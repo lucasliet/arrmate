@@ -10,22 +10,22 @@ void main() {
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getTemporaryDirectory' ||
-            methodCall.method == 'getApplicationSupportDirectory') {
-          return '.';
-        }
-        return null;
-      },
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getTemporaryDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory') {
+              return '.';
+            }
+            return null;
+          },
+        );
   });
 
   group('CustomCacheManager', () {
     test('should provide a singleton instance', () {
       final instance1 = CustomCacheManager.instance;
       final instance2 = CustomCacheManager.instance;
-      
+
       expect(instance1, isA<CacheManager>());
       expect(instance1, equals(instance2));
     });

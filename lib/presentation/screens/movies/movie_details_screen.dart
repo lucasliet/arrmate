@@ -5,21 +5,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/widgets/releases_sheet.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
 import 'widgets/movie_poster.dart';
 
-
 class MovieDetailsScreen extends ConsumerWidget {
   final int movieId;
 
-  const MovieDetailsScreen({
-    super.key,
-    required this.movieId,
-  });
+  const MovieDetailsScreen({super.key, required this.movieId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,11 +55,16 @@ class MovieDetailsScreen extends ConsumerWidget {
                 if (fanartUrl != null && instance != null)
                   CachedNetworkImage(
                     imageUrl: Uri.parse(instance.url)
-                        .replace(path: '${Uri.parse(instance.url).path}$fanartUrl'.replaceAll('//', '/'))
+                        .replace(
+                          path: '${Uri.parse(instance.url).path}$fanartUrl'
+                              .replaceAll('//', '/'),
+                        )
                         .toString(),
                     httpHeaders: instance.authHeaders,
                     fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                    errorWidget: (context, url, error) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                    ),
                   )
                 else
                   Container(color: theme.colorScheme.surfaceContainerHighest),
@@ -87,20 +88,31 @@ class MovieDetailsScreen extends ConsumerWidget {
           ),
           actions: [
             IconButton(
-              icon: Icon(movie.monitored ? Icons.bookmark : Icons.bookmark_border),
+              icon: Icon(
+                movie.monitored ? Icons.bookmark : Icons.bookmark_border,
+              ),
               tooltip: movie.monitored ? 'Unmonitor' : 'Monitor',
               onPressed: () async {
                 try {
-                  await ref.read(movieControllerProvider(movieId)).toggleMonitor(movie);
+                  await ref
+                      .read(movieControllerProvider(movieId))
+                      .toggleMonitor(movie);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(movie.monitored ? 'Unmonitored' : 'Monitored')),
+                      SnackBar(
+                        content: Text(
+                          movie.monitored ? 'Unmonitored' : 'Monitored',
+                        ),
+                      ),
                     );
                   }
                 } catch (e) {
-                   if (context.mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: theme.colorScheme.error),
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
                     );
                   }
                 }
@@ -125,7 +137,9 @@ class MovieDetailsScreen extends ConsumerWidget {
               icon: const Icon(Icons.edit),
               onPressed: () {
                 // TODO: Edit movie
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit not implemented')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Edit not implemented')),
+                );
               },
             ),
             PopupMenuButton<String>(
@@ -135,7 +149,9 @@ class MovieDetailsScreen extends ConsumerWidget {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Delete Movie'),
-                      content: const Text('Are you sure you want to delete this movie?'),
+                      content: const Text(
+                        'Are you sure you want to delete this movie?',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -151,17 +167,22 @@ class MovieDetailsScreen extends ConsumerWidget {
 
                   if (confirm == true) {
                     try {
-                      await ref.read(movieControllerProvider(movieId)).deleteMovie();
+                      await ref
+                          .read(movieControllerProvider(movieId))
+                          .deleteMovie();
                       if (context.mounted) {
                         context.pop(); // Pop details screen
-                         ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Movie deleted')),
                         );
                       }
                     } catch (e) {
-                       if (context.mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: theme.colorScheme.error),
+                          SnackBar(
+                            content: Text('Failed to delete: $e'),
+                            backgroundColor: theme.colorScheme.error,
+                          ),
                         );
                       }
                     }
@@ -209,7 +230,9 @@ class MovieDetailsScreen extends ConsumerWidget {
                         children: [
                           Text(
                             movie.title,
-                            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           if (movie.year > 0) ...[
                             const SizedBox(height: 4),
@@ -233,13 +256,12 @@ class MovieDetailsScreen extends ConsumerWidget {
                 if (movie.overview != null) ...[
                   Text(
                     'Overview',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    movie.overview!,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(movie.overview!, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 24),
                 ],
                 _buildInfoGrid(context, movie),
@@ -318,10 +340,13 @@ class MovieDetailsScreen extends ConsumerWidget {
     final items = [
       if (movie.studio != null) _InfoItem('Studio', movie.studio!),
       _InfoItem('Status', movie.status.label),
-      _InfoItem('Quality Profile', movie.qualityProfileId.toString()), // TODO: Lookup profile name
+      _InfoItem(
+        'Quality Profile',
+        movie.qualityProfileId.toString(),
+      ), // TODO: Lookup profile name
       if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0)
         _InfoItem('Size', formatBytes(movie.sizeOnDisk!)),
-        if (movie.path != null) _InfoItem('Path', movie.path!),
+      if (movie.path != null) _InfoItem('Path', movie.path!),
     ];
 
     return Wrap(
@@ -329,7 +354,8 @@ class MovieDetailsScreen extends ConsumerWidget {
       runSpacing: 16,
       children: items.map((item) {
         return SizedBox(
-          width: (MediaQuery.of(context).size.width - 48) / 2, // 2 columns roughly
+          width:
+              (MediaQuery.of(context).size.width - 48) / 2, // 2 columns roughly
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -340,10 +366,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                item.value,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(item.value, style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         );

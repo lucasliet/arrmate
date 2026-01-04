@@ -27,6 +27,12 @@ dependencies:
   uuid: ^4.5.2
   flutter_cache_manager: ^3.3.1
   riverpod_annotation: ^2.6.1
+  flutter_local_notifications: ^18.0.0
+  workmanager: ^0.9.0+3
+  ota_update: ^7.1.0
+  package_info_plus: ^9.0.0
+  pub_semver: ^2.2.0
+  logger: ^2.6.2
 
 dev_dependencies:
   flutter_test:
@@ -50,3 +56,4 @@ flutter_launcher_icons:
   min_sdk_android: 21
   adaptive_icon_foreground: "assets/images/icon.png"
   adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground_inset: 20

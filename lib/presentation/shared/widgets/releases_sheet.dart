@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 
@@ -52,12 +52,14 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       if (confirmed != true) return;
 
       if (!mounted) return;
-      
-      await ref.read(releaseActionsProvider.notifier).downloadRelease(
-        guid: release.guid,
-        indexerId: release.indexerId, 
-        isMovie: widget.isMovie,
-      );
+
+      await ref
+          .read(releaseActionsProvider.notifier)
+          .downloadRelease(
+            guid: release.guid,
+            indexerId: release.indexerId,
+            isMovie: widget.isMovie,
+          );
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Close sheet
@@ -67,7 +69,10 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error grabbing release: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error grabbing release: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -78,7 +83,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
     final releaseListAsync = widget.isMovie
         ? ref.watch(movieReleasesProvider(widget.id))
         : ref.watch(episodeReleasesProvider(widget.id));
-    
+
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -90,18 +95,25 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
             AppBar(
               title: Column(
                 children: [
-                   Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                   if (widget.episodeCode != null)
-                      Text(widget.episodeCode!, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.episodeCode != null)
+                    Text(
+                      widget.episodeCode!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                 ],
               ),
               centerTitle: true,
               automaticallyImplyLeading: false,
               actions: [
-                 IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                 ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
               ],
             ),
             const Divider(height: 1),
@@ -111,16 +123,19 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                   if (releases.isEmpty) {
                     return const Center(child: Text('No releases found'));
                   }
-                  
+
                   // Sort by rejected last, then score/seeds
                   // API usually returns sorted, but we want rejected visible but de-emphasized.
-                  
+
                   return ListView.builder(
                     controller: scrollController,
                     itemCount: releases.length,
                     itemBuilder: (context, index) {
                       final release = releases[index];
-                      return _ReleaseTile(release: release, onTap: () => _onDownload(release));
+                      return _ReleaseTile(
+                        release: release,
+                        onTap: () => _onDownload(release),
+                      );
                     },
                   );
                 },
@@ -157,53 +172,58 @@ class _ReleaseTile extends StatelessWidget {
       opacity: isRejected ? 0.5 : 1.0,
       child: ListTile(
         title: Text(
-           release.title,
-           style: theme.textTheme.bodyMedium?.copyWith(
-             decoration: isRejected ? TextDecoration.lineThrough : null,
-           ),
+          release.title,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            decoration: isRejected ? TextDecoration.lineThrough : null,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Row(
-               children: [
-                 _Badge(label: release.quality.quality.name, color: Colors.blueAccent),
-                 const SizedBox(width: 4),
-                 _Badge(label: _formatSize(release.size), color: Colors.grey),
-                 const SizedBox(width: 4),
-                 _Badge(label: '${release.age}d', color: Colors.orange),
-               ],
-             ),
-             const SizedBox(height: 4),
-             Row(
-               children: [
-                  Text(release.indexer),
-                  const Spacer(),
-                  Icon(Icons.arrow_upward, size: 14, color: Colors.green),
-                  Text('${release.seeders}'),
-                  const SizedBox(width: 8),
-                  Icon(Icons.arrow_downward, size: 14, color: Colors.red),
-                  Text('${release.leechers}'),
-               ],
-             ),
-             if (isRejected && release.rejections.isNotEmpty)
-               Padding(
-                 padding: const EdgeInsets.only(top: 4.0),
-                 child: Text(
-                   release.rejections.first,
-                   style: theme.textTheme.bodySmall?.copyWith(color: Colors.red),
-                 ),
-               ),
+            Row(
+              children: [
+                _Badge(
+                  label: release.quality.quality.name,
+                  color: Colors.blueAccent,
+                ),
+                const SizedBox(width: 4),
+                _Badge(label: _formatSize(release.size), color: Colors.grey),
+                const SizedBox(width: 4),
+                _Badge(label: '${release.age}d', color: Colors.orange),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(release.indexer),
+                const Spacer(),
+                Icon(Icons.arrow_upward, size: 14, color: Colors.green),
+                Text('${release.seeders}'),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_downward, size: 14, color: Colors.red),
+                Text('${release.leechers}'),
+              ],
+            ),
+            if (isRejected && release.rejections.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  release.rejections.first,
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.red),
+                ),
+              ),
           ],
         ),
-        onTap: isRejected ? null : onTap, // Prevent click if rejected? or allow override? 
-        // Usually allow override or just show rejection reason. 
+        onTap: isRejected
+            ? null
+            : onTap, // Prevent click if rejected? or allow override?
+        // Usually allow override or just show rejection reason.
         // For now, disable if rejected to prevent accidental bad downloads, or allow user to force (Rudarr allows force).
         // I'll disable for simplicity but could show dialog explaining "Rejected: ..."
         enabled: !isRejected,
         trailing: IconButton(
-           icon: const Icon(Icons.download),
-           onPressed: isRejected ? null : onTap,
+          icon: const Icon(Icons.download),
+          onPressed: isRejected ? null : onTap,
         ),
       ),
     );
@@ -213,7 +233,7 @@ class _ReleaseTile extends StatelessWidget {
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
-  
+
   const _Badge({required this.label, required this.color});
 
   @override
@@ -227,7 +247,11 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../../core/constants/app_constants.dart';
 import 'movie_poster.dart';
 
@@ -8,11 +8,7 @@ class MovieCard extends StatelessWidget {
   final Movie movie;
   final VoidCallback? onTap;
 
-  const MovieCard({
-    super.key,
-    required this.movie,
-    this.onTap,
-  });
+  const MovieCard({super.key, required this.movie, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +23,7 @@ class MovieCard extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            Positioned.fill(
-              child: MoviePoster(movie: movie),
-            ),
+            Positioned.fill(child: MoviePoster(movie: movie)),
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -84,7 +78,7 @@ class MovieCard extends StatelessWidget {
 
   Widget _buildStatusIndicator(BuildContext context) {
     Color color;
-    
+
     if (movie.isDownloaded) {
       color = Colors.green;
     } else if (!movie.monitored) {
@@ -92,7 +86,7 @@ class MovieCard extends StatelessWidget {
     } else if (movie.isAvailable) {
       color = Colors.red;
     } else {
-      color = Colors.blue; 
+      color = Colors.blue;
     }
 
     return Positioned(

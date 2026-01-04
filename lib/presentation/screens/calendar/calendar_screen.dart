@@ -14,14 +14,13 @@ class CalendarScreen extends ConsumerWidget {
     final calendarState = ref.watch(calendarProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-      ),
+      appBar: AppBar(title: const Text('Calendar')),
       body: calendarState.when(
         data: (events) {
           if (events.isEmpty) {
             return RefreshIndicator(
-              onRefresh: () async => ref.read(calendarProvider.notifier).refresh(),
+              onRefresh: () async =>
+                  ref.read(calendarProvider.notifier).refresh(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: SizedBox(
@@ -29,7 +28,8 @@ class CalendarScreen extends ConsumerWidget {
                   child: const EmptyState(
                     icon: Icons.calendar_today,
                     title: 'No upcoming events',
-                    subtitle: 'Check back later or add content to your libraries.',
+                    subtitle:
+                        'Check back later or add content to your libraries.',
                   ),
                 ),
               ),
@@ -41,7 +41,8 @@ class CalendarScreen extends ConsumerWidget {
           final sortedDates = grouped.keys.toList()..sort();
 
           return RefreshIndicator(
-            onRefresh: () async => ref.read(calendarProvider.notifier).refresh(),
+            onRefresh: () async =>
+                ref.read(calendarProvider.notifier).refresh(),
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: sortedDates.length,
@@ -88,7 +89,7 @@ class CalendarScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     String label;
     if (date == today) {
       label = 'Today';

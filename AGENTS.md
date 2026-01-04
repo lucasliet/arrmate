@@ -21,14 +21,26 @@ series).
     Quality Profile and Root Folder configuration.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.
+  - **Activity History**: View historical events (grabbed, imported, failed,
+    deleted) with filtering by event type.
+  - **Queue Management**: View active downloads with detailed status, remove
+    tasks with blocklist option.
+  - **Notifications**: Local push notifications for download events (via
+    background polling).
+  - **Advanced Management**: View Quality Profiles, System Logs, and Health
+    Checks.
+  - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 
 ## Project Structure & Module Organization
 
-- `lib/core`: Shared logic, constants, extensions, and utilities.
-- `lib/data`: Data layer including models (`/models`), API clients (`/api`), and
-  repositories (`/repositories`).
+- `lib/core`: Shared logic, constants, extensions, and utilities, including
+  background services (`/services`).
+- `lib/data`: Data layer including API clients (`/api`) and repository
+  implementations (`/repositories`).
+- `lib/domain`: Domain layer including models (`/models`) and repository
+  interfaces (`/repositories`).
 - `lib/presentation`: UI layer organized by feature (screens, widgets) and
   router configuration.
 - `lib/providers`: State management using Riverpod.
@@ -39,6 +51,7 @@ series).
 - `flutter pub get`: Install dependencies.
 - `flutter run`: Launch the application on a connected device or emulator.
 - `flutter test`: Run unit and widget tests.
+- `flutter build apk --split-per-abi`: Build release APKs for Android.
 - `dart run build_runner build --delete-conflicting-outputs`: Generate code (if
   required by future dependencies).
 - `dart run flutter_launcher_icons`: Generate app icons (configured for
@@ -81,3 +94,18 @@ The app follows a Clean Architecture-inspired layered approach:
 2. **Domain/Providers**: Riverpod providers bridge data to UI and handle state.
 3. **Presentation**: Screens and Widgets consume providers; minimal business
    logic in UI code.
+4. **Services**: Background tasks for notifications and sync.
+
+## Reference Implementation
+
+The `rudarr/` directory contains the Ruddarr iOS app source code for reference.
+It implements similar features in SwiftUI and can be used as a guide for API
+integration and UI patterns.
+
+## Quality Assurance
+
+To ensure project stability, every code change or addition MUST be followed by:
+
+1. **Format**: Run `dart format .` to maintain consistent style.
+2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.
+3. **Test**: Run `flutter test` to ensure no regressions were introduced.

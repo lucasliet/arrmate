@@ -17,8 +17,8 @@ class LoadingIndicator extends StatelessWidget {
             Text(
               message!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -31,11 +31,7 @@ class ErrorDisplay extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
 
-  const ErrorDisplay({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const ErrorDisplay({super.key, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +43,7 @@ class ErrorDisplay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
             const SizedBox(height: 16),
             Text(
               message,
@@ -114,14 +106,11 @@ class EmptyState extends StatelessWidget {
                 subtitle!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
-            if (action != null) ...[
-              const SizedBox(height: 24),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 24), action!],
           ],
         ),
       ),

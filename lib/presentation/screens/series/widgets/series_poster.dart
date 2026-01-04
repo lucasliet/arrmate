@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../../core/network/custom_cache_manager.dart';
 
@@ -25,34 +25,43 @@ class SeriesPoster extends ConsumerWidget {
     // Priority:
     // 1. Remote URL (TVDB) - No auth needed, faster.
     // 2. Local URL - Needs auth, served by Sonarr.
-    
+
     // Check for remote URL
-    final remotePoster = series.images.where((i) => i.coverType == 'poster').firstOrNull?.remoteUrl;
-    
+    final remotePoster = series.images
+        .where((i) => i.coverType == 'poster')
+        .firstOrNull
+        ?.remoteUrl;
+
     if (remotePoster != null && remotePoster.isNotEmpty) {
-       return CachedNetworkImage(
+      return CachedNetworkImage(
         imageUrl: remotePoster,
         cacheManager: CustomCacheManager.instance,
         fit: fit,
         placeholder: (context, url) => Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) => _buildPlaceholder(context),
       );
     }
 
     // Fallback to local authenticated URL
-    final localPosterPath = series.images.where((i) => i.coverType == 'poster').firstOrNull?.url;
-    
+    final localPosterPath = series.images
+        .where((i) => i.coverType == 'poster')
+        .firstOrNull
+        ?.url;
+
     if (localPosterPath == null || instance == null) {
       return _buildPlaceholder(context);
     }
 
     // URL Construction logic
-    final uri = Uri.parse(instance.url).replace(path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll('//', '/'));
+    final uri = Uri.parse(instance.url).replace(
+      path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll(
+        '//',
+        '/',
+      ),
+    );
 
     return CachedNetworkImage(
       imageUrl: uri.toString(),
@@ -61,9 +70,7 @@ class SeriesPoster extends ConsumerWidget {
       fit: fit,
       placeholder: (context, url) => Container(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       errorWidget: (context, url, error) => _buildPlaceholder(context),
     );
@@ -75,7 +82,9 @@ class SeriesPoster extends ConsumerWidget {
       child: Center(
         child: Icon(
           Icons.tv,
-          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           size: 32,
         ),
       ),

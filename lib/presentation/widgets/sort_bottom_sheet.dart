@@ -53,10 +53,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                title,
-                style: theme.textTheme.titleLarge,
-              ),
+              child: Text(title, style: theme.textTheme.titleLarge),
             ),
             Expanded(
               child: ListView(
@@ -64,18 +61,22 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   _buildSectionHeader(context, 'Sort By'),
-                  ...sortOptions.map((option) => RadioListTile<T>(
-                    title: Text(sortLabelBuilder(option)),
-                    value: option,
-                    groupValue: currentSort,
-                    onChanged: (value) {
-                      if (value != null) {
-                        onSortChanged(value);
-                        Navigator.pop(context);
-                      }
-                    },
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  )),
+                  ...sortOptions.map(
+                    (option) => RadioListTile<T>(
+                      title: Text(sortLabelBuilder(option)),
+                      value: option,
+                      groupValue: currentSort,
+                      onChanged: (value) {
+                        if (value != null) {
+                          onSortChanged(value);
+                          Navigator.pop(context);
+                        }
+                      },
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                      ),
+                    ),
+                  ),
                   const Divider(),
                   _buildSectionHeader(context, 'Order'),
                   RadioListTile<bool>(
@@ -105,7 +106,10 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                   const Divider(),
                   _buildSectionHeader(context, 'Filter'),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -139,8 +143,8 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }

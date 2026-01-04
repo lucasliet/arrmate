@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arrmate/data/models/shared/media_file.dart';
+import 'package:arrmate/domain/models/shared/media_file.dart';
 
 void main() {
   group('MediaFile Model', () {
@@ -28,11 +28,7 @@ void main() {
 
     test('should use DateTime.now() fallback when dateAdded is null', () {
       // Given
-      final json = {
-        'id': 2,
-        'size': 512,
-        'dateAdded': null,
-      };
+      final json = {'id': 2, 'size': 512, 'dateAdded': null};
       final beforeTest = DateTime.now();
 
       // When
@@ -42,62 +38,69 @@ void main() {
       // Then
       expect(mediaFile.id, 2);
       expect(
-        mediaFile.dateAdded.isAfter(beforeTest.subtract(const Duration(seconds: 1))) &&
-        mediaFile.dateAdded.isBefore(afterTest.add(const Duration(seconds: 1))),
+        mediaFile.dateAdded.isAfter(
+              beforeTest.subtract(const Duration(seconds: 1)),
+            ) &&
+            mediaFile.dateAdded.isBefore(
+              afterTest.add(const Duration(seconds: 1)),
+            ),
         isTrue,
       );
     });
 
-    test('should use DateTime.now() fallback when dateAdded is invalid format', () {
-      // Given
-      final json = {
-        'id': 3,
-        'size': 256,
-        'dateAdded': 'invalid-date-format',
-      };
-      final beforeTest = DateTime.now();
+    test(
+      'should use DateTime.now() fallback when dateAdded is invalid format',
+      () {
+        // Given
+        final json = {'id': 3, 'size': 256, 'dateAdded': 'invalid-date-format'};
+        final beforeTest = DateTime.now();
 
-      // When
-      final mediaFile = MediaFile.fromJson(json);
-      final afterTest = DateTime.now();
+        // When
+        final mediaFile = MediaFile.fromJson(json);
+        final afterTest = DateTime.now();
 
-      // Then
-      expect(mediaFile.id, 3);
-      expect(
-        mediaFile.dateAdded.isAfter(beforeTest.subtract(const Duration(seconds: 1))) &&
-        mediaFile.dateAdded.isBefore(afterTest.add(const Duration(seconds: 1))),
-        isTrue,
-      );
-    });
+        // Then
+        expect(mediaFile.id, 3);
+        expect(
+          mediaFile.dateAdded.isAfter(
+                beforeTest.subtract(const Duration(seconds: 1)),
+              ) &&
+              mediaFile.dateAdded.isBefore(
+                afterTest.add(const Duration(seconds: 1)),
+              ),
+          isTrue,
+        );
+      },
+    );
 
-    test('should use DateTime.now() fallback when dateAdded is empty string', () {
-      // Given
-      final json = {
-        'id': 4,
-        'size': 128,
-        'dateAdded': '',
-      };
-      final beforeTest = DateTime.now();
+    test(
+      'should use DateTime.now() fallback when dateAdded is empty string',
+      () {
+        // Given
+        final json = {'id': 4, 'size': 128, 'dateAdded': ''};
+        final beforeTest = DateTime.now();
 
-      // When
-      final mediaFile = MediaFile.fromJson(json);
-      final afterTest = DateTime.now();
+        // When
+        final mediaFile = MediaFile.fromJson(json);
+        final afterTest = DateTime.now();
 
-      // Then
-      expect(mediaFile.id, 4);
-      expect(
-        mediaFile.dateAdded.isAfter(beforeTest.subtract(const Duration(seconds: 1))) &&
-        mediaFile.dateAdded.isBefore(afterTest.add(const Duration(seconds: 1))),
-        isTrue,
-      );
-    });
+        // Then
+        expect(mediaFile.id, 4);
+        expect(
+          mediaFile.dateAdded.isAfter(
+                beforeTest.subtract(const Duration(seconds: 1)),
+              ) &&
+              mediaFile.dateAdded.isBefore(
+                afterTest.add(const Duration(seconds: 1)),
+              ),
+          isTrue,
+        );
+      },
+    );
 
     test('should use default size of 0 when size is null', () {
       // Given
-      final json = {
-        'id': 5,
-        'dateAdded': '2024-01-01T00:00:00Z',
-      };
+      final json = {'id': 5, 'dateAdded': '2024-01-01T00:00:00Z'};
 
       // When
       final mediaFile = MediaFile.fromJson(json);

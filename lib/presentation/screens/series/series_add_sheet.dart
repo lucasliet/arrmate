@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'providers/series_lookup_provider.dart';
 import 'providers/series_provider.dart';
@@ -17,7 +17,7 @@ class SeriesAddSheet extends ConsumerStatefulWidget {
 class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
   final _searchController = TextEditingController();
   Series? _selectedSeries;
-  
+
   // Form State
   bool _monitored = true;
   SeriesType _seriesType = SeriesType.standard; // Default to standard
@@ -37,12 +37,15 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       _selectedSeries = series;
       _monitored = true;
       _seasonFolder = true;
-      _seriesType = SeriesType.standard; 
+      _seriesType = SeriesType.standard;
     });
   }
 
   Future<void> _submit() async {
-    if (_selectedSeries == null || _qualityProfileId == null || _rootFolderPath == null) return;
+    if (_selectedSeries == null ||
+        _qualityProfileId == null ||
+        _rootFolderPath == null)
+      return;
 
     setState(() => _isSubmitting = true);
 
@@ -60,7 +63,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       );
 
       await api.addSeries(seriesToAdd);
-      
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +74,10 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding series: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error adding series: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -111,7 +117,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                         border: OutlineInputBorder(),
                       ),
                       onSubmitted: (value) {
-                         ref.read(seriesLookupProvider.notifier).search(value);
+                        ref.read(seriesLookupProvider.notifier).search(value);
                       },
                     ),
                   ),
@@ -135,11 +141,15 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     itemBuilder: (context, index) {
                       final series = seriesList[index];
                       // Use a safe check for 'added' or similar property
-                      final isAdded = series.added.year > 2000; 
-                      
+                      final isAdded = series.added.year > 2000;
+
                       return ListTile(
                         leading: series.remotePoster != null
-                            ? Image.network(series.remotePoster!, width: 40, fit: BoxFit.cover)
+                            ? Image.network(
+                                series.remotePoster!,
+                                width: 40,
+                                fit: BoxFit.cover,
+                              )
                             : const Icon(Icons.tv),
                         title: Text(series.title),
                         subtitle: Text('${series.year}'),
@@ -147,13 +157,15 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                             ? const Icon(Icons.check, color: Colors.green)
                             : const Icon(Icons.add),
                         onTap: () {
-                             if (!isAdded) {
-                                  _onSeriesSelected(series);
-                             } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                       const SnackBar(content: Text('Series already in library')),
-                                  );
-                             }
+                          if (!isAdded) {
+                            _onSeriesSelected(series);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Series already in library'),
+                              ),
+                            );
+                          }
                         },
                       );
                     },
@@ -190,12 +202,19 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
               actions: [
                 TextButton(
                   onPressed: _isSubmitting ? null : _submit,
-                  child: _isSubmitting 
-                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
-                     : const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Add',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                 ),
               ],
-              automaticallyImplyLeading: false, 
+              automaticallyImplyLeading: false,
             ),
             Expanded(
               child: ListView(
@@ -219,7 +238,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     }).toList(),
                     onChanged: (val) => setState(() => _seriesType = val!),
                   ),
-                   const SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   SwitchListTile(
                     title: const Text('Season Folder'),
                     value: _seasonFolder,
@@ -229,18 +248,28 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   qualityProfiles.when(
                     data: (profiles) {
                       if (_qualityProfileId == null && profiles.isNotEmpty) {
-                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                           if(mounted) setState(() => _qualityProfileId = profiles.first.id);
-                         });
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted)
+                            setState(
+                              () => _qualityProfileId = profiles.first.id,
+                            );
+                        });
                       }
                       return DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: 'Quality Profile'),
+                        decoration: const InputDecoration(
+                          labelText: 'Quality Profile',
+                        ),
                         value: _qualityProfileId,
-                        items: profiles.map((p) => DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.name),
-                        )).toList(),
-                        onChanged: (val) => setState(() => _qualityProfileId = val),
+                        items: profiles
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p.id,
+                                child: Text(p.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _qualityProfileId = val),
                       );
                     },
                     loading: () => const LinearProgressIndicator(),
@@ -249,23 +278,33 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   const SizedBox(height: 16),
                   rootFolders.when(
                     data: (folders) {
-                       final rootFolderList = List<RootFolder>.from(folders);
-                       if (_rootFolderPath == null && rootFolderList.isNotEmpty) {
-                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                           if(mounted) setState(() => _rootFolderPath = rootFolderList.first.path);
-                         });
+                      final rootFolderList = List<RootFolder>.from(folders);
+                      if (_rootFolderPath == null &&
+                          rootFolderList.isNotEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted)
+                            setState(
+                              () => _rootFolderPath = rootFolderList.first.path,
+                            );
+                        });
                       }
                       return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Root Folder'),
+                        decoration: const InputDecoration(
+                          labelText: 'Root Folder',
+                        ),
                         value: _rootFolderPath,
                         items: rootFolderList.map((f) {
-                          final freeSpaceGb = (f.freeSpace ?? 0) / 1024 / 1024 / 1024;
+                          final freeSpaceGb =
+                              (f.freeSpace ?? 0) / 1024 / 1024 / 1024;
                           return DropdownMenuItem(
                             value: f.path,
-                            child: Text('${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)'),
+                            child: Text(
+                              '${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)',
+                            ),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _rootFolderPath = val),
+                        onChanged: (val) =>
+                            setState(() => _rootFolderPath = val),
                       );
                     },
                     loading: () => const LinearProgressIndicator(),

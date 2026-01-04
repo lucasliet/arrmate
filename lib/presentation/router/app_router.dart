@@ -9,6 +9,9 @@ import '../screens/calendar/calendar_screen.dart';
 import '../screens/activity/activity_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/instance_edit_screen.dart';
+import '../screens/settings/logs_screen.dart';
+import '../screens/settings/health_screen.dart';
+import '../screens/settings/quality_profiles_screen.dart';
 import '../widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -24,9 +27,8 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/movies',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: MoviesScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: MoviesScreen()),
           routes: [
             GoRoute(
               path: ':id',
@@ -39,9 +41,8 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/series',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SeriesScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: SeriesScreen()),
           routes: [
             GoRoute(
               path: ':id',
@@ -54,31 +55,40 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/calendar',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: CalendarScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: CalendarScreen()),
         ),
         GoRoute(
           path: '/activity',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: ActivityScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ActivityScreen()),
         ),
-         GoRoute(
-           path: '/settings',
-           pageBuilder: (context, state) => const NoTransitionPage(
-             child: SettingsScreen(),
-           ),
-           routes: [
-             GoRoute(
-               path: 'instance/:id',
-               builder: (context, state) {
-                 final id = state.pathParameters['id'];
-                 return InstanceEditScreen(instanceId: id == 'new' ? null : id);
-               },
-             ),
-           ],
-         ),
+        GoRoute(
+          path: '/settings',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: SettingsScreen()),
+          routes: [
+            GoRoute(
+              path: 'instance/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id'];
+                return InstanceEditScreen(instanceId: id == 'new' ? null : id);
+              },
+            ),
+            GoRoute(
+              path: 'logs',
+              builder: (context, state) => const LogsScreen(),
+            ),
+            GoRoute(
+              path: 'health',
+              builder: (context, state) => const HealthScreen(),
+            ),
+            GoRoute(
+              path: 'quality-profiles',
+              builder: (context, state) => const QualityProfilesScreen(),
+            ),
+          ],
+        ),
       ],
     ),
   ],
@@ -87,7 +97,12 @@ final appRouter = GoRouter(
 enum AppTab {
   movies('/movies', 'Movies', Icons.movie_outlined, Icons.movie),
   series('/series', 'Series', Icons.tv_outlined, Icons.tv),
-  calendar('/calendar', 'Calendar', Icons.calendar_today_outlined, Icons.calendar_today),
+  calendar(
+    '/calendar',
+    'Calendar',
+    Icons.calendar_today_outlined,
+    Icons.calendar_today,
+  ),
   activity('/activity', 'Activity', Icons.download_outlined, Icons.download),
   settings('/settings', 'Settings', Icons.settings_outlined, Icons.settings);
 

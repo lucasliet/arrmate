@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/update_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/update_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -13,16 +17,18 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           _buildInstancesSection(context, ref),
           const Divider(),
           _buildAppearanceSection(context, ref),
           const Divider(),
-          _buildAboutSection(context),
+          _buildSystemSection(context),
+          const Divider(),
+          _buildNotificationsSection(context, ref),
+          const Divider(),
+          _buildAboutSection(context, ref),
         ],
       ),
     );
@@ -39,9 +45,9 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             'Instances',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (instancesState.instances.isEmpty)
@@ -77,21 +83,21 @@ class SettingsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-         Padding(
+        Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             'Appearance',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         ListTile(
           title: const Text('Theme Mode'),
           subtitle: Text(settings.appearance.label),
           trailing: const Icon(Icons.chevron_right),
-           onTap: () {
+          onTap: () {
             _showAppearanceDialog(context, ref, settings.appearance);
           },
         ),
@@ -107,7 +113,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAppearanceDialog(BuildContext context, WidgetRef ref, AppAppearance current) {
+  void _showAppearanceDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppAppearance current,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -121,10 +131,15 @@ class SettingsScreen extends ConsumerWidget {
                 return ListTile(
                   title: Text(mode.label),
                   leading: Icon(
-                    mode == AppAppearance.light ? Icons.light_mode : 
-                    mode == AppAppearance.dark ? Icons.dark_mode : Icons.brightness_auto,
+                    mode == AppAppearance.light
+                        ? Icons.light_mode
+                        : mode == AppAppearance.dark
+                        ? Icons.dark_mode
+                        : Icons.brightness_auto,
                   ),
-                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
                   onTap: () {
                     ref.read(settingsProvider.notifier).setAppearance(mode);
                     context.pop();
@@ -138,7 +153,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showColorSchemeDialog(BuildContext context, WidgetRef ref, AppColorScheme current) {
+  void _showColorSchemeDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppColorScheme current,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -151,8 +170,8 @@ class SettingsScreen extends ConsumerWidget {
               children: AppColorScheme.values.map((scheme) {
                 return InkWell(
                   onTap: () {
-                     ref.read(settingsProvider.notifier).setColorScheme(scheme);
-                     context.pop();
+                    ref.read(settingsProvider.notifier).setColorScheme(scheme);
+                    context.pop();
                   },
                   borderRadius: BorderRadius.circular(32),
                   child: Container(
@@ -161,9 +180,12 @@ class SettingsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: scheme.color,
                       shape: BoxShape.circle,
-                      border: current == scheme 
-                        ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
-                        : null,
+                      border: current == scheme
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              width: 3,
+                            )
+                          : null,
                     ),
                   ),
                 );
@@ -175,7 +197,180 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAboutSection(BuildContext context) {
+  Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notifications = settings.notifications;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Notifications',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        SwitchListTile(
+          title: const Text('Enable Notifications'),
+          subtitle: const Text('Periodically check for activity updates'),
+          value: notifications.enabled,
+          onChanged: (value) {
+            ref
+                .read(settingsProvider.notifier)
+                .updateNotifications(notifications.copyWith(enabled: value));
+          },
+        ),
+        if (notifications.enabled) ...[
+          CheckboxListTile(
+            title: const Text('Notify on Grab'),
+            subtitle: const Text(
+              'When a new release is sent to download client',
+            ),
+            value: notifications.notifyOnGrab,
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
+                      notifications.copyWith(notifyOnGrab: value),
+                    );
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Notify on Import'),
+            subtitle: const Text('When a file is successfully imported'),
+            value: notifications.notifyOnImport,
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
+                      notifications.copyWith(notifyOnImport: value),
+                    );
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Notify on Failure'),
+            subtitle: const Text('When a download fails to import'),
+            value: notifications.notifyOnDownloadFailed,
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
+                      notifications.copyWith(notifyOnDownloadFailed: value),
+                    );
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('Polling Interval'),
+            subtitle: Text('${notifications.pollingIntervalMinutes} minutes'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              _showPollingIntervalDialog(
+                context,
+                ref,
+                notifications.pollingIntervalMinutes,
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showPollingIntervalDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int current,
+  ) {
+    final intervals = [15, 30, 60, 120, 240, 480, 1440];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Polling Interval'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: intervals.map((min) {
+                final isSelected = min == current;
+                final label = min < 60 ? '$min minutes' : '${min ~/ 60} hours';
+                return ListTile(
+                  title: Text(label),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    final settings = ref.read(settingsProvider);
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateNotifications(
+                          settings.notifications.copyWith(
+                            pollingIntervalMinutes: min,
+                          ),
+                        );
+                    context.pop();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSystemSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'SYSTEM MANAGEMENT',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.library_books_outlined),
+          title: const Text('Logs'),
+          subtitle: const Text('System event logs'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/logs'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.health_and_safety_outlined),
+          title: const Text('Health'),
+          subtitle: const Text('System health and issues'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/health'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.high_quality_outlined),
+          title: const Text('Quality Profiles'),
+          subtitle: const Text('Available profiles from instances'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/quality-profiles'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context, WidgetRef ref) {
+    final updateState = ref.watch(updateProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,14 +379,47 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             'About',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        ListTile(
-          title: const Text('Version'),
-          subtitle: const Text('0.1.0'),
+        FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final version = snapshot.data?.version ?? '...';
+            return ListTile(
+              title: const Text('Version'),
+              subtitle: Text(version),
+              trailing: updateState.status == UpdateStatus.checking
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : (updateState.status == UpdateStatus.upToDate
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          )
+                        : const Icon(Icons.refresh, size: 20)),
+              onTap: updateState.status == UpdateStatus.checking
+                  ? null
+                  : () async {
+                      await ref
+                          .read(updateProvider.notifier)
+                          .checkForUpdate(force: true);
+                      if (context.mounted &&
+                          ref.read(updateProvider).status ==
+                              UpdateStatus.upToDate) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('App is up to date')),
+                        );
+                      }
+                    },
+            );
+          },
         ),
         ListTile(
           title: const Text('Source Code'),

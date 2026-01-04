@@ -17,10 +17,7 @@ enum AppColorScheme {
   const AppColorScheme(this.label, this.color);
 
   ColorScheme toColorScheme(Brightness brightness) {
-    return ColorScheme.fromSeed(
-      seedColor: color,
-      brightness: brightness,
-    );
+    return ColorScheme.fromSeed(seedColor: color, brightness: brightness);
   }
 }
 
@@ -73,18 +70,14 @@ class AppTheme {
         color: isDark
             ? colorScheme.surfaceContainerHighest
             : colorScheme.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       chipTheme: ChipThemeData(
         elevation: 0,
         backgroundColor: colorScheme.surfaceContainerHigh,
         selectedColor: colorScheme.primaryContainer,
         labelStyle: TextStyle(color: colorScheme.onSurface),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 2,
@@ -115,15 +108,10 @@ class AppTheme {
               color: colorScheme.primary,
             );
           }
-          return TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurfaceVariant,
-          );
+          return TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant);
         }),
       ),
-      listTileTheme: ListTileThemeData(
-        iconColor: colorScheme.onSurfaceVariant,
-      ),
+      listTileTheme: ListTileThemeData(iconColor: colorScheme.onSurfaceVariant),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest,
@@ -138,14 +126,10 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         shape: const RoundedRectangleBorder(

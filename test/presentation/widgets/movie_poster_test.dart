@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/widgets/movie_poster.dart';
 import 'package:flutter/material.dart';
@@ -27,12 +27,7 @@ void main() {
     minimumAvailability: MovieStatus.released,
     added: DateTime.now(),
     qualityProfileId: 1,
-    images: [
-      MediaImage(
-        coverType: 'poster',
-        url: '/MediaCover/1/poster.jpg',
-      ),
-    ],
+    images: [MediaImage(coverType: 'poster', url: '/MediaCover/1/poster.jpg')],
   );
 
   final testMovieWithRemotePoster = Movie(
@@ -108,39 +103,38 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should display placeholder when movie has no images',
-      (tester) async {
-        // Given
-        await HttpOverrides.runZoned(
-          () async {
-            await tester.pumpWidget(
-              ProviderScope(
-                overrides: [
-                  currentRadarrInstanceProvider.overrideWithValue(null),
-                ],
-                child: MaterialApp(
-                  home: Scaffold(
-                    body: SizedBox(
-                      width: 100,
-                      height: 150,
-                      child: MoviePoster(movie: testMovieWithoutImages),
-                    ),
+    testWidgets('should display placeholder when movie has no images', (
+      tester,
+    ) async {
+      // Given
+      await HttpOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                currentRadarrInstanceProvider.overrideWithValue(null),
+              ],
+              child: MaterialApp(
+                home: Scaffold(
+                  body: SizedBox(
+                    width: 100,
+                    height: 150,
+                    child: MoviePoster(movie: testMovieWithoutImages),
                   ),
                 ),
               ),
-            );
+            ),
+          );
 
-            await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-            // Then
-            expect(find.byIcon(Icons.movie_outlined), findsOneWidget);
-          },
-          createHttpClient: (context) =>
-              TestHttpOverrides().createHttpClient(context),
-        );
-      },
-    );
+          // Then
+          expect(find.byIcon(Icons.movie_outlined), findsOneWidget);
+        },
+        createHttpClient: (context) =>
+            TestHttpOverrides().createHttpClient(context),
+      );
+    });
 
     testWidgets(
       'should display image when movie has remote poster (no auth needed)',

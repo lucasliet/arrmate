@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
 // Series List Provider
@@ -10,17 +10,21 @@ final seriesProvider = AsyncNotifierProvider<SeriesNotifier, List<Series>>(
   SeriesNotifier.new,
 );
 
-final seriesSearchProvider = NotifierProvider<SeriesSearchNotifier, String>(SeriesSearchNotifier.new);
+final seriesSearchProvider = NotifierProvider<SeriesSearchNotifier, String>(
+  SeriesSearchNotifier.new,
+);
 
 class SeriesSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
-  
+
   // ignore: use_setters_to_change_properties
   void update(String value) => state = value;
 }
 
-final seriesSortProvider = NotifierProvider<SeriesSortNotifier, SeriesSort>(SeriesSortNotifier.new);
+final seriesSortProvider = NotifierProvider<SeriesSortNotifier, SeriesSort>(
+  SeriesSortNotifier.new,
+);
 
 class SeriesSortNotifier extends Notifier<SeriesSort> {
   @override
@@ -64,11 +68,11 @@ class SeriesNotifier extends AsyncNotifier<List<Series>> {
     if (repository == null) {
       return [];
     }
-    
+
     final series = await repository.getSeries();
     // Sort by sortTitle
     series.sort((a, b) => a.sortTitle.compareTo(b.sortTitle));
-    
+
     return series;
   }
 
@@ -79,7 +83,10 @@ class SeriesNotifier extends AsyncNotifier<List<Series>> {
 }
 
 // Single Series Details Provider
-final seriesDetailsProvider = FutureProvider.autoDispose.family<Series, int>((ref, seriesId) async {
+final seriesDetailsProvider = FutureProvider.autoDispose.family<Series, int>((
+  ref,
+  seriesId,
+) async {
   final repository = ref.watch(seriesRepositoryProvider);
   if (repository == null) {
     throw Exception('Repository not available');
@@ -104,17 +111,25 @@ class SeriesController {
     ref.invalidate(seriesDetailsProvider(seriesId));
   }
 
-  Future<void> deleteSeries({bool deleteFiles = false, bool addExclusion = false}) async {
+  Future<void> deleteSeries({
+    bool deleteFiles = false,
+    bool addExclusion = false,
+  }) async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
-    await repository.deleteSeries(seriesId, deleteFiles: deleteFiles, addExclusion: addExclusion);
+    await repository.deleteSeries(
+      seriesId,
+      deleteFiles: deleteFiles,
+      addExclusion: addExclusion,
+    );
   }
-  
+
   Future<void> refresh() async {
     ref.invalidate(seriesDetailsProvider(seriesId));
   }
 }
 
-final seriesControllerProvider = Provider.autoDispose.family<SeriesController, int>((ref, seriesId) {
-  return SeriesController(ref, seriesId);
-});
+final seriesControllerProvider = Provider.autoDispose
+    .family<SeriesController, int>((ref, seriesId) {
+      return SeriesController(ref, seriesId);
+    });

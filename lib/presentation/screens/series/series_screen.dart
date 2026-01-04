@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/sort_bottom_sheet.dart';
 import 'series_add_sheet.dart';
@@ -43,13 +43,19 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           sortLabelBuilder: (option) => option.label,
           filterLabelBuilder: (filter) => filter.label,
           onSortChanged: (option) {
-            ref.read(seriesSortProvider.notifier).update(currentSort.copyWith(option: option));
+            ref
+                .read(seriesSortProvider.notifier)
+                .update(currentSort.copyWith(option: option));
           },
           onAscendingChanged: (ascending) {
-            ref.read(seriesSortProvider.notifier).update(currentSort.copyWith(isAscending: ascending));
+            ref
+                .read(seriesSortProvider.notifier)
+                .update(currentSort.copyWith(isAscending: ascending));
           },
           onFilterChanged: (filter) {
-            ref.read(seriesSortProvider.notifier).update(currentSort.copyWith(filter: filter));
+            ref
+                .read(seriesSortProvider.notifier)
+                .update(currentSort.copyWith(filter: filter));
           },
         );
       },
@@ -63,9 +69,9 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-            ref.read(seriesSearchProvider.notifier).update('');
-            _searchController.clear();
-            await ref.read(seriesProvider.notifier).refresh();
+          ref.read(seriesSearchProvider.notifier).update('');
+          _searchController.clear();
+          await ref.read(seriesProvider.notifier).refresh();
         },
         child: CustomScrollView(
           slivers: [
@@ -78,7 +84,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         hintText: 'Search series...',
                         border: InputBorder.none,
                       ),
-                      onChanged: (value) => ref.read(seriesSearchProvider.notifier).update(value),
+                      onChanged: (value) =>
+                          ref.read(seriesSearchProvider.notifier).update(value),
                     )
                   : const Text('Series'),
               actions: [
@@ -87,8 +94,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       setState(() {
-                         _isSearching = false;
-                         _searchController.clear();
+                        _isSearching = false;
+                        _searchController.clear();
                       });
                       ref.read(seriesSearchProvider.notifier).update('');
                     },
@@ -110,13 +117,16 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
               sliver: seriesAsync.when(
                 data: (seriesList) {
                   if (seriesList.isEmpty) {
-                    final isFiltered = ref.read(seriesSearchProvider).isNotEmpty || 
-                                     ref.read(seriesSortProvider).filter != SeriesFilter.all;
+                    final isFiltered =
+                        ref.read(seriesSearchProvider).isNotEmpty ||
+                        ref.read(seriesSortProvider).filter != SeriesFilter.all;
 
                     return SliverFillRemaining(
                       child: EmptyState(
                         icon: isFiltered ? Icons.filter_list_off : Icons.tv,
-                        title: isFiltered ? 'No results found' : 'No series found',
+                        title: isFiltered
+                            ? 'No results found'
+                            : 'No series found',
                         subtitle: isFiltered
                             ? 'Try parsing your search query or filters.'
                             : 'Add series to your Sonarr library to see them here.',
@@ -125,24 +135,22 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                   }
 
                   return SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 120,
-                      childAspectRatio: 2 / 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final series = seriesList[index];
-                        return SeriesCard(
-                          series: series,
-                          onTap: () {
-                            context.go('/series/${series.id}');
-                          },
-                        );
-                      },
-                      childCount: seriesList.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 120,
+                          childAspectRatio: 2 / 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final series = seriesList[index];
+                      return SeriesCard(
+                        series: series,
+                        onTap: () {
+                          context.go('/series/${series.id}');
+                        },
+                      );
+                    }, childCount: seriesList.length),
                   );
                 },
                 error: (error, stack) => SliverFillRemaining(
@@ -156,7 +164,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                 ),
               ),
             ),
-             const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
           ],
         ),
       ),

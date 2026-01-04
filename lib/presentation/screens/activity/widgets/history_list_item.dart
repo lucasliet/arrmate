@@ -8,8 +8,8 @@ class HistoryListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ListTile(
-       title: Text('History Item'),
-       subtitle: Text('Details...'),
+      title: Text('History Item'),
+      subtitle: Text('Details...'),
     );
   }
 }
