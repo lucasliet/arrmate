@@ -411,8 +411,9 @@ class SettingsScreen extends ConsumerWidget {
                       await ref
                           .read(updateProvider.notifier)
                           .checkForUpdate(force: true);
-                      if (updateState.status == UpdateStatus.upToDate &&
-                          context.mounted) {
+                      if (context.mounted &&
+                          ref.read(updateProvider).status ==
+                              UpdateStatus.upToDate) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('App is up to date')),
                         );

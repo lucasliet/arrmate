@@ -31,7 +31,32 @@ class UpdateDialog extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!isDownloading) ...[
+            if (isInstalling) ...[
+              const SizedBox(height: 16),
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Aguarde enquanto a instalação inicia...'),
+                  ],
+                ),
+              ),
+            ] else if (isDownloading) ...[
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: updateState.progress / 100,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  '${updateState.progress.toStringAsFixed(1)}%',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ] else ...[
               Text(
                 'Versão: ${info.version}',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -49,31 +74,6 @@ class UpdateDialog extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(info.changelog, style: theme.textTheme.bodySmall),
-              ),
-            ] else if (isDownloading) ...[
-              const SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: updateState.progress / 100,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  '${updateState.progress.toStringAsFixed(1)}%',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-            ] else if (isInstalling) ...[
-              const SizedBox(height: 16),
-              const Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Aguarde enquanto a instalação inicia...'),
-                  ],
-                ),
               ),
             ],
             if (updateState.status == UpdateStatus.error) ...[

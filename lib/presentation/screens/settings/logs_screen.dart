@@ -81,10 +81,13 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
               itemCount: records.length + 1,
               itemBuilder: (context, index) {
                 if (index == records.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
+                  if (logsAsync.isLoading && logsAsync.hasValue) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return const SizedBox.shrink();
                 }
 
                 final log = records[index];

@@ -21,6 +21,9 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
 
   @override
   Future<List<HistoryEvent>> build() async {
+    // Watch filter to trigger rebuild on change
+    ref.watch(historyEventTypeFilterProvider);
+
     _currentPage = 1;
     _hasMoreRadarr = true;
     _hasMoreSonarr = true;
@@ -28,9 +31,9 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
   }
 
   Future<List<HistoryEvent>> _fetchHistory(int page) async {
-    final movieRepo = ref.watch(movieRepositoryProvider);
-    final seriesRepo = ref.watch(seriesRepositoryProvider);
-    final eventType = ref.watch(historyEventTypeFilterProvider);
+    final movieRepo = ref.read(movieRepositoryProvider);
+    final seriesRepo = ref.read(seriesRepositoryProvider);
+    final eventType = ref.read(historyEventTypeFilterProvider);
 
     final events = <HistoryEvent>[];
 
