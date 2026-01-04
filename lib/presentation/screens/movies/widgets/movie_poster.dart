@@ -58,12 +58,12 @@ class MoviePoster extends ConsumerWidget {
     // Fallback to local authenticated URL
     final localPosterPath = movie.images.where((i) => i.isPoster).firstOrNull?.url;
     
-    if (localPosterPath == null) {
+    if (localPosterPath == null || instance == null) {
       return _buildPlaceholder(context);
     }
     
     // Better URL construction:
-    final uri = Uri.parse(instance!.url).replace(path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll('//', '/'));
+    final uri = Uri.parse(instance.url).replace(path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll('//', '/'));
 
     return CachedNetworkImage(
       imageUrl: uri.toString(),

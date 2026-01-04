@@ -2,7 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'package:mocktail/mocktail.dart';
 
-/// Override for Http requests during widget tests to avoid Image.network errors
+class FakeUri extends Fake implements Uri {}
+
+void registerMockFallbacks() {
+  registerFallbackValue(FakeUri());
+}
+
 class TestHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {

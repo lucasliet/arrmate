@@ -26,7 +26,7 @@ class MediaFile extends Equatable {
       relativePath: json['relativePath'] as String?,
       path: json['path'] as String?,
       size: json['size'] as int? ?? 0,
-      dateAdded: DateTime.parse(json['dateAdded'] as String),
+      dateAdded: DateTime.tryParse(json['dateAdded'] as String? ?? '') ?? DateTime.now(),
       quality: json['quality'] != null
           ? MediaQuality.fromJson(json['quality'] as Map<String, dynamic>)
           : null,
