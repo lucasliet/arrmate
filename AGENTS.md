@@ -9,11 +9,14 @@ series).
 - **Objective**: Provide a seamless, efficient, and beautiful mobile interface
   for managing media libraries remotely.
 - **Core Features**:
-  - **Library Management**: Browse, search, monitoring, and delete media.
+  - **Library Management**: Browse, search, filter, sort, monitor, and delete
+    media.
   - **Releases Calendar**: View upcoming movie releases and series episodes.
   - **Activity Monitoring**: Check download queues and history status.
   - **Multi-Instance**: Support for managing multiple server instances within
     the same app.
+  - **Search & Sort**: Client-side filtering and sorting for instant library
+    navigation.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 

@@ -1,5 +1,8 @@
 export 'shared/shared.dart';
 export 'instance/instance_models.dart';
-export 'movie/movie_models.dart';
-export 'series/series_models.dart';
-export 'queue/queue_models.dart';
+export 'movie/movie.dart';
+export 'movie/movie_sort.dart';
+export 'series/series.dart';
+export 'series/season.dart';
+export 'series/series_sort.dart';
+export 'queue/queue.dart';

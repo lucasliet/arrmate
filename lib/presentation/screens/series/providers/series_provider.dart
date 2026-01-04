@@ -10,6 +10,53 @@ final seriesProvider = AsyncNotifierProvider<SeriesNotifier, List<Series>>(
   SeriesNotifier.new,
 );
 
+final seriesSearchProvider = NotifierProvider<SeriesSearchNotifier, String>(SeriesSearchNotifier.new);
+
+class SeriesSearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+  
+  // ignore: use_setters_to_change_properties
+  void update(String value) => state = value;
+}
+
+final seriesSortProvider = NotifierProvider<SeriesSortNotifier, SeriesSort>(SeriesSortNotifier.new);
+
+class SeriesSortNotifier extends Notifier<SeriesSort> {
+  @override
+  SeriesSort build() => const SeriesSort();
+
+  // ignore: use_setters_to_change_properties
+  void update(SeriesSort value) => state = value;
+}
+
+final filteredSeriesProvider = Provider<AsyncValue<List<Series>>>((ref) {
+  final seriesState = ref.watch(seriesProvider);
+  final searchQuery = ref.watch(seriesSearchProvider).toLowerCase();
+  final sort = ref.watch(seriesSortProvider);
+
+  return seriesState.whenData((series) {
+    var filtered = List<Series>.from(series);
+
+    if (searchQuery.isNotEmpty) {
+      filtered = filtered.where((s) {
+        final titleMatch = s.title.toLowerCase().contains(searchQuery);
+        final sortTitleMatch = s.sortTitle.toLowerCase().contains(searchQuery);
+        return titleMatch || sortTitleMatch;
+      }).toList();
+    }
+
+    filtered = filtered.where((s) => sort.filter.filter(s)).toList();
+
+    filtered.sort((a, b) {
+      final comparison = sort.option.compare(a, b);
+      return sort.isAscending ? comparison : -comparison;
+    });
+
+    return filtered;
+  });
+});
+
 class SeriesNotifier extends AsyncNotifier<List<Series>> {
   @override
   FutureOr<List<Series>> build() async {
