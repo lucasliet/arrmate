@@ -15,7 +15,7 @@ class MediaImage extends Equatable {
     return MediaImage(
       coverType: json['coverType'] as String,
       url: json['url'] as String?,
-      remoteUrl: json['remoteURL'] as String?,
+      remoteUrl: json['remoteUrl'] as String?,
     );
   }
 
@@ -23,7 +23,7 @@ class MediaImage extends Equatable {
     return {
       'coverType': coverType,
       if (url != null) 'url': url,
-      if (remoteUrl != null) 'remoteURL': remoteUrl,
+      if (remoteUrl != null) 'remoteUrl': remoteUrl,
     };
   }
 

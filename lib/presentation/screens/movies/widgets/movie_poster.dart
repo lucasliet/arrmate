@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../data/models/models.dart';
 import '../../../providers/instances_provider.dart';
+import '../../../../core/network/custom_cache_manager.dart';
 
 class MoviePoster extends ConsumerWidget {
   final Movie movie;
@@ -31,7 +32,30 @@ class MoviePoster extends ConsumerWidget {
     // Actually, Radarr API returns `url` like "/MediaCover/1/poster.jpg" and `remoteUrl` like "http://image.tmdb.org/...".
     // We prefer the local `url` served by Radarr to use the cache and API key authentication.
     
-    // Let's refine the logic: use `url` from `MediaImage` where `coverType` is `poster`.
+    // Priority:
+    // 1. Remote URL (TMDB/TVDB) - No auth needed, faster, but might be empty?
+    // 2. Local URL - Needs auth, served by Radarr.
+    
+    // Radarr API returns `remoteUrl` (http://tmdb...) and `url` (/MediaCover/...).
+    // Rudarr prefers `remoteUrl`. Let's allow utilizing it if available.
+    
+    final remotePoster = movie.remotePoster;
+    if (remotePoster != null && remotePoster.isNotEmpty) {
+       return CachedNetworkImage(
+        imageUrl: remotePoster,
+        cacheManager: CustomCacheManager.instance,
+        fit: fit,
+        placeholder: (context, url) => Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        errorWidget: (context, url, error) => _buildPlaceholder(context),
+      );
+    }
+    
+    // Fallback to local authenticated URL
     final localPosterPath = movie.images.where((i) => i.isPoster).firstOrNull?.url;
     
     if (localPosterPath == null) {
@@ -43,6 +67,7 @@ class MoviePoster extends ConsumerWidget {
 
     return CachedNetworkImage(
       imageUrl: uri.toString(),
+      cacheManager: CustomCacheManager.instance,
       httpHeaders: headers,
       fit: fit,
       placeholder: (context, url) => Container(
