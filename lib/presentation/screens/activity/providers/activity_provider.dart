@@ -10,7 +10,7 @@ final queueProvider = AsyncNotifierProvider.autoDispose<QueueNotifier, List<Queu
   QueueNotifier.new,
 );
 
-class QueueNotifier extends AsyncNotifier<List<QueueItem>> {
+class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Timer? _timer;
 
   @override

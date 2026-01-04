@@ -40,7 +40,7 @@ final calendarProvider = AsyncNotifierProvider.autoDispose<CalendarNotifier, Lis
 // Using AsyncNotifier with autoDispose provider works if we don't need 'ref.keepAlive' specifically inside?
 // Actually Dart requires specific class for type safety in provider. 
 // If 'AutoDisposeAsyncNotifier' is undefined, I will try just 'AsyncNotifier'.
-class CalendarNotifier extends AsyncNotifier<List<CalendarEvent>> {
+class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   @override
   Future<List<CalendarEvent>> build() async {
     return _fetchCalendar();

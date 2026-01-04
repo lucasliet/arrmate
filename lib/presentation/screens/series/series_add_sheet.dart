@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arrmate/data/models/models.dart';
-import 'package:arrmate/presentation/shared/widgets/common_widgets.dart';
+import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'providers/series_lookup_provider.dart';
 import 'providers/series_provider.dart';
+import 'package:arrmate/presentation/providers/data_providers.dart';
 import '../../../../presentation/shared/providers/formatted_options_provider.dart';
-import '../../../../presentation/shared/providers/instances_provider.dart';
 
 class SeriesAddSheet extends ConsumerStatefulWidget {
   const SeriesAddSheet({super.key});
@@ -20,7 +20,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
   
   // Form State
   bool _monitored = true;
-  String _seriesType = 'standard'; // Default to standard
+  SeriesType _seriesType = SeriesType.standard; // Default to standard
   int? _qualityProfileId;
   String? _rootFolderPath;
   bool _seasonFolder = true;
@@ -37,7 +37,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       _selectedSeries = series;
       _monitored = true;
       _seasonFolder = true;
-      _seriesType = 'standard'; 
+      _seriesType = SeriesType.standard; 
     });
   }
 
@@ -208,14 +208,15 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     onChanged: (val) => setState(() => _monitored = val),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
+                  DropdownButtonFormField<SeriesType>(
                     decoration: const InputDecoration(labelText: 'Series Type'),
                     value: _seriesType,
-                    items: const [
-                      DropdownMenuItem(value: 'standard', child: Text('Standard')),
-                      DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                      DropdownMenuItem(value: 'anime', child: Text('Anime')),
-                    ],
+                    items: SeriesType.values.map((type) {
+                      return DropdownMenuItem(
+                        value: type,
+                        child: Text(type.label),
+                      );
+                    }).toList(),
                     onChanged: (val) => setState(() => _seriesType = val!),
                   ),
                    const SizedBox(height: 16),
@@ -248,18 +249,22 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   const SizedBox(height: 16),
                   rootFolders.when(
                     data: (folders) {
-                       if (_rootFolderPath == null && folders.isNotEmpty) {
+                       final rootFolderList = List<RootFolder>.from(folders);
+                       if (_rootFolderPath == null && rootFolderList.isNotEmpty) {
                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                           if(mounted) setState(() => _rootFolderPath = folders.first.path);
+                           if(mounted) setState(() => _rootFolderPath = rootFolderList.first.path);
                          });
                       }
                       return DropdownButtonFormField<String>(
                         decoration: const InputDecoration(labelText: 'Root Folder'),
                         value: _rootFolderPath,
-                        items: folders.map((f) => DropdownMenuItem(
-                          value: f.path,
-                          child: Text('${f.path} (${f.freeSpaceGb.toStringAsFixed(1)} GB Free)'),
-                        )).toList(),
+                        items: rootFolderList.map((f) {
+                          final freeSpaceGb = (f.freeSpace ?? 0) / 1024 / 1024 / 1024;
+                          return DropdownMenuItem(
+                            value: f.path,
+                            child: Text('${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)'),
+                          );
+                        }).toList(),
                         onChanged: (val) => setState(() => _rootFolderPath = val),
                       );
                     },

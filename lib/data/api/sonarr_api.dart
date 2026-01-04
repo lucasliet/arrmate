@@ -58,6 +58,28 @@ class SonarrApi {
         .toList();
   }
 
+  Future<List<Release>> getSeriesReleases({int? episodeId}) async {
+    final response = await _client.get(
+      '/release',
+      queryParameters: {
+        if (episodeId != null) 'episodeId': episodeId, 
+      },
+    );
+    return (response as List)
+        .map((e) => Release.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> downloadRelease(String guid, String indexerId) async {
+    await _client.post(
+      '/release',
+      data: {
+        'guid': guid,
+        'indexerId': indexerId,
+      },
+    );
+  }
+
   Future<List<Series>> lookupSeries(String term) async {
     final response = await _client.get(
       '/series/lookup',

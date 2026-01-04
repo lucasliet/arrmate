@@ -7,9 +7,11 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../data/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../shared/widgets/releases_sheet.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
 import 'widgets/movie_poster.dart';
+
 
 class MovieDetailsScreen extends ConsumerWidget {
   final int movieId;
@@ -102,6 +104,21 @@ class MovieDetailsScreen extends ConsumerWidget {
                     );
                   }
                 }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.travel_explore),
+              tooltip: 'Search Releases',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => ReleasesSheet(
+                    id: movie.id,
+                    isMovie: true,
+                    title: movie.title,
+                  ),
+                );
               },
             ),
             IconButton(

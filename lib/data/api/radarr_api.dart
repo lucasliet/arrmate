@@ -58,6 +58,26 @@ class RadarrApi {
         .toList();
   }
 
+  Future<List<Release>> getMovieReleases(int movieId) async {
+    final response = await _client.get(
+      '/release',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => Release.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> downloadRelease(String guid, String indexerId) async {
+    await _client.post(
+      '/release',
+      data: {
+        'guid': guid,
+        'indexerId': indexerId,
+      },
+    );
+  }
+
   Future<List<Movie>> lookupMovie(String term) async {
     final response = await _client.get(
       '/movie/lookup',

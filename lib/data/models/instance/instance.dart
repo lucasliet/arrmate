@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 import '../shared/shared.dart';
-import 'root_folder.dart';
+import '../shared/root_folder.dart';
 
 enum InstanceType {
   radarr('Radarr'),

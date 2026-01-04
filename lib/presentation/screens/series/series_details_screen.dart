@@ -9,6 +9,7 @@ import '../../providers/instances_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
+import 'season_details_screen.dart';
 
 class SeriesDetailsScreen extends ConsumerWidget {
   final int seriesId;
@@ -345,7 +346,14 @@ class SeriesDetailsScreen extends ConsumerWidget {
                           backgroundColor: Theme.of(context).colorScheme.surfaceDim,
                       ),
                       onTap: () {
-                          // TODO: Navigate to Season Details / Episode List
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SeasonDetailsScreen(
+                              series: series,
+                              season: season,
+                            ),
+                          ),
+                        );
                       },
                   ),
               );

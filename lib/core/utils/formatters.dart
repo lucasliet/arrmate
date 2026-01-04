@@ -49,3 +49,7 @@ String formatCustomScore(int score) {
 String formatListWithSeparator(List<String> items, {String separator = ' · '}) {
   return items.where((item) => item.isNotEmpty).join(separator);
 }
+
+String formatDate(DateTime date) {
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
