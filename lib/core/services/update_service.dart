@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
-import 'logger_service.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
+import 'logger_service.dart';
 
 class AppUpdateInfo {
+// ...
   final String version;
   final String changelog;
   final String downloadUrl;
@@ -54,12 +57,38 @@ class UpdateService {
       final changelog = data['body'] as String;
       final assets = data['assets'] as List;
 
-      // Look for an APK asset
-      final apkAsset = assets.firstWhereOrNull(
-        (asset) => (asset['name'] as String).endsWith('.apk'),
-      );
+      // Detect architecture
+      String? architecture;
+      if (Platform.isAndroid) {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final abis = androidInfo.supportedAbis;
+        logger.debug('Supported ABIs: $abis');
+        if (abis.contains('arm64-v8a')) {
+          architecture = 'arm64-v8a';
+        } else if (abis.contains('armeabi-v7a')) {
+          architecture = 'armeabi-v7a';
+        }
+      }
 
-      if (apkAsset == null) return null;
+      // Look for a matching APK asset
+      final apkAsset = assets.firstWhereOrNull((asset) {
+        final name = (asset['name'] as String).toLowerCase();
+        if (!name.endsWith('.apk')) return false;
+
+        // If we detected an architecture, try to find a match in the filename
+        if (architecture != null) {
+          return name.contains(architecture);
+        }
+        return true;
+      }) ?? assets.firstWhereOrNull((asset) => (asset['name'] as String).endsWith('.apk'));
+
+      if (apkAsset == null) {
+        logger.warning('No matching APK asset found in release');
+        return null;
+      }
+
+      logger.info('Selected APK: ${apkAsset['name']} for architecture: $architecture');
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
       final publishedAtStr = data['published_at'] as String?;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/update_provider.dart';
+import '../../core/services/logger_service.dart';
 
 class UpdateDialog extends ConsumerWidget {
   const UpdateDialog({super.key});
@@ -80,9 +81,14 @@ class UpdateDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 updateState.errorMessage ?? 'Ocorreu um erro inesperado.',
-                style: TextStyle(color: colorScheme.error),
+                style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold),
               ),
             ],
+            const SizedBox(height: 8),
+            Text(
+              'Status: ${updateState.status.name}',
+              style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
+            ),
           ],
         ),
       ),
@@ -94,8 +100,10 @@ class UpdateDialog extends ConsumerWidget {
                 child: const Text('Mais Tarde'),
               ),
               FilledButton(
-                onPressed: () =>
-                    ref.read(updateProvider.notifier).startUpdate(),
+                onPressed: () {
+                  logger.info('UpdateDialog: Button "Atualizar Agora" clicked. Current status: ${updateState.status.name}');
+                  ref.read(updateProvider.notifier).startUpdate();
+                },
                 child: const Text('Atualizar Agora'),
               ),
             ],

@@ -14,11 +14,11 @@ import '../screens/settings/health_screen.dart';
 import '../screens/settings/quality_profiles_screen.dart';
 import '../widgets/app_shell.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/movies',
   routes: [
     ShellRoute(

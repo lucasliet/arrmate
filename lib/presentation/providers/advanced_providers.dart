@@ -96,3 +96,9 @@ final seriesQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
   if (seriesRepo == null) return [];
   return seriesRepo.getQualityProfiles();
 });
+
+// App Logs Provider (Internal logs from LoggerService)
+final appLogsProvider = StreamProvider<List<AppLogEntry>>((ref) async* {
+  yield logger.logs;
+  yield* logger.logStream;
+});

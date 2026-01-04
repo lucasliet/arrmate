@@ -32,8 +32,9 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
 
   void _showErrorDialog(String message) {
     if (!mounted) return;
+    final navContext = rootNavigatorKey.currentContext ?? context;
     showDialog(
-      context: context,
+      context: navContext,
       builder: (context) => AlertDialog(
         title: const Text('Initialization Error'),
         content: Text(message),
@@ -51,27 +52,33 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
-    return Consumer(
-      builder: (context, ref, child) {
-        // Listen for update availability
-        ref.listen(updateProvider, (previous, next) {
-          if (next.status == UpdateStatus.available &&
-              previous?.status != UpdateStatus.available) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const UpdateDialog(),
-            );
-          }
-        });
-
-        return MaterialApp.router(
-          title: 'Arrmate',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(settings.colorScheme),
-          darkTheme: AppTheme.dark(settings.colorScheme),
-          themeMode: settings.appearance.themeMode,
-          routerConfig: appRouter,
+    return MaterialApp.router(
+      title: 'Arrmate',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(settings.colorScheme),
+      darkTheme: AppTheme.dark(settings.colorScheme),
+      themeMode: settings.appearance.themeMode,
+      routerConfig: appRouter,
+      builder: (context, child) {
+        return Consumer(
+          builder: (context, ref, child) {
+            // Listen for update availability inside the MaterialApp context
+            ref.listen(updateProvider, (previous, next) {
+              if (next.status == UpdateStatus.available &&
+                  previous?.status != UpdateStatus.available) {
+                final navContext = rootNavigatorKey.currentContext;
+                if (navContext != null) {
+                  showDialog(
+                    context: navContext,
+                    barrierDismissible: false,
+                    builder: (context) => const UpdateDialog(),
+                  );
+                }
+              }
+            });
+            return child!;
+          },
+          child: child,
         );
       },
     );
