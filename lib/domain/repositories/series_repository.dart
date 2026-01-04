@@ -16,4 +16,15 @@ abstract class SeriesRepository {
     String sortKey = 'timeleft',
     String sortDirection = 'ascending',
   });
+  Future<HistoryPage> getHistory({
+    int page = 1,
+    int pageSize = 25,
+    HistoryEventType? eventType,
+  });
+  Future<void> deleteQueueItem(
+    int id, {
+    bool removeFromClient = true,
+    bool blocklist = false,
+    bool skipRedownload = false,
+  });
 }

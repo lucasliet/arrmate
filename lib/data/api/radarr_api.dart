@@ -124,4 +124,40 @@ class RadarrApi {
     final response = await _client.get('/command/$id');
     return response;
   }
+
+  Future<HistoryPage> getHistory({
+    int page = 1,
+    int pageSize = 25,
+    HistoryEventType? eventType,
+  }) async {
+    final response = await _client.get(
+      '/history',
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+        if (eventType != null && eventType.toRadarrEventType() != null)
+          'eventType': eventType.toRadarrEventType(),
+      },
+    );
+    return HistoryPage.fromJson(
+      response as Map<String, dynamic>,
+      instanceId: instance.id,
+    );
+  }
+
+  Future<void> deleteQueueItem(
+    int id, {
+    bool removeFromClient = true,
+    bool blocklist = false,
+    bool skipRedownload = false,
+  }) async {
+    await _client.delete(
+      '/queue/$id',
+      queryParameters: {
+        'removeFromClient': removeFromClient,
+        'blocklist': blocklist,
+        'skipRedownload': skipRedownload,
+      },
+    );
+  }
 }

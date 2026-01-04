@@ -140,4 +140,40 @@ class SonarrApi {
     );
     return QueueItems.fromJson(response as Map<String, dynamic>);
   }
+
+  Future<HistoryPage> getHistory({
+    int page = 1,
+    int pageSize = 25,
+    HistoryEventType? eventType,
+  }) async {
+    final response = await _client.get(
+      '/history',
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+        if (eventType != null && eventType.toSonarrEventType() != null)
+          'eventType': eventType.toSonarrEventType(),
+      },
+    );
+    return HistoryPage.fromJson(
+      response as Map<String, dynamic>,
+      instanceId: instance.id,
+    );
+  }
+
+  Future<void> deleteQueueItem(
+    int id, {
+    bool removeFromClient = true,
+    bool blocklist = false,
+    bool skipRedownload = false,
+  }) async {
+    await _client.delete(
+      '/queue/$id',
+      queryParameters: {
+        'removeFromClient': removeFromClient,
+        'blocklist': blocklist,
+        'skipRedownload': skipRedownload,
+      },
+    );
+  }
 }

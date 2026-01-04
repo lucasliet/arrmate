@@ -21,6 +21,14 @@ series).
     Quality Profile and Root Folder configuration.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.
+  - **Activity History**: View historical events (grabbed, imported, failed,
+    deleted) with filtering by event type.
+  - **Queue Management**: View active downloads with detailed status, remove
+    tasks with blocklist option.
+  - **Notifications**: Local push notifications for download events (via
+    background polling).
+  - **Advanced Management**: View Quality Profiles, System Logs, and Health
+    Checks.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 
@@ -32,6 +40,7 @@ series).
 - `lib/presentation`: UI layer organized by feature (screens, widgets) and
   router configuration.
 - `lib/providers`: State management using Riverpod.
+- `lib/services`: Background services (notifications, sync).
 - `assets/images`: Static image assets and icons.
 
 ## Build, Test, and Development Commands
@@ -39,6 +48,7 @@ series).
 - `flutter pub get`: Install dependencies.
 - `flutter run`: Launch the application on a connected device or emulator.
 - `flutter test`: Run unit and widget tests.
+- `flutter build apk --split-per-abi`: Build release APKs for Android.
 - `dart run build_runner build --delete-conflicting-outputs`: Generate code (if
   required by future dependencies).
 - `dart run flutter_launcher_icons`: Generate app icons (configured for
@@ -81,3 +91,10 @@ The app follows a Clean Architecture-inspired layered approach:
 2. **Domain/Providers**: Riverpod providers bridge data to UI and handle state.
 3. **Presentation**: Screens and Widgets consume providers; minimal business
    logic in UI code.
+4. **Services**: Background tasks for notifications and sync.
+
+## Reference Implementation
+
+The `rudarr/` directory contains the Ruddarr iOS app source code for reference.
+It implements similar features in SwiftUI and can be used as a guide for API
+integration and UI patterns.

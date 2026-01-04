@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/common_widgets.dart';
 import 'providers/activity_provider.dart';
+import 'providers/history_provider.dart';
 import 'widgets/queue_list_item.dart';
+import 'history_screen.dart';
 
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
@@ -26,7 +28,7 @@ class ActivityScreen extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(queueProvider);
-                // ref.invalidate(historyProvider);
+                ref.invalidate(activityHistoryProvider);
               },
             ),
           ],
@@ -34,7 +36,7 @@ class ActivityScreen extends ConsumerWidget {
         body: TabBarView(
           children: [
             _QueueTab(),
-            _HistoryTab(),
+            const HistoryScreen(),
           ],
         ),
       ),
@@ -82,16 +84,6 @@ class _QueueTab extends ConsumerWidget {
         onRetry: () => ref.refresh(queueProvider),
       ),
       loading: () => const LoadingIndicator(message: 'Loading queue...'),
-    );
-  }
-}
-
-class _HistoryTab extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Placeholder History View
-    return const Center(
-      child: Text('History not yet implemented'),
     );
   }
 }

@@ -43,4 +43,30 @@ class MovieRepositoryImpl implements MovieRepository {
         sortKey: sortKey,
         sortDirection: sortDirection,
       );
+
+  @override
+  Future<HistoryPage> getHistory({
+    int page = 1,
+    int pageSize = 25,
+    HistoryEventType? eventType,
+  }) =>
+      _api.getHistory(
+        page: page,
+        pageSize: pageSize,
+        eventType: eventType,
+      );
+
+  @override
+  Future<void> deleteQueueItem(
+    int id, {
+    bool removeFromClient = true,
+    bool blocklist = false,
+    bool skipRedownload = false,
+  }) =>
+      _api.deleteQueueItem(
+        id,
+        removeFromClient: removeFromClient,
+        blocklist: blocklist,
+        skipRedownload: skipRedownload,
+      );
 }

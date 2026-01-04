@@ -69,9 +69,42 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     state = await AsyncValue.guard(() => _fetchQueue());
   }
 
-  Future<void> removeItem(String id) async {
-    // TODO: Implement remove from queue (cancel)
-    // Needs deleteQueueItem on Repository
+  Future<void> removeQueueItem(
+    int id, {
+    bool removeFromClient = true,
+    bool blocklist = false,
+    bool skipRedownload = false,
+  }) async {
+    final movieRepo = ref.read(movieRepositoryProvider);
+    final seriesRepo = ref.read(seriesRepositoryProvider);
+
+    try {
+      if (movieRepo != null) {
+        await movieRepo.deleteQueueItem(
+          id,
+          removeFromClient: removeFromClient,
+          blocklist: blocklist,
+          skipRedownload: skipRedownload,
+        );
+      }
+    } catch (e) {
+      // Item might be from Sonarr, try that
+    }
+
+    try {
+      if (seriesRepo != null) {
+        await seriesRepo.deleteQueueItem(
+          id,
+          removeFromClient: removeFromClient,
+          blocklist: blocklist,
+          skipRedownload: skipRedownload,
+        );
+      }
+    } catch (e) {
+      // Item might be from Radarr, already tried
+    }
+
+    await refresh();
   }
 }
 

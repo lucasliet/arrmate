@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../data/models/models.dart';
+import 'queue_item_sheet.dart';
 
 class QueueListItem extends ConsumerWidget {
   final QueueItem item;
@@ -22,8 +23,11 @@ class QueueListItem extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
       elevation: 0,
       color: theme.colorScheme.surfaceContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showQueueItemSheet(context),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,7 +105,16 @@ class QueueListItem extends ConsumerWidget {
             ]
           ],
         ),
+        ),
       ),
+    );
+  }
+
+  void _showQueueItemSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => QueueItemSheet(item: item),
     );
   }
 
