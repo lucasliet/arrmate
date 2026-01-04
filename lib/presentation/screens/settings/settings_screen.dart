@@ -28,7 +28,6 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildNotificationsSection(context, ref),
           const Divider(),
-          const Divider(),
           _buildAboutSection(context, ref),
         ],
       ),

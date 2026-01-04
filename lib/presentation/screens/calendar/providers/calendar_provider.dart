@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
@@ -68,8 +69,8 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
             return CalendarEvent(releaseDate: date, movie: m);
           }),
         );
-      } catch (e) {
-        /*ignore*/
+      } catch (e, stack) {
+        debugPrint('calendar: movies fetch failed: $e\n$stack');
       }
     }
 
@@ -85,8 +86,8 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
             );
           }),
         );
-      } catch (e) {
-        /*ignore*/
+      } catch (e, stack) {
+        debugPrint('calendar: series fetch failed: $e\n$stack');
       }
     }
 

@@ -1,10 +1,11 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 import '../../domain/models/settings/notification_settings.dart';
 import '../../core/services/background_sync_service.dart';
-import 'dart:convert';
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
   return SettingsNotifier();
@@ -76,9 +77,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
             )
           : null,
       isGridViewCompact: isCompact,
-      notifications: notificationsJson != null
-          ? NotificationSettings.fromJson(jsonDecode(notificationsJson))
-          : const NotificationSettings(),
+      notifications: _parseNotificationSettings(notificationsJson),
     );
 
     // Ensure background task matches settings
@@ -86,6 +85,17 @@ class SettingsNotifier extends Notifier<SettingsState> {
       ref
           .read(backgroundSyncServiceProvider)
           .registerTask(state.notifications.pollingIntervalMinutes);
+    }
+  }
+
+  NotificationSettings _parseNotificationSettings(String? jsonString) {
+    if (jsonString == null) return const NotificationSettings();
+    try {
+      final Map<String, dynamic> data = jsonDecode(jsonString);
+      return NotificationSettings.fromJson(data);
+    } catch (e, stack) {
+      debugPrint('Error parsing notification settings: $e\n$stack');
+      return const NotificationSettings();
     }
   }
 

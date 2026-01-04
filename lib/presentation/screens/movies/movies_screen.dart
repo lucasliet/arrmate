@@ -130,7 +130,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ? 'No results found'
                             : 'No movies found',
                         subtitle: isFiltered
-                            ? 'Try parsing your search query or filters.'
+                            ? 'Try clearing or adjusting your search query or filters.'
                             : 'Add movies to your Radarr library to see them here.',
                       ),
                     );

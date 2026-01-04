@@ -17,7 +17,11 @@ void main() async {
     // Initialize background sync service
     await container.read(backgroundSyncServiceProvider).init();
   } catch (e, stackTrace) {
-    debugPrint('Failed to initialize services: $e\n$stackTrace');
+    // In a real app, send to Sentry/Crashlytics
+    debugPrint('CRITICAL: Failed to initialize services: $e\n$stackTrace');
+
+    // We could use a provider to signal this to the UI
+    // container.read(serviceInitializationErrorProvider.notifier).state = e.toString();
   }
 
   runApp(

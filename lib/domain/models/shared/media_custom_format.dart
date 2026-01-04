@@ -9,8 +9,22 @@ class MediaCustomFormat extends Equatable {
   String get label => name;
 
   factory MediaCustomFormat.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    int parsedId = -1;
+    if (rawId is int) {
+      parsedId = rawId;
+    } else if (rawId is String) {
+      parsedId = int.tryParse(rawId) ?? -1;
+    }
+
+    if (parsedId == -1) {
+      throw FormatException(
+        'Invalid or missing id in MediaCustomFormat JSON: $json',
+      );
+    }
+
     return MediaCustomFormat(
-      id: json['id'] as int,
+      id: parsedId,
       name: json['name'] as String? ?? 'Unknown',
     );
   }

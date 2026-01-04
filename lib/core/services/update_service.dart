@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -80,8 +81,9 @@ class UpdateService {
           publishedAt: publishedAt,
         );
       }
-    } catch (e) {
-      // Log error or handle silently for auto-check
+    } catch (e, stack) {
+      // Log error for debugging
+      debugPrint('Auto-check update failed: $e\n$stack');
     }
 
     return null;

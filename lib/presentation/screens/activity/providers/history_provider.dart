@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
@@ -75,11 +76,21 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
     if (!hasMore) return;
     if (state.isLoading) return;
 
-    _currentPage++;
-    final currentEvents = state.valueOrNull ?? [];
-    final newEvents = await _fetchHistory(_currentPage);
+    final previousState = state;
+    state = const AsyncLoading<List<HistoryEvent>>().copyWithPrevious(
+      previousState,
+    );
 
-    state = AsyncValue.data([...currentEvents, ...newEvents]);
+    try {
+      _currentPage++;
+      final currentEvents = state.valueOrNull ?? [];
+      final newEvents = await _fetchHistory(_currentPage);
+      state = AsyncValue.data([...currentEvents, ...newEvents]);
+    } catch (e, stack) {
+      _currentPage--;
+      state = AsyncValue.error(e, stack);
+      debugPrint('History loadMore failed: $e\n$stack');
+    }
   }
 
   Future<void> refresh() async {
