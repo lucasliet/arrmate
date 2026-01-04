@@ -7,10 +7,12 @@ class RadarrApi {
   final Instance instance;
 
   RadarrApi(this.instance, [ApiClient? client])
-      : _client = client ?? ApiClient(
-          baseUrl: '${instance.url}${ApiConstants.apiPath}',
-          headers: instance.authHeaders,
-        );
+    : _client =
+          client ??
+          ApiClient(
+            baseUrl: '${instance.url}${ApiConstants.apiPath}',
+            headers: instance.authHeaders,
+          );
 
   Future<List<Movie>> getMovies() async {
     final response = await _client.get('/movie');
@@ -30,11 +32,18 @@ class RadarrApi {
   }
 
   Future<Movie> updateMovie(Movie movie) async {
-    final response = await _client.put('/movie/${movie.id}', data: movie.toJson());
+    final response = await _client.put(
+      '/movie/${movie.id}',
+      data: movie.toJson(),
+    );
     return Movie.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<void> deleteMovie(int id, {bool deleteFiles = false, bool addExclusion = false}) async {
+  Future<void> deleteMovie(
+    int id, {
+    bool deleteFiles = false,
+    bool addExclusion = false,
+  }) async {
     await _client.delete(
       '/movie/$id',
       queryParameters: {
@@ -71,10 +80,7 @@ class RadarrApi {
   Future<void> downloadRelease(String guid, String indexerId) async {
     await _client.post(
       '/release',
-      data: {
-        'guid': guid,
-        'indexerId': indexerId,
-      },
+      data: {'guid': guid, 'indexerId': indexerId},
     );
   }
 
@@ -164,10 +170,7 @@ class RadarrApi {
   Future<LogPage> getLogs({int page = 1, int pageSize = 50}) async {
     final response = await _client.get(
       '/log',
-      queryParameters: {
-        'page': page,
-        'pageSize': pageSize,
-      },
+      queryParameters: {'page': page, 'pageSize': pageSize},
     );
     return LogPage.fromJson(response as Map<String, dynamic>);
   }

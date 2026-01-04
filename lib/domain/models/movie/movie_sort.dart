@@ -34,12 +34,18 @@ enum MovieSortOption {
 
   String get label {
     switch (this) {
-      case MovieSortOption.byTitle: return 'Title';
-      case MovieSortOption.byYear: return 'Year';
-      case MovieSortOption.byAdded: return 'Added';
-      case MovieSortOption.byRating: return 'Rating';
-      case MovieSortOption.bySize: return 'Size';
-      case MovieSortOption.byRuntime: return 'Runtime';
+      case MovieSortOption.byTitle:
+        return 'Title';
+      case MovieSortOption.byYear:
+        return 'Year';
+      case MovieSortOption.byAdded:
+        return 'Added';
+      case MovieSortOption.byRating:
+        return 'Rating';
+      case MovieSortOption.bySize:
+        return 'Size';
+      case MovieSortOption.byRuntime:
+        return 'Runtime';
     }
   }
 
@@ -70,11 +76,16 @@ enum MovieFilter {
 
   String get label {
     switch (this) {
-      case MovieFilter.all: return 'All Movies';
-      case MovieFilter.monitored: return 'Monitored';
-      case MovieFilter.unmonitored: return 'Unmonitored';
-      case MovieFilter.missing: return 'Missing';
-      case MovieFilter.downloaded: return 'Downloaded';
+      case MovieFilter.all:
+        return 'All Movies';
+      case MovieFilter.monitored:
+        return 'Monitored';
+      case MovieFilter.unmonitored:
+        return 'Unmonitored';
+      case MovieFilter.missing:
+        return 'Missing';
+      case MovieFilter.downloaded:
+        return 'Downloaded';
     }
   }
 

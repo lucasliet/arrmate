@@ -22,9 +22,7 @@ void main() {
     minimumAvailability: MovieStatus.released,
     added: DateTime.now(),
     qualityProfileId: 1,
-    images: [
-      MediaImage(coverType: 'poster', url: '/poster.jpg'),
-    ],
+    images: [MediaImage(coverType: 'poster', url: '/poster.jpg')],
   );
 
   testWidgets('MovieCard displays title and year', (tester) async {
@@ -34,10 +32,7 @@ void main() {
           ProviderScope(
             child: MaterialApp(
               home: Scaffold(
-                body: MovieCard(
-                  movie: testMovie,
-                  onTap: () {},
-                ),
+                body: MovieCard(movie: testMovie, onTap: () {}),
               ),
             ),
           ),
@@ -46,7 +41,8 @@ void main() {
         expect(find.text('Test Movie'), findsOneWidget);
         expect(find.text('2023'), findsOneWidget);
       },
-      createHttpClient: (context) => TestHttpOverrides().createHttpClient(context),
+      createHttpClient: (context) =>
+          TestHttpOverrides().createHttpClient(context),
     );
   });
 
@@ -58,10 +54,7 @@ void main() {
           ProviderScope(
             child: MaterialApp(
               home: Scaffold(
-                body: MovieCard(
-                  movie: testMovie,
-                  onTap: () => tapped = true,
-                ),
+                body: MovieCard(movie: testMovie, onTap: () => tapped = true),
               ),
             ),
           ),
@@ -70,7 +63,8 @@ void main() {
         await tester.tap(find.byType(MovieCard));
         expect(tapped, true);
       },
-      createHttpClient: (context) => TestHttpOverrides().createHttpClient(context),
+      createHttpClient: (context) =>
+          TestHttpOverrides().createHttpClient(context),
     );
   });
 }

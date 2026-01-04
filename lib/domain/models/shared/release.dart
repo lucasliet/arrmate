@@ -55,9 +55,11 @@ class Release extends Equatable {
       leechers: json['leechers'] as int? ?? 0,
       protocol: json['protocol'] as String? ?? 'torrent',
       rejected: json['rejected'] as bool? ?? false,
-      rejections: (json['rejections'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? [],
+      rejections:
+          (json['rejections'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       age: json['age'] as int? ?? 0,
       indexerFlags: (json['indexerFlags'] as num?)?.toDouble() ?? 0.0,
       infoUrl: json['infoUrl'] as String?,
@@ -78,15 +80,20 @@ class ReleaseQuality extends Equatable {
 
   factory ReleaseQuality.fromJson(Map<String, dynamic> json) {
     return ReleaseQuality(
-      quality: ReleaseQualityItem.fromJson(json['quality'] as Map<String, dynamic>),
-      revision: ReleaseQualityRevision.fromJson(json['revision'] as Map<String, dynamic>),
+      quality: ReleaseQualityItem.fromJson(
+        json['quality'] as Map<String, dynamic>,
+      ),
+      revision: ReleaseQualityRevision.fromJson(
+        json['revision'] as Map<String, dynamic>,
+      ),
     );
   }
-  
+
   @override
   List<Object?> get props => [quality, revision];
-  
-  String get name => '${quality.name} ${revision.version > 1 ? "v${revision.version}" : ""}';
+
+  String get name =>
+      '${quality.name} ${revision.version > 1 ? "v${revision.version}" : ""}';
 }
 
 class ReleaseQualityItem extends Equatable {
@@ -95,7 +102,12 @@ class ReleaseQualityItem extends Equatable {
   final String? source;
   final int resolution;
 
-  const ReleaseQualityItem({required this.id, required this.name, this.source, this.resolution = 0});
+  const ReleaseQualityItem({
+    required this.id,
+    required this.name,
+    this.source,
+    this.resolution = 0,
+  });
 
   factory ReleaseQualityItem.fromJson(Map<String, dynamic> json) {
     return ReleaseQualityItem(
@@ -115,7 +127,11 @@ class ReleaseQualityRevision extends Equatable {
   final int real;
   final bool isRepack;
 
-  const ReleaseQualityRevision({this.version = 1, this.real = 0, this.isRepack = false});
+  const ReleaseQualityRevision({
+    this.version = 1,
+    this.real = 0,
+    this.isRepack = false,
+  });
 
   factory ReleaseQualityRevision.fromJson(Map<String, dynamic> json) {
     return ReleaseQualityRevision(

@@ -17,14 +17,14 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
     final movieRepo = ref.watch(movieRepositoryProvider);
     final seriesRepo = ref.watch(seriesRepositoryProvider);
 
-    // Simplificação: Pegamos logs de uma instância ou combinamos. 
+    // Simplificação: Pegamos logs de uma instância ou combinamos.
     // Para simplificar a UI no início, pegaremos da primeira instância Radarr disponível.
     if (movieRepo != null) {
       return movieRepo.getLogs(page: page);
     } else if (seriesRepo != null) {
       return seriesRepo.getLogs(page: page);
     }
-    
+
     return const LogPage(page: 1, pageSize: 50, totalRecords: 0, records: []);
   }
 
@@ -34,7 +34,7 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
 
     final currentPage = currentStatus.value!.page;
     final totalRecords = currentStatus.value!.totalRecords;
-    
+
     if (currentPage * 50 >= totalRecords) return;
 
     final previousState = state;
@@ -76,13 +76,17 @@ final healthProvider = FutureProvider<List<HealthCheck>>((ref) async {
 });
 
 // Quality Profiles Provider (Fetching from instances)
-final movieQualityProfilesProvider = FutureProvider<List<QualityProfile>>((ref) async {
+final movieQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
+  ref,
+) async {
   final movieRepo = ref.watch(movieRepositoryProvider);
   if (movieRepo == null) return [];
   return movieRepo.getQualityProfiles();
 });
 
-final seriesQualityProfilesProvider = FutureProvider<List<QualityProfile>>((ref) async {
+final seriesQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
+  ref,
+) async {
   final seriesRepo = ref.watch(seriesRepositoryProvider);
   if (seriesRepo == null) return [];
   return seriesRepo.getQualityProfiles();

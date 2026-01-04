@@ -31,7 +31,8 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
       builder: (context, ref, child) {
         // Listen for update availability
         ref.listen(updateProvider, (previous, next) {
-          if (next.status == UpdateStatus.available && previous?.status != UpdateStatus.available) {
+          if (next.status == UpdateStatus.available &&
+              previous?.status != UpdateStatus.available) {
             showDialog(
               context: context,
               barrierDismissible: false,

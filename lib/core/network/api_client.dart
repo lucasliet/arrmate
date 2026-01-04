@@ -13,18 +13,22 @@ class ApiClient {
     required this.baseUrl,
     required this.headers,
     this.timeout = ApiConstants.defaultTimeout,
-  }) : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: timeout,
-          receiveTimeout: timeout,
-          sendTimeout: timeout,
-          headers: headers,
-        )) {
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => debugPrint('[API] $obj'),
-    ));
+  }) : _dio = Dio(
+         BaseOptions(
+           baseUrl: baseUrl,
+           connectTimeout: timeout,
+           receiveTimeout: timeout,
+           sendTimeout: timeout,
+           headers: headers,
+         ),
+       ) {
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[API] $obj'),
+      ),
+    );
   }
 
   Future<T> get<T>(
@@ -91,10 +95,7 @@ class ApiClient {
 
   Options? _optionsWithTimeout(Duration? customTimeout) {
     if (customTimeout == null) return null;
-    return Options(
-      receiveTimeout: customTimeout,
-      sendTimeout: customTimeout,
-    );
+    return Options(receiveTimeout: customTimeout, sendTimeout: customTimeout);
   }
 
   Future<T> _request<T>(Future<Response<dynamic>> Function() request) async {

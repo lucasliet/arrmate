@@ -4,10 +4,7 @@ class MediaCustomFormat extends Equatable {
   final int id;
   final String name;
 
-  const MediaCustomFormat({
-    required this.id,
-    required this.name,
-  });
+  const MediaCustomFormat({required this.id, required this.name});
 
   String get label => name;
 
@@ -19,10 +16,7 @@ class MediaCustomFormat extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
+    return {'id': id, 'name': name};
   }
 
   @override

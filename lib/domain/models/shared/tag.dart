@@ -4,23 +4,14 @@ class Tag extends Equatable {
   final int id;
   final String label;
 
-  const Tag({
-    required this.id,
-    required this.label,
-  });
+  const Tag({required this.id, required this.label});
 
   factory Tag.fromJson(Map<String, dynamic> json) {
-    return Tag(
-      id: json['id'] as int,
-      label: json['label'] as String,
-    );
+    return Tag(id: json['id'] as int, label: json['label'] as String);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'label': label,
-    };
+    return {'id': id, 'label': label};
   }
 
   @override

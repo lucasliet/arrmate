@@ -31,8 +31,9 @@ void main() {
         ],
       );
 
-      when(() => mockApi.getLogs(page: 1, pageSize: 50))
-          .thenAnswer((_) async => expectedPage);
+      when(
+        () => mockApi.getLogs(page: 1, pageSize: 50),
+      ).thenAnswer((_) async => expectedPage);
 
       final result = await repository.getLogs(page: 1, pageSize: 50);
 

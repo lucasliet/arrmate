@@ -17,13 +17,21 @@ class HistoryPage extends Equatable {
 
   bool get hasMore => totalRecords > page * pageSize;
 
-  factory HistoryPage.fromJson(Map<String, dynamic> json, {String? instanceId}) {
+  factory HistoryPage.fromJson(
+    Map<String, dynamic> json, {
+    String? instanceId,
+  }) {
     return HistoryPage(
       page: json['page'] as int,
       pageSize: json['pageSize'] as int,
       totalRecords: json['totalRecords'] as int,
       records: (json['records'] as List<dynamic>)
-          .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>, instanceId: instanceId))
+          .map(
+            (e) => HistoryEvent.fromJson(
+              e as Map<String, dynamic>,
+              instanceId: instanceId,
+            ),
+          )
           .toList(),
     );
   }
@@ -121,7 +129,10 @@ class HistoryEvent extends Equatable {
     }
   }
 
-  factory HistoryEvent.fromJson(Map<String, dynamic> json, {String? instanceId}) {
+  factory HistoryEvent.fromJson(
+    Map<String, dynamic> json, {
+    String? instanceId,
+  }) {
     return HistoryEvent(
       id: json['id'] as int,
       eventType: HistoryEventType.fromString(json['eventType'] as String?),
@@ -147,20 +158,20 @@ class HistoryEvent extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        eventType,
-        date,
-        sourceTitle,
-        instanceId,
-        movieId,
-        seriesId,
-        episodeId,
-        quality,
-        languages,
-        customFormats,
-        customFormatScore,
-        data,
-      ];
+    id,
+    eventType,
+    date,
+    sourceTitle,
+    instanceId,
+    movieId,
+    seriesId,
+    episodeId,
+    quality,
+    languages,
+    customFormats,
+    customFormatScore,
+    data,
+  ];
 }
 
 enum HistoryEventType {

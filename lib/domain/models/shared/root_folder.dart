@@ -21,7 +21,8 @@ class RootFolder extends Equatable {
       id: json['id'] as int,
       path: json['path'] as String,
       freeSpace: json['freeSpace'] as int?,
-      unmappedFolders: (json['unmappedFolders'] as List<dynamic>?)
+      unmappedFolders:
+          (json['unmappedFolders'] as List<dynamic>?)
               ?.map((e) => UnmappedFolder.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -45,10 +46,7 @@ class UnmappedFolder extends Equatable {
   final String name;
   final String path;
 
-  const UnmappedFolder({
-    required this.name,
-    required this.path,
-  });
+  const UnmappedFolder({required this.name, required this.path});
 
   factory UnmappedFolder.fromJson(Map<String, dynamic> json) {
     return UnmappedFolder(
@@ -58,10 +56,7 @@ class UnmappedFolder extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'path': path,
-    };
+    return {'name': name, 'path': path};
   }
 
   @override

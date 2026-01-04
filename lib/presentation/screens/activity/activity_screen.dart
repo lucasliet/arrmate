@@ -33,12 +33,7 @@ class ActivityScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: TabBarView(
-          children: [
-            _QueueTab(),
-            const HistoryScreen(),
-          ],
-        ),
+        body: TabBarView(children: [_QueueTab(), const HistoryScreen()]),
       ),
     );
   }

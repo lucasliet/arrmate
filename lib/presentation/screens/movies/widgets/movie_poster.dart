@@ -10,11 +10,7 @@ class MoviePoster extends ConsumerWidget {
   final Movie movie;
   final BoxFit fit;
 
-  const MoviePoster({
-    super.key,
-    required this.movie,
-    this.fit = BoxFit.cover,
-  });
+  const MoviePoster({super.key, required this.movie, this.fit = BoxFit.cover});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,39 +27,45 @@ class MoviePoster extends ConsumerWidget {
     // The model getter `remotePoster` gets `remoteUrl`, but for local images we might need `url`.
     // Actually, Radarr API returns `url` like "/MediaCover/1/poster.jpg" and `remoteUrl` like "http://image.tmdb.org/...".
     // We prefer the local `url` served by Radarr to use the cache and API key authentication.
-    
+
     // Priority:
     // 1. Remote URL (TMDB/TVDB) - No auth needed, faster, but might be empty?
     // 2. Local URL - Needs auth, served by Radarr.
-    
+
     // Radarr API returns `remoteUrl` (http://tmdb...) and `url` (/MediaCover/...).
     // Rudarr prefers `remoteUrl`. Let's allow utilizing it if available.
-    
+
     final remotePoster = movie.remotePoster;
     if (remotePoster != null && remotePoster.isNotEmpty) {
-       return CachedNetworkImage(
+      return CachedNetworkImage(
         imageUrl: remotePoster,
         cacheManager: CustomCacheManager.instance,
         fit: fit,
         placeholder: (context, url) => Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) => _buildPlaceholder(context),
       );
     }
-    
+
     // Fallback to local authenticated URL
-    final localPosterPath = movie.images.where((i) => i.isPoster).firstOrNull?.url;
-    
+    final localPosterPath = movie.images
+        .where((i) => i.isPoster)
+        .firstOrNull
+        ?.url;
+
     if (localPosterPath == null || instance == null) {
       return _buildPlaceholder(context);
     }
-    
+
     // Better URL construction:
-    final uri = Uri.parse(instance.url).replace(path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll('//', '/'));
+    final uri = Uri.parse(instance.url).replace(
+      path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll(
+        '//',
+        '/',
+      ),
+    );
 
     return CachedNetworkImage(
       imageUrl: uri.toString(),
@@ -72,9 +74,7 @@ class MoviePoster extends ConsumerWidget {
       fit: fit,
       placeholder: (context, url) => Container(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       errorWidget: (context, url, error) => _buildPlaceholder(context),
     );
@@ -86,7 +86,9 @@ class MoviePoster extends ConsumerWidget {
       child: Center(
         child: Icon(
           Icons.movie_outlined,
-          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           size: 32,
         ),
       ),

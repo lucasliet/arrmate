@@ -36,7 +36,8 @@ class HistoryScreen extends ConsumerWidget {
               if (index == events.length) {
                 return _LoadMoreButton(
                   hasMore: ref.watch(activityHistoryProvider.notifier).hasMore,
-                  onPressed: () => ref.read(activityHistoryProvider.notifier).loadMore(),
+                  onPressed: () =>
+                      ref.read(activityHistoryProvider.notifier).loadMore(),
                 );
               }
 
@@ -64,7 +65,6 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 }
-
 
 class _HistoryEventCard extends StatelessWidget {
   final HistoryEvent event;
@@ -111,8 +111,8 @@ class _HistoryEventCard extends StatelessWidget {
                   Text(
                     event.quality.quality.name,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const Spacer(),
                   Icon(
@@ -124,8 +124,8 @@ class _HistoryEventCard extends StatelessWidget {
                   Text(
                     _formatRelativeTime(event.date),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -175,9 +175,9 @@ class _EventTypeBadge extends StatelessWidget {
       child: Text(
         eventType.label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _getColor(context),
-              fontWeight: FontWeight.bold,
-            ),
+          color: _getColor(context),
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -255,10 +255,7 @@ class _HistoryEventSheet extends StatelessWidget {
               const SizedBox(height: 24),
               _DetailRow(label: 'Quality', value: event.quality.quality.name),
               _DetailRow(label: 'Language', value: event.languageLabel),
-              _DetailRow(
-                label: 'Date',
-                value: formatDate(event.date),
-              ),
+              _DetailRow(label: 'Date', value: formatDate(event.date)),
               if (event.indexer != null)
                 _DetailRow(label: 'Indexer', value: event.indexer!),
               if (event.downloadClient != null)
@@ -289,13 +286,10 @@ class _DetailRow extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

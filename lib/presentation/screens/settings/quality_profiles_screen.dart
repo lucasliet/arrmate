@@ -11,23 +11,41 @@ class QualityProfilesScreen extends ConsumerWidget {
     final seriesProfilesAsync = ref.watch(seriesQualityProfilesProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quality Profiles'),
-      ),
+      appBar: AppBar(title: const Text('Quality Profiles')),
       body: ListView(
         children: [
           _buildSectionHeader(context, 'Radarr Profiles'),
           movieProfilesAsync.when(
             data: (profiles) => _buildProfilesList(profiles),
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-            error: (err, _) => ListTile(title: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (err, _) => ListTile(
+              title: Text(
+                'Error: $err',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           ),
           const Divider(),
           _buildSectionHeader(context, 'Sonarr Profiles'),
           seriesProfilesAsync.when(
             data: (profiles) => _buildProfilesList(profiles),
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-            error: (err, _) => ListTile(title: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (err, _) => ListTile(
+              title: Text(
+                'Error: $err',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           ),
         ],
       ),
@@ -50,15 +68,24 @@ class QualityProfilesScreen extends ConsumerWidget {
 
   Widget _buildProfilesList(List profiles) {
     if (profiles.isEmpty) {
-      return const ListTile(title: Text('No profiles found or instance not connected'));
+      return const ListTile(
+        title: Text('No profiles found or instance not connected'),
+      );
     }
 
     return Column(
-      children: profiles.map((p) => ListTile(
-        leading: const Icon(Icons.high_quality),
-        title: Text(p.name),
-        trailing: Text('ID: ${p.id}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-      )).toList(),
+      children: profiles
+          .map(
+            (p) => ListTile(
+              leading: const Icon(Icons.high_quality),
+              title: Text(p.name),
+              trailing: Text(
+                'ID: ${p.id}',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }

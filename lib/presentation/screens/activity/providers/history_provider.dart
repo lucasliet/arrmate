@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
-final activityHistoryProvider = AsyncNotifierProvider.autoDispose<HistoryNotifier, List<HistoryEvent>>(
-  HistoryNotifier.new,
-);
+final activityHistoryProvider =
+    AsyncNotifierProvider.autoDispose<HistoryNotifier, List<HistoryEvent>>(
+      HistoryNotifier.new,
+    );
 
-final historyEventTypeFilterProvider = StateProvider<HistoryEventType?>((ref) => null);
+final historyEventTypeFilterProvider = StateProvider<HistoryEventType?>(
+  (ref) => null,
+);
 
 class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
   int _currentPage = 1;
@@ -72,7 +75,7 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
     _currentPage++;
     final currentEvents = state.valueOrNull ?? [];
     final newEvents = await _fetchHistory(_currentPage);
-    
+
     state = AsyncValue.data([...currentEvents, ...newEvents]);
   }
 

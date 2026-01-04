@@ -17,9 +17,7 @@ void main() {
 
   test('MoviesNotifier should emit empty list initially', () async {
     final container = ProviderContainer(
-      overrides: [
-        movieRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      overrides: [movieRepositoryProvider.overrideWithValue(mockRepository)],
     );
     addTearDown(container.dispose);
 
@@ -34,37 +32,38 @@ void main() {
     expect(container.read(moviesProvider).value, isEmpty);
   });
 
-  test('MoviesNotifier should emit movies when repository returns data', () async {
-    final List<Movie> movies = [
-      Movie(
-        tmdbId: 12345,
-        title: 'Test Movie',
-        sortTitle: 'test movie',
-        runtime: 120,
-        year: 2023,
-        monitored: true,
-        hasFile: true,
-        isAvailable: true,
-        minimumAvailability: MovieStatus.released,
-        status: MovieStatus.released,
-        added: DateTime.now(),
-        qualityProfileId: 1,
-        images: [],
-      ),
-    ];
+  test(
+    'MoviesNotifier should emit movies when repository returns data',
+    () async {
+      final List<Movie> movies = [
+        Movie(
+          tmdbId: 12345,
+          title: 'Test Movie',
+          sortTitle: 'test movie',
+          runtime: 120,
+          year: 2023,
+          monitored: true,
+          hasFile: true,
+          isAvailable: true,
+          minimumAvailability: MovieStatus.released,
+          status: MovieStatus.released,
+          added: DateTime.now(),
+          qualityProfileId: 1,
+          images: [],
+        ),
+      ];
 
-    final container = ProviderContainer(
-      overrides: [
-        movieRepositoryProvider.overrideWithValue(mockRepository),
-      ],
-    );
-    addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [movieRepositoryProvider.overrideWithValue(mockRepository)],
+      );
+      addTearDown(container.dispose);
 
-    when(() => mockRepository.getMovies()).thenAnswer((_) async => movies);
+      when(() => mockRepository.getMovies()).thenAnswer((_) async => movies);
 
-    await container.read(moviesProvider.future);
+      await container.read(moviesProvider.future);
 
-    expect(container.read(moviesProvider).value, hasLength(1));
-    expect(container.read(moviesProvider).value!.first.title, 'Test Movie');
-  });
+      expect(container.read(moviesProvider).value, hasLength(1));
+      expect(container.read(moviesProvider).value!.first.title, 'Test Movie');
+    },
+  );
 }

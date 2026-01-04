@@ -28,7 +28,8 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(logsProvider.notifier).fetchNextPage();
     }
   }
@@ -49,7 +50,11 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
               });
             },
             itemBuilder: (context) => [
-              'All', 'Info', 'Warn', 'Error', 'Debug'
+              'All',
+              'Info',
+              'Warn',
+              'Error',
+              'Debug',
             ].map((e) => PopupMenuItem(value: e, child: Text(e))).toList(),
           ),
         ],
@@ -58,9 +63,14 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
         onRefresh: () => ref.refresh(logsProvider.future),
         child: logsAsync.when(
           data: (logPage) {
-            final records = _levelFilter == 'All' 
-                ? logPage.records 
-                : logPage.records.where((e) => e.level.toLowerCase() == _levelFilter.toLowerCase()).toList();
+            final records = _levelFilter == 'All'
+                ? logPage.records
+                : logPage.records
+                      .where(
+                        (e) =>
+                            e.level.toLowerCase() == _levelFilter.toLowerCase(),
+                      )
+                      .toList();
 
             if (records.isEmpty) {
               return const Center(child: Text('No logs found matching filter'));
@@ -89,7 +99,9 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
                     style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 13,
-                      color: isError ? Colors.red : (isWarn ? Colors.orange : null),
+                      color: isError
+                          ? Colors.red
+                          : (isWarn ? Colors.orange : null),
                     ),
                   ),
                   subtitle: Text('${log.time.toLocal()} - ${log.logger}'),
@@ -118,25 +130,46 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
           child: ListView(
             controller: scrollController,
             children: [
-              Text('Log Detail', style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                'Log Detail',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const Divider(),
               _buildDetailItem('Time', log.time.toLocal().toString()),
               _buildDetailItem('Level', log.level),
               _buildDetailItem('Logger', log.logger),
               const SizedBox(height: 16),
-              const Text('Message:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Message:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Container(
                 padding: const EdgeInsets.all(8),
                 color: Colors.grey.withOpacity(0.1),
-                child: Text(log.message, style: const TextStyle(fontFamily: 'monospace')),
+                child: Text(
+                  log.message,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
               ),
               if (log.exception != null) ...[
                 const SizedBox(height: 16),
-                const Text('Exception:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                const Text(
+                  'Exception:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.all(8),
                   color: Colors.red.withOpacity(0.05),
-                  child: Text(log.exception!, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+                  child: Text(
+                    log.exception!,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -152,7 +185,13 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold))),
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
           Expanded(child: Text(value)),
         ],
       ),

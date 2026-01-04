@@ -24,8 +24,10 @@ class SeasonDetailsScreen extends ConsumerWidget {
     // My `Series` model has `seasons` list but `Season` model only has stats, usually.
     // I need to fetch episodes for this season.
     // I'll create a provider `seasonEpisodesProvider(seriesId, seasonNumber)`.
-    
-    final episodesAsync = ref.watch(seasonEpisodesProvider(series.id, season.seasonNumber));
+
+    final episodesAsync = ref.watch(
+      seasonEpisodesProvider(series.id, season.seasonNumber),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -34,7 +36,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
       body: episodesAsync.when(
         data: (episodes) {
           if (episodes.isEmpty) {
-             return const Center(child: Text('No episodes found'));
+            return const Center(child: Text('No episodes found'));
           }
           return ListView.builder(
             itemCount: episodes.length,
@@ -45,7 +47,12 @@ class SeasonDetailsScreen extends ConsumerWidget {
           );
         },
         loading: () => const LoadingIndicator(),
-        error: (e, st) => ErrorDisplay(message: 'Failed to load episodes: $e', onRetry: () => ref.refresh(seasonEpisodesProvider(series.id, season.seasonNumber))),
+        error: (e, st) => ErrorDisplay(
+          message: 'Failed to load episodes: $e',
+          onRetry: () => ref.refresh(
+            seasonEpisodesProvider(series.id, season.seasonNumber),
+          ),
+        ),
       ),
     );
   }
@@ -62,16 +69,16 @@ class _EpisodeTile extends StatelessWidget {
     final hasFile = episode.hasFile;
     final monitored = episode.monitored;
     final aired = episode.isAired;
-    
+
     Color statusColor = Colors.grey;
     if (hasFile) {
       statusColor = Colors.green;
     } else if (monitored && aired) {
       statusColor = Colors.red;
     } else if (!monitored) {
-        statusColor = Colors.grey; // Unmonitored
+      statusColor = Colors.grey; // Unmonitored
     } else {
-        statusColor = Colors.blue; // Upcoming
+      statusColor = Colors.blue; // Upcoming
     }
 
     return ListTile(
@@ -87,26 +94,26 @@ class _EpisodeTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-           /* 
+          /* 
            // Example: Manual/Auto Search buttons 
            IconButton(icon: Icon(Icons.search), onPressed: () {}), 
            */
-           IconButton(
-             icon: const Icon(Icons.travel_explore),
-             tooltip: 'Interactive Search',
-             onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => ReleasesSheet(
-                    id: episode.id,
-                    isMovie: false,
-                    title: '${series.title} - ${episode.episodeLabel}',
-                    episodeCode: episode.episodeLabel,
-                  ),
-                );
-             },
-           ),
+          IconButton(
+            icon: const Icon(Icons.travel_explore),
+            tooltip: 'Interactive Search',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => ReleasesSheet(
+                  id: episode.id,
+                  isMovie: false,
+                  title: '${series.title} - ${episode.episodeLabel}',
+                  episodeCode: episode.episodeLabel,
+                ),
+              );
+            },
+          ),
         ],
       ),
       onTap: () {

@@ -26,7 +26,9 @@ class MediaFile extends Equatable {
       relativePath: json['relativePath'] as String?,
       path: json['path'] as String?,
       size: json['size'] as int? ?? 0,
-      dateAdded: DateTime.tryParse(json['dateAdded'] as String? ?? '') ?? DateTime.now(),
+      dateAdded:
+          DateTime.tryParse(json['dateAdded'] as String? ?? '') ??
+          DateTime.now(),
       quality: json['quality'] != null
           ? MediaQuality.fromJson(json['quality'] as Map<String, dynamic>)
           : null,
@@ -50,23 +52,28 @@ class MediaFile extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, relativePath, path, size, dateAdded, quality, languages];
+  List<Object?> get props => [
+    id,
+    relativePath,
+    path,
+    size,
+    dateAdded,
+    quality,
+    languages,
+  ];
 }
 
 class MediaQuality extends Equatable {
   final QualityInfo quality;
   final int revision;
 
-  const MediaQuality({
-    required this.quality,
-    required this.revision,
-  });
+  const MediaQuality({required this.quality, required this.revision});
 
   factory MediaQuality.fromJson(Map<String, dynamic> json) {
     return MediaQuality(
       quality: QualityInfo.fromJson(json['quality'] as Map<String, dynamic>),
-      revision: (json['revision'] as Map<String, dynamic>?)?['version'] as int? ?? 1,
+      revision:
+          (json['revision'] as Map<String, dynamic>?)?['version'] as int? ?? 1,
     );
   }
 
@@ -120,10 +127,7 @@ class MediaLanguageInfo extends Equatable {
   final int id;
   final String name;
 
-  const MediaLanguageInfo({
-    required this.id,
-    required this.name,
-  });
+  const MediaLanguageInfo({required this.id, required this.name});
 
   factory MediaLanguageInfo.fromJson(Map<String, dynamic> json) {
     return MediaLanguageInfo(
@@ -133,10 +137,7 @@ class MediaLanguageInfo extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
+    return {'id': id, 'name': name};
   }
 
   @override

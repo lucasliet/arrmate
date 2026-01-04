@@ -5,11 +5,7 @@ class MediaImage extends Equatable {
   final String? url;
   final String? remoteUrl;
 
-  const MediaImage({
-    required this.coverType,
-    this.url,
-    this.remoteUrl,
-  });
+  const MediaImage({required this.coverType, this.url, this.remoteUrl});
 
   factory MediaImage.fromJson(Map<String, dynamic> json) {
     return MediaImage(

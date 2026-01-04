@@ -5,7 +5,11 @@ abstract class SeriesRepository {
   Future<Series> getSeriesById(int id);
   Future<Series> addSeries(Series series);
   Future<Series> updateSeries(Series series);
-  Future<void> deleteSeries(int id, {bool deleteFiles = false, bool addExclusion = false});
+  Future<void> deleteSeries(
+    int id, {
+    bool deleteFiles = false,
+    bool addExclusion = false,
+  });
   Future<List<Series>> lookupSeries(String term);
   Future<List<Episode>> getEpisodes(int seriesId);
   Future<Episode> getEpisode(int id);

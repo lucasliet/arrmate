@@ -24,13 +24,10 @@ class InstanceHeader extends Equatable {
   final String name;
   final String value;
 
-  InstanceHeader({
-    String? id,
-    required String name,
-    required String value,
-  })  : id = id ?? const Uuid().v4(),
-        name = name.replaceAll(':', '').trim(),
-        value = value.trim();
+  InstanceHeader({String? id, required String name, required String value})
+    : id = id ?? const Uuid().v4(),
+      name = name.replaceAll(':', '').trim(),
+      value = value.trim();
 
   factory InstanceHeader.fromJson(Map<String, dynamic> json) {
     return InstanceHeader(
@@ -41,11 +38,7 @@ class InstanceHeader extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'value': value,
-    };
+    return {'id': id, 'name': name, 'value': value};
   }
 
   @override
@@ -118,19 +111,23 @@ class Instance extends Equatable {
       label: json['label'] as String,
       url: json['url'] as String,
       apiKey: json['apiKey'] as String,
-      headers: (json['headers'] as List<dynamic>?)
+      headers:
+          (json['headers'] as List<dynamic>?)
               ?.map((e) => InstanceHeader.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      rootFolders: (json['rootFolders'] as List<dynamic>?)
+      rootFolders:
+          (json['rootFolders'] as List<dynamic>?)
               ?.map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      qualityProfiles: (json['qualityProfiles'] as List<dynamic>?)
+      qualityProfiles:
+          (json['qualityProfiles'] as List<dynamic>?)
               ?.map((e) => QualityProfile.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      tags: (json['tags'] as List<dynamic>?)
+      tags:
+          (json['tags'] as List<dynamic>?)
               ?.map((e) => Tag.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -211,34 +208,29 @@ class Instance extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        type,
-        mode,
-        label,
-        url,
-        apiKey,
-        headers,
-        rootFolders,
-        qualityProfiles,
-        tags,
-        name,
-        version,
-      ];
+    id,
+    type,
+    mode,
+    label,
+    url,
+    apiKey,
+    headers,
+    rootFolders,
+    qualityProfiles,
+    tags,
+    name,
+    version,
+  ];
 
   static Instance get radarrVoid => Instance(
-        id: '00000000-1000-0000-0000-000000000000',
-        type: InstanceType.radarr,
-      );
+    id: '00000000-1000-0000-0000-000000000000',
+    type: InstanceType.radarr,
+  );
 
   static Instance get sonarrVoid => Instance(
-        id: '00000000-2000-0000-0000-000000000000',
-        type: InstanceType.sonarr,
-      );
+    id: '00000000-2000-0000-0000-000000000000',
+    type: InstanceType.sonarr,
+  );
 }
 
-enum InstanceTimeout {
-  normal,
-  slow,
-  releaseSearch,
-  releaseDownload,
-}
+enum InstanceTimeout { normal, slow, releaseSearch, releaseDownload }

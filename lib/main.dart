@@ -7,13 +7,13 @@ import 'core/services/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final container = ProviderContainer();
-  
+
   try {
     // Initialize notification service
     await container.read(notificationServiceProvider).init();
-    
+
     // Initialize background sync service
     await container.read(backgroundSyncServiceProvider).init();
   } catch (e, stackTrace) {
@@ -21,9 +21,6 @@ void main() async {
   }
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const ArrmateApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const ArrmateApp()),
   );
 }

@@ -83,7 +83,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     // Ensure background task matches settings
     if (state.notifications.enabled) {
-      ref.read(backgroundSyncServiceProvider).registerTask(state.notifications.pollingIntervalMinutes);
+      ref
+          .read(backgroundSyncServiceProvider)
+          .registerTask(state.notifications.pollingIntervalMinutes);
     }
   }
 
@@ -108,7 +110,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> updateNotifications(NotificationSettings notifications) async {
     state = state.copyWith(notifications: notifications);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_notificationsKey, jsonEncode(notifications.toJson()));
+    await prefs.setString(
+      _notificationsKey,
+      jsonEncode(notifications.toJson()),
+    );
 
     final syncService = ref.read(backgroundSyncServiceProvider);
     if (notifications.enabled) {

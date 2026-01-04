@@ -10,9 +10,7 @@ class HealthScreen extends ConsumerWidget {
     final healthAsync = ref.watch(healthProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Health'),
-      ),
+      appBar: AppBar(title: const Text('System Health')),
       body: healthAsync.when(
         data: (checks) {
           if (checks.isEmpty) {
@@ -20,7 +18,11 @@ class HealthScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: Colors.green,
+                  ),
                   SizedBox(height: 16),
                   Text('No issues found', style: TextStyle(fontSize: 18)),
                 ],

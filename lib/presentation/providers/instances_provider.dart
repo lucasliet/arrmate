@@ -4,9 +4,11 @@ import 'dart:convert';
 
 import '../../domain/models/instance/instance.dart';
 
-final instancesProvider = NotifierProvider<InstancesNotifier, InstancesState>(() {
-  return InstancesNotifier();
-});
+final instancesProvider = NotifierProvider<InstancesNotifier, InstancesState>(
+  () {
+    return InstancesNotifier();
+  },
+);
 
 final currentRadarrInstanceProvider = Provider<Instance?>((ref) {
   final state = ref.watch(instancesProvider);
@@ -28,19 +30,13 @@ class InstancesState {
   final List<Instance> instances;
   final bool isLoading;
 
-  const InstancesState({
-    this.instances = const [],
-    this.isLoading = true,
-  });
+  const InstancesState({this.instances = const [], this.isLoading = true});
 
   bool get hasRadarr => instances.any((i) => i.type == InstanceType.radarr);
   bool get hasSonarr => instances.any((i) => i.type == InstanceType.sonarr);
   bool get isEmpty => instances.isEmpty;
 
-  InstancesState copyWith({
-    List<Instance>? instances,
-    bool? isLoading,
-  }) {
+  InstancesState copyWith({List<Instance>? instances, bool? isLoading}) {
     return InstancesState(
       instances: instances ?? this.instances,
       isLoading: isLoading ?? this.isLoading,
@@ -78,7 +74,9 @@ class InstancesNotifier extends Notifier<InstancesState> {
 
   Future<void> _saveInstances() async {
     final prefs = await SharedPreferences.getInstance();
-    final instancesJson = json.encode(state.instances.map((e) => e.toJson()).toList());
+    final instancesJson = json.encode(
+      state.instances.map((e) => e.toJson()).toList(),
+    );
     await prefs.setString(_instancesKey, instancesJson);
   }
 

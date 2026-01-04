@@ -9,10 +9,7 @@ import 'queue_item_sheet.dart';
 class QueueListItem extends ConsumerWidget {
   final QueueItem item;
 
-  const QueueListItem({
-    super.key,
-    required this.item,
-  });
+  const QueueListItem({super.key, required this.item});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,83 +25,91 @@ class QueueListItem extends ConsumerWidget {
         onTap: () => _showQueueItemSheet(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildIcon(context),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.displayTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (item.episode != null) ...[
-                        const SizedBox(height: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildIcon(context),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          item.episode!.fullLabel,
-                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          item.displayTitle,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          _buildStatusBadge(context),
-                          const Spacer(),
-                          if (item.status == QueueStatus.downloading && item.sizeleft > 0)
-                            Text(
-                              '${formatBytes(item.sizeleft)} left',
-                              style: theme.textTheme.labelSmall,
+                        if (item.episode != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            item.episode!.fullLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
-                          if (item.estimatedCompletionTime != null) ...[
-                             const SizedBox(width: 8),
-                             Text(
-                               '•  ${_formatEta(item.estimatedCompletionTime!)}',
-                               style: theme.textTheme.labelSmall,
-                             ),
-                          ]
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            _buildStatusBadge(context),
+                            const Spacer(),
+                            if (item.status == QueueStatus.downloading &&
+                                item.sizeleft > 0)
+                              Text(
+                                '${formatBytes(item.sizeleft)} left',
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            if (item.estimatedCompletionTime != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '•  ${_formatEta(item.estimatedCompletionTime!)}',
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: theme.colorScheme.surfaceDim,
+                  valueColor: AlwaysStoppedAnimation(
+                    item.hasWarning || item.hasError
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.primary,
+                  ),
+                  minHeight: 4,
+                ),
+              ),
+              if (item.errorMessage != null ||
+                  item.statusMessages.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.errorMessage ??
+                      item.statusMessages.first.messages.firstOrNull ??
+                      'Unknown error',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: theme.colorScheme.surfaceDim,
-                valueColor: AlwaysStoppedAnimation(
-                   item.hasWarning || item.hasError ? theme.colorScheme.error : theme.colorScheme.primary
-                ),
-                minHeight: 4,
-              ),
-            ),
-            if (item.errorMessage != null || item.statusMessages.isNotEmpty) ...[
-               const SizedBox(height: 8),
-               Text(
-                 item.errorMessage ?? item.statusMessages.first.messages.firstOrNull ?? 'Unknown error',
-                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-                 maxLines: 1,
-                 overflow: TextOverflow.ellipsis,
-               )
-            ]
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -176,7 +181,7 @@ class QueueListItem extends ConsumerWidget {
   String _formatEta(DateTime eta) {
     final diff = eta.difference(DateTime.now());
     if (diff.isNegative) return 'Done';
-    
+
     if (diff.inDays > 0) return '${diff.inDays}d';
     if (diff.inHours > 0) return '${diff.inHours}h';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m';

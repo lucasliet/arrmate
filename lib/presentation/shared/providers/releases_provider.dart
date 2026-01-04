@@ -12,7 +12,10 @@ Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
 }
 
 @riverpod
-Future<List<Release>> episodeReleases(EpisodeReleasesRef ref, int episodeId) async {
+Future<List<Release>> episodeReleases(
+  EpisodeReleasesRef ref,
+  int episodeId,
+) async {
   final api = ref.watch(sonarrApiProvider);
   if (api == null) throw Exception('API not available');
   return api.getSeriesReleases(episodeId: episodeId);
@@ -30,16 +33,16 @@ class ReleaseActions extends _$ReleaseActions {
   Future<void> downloadRelease({
     required String guid,
     required String indexerId,
-    required bool isMovie, 
+    required bool isMovie,
   }) async {
     if (isMovie) {
-       final api = ref.read(radarrApiProvider);
-       if (api == null) throw Exception('Radarr API not available');
-       await api.downloadRelease(guid, indexerId);
+      final api = ref.read(radarrApiProvider);
+      if (api == null) throw Exception('Radarr API not available');
+      await api.downloadRelease(guid, indexerId);
     } else {
-       final api = ref.read(sonarrApiProvider);
-       if (api == null) throw Exception('Sonarr API not available');
-       await api.downloadRelease(guid, indexerId);
+      final api = ref.read(sonarrApiProvider);
+      if (api == null) throw Exception('Sonarr API not available');
+      await api.downloadRelease(guid, indexerId);
     }
   }
 }

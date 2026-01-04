@@ -33,7 +33,8 @@ extension ContextExtensions on BuildContext {
     );
   }
 
-  void showErrorSnackBar(String message) => showSnackBar(message, isError: true);
+  void showErrorSnackBar(String message) =>
+      showSnackBar(message, isError: true);
 
   Future<T?> showBottomSheet<T>(Widget child) {
     return showModalBottomSheet<T>(

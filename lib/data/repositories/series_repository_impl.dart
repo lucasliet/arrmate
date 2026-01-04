@@ -20,8 +20,15 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<Series> updateSeries(Series series) => _api.updateSeries(series);
 
   @override
-  Future<void> deleteSeries(int id, {bool deleteFiles = false, bool addExclusion = false}) =>
-      _api.deleteSeries(id, deleteFiles: deleteFiles, addExclusion: addExclusion);
+  Future<void> deleteSeries(
+    int id, {
+    bool deleteFiles = false,
+    bool addExclusion = false,
+  }) => _api.deleteSeries(
+    id,
+    deleteFiles: deleteFiles,
+    addExclusion: addExclusion,
+  );
 
   @override
   Future<List<Series>> lookupSeries(String term) => _api.lookupSeries(term);
@@ -42,25 +49,19 @@ class SeriesRepositoryImpl implements SeriesRepository {
     int pageSize = 20,
     String sortKey = 'timeleft',
     String sortDirection = 'ascending',
-  }) =>
-      _api.getQueue(
-        page: page,
-        pageSize: pageSize,
-        sortKey: sortKey,
-        sortDirection: sortDirection,
-      );
+  }) => _api.getQueue(
+    page: page,
+    pageSize: pageSize,
+    sortKey: sortKey,
+    sortDirection: sortDirection,
+  );
 
   @override
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
-  }) =>
-      _api.getHistory(
-        page: page,
-        pageSize: pageSize,
-        eventType: eventType,
-      );
+  }) => _api.getHistory(page: page, pageSize: pageSize, eventType: eventType);
 
   @override
   Future<void> deleteQueueItem(
@@ -68,13 +69,12 @@ class SeriesRepositoryImpl implements SeriesRepository {
     bool removeFromClient = true,
     bool blocklist = false,
     bool skipRedownload = false,
-  }) =>
-      _api.deleteQueueItem(
-        id,
-        removeFromClient: removeFromClient,
-        blocklist: blocklist,
-        skipRedownload: skipRedownload,
-      );
+  }) => _api.deleteQueueItem(
+    id,
+    removeFromClient: removeFromClient,
+    blocklist: blocklist,
+    skipRedownload: skipRedownload,
+  );
 
   @override
   Future<LogPage> getLogs({int page = 1, int pageSize = 50}) {

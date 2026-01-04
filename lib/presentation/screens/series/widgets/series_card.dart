@@ -8,11 +8,7 @@ class SeriesCard extends StatelessWidget {
   final Series series;
   final VoidCallback? onTap;
 
-  const SeriesCard({
-    super.key,
-    required this.series,
-    this.onTap,
-  });
+  const SeriesCard({super.key, required this.series, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +23,7 @@ class SeriesCard extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            Positioned.fill(
-              child: SeriesPoster(series: series),
-            ),
+            Positioned.fill(child: SeriesPoster(series: series)),
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -84,15 +78,15 @@ class SeriesCard extends StatelessWidget {
 
   Widget _buildStatusIndicator(BuildContext context) {
     Color color;
-    
+
     // Logic for Series status varies slightly from Movies.
     // Simplifying for now based on 'monitored' and 'status'.
     if (series.monitored) {
-       if (series.status == SeriesStatus.ended) {
-         color = Colors.green;
-       } else {
-         color = Colors.blue; 
-       }
+      if (series.status == SeriesStatus.ended) {
+        color = Colors.green;
+      } else {
+        color = Colors.blue;
+      }
     } else {
       color = Colors.grey;
     }

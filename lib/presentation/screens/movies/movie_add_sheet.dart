@@ -17,7 +17,7 @@ class MovieAddSheet extends ConsumerStatefulWidget {
 class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
   final _searchController = TextEditingController();
   Movie? _selectedMovie;
-  
+
   // Form State
   bool _monitored = true;
   MovieStatus _minimumAvailability = MovieStatus.announced;
@@ -42,7 +42,10 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
   }
 
   Future<void> _submit() async {
-    if (_selectedMovie == null || _qualityProfileId == null || _rootFolderPath == null) return;
+    if (_selectedMovie == null ||
+        _qualityProfileId == null ||
+        _rootFolderPath == null)
+      return;
 
     setState(() => _isSubmitting = true);
 
@@ -56,11 +59,11 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
         qualityProfileId: _qualityProfileId,
         rootFolderPath: _rootFolderPath,
         // Ensure added is set correctly, though API usually handles this
-        added: DateTime.now(), 
+        added: DateTime.now(),
       );
 
       await api.addMovie(movieToAdd);
-      
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +74,10 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding movie: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error adding movie: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -111,7 +117,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                         border: OutlineInputBorder(),
                       ),
                       onSubmitted: (value) {
-                         ref.read(movieLookupProvider.notifier).search(value);
+                        ref.read(movieLookupProvider.notifier).search(value);
                       },
                     ),
                   ),
@@ -136,21 +142,30 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       final movie = movies[index];
                       return ListTile(
                         leading: movie.remotePoster != null
-                            ? Image.network(movie.remotePoster!, width: 40, fit: BoxFit.cover)
+                            ? Image.network(
+                                movie.remotePoster!,
+                                width: 40,
+                                fit: BoxFit.cover,
+                              )
                             : const Icon(Icons.movie),
                         title: Text(movie.title),
                         subtitle: Text('${movie.year}'),
-                        trailing: movie.added.year > 2000 // Simple check if already added - usually API returns fully populated obj if exists
+                        trailing:
+                            movie.added.year >
+                                2000 // Simple check if already added - usually API returns fully populated obj if exists
                             ? const Icon(Icons.check, color: Colors.green)
                             : const Icon(Icons.add),
                         onTap: () {
-                             if (movie.added.year <= 2000) { // Check if 'added' is default (not in library)
-                                  _onMovieSelected(movie);
-                             } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                       const SnackBar(content: Text('Movie already in library')),
-                                  );
-                             }
+                          if (movie.added.year <= 2000) {
+                            // Check if 'added' is default (not in library)
+                            _onMovieSelected(movie);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Movie already in library'),
+                              ),
+                            );
+                          }
                         },
                       );
                     },
@@ -187,12 +202,19 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
               actions: [
                 TextButton(
                   onPressed: _isSubmitting ? null : _submit,
-                  child: _isSubmitting 
-                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
-                     : const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Add',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                 ),
               ],
-              automaticallyImplyLeading: false, 
+              automaticallyImplyLeading: false,
             ),
             Expanded(
               child: ListView(
@@ -206,37 +228,51 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<MovieStatus>(
-                    decoration: const InputDecoration(labelText: 'Minimum Availability'),
+                    decoration: const InputDecoration(
+                      labelText: 'Minimum Availability',
+                    ),
                     value: _minimumAvailability,
-                    items: [
-                      MovieStatus.announced,
-                      MovieStatus.inCinemas,
-                      MovieStatus.released
-                    ].map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(status.label),
-                      );
-                    }).toList(),
-                    onChanged: (val) => setState(() => _minimumAvailability = val!),
+                    items:
+                        [
+                          MovieStatus.announced,
+                          MovieStatus.inCinemas,
+                          MovieStatus.released,
+                        ].map((status) {
+                          return DropdownMenuItem(
+                            value: status,
+                            child: Text(status.label),
+                          );
+                        }).toList(),
+                    onChanged: (val) =>
+                        setState(() => _minimumAvailability = val!),
                   ),
                   const SizedBox(height: 16),
                   qualityProfiles.when(
                     data: (profiles) {
                       if (_qualityProfileId == null && profiles.isNotEmpty) {
-                         // Defer state update to next frame to avoid build error
-                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                           if(mounted) setState(() => _qualityProfileId = profiles.first.id);
-                         });
+                        // Defer state update to next frame to avoid build error
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted)
+                            setState(
+                              () => _qualityProfileId = profiles.first.id,
+                            );
+                        });
                       }
                       return DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: 'Quality Profile'),
+                        decoration: const InputDecoration(
+                          labelText: 'Quality Profile',
+                        ),
                         value: _qualityProfileId,
-                        items: profiles.map((p) => DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.name),
-                        )).toList(),
-                        onChanged: (val) => setState(() => _qualityProfileId = val),
+                        items: profiles
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p.id,
+                                child: Text(p.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _qualityProfileId = val),
                       );
                     },
                     loading: () => const LinearProgressIndicator(),
@@ -245,23 +281,33 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                   const SizedBox(height: 16),
                   rootFolders.when(
                     data: (folders) {
-                       final rootFolderList = List<RootFolder>.from(folders);
-                       if (_rootFolderPath == null && rootFolderList.isNotEmpty) {
-                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                           if(mounted) setState(() => _rootFolderPath = rootFolderList.first.path);
-                         });
+                      final rootFolderList = List<RootFolder>.from(folders);
+                      if (_rootFolderPath == null &&
+                          rootFolderList.isNotEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted)
+                            setState(
+                              () => _rootFolderPath = rootFolderList.first.path,
+                            );
+                        });
                       }
                       return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Root Folder'),
+                        decoration: const InputDecoration(
+                          labelText: 'Root Folder',
+                        ),
                         value: _rootFolderPath,
                         items: rootFolderList.map((f) {
-                          final freeSpaceGb = (f.freeSpace ?? 0) / 1024 / 1024 / 1024;
+                          final freeSpaceGb =
+                              (f.freeSpace ?? 0) / 1024 / 1024 / 1024;
                           return DropdownMenuItem(
                             value: f.path,
-                            child: Text('${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)'),
+                            child: Text(
+                              '${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)',
+                            ),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _rootFolderPath = val),
+                        onChanged: (val) =>
+                            setState(() => _rootFolderPath = val),
                       );
                     },
                     loading: () => const LinearProgressIndicator(),

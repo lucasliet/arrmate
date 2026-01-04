@@ -40,10 +40,7 @@ class UpdateDialog extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                'Changelog:',
-                style: theme.textTheme.titleSmall,
-              ),
+              Text('Changelog:', style: theme.textTheme.titleSmall),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -51,10 +48,7 @@ class UpdateDialog extends ConsumerWidget {
                   color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  info.changelog,
-                  style: theme.textTheme.bodySmall,
-                ),
+                child: Text(info.changelog, style: theme.textTheme.bodySmall),
               ),
             ] else if (isDownloading) ...[
               const SizedBox(height: 16),
@@ -100,7 +94,8 @@ class UpdateDialog extends ConsumerWidget {
                 child: const Text('Mais Tarde'),
               ),
               FilledButton(
-                onPressed: () => ref.read(updateProvider.notifier).startUpdate(),
+                onPressed: () =>
+                    ref.read(updateProvider.notifier).startUpdate(),
                 child: const Text('Atualizar Agora'),
               ),
             ],

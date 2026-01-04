@@ -17,28 +17,30 @@ class CalendarEvent extends Equatable {
     this.episode,
     this.series,
   });
-  
+
   bool get isMovie => movie != null;
   bool get isEpisode => episode != null;
-  
-  String get title => isMovie ? movie!.title : series?.title ?? 'Unknown Series';
-  String get subtitle => isMovie 
-      ? (movie!.year > 0 ? '${movie!.year}' : '') 
+
+  String get title =>
+      isMovie ? movie!.title : series?.title ?? 'Unknown Series';
+  String get subtitle => isMovie
+      ? (movie!.year > 0 ? '${movie!.year}' : '')
       : '${episode!.seasonNumber}x${episode!.episodeNumber.toString().padLeft(2, '0')} - ${episode!.title}';
 
   @override
   List<Object?> get props => [releaseDate, movie, episode, series];
 }
 
-final calendarProvider = AsyncNotifierProvider.autoDispose<CalendarNotifier, List<CalendarEvent>>(
-  CalendarNotifier.new,
-);
+final calendarProvider =
+    AsyncNotifierProvider.autoDispose<CalendarNotifier, List<CalendarEvent>>(
+      CalendarNotifier.new,
+    );
 
-// Changed to AsyncNotifier, provider.autoDispose handles part of it, 
+// Changed to AsyncNotifier, provider.autoDispose handles part of it,
 // but technically for autoDispose provider we usually extend AutoDisposeAsyncNotifier.
 // If that class is missing (older riverpod?), we might need to check.
 // Using AsyncNotifier with autoDispose provider works if we don't need 'ref.keepAlive' specifically inside?
-// Actually Dart requires specific class for type safety in provider. 
+// Actually Dart requires specific class for type safety in provider.
 // If 'AutoDisposeAsyncNotifier' is undefined, I will try just 'AsyncNotifier'.
 class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   @override
@@ -59,27 +61,40 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
     if (movieRepo != null) {
       try {
         final movies = await movieRepo.getCalendar(start: start, end: end);
-        events.addAll(movies.map((m) {
-          final date = m.physicalRelease ?? m.digitalRelease ?? m.inCinemas ?? m.added; 
-          return CalendarEvent(releaseDate: date, movie: m);
-        }));
-      } catch (e) {/*ignore*/}
+        events.addAll(
+          movies.map((m) {
+            final date =
+                m.physicalRelease ?? m.digitalRelease ?? m.inCinemas ?? m.added;
+            return CalendarEvent(releaseDate: date, movie: m);
+          }),
+        );
+      } catch (e) {
+        /*ignore*/
+      }
     }
 
     if (seriesRepo != null) {
       try {
         final episodes = await seriesRepo.getCalendar(start: start, end: end);
-        events.addAll(episodes.map((e) {
-          return CalendarEvent(releaseDate: e.airDateUtc ?? now, episode: e, series: e.series);
-        }));
-      } catch (e) {/*ignore*/}
+        events.addAll(
+          episodes.map((e) {
+            return CalendarEvent(
+              releaseDate: e.airDateUtc ?? now,
+              episode: e,
+              series: e.series,
+            );
+          }),
+        );
+      } catch (e) {
+        /*ignore*/
+      }
     }
 
     events.sort((a, b) => a.releaseDate.compareTo(b.releaseDate));
 
     return events;
   }
-  
+
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;

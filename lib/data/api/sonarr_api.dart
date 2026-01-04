@@ -7,10 +7,12 @@ class SonarrApi {
   final Instance instance;
 
   SonarrApi(this.instance, [ApiClient? client])
-      : _client = client ?? ApiClient(
-          baseUrl: '${instance.url}${ApiConstants.apiPath}',
-          headers: instance.authHeaders,
-        );
+    : _client =
+          client ??
+          ApiClient(
+            baseUrl: '${instance.url}${ApiConstants.apiPath}',
+            headers: instance.authHeaders,
+          );
 
   Future<List<Series>> getSeries() async {
     final response = await _client.get('/series');
@@ -30,11 +32,18 @@ class SonarrApi {
   }
 
   Future<Series> updateSeries(Series series) async {
-    final response = await _client.put('/series/${series.id}', data: series.toJson());
+    final response = await _client.put(
+      '/series/${series.id}',
+      data: series.toJson(),
+    );
     return Series.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<void> deleteSeries(int id, {bool deleteFiles = false, bool addExclusion = false}) async {
+  Future<void> deleteSeries(
+    int id, {
+    bool deleteFiles = false,
+    bool addExclusion = false,
+  }) async {
     await _client.delete(
       '/series/$id',
       queryParameters: {
@@ -61,9 +70,7 @@ class SonarrApi {
   Future<List<Release>> getSeriesReleases({int? episodeId}) async {
     final response = await _client.get(
       '/release',
-      queryParameters: {
-        if (episodeId != null) 'episodeId': episodeId, 
-      },
+      queryParameters: {if (episodeId != null) 'episodeId': episodeId},
     );
     return (response as List)
         .map((e) => Release.fromJson(e as Map<String, dynamic>))
@@ -73,10 +80,7 @@ class SonarrApi {
   Future<void> downloadRelease(String guid, String indexerId) async {
     await _client.post(
       '/release',
-      data: {
-        'guid': guid,
-        'indexerId': indexerId,
-      },
+      data: {'guid': guid, 'indexerId': indexerId},
     );
   }
 
@@ -115,7 +119,7 @@ class SonarrApi {
         'includeEpisodeFile': true,
       },
     );
-    
+
     // O calendário do Sonarr retorna Episódios, mas precisamos garantir que venha os dados da Série junto se disponível
     return (response as List)
         .map((e) => Episode.fromJson(e as Map<String, dynamic>))
@@ -180,10 +184,7 @@ class SonarrApi {
   Future<LogPage> getLogs({int page = 1, int pageSize = 50}) async {
     final response = await _client.get(
       '/log',
-      queryParameters: {
-        'page': page,
-        'pageSize': pageSize,
-      },
+      queryParameters: {'page': page, 'pageSize': pageSize},
     );
     return LogPage.fromJson(response as Map<String, dynamic>);
   }

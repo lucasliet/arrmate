@@ -16,12 +16,12 @@ void main() {
         'added': '2023-01-01T00:00:00Z',
         'qualityProfileId': 1,
         'images': [
-        {
-          'coverType': 'poster',
-          'url': '/poster.jpg',
-          'remoteUrl': 'http://tmdb.org/poster.jpg'
-        }
-      ]
+          {
+            'coverType': 'poster',
+            'url': '/poster.jpg',
+            'remoteUrl': 'http://tmdb.org/poster.jpg',
+          },
+        ],
       };
 
       final movie = Movie.fromJson(json);
@@ -54,9 +54,9 @@ void main() {
           {
             'coverType': 'poster',
             'url': '/local.jpg',
-            'remoteUrl': 'http://remote.jpg'
-          }
-        ]
+            'remoteUrl': 'http://remote.jpg',
+          },
+        ],
       };
 
       final movie = Movie.fromJson(json);
@@ -76,7 +76,7 @@ void main() {
         'status': 'announced',
         'added': '2023-02-01T00:00:00Z',
         'qualityProfileId': 1,
-        'images': []
+        'images': [],
       };
 
       final movie = Movie.fromJson(json);

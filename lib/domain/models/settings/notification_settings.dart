@@ -29,8 +29,10 @@ class NotificationSettings extends Equatable {
       enabled: enabled ?? this.enabled,
       notifyOnGrab: notifyOnGrab ?? this.notifyOnGrab,
       notifyOnImport: notifyOnImport ?? this.notifyOnImport,
-      notifyOnDownloadFailed: notifyOnDownloadFailed ?? this.notifyOnDownloadFailed,
-      pollingIntervalMinutes: pollingIntervalMinutes ?? this.pollingIntervalMinutes,
+      notifyOnDownloadFailed:
+          notifyOnDownloadFailed ?? this.notifyOnDownloadFailed,
+      pollingIntervalMinutes:
+          pollingIntervalMinutes ?? this.pollingIntervalMinutes,
       lastNotifiedIdByInstance: lastNotifiedIdByInstance != null
           ? Map<String, int>.from(lastNotifiedIdByInstance)
           : Map<String, int>.from(this.lastNotifiedIdByInstance),
@@ -44,7 +46,8 @@ class NotificationSettings extends Equatable {
       notifyOnImport: json['notifyOnImport'] as bool? ?? true,
       notifyOnDownloadFailed: json['notifyOnDownloadFailed'] as bool? ?? true,
       pollingIntervalMinutes: json['pollingIntervalMinutes'] as int? ?? 15,
-      lastNotifiedIdByInstance: (json['lastNotifiedIdByInstance'] as Map<String, dynamic>?)?.map(
+      lastNotifiedIdByInstance:
+          (json['lastNotifiedIdByInstance'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, v as int),
           ) ??
           const {},
@@ -64,11 +67,11 @@ class NotificationSettings extends Equatable {
 
   @override
   List<Object?> get props => [
-        enabled,
-        notifyOnGrab,
-        notifyOnImport,
-        notifyOnDownloadFailed,
-        pollingIntervalMinutes,
-        lastNotifiedIdByInstance,
-      ];
+    enabled,
+    notifyOnGrab,
+    notifyOnImport,
+    notifyOnDownloadFailed,
+    pollingIntervalMinutes,
+    lastNotifiedIdByInstance,
+  ];
 }

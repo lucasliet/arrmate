@@ -28,7 +28,9 @@ class Season extends Equatable {
       seasonNumber: json['seasonNumber'] as int,
       monitored: json['monitored'] as bool? ?? false,
       statistics: json['statistics'] != null
-          ? SeasonStatistics.fromJson(json['statistics'] as Map<String, dynamic>)
+          ? SeasonStatistics.fromJson(
+              json['statistics'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -94,10 +96,10 @@ class SeasonStatistics extends Equatable {
 
   @override
   List<Object?> get props => [
-        episodeCount,
-        episodeFileCount,
-        totalEpisodeCount,
-        percentOfEpisodes,
-        sizeOnDisk,
-      ];
+    episodeCount,
+    episodeFileCount,
+    totalEpisodeCount,
+    percentOfEpisodes,
+    sizeOnDisk,
+  ];
 }

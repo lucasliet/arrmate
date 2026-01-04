@@ -15,7 +15,8 @@ class CustomCacheManager {
       fileService: HttpFileService(
         httpClient: IOClient(
           HttpClient()
-            ..badCertificateCallback = (X509Certificate cert, String host, int port) => true,
+            ..badCertificateCallback =
+                (X509Certificate cert, String host, int port) => true,
         ),
       ),
     ),

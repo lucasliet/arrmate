@@ -33,11 +33,16 @@ enum SeriesSortOption {
 
   String get label {
     switch (this) {
-      case SeriesSortOption.byTitle: return 'Title';
-      case SeriesSortOption.byYear: return 'Year';
-      case SeriesSortOption.byAdded: return 'Added';
-      case SeriesSortOption.byRating: return 'Rating';
-      case SeriesSortOption.bySize: return 'Size';
+      case SeriesSortOption.byTitle:
+        return 'Title';
+      case SeriesSortOption.byYear:
+        return 'Year';
+      case SeriesSortOption.byAdded:
+        return 'Added';
+      case SeriesSortOption.byRating:
+        return 'Rating';
+      case SeriesSortOption.bySize:
+        return 'Size';
     }
   }
 
@@ -52,7 +57,9 @@ enum SeriesSortOption {
       case SeriesSortOption.byRating:
         return (a.ratings?.value ?? 0).compareTo(b.ratings?.value ?? 0);
       case SeriesSortOption.bySize:
-        return (a.statistics?.sizeOnDisk ?? 0).compareTo(b.statistics?.sizeOnDisk ?? 0);
+        return (a.statistics?.sizeOnDisk ?? 0).compareTo(
+          b.statistics?.sizeOnDisk ?? 0,
+        );
     }
   }
 }
@@ -66,11 +73,16 @@ enum SeriesFilter {
 
   String get label {
     switch (this) {
-      case SeriesFilter.all: return 'All Series';
-      case SeriesFilter.monitored: return 'Monitored';
-      case SeriesFilter.unmonitored: return 'Unmonitored';
-      case SeriesFilter.ended: return 'Ended';
-      case SeriesFilter.continuing: return 'Continuing';
+      case SeriesFilter.all:
+        return 'All Series';
+      case SeriesFilter.monitored:
+        return 'Monitored';
+      case SeriesFilter.unmonitored:
+        return 'Unmonitored';
+      case SeriesFilter.ended:
+        return 'Ended';
+      case SeriesFilter.continuing:
+        return 'Continuing';
     }
   }
 

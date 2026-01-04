@@ -16,19 +16,21 @@ void callbackDispatcher() {
     final container = ProviderContainer();
     try {
       final settingsRepo = container.read(settingsProvider.notifier);
-      
+
       // Manual load since it's a new container
       final prefs = await SharedPreferences.getInstance();
       final notificationsJson = prefs.getString('notification_settings');
       if (notificationsJson == null) return true;
 
-      final settings = NotificationSettings.fromJson(jsonDecode(notificationsJson));
+      final settings = NotificationSettings.fromJson(
+        jsonDecode(notificationsJson),
+      );
       if (!settings.enabled) return true;
 
       final movieRepo = container.read(movieRepositoryProvider);
       final seriesRepo = container.read(seriesRepositoryProvider);
       final notificationService = container.read(notificationServiceProvider);
-      
+
       await notificationService.init();
 
       Map<String, int> newLastIds = Map.from(settings.lastNotifiedIdByInstance);
@@ -38,8 +40,14 @@ void callbackDispatcher() {
       if (movieRepo != null) {
         try {
           final history = await movieRepo.getHistory(page: 1, pageSize: 10);
-          final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'radarr'] ?? 0;
-          
+          final lastId =
+              settings.lastNotifiedIdByInstance[history
+                      .records
+                      .firstOrNull
+                      ?.instanceId ??
+                  'radarr'] ??
+              0;
+
           for (var event in history.records.reversed) {
             if (event.id > lastId) {
               if (_shouldNotify(event, settings)) {
@@ -62,8 +70,14 @@ void callbackDispatcher() {
       if (seriesRepo != null) {
         try {
           final history = await seriesRepo.getHistory(page: 1, pageSize: 10);
-          final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'sonarr'] ?? 0;
-          
+          final lastId =
+              settings.lastNotifiedIdByInstance[history
+                      .records
+                      .firstOrNull
+                      ?.instanceId ??
+                  'sonarr'] ??
+              0;
+
           for (var event in history.records.reversed) {
             if (event.id > lastId) {
               if (_shouldNotify(event, settings)) {
@@ -83,8 +97,13 @@ void callbackDispatcher() {
       }
 
       if (changed) {
-        final updatedSettings = settings.copyWith(lastNotifiedIdByInstance: newLastIds);
-        await prefs.setString('notification_settings', jsonEncode(updatedSettings.toJson()));
+        final updatedSettings = settings.copyWith(
+          lastNotifiedIdByInstance: newLastIds,
+        );
+        await prefs.setString(
+          'notification_settings',
+          jsonEncode(updatedSettings.toJson()),
+        );
       }
 
       return true;
@@ -122,9 +141,7 @@ class BackgroundSyncService {
       '1',
       taskName,
       frequency: Duration(minutes: intervalMinutes),
-      constraints: Constraints(
-        networkType: NetworkType.connected,
-      ),
+      constraints: Constraints(networkType: NetworkType.connected),
     );
   }
 

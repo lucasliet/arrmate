@@ -29,10 +29,7 @@ class MovieRating extends Equatable {
   final int votes;
   final double value;
 
-  const MovieRating({
-    required this.votes,
-    required this.value,
-  });
+  const MovieRating({required this.votes, required this.value});
 
   factory MovieRating.fromJson(Map<String, dynamic> json) {
     return MovieRating(
@@ -219,14 +216,18 @@ class Movie extends Equatable {
       youTubeTrailerId: json['youTubeTrailerId'] as String?,
       originalLanguage: json['originalLanguage'] != null
           ? MediaLanguage.fromJson(
-              json['originalLanguage'] as Map<String, dynamic>)
+              json['originalLanguage'] as Map<String, dynamic>,
+            )
           : null,
-      alternateTitles: (json['alternateTitles'] as List<dynamic>?)
-              ?.map((e) =>
-                  MediaAlternateTitle.fromJson(e as Map<String, dynamic>))
+      alternateTitles:
+          (json['alternateTitles'] as List<dynamic>?)
+              ?.map(
+                (e) => MediaAlternateTitle.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      genres: (json['genres'] as List<dynamic>?)
+      genres:
+          (json['genres'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
@@ -262,7 +263,8 @@ class Movie extends Equatable {
           : null,
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
-      images: (json['images'] as List<dynamic>?)
+      images:
+          (json['images'] as List<dynamic>?)
               ?.map((e) => MediaImage.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -389,40 +391,40 @@ class Movie extends Equatable {
 
   @override
   List<Object?> get props => [
-        guid,
-        instanceId,
-        tmdbId,
-        imdbId,
-        title,
-        sortTitle,
-        studio,
-        year,
-        runtime,
-        overview,
-        certification,
-        youTubeTrailerId,
-        originalLanguage,
-        alternateTitles,
-        genres,
-        ratings,
-        popularity,
-        status,
-        isAvailable,
-        minimumAvailability,
-        monitored,
-        qualityProfileId,
-        sizeOnDisk,
-        hasFile,
-        path,
-        relativePath,
-        folderName,
-        rootFolderPath,
-        added,
-        inCinemas,
-        physicalRelease,
-        digitalRelease,
-        tags,
-        images,
-        movieFile,
-      ];
+    guid,
+    instanceId,
+    tmdbId,
+    imdbId,
+    title,
+    sortTitle,
+    studio,
+    year,
+    runtime,
+    overview,
+    certification,
+    youTubeTrailerId,
+    originalLanguage,
+    alternateTitles,
+    genres,
+    ratings,
+    popularity,
+    status,
+    isAvailable,
+    minimumAvailability,
+    monitored,
+    qualityProfileId,
+    sizeOnDisk,
+    hasFile,
+    path,
+    relativePath,
+    folderName,
+    rootFolderPath,
+    added,
+    inCinemas,
+    physicalRelease,
+    digitalRelease,
+    tags,
+    images,
+    movieFile,
+  ];
 }

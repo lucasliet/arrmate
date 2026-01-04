@@ -8,10 +8,7 @@ import '../providers/calendar_provider.dart';
 class CalendarItem extends StatelessWidget {
   final CalendarEvent event;
 
-  const CalendarItem({
-    super.key,
-    required this.event,
-  });
+  const CalendarItem({super.key, required this.event});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +61,7 @@ class CalendarItem extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                       maxLines: 1,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

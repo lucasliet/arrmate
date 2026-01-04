@@ -17,9 +17,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           _buildInstancesSection(context, ref),
@@ -48,9 +46,9 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             'Instances',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (instancesState.instances.isEmpty)
@@ -86,21 +84,21 @@ class SettingsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-         Padding(
+        Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             'Appearance',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         ListTile(
           title: const Text('Theme Mode'),
           subtitle: Text(settings.appearance.label),
           trailing: const Icon(Icons.chevron_right),
-           onTap: () {
+          onTap: () {
             _showAppearanceDialog(context, ref, settings.appearance);
           },
         ),
@@ -116,7 +114,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAppearanceDialog(BuildContext context, WidgetRef ref, AppAppearance current) {
+  void _showAppearanceDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppAppearance current,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -130,10 +132,15 @@ class SettingsScreen extends ConsumerWidget {
                 return ListTile(
                   title: Text(mode.label),
                   leading: Icon(
-                    mode == AppAppearance.light ? Icons.light_mode : 
-                    mode == AppAppearance.dark ? Icons.dark_mode : Icons.brightness_auto,
+                    mode == AppAppearance.light
+                        ? Icons.light_mode
+                        : mode == AppAppearance.dark
+                        ? Icons.dark_mode
+                        : Icons.brightness_auto,
                   ),
-                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
                   onTap: () {
                     ref.read(settingsProvider.notifier).setAppearance(mode);
                     context.pop();
@@ -147,7 +154,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showColorSchemeDialog(BuildContext context, WidgetRef ref, AppColorScheme current) {
+  void _showColorSchemeDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppColorScheme current,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -160,8 +171,8 @@ class SettingsScreen extends ConsumerWidget {
               children: AppColorScheme.values.map((scheme) {
                 return InkWell(
                   onTap: () {
-                     ref.read(settingsProvider.notifier).setColorScheme(scheme);
-                     context.pop();
+                    ref.read(settingsProvider.notifier).setColorScheme(scheme);
+                    context.pop();
                   },
                   borderRadius: BorderRadius.circular(32),
                   child: Container(
@@ -170,9 +181,12 @@ class SettingsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: scheme.color,
                       shape: BoxShape.circle,
-                      border: current == scheme 
-                        ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
-                        : null,
+                      border: current == scheme
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              width: 3,
+                            )
+                          : null,
                     ),
                   ),
                 );
@@ -196,9 +210,9 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             'Notifications',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         SwitchListTile(
@@ -206,19 +220,23 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: const Text('Periodically check for activity updates'),
           value: notifications.enabled,
           onChanged: (value) {
-            ref.read(settingsProvider.notifier).updateNotifications(
-                  notifications.copyWith(enabled: value),
-                );
+            ref
+                .read(settingsProvider.notifier)
+                .updateNotifications(notifications.copyWith(enabled: value));
           },
         ),
         if (notifications.enabled) ...[
           CheckboxListTile(
             title: const Text('Notify on Grab'),
-            subtitle: const Text('When a new release is sent to download client'),
+            subtitle: const Text(
+              'When a new release is sent to download client',
+            ),
             value: notifications.notifyOnGrab,
             onChanged: (value) {
               if (value != null) {
-                ref.read(settingsProvider.notifier).updateNotifications(
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
                       notifications.copyWith(notifyOnGrab: value),
                     );
               }
@@ -230,7 +248,9 @@ class SettingsScreen extends ConsumerWidget {
             value: notifications.notifyOnImport,
             onChanged: (value) {
               if (value != null) {
-                ref.read(settingsProvider.notifier).updateNotifications(
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
                       notifications.copyWith(notifyOnImport: value),
                     );
               }
@@ -242,7 +262,9 @@ class SettingsScreen extends ConsumerWidget {
             value: notifications.notifyOnDownloadFailed,
             onChanged: (value) {
               if (value != null) {
-                ref.read(settingsProvider.notifier).updateNotifications(
+                ref
+                    .read(settingsProvider.notifier)
+                    .updateNotifications(
                       notifications.copyWith(notifyOnDownloadFailed: value),
                     );
               }
@@ -253,7 +275,11 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text('${notifications.pollingIntervalMinutes} minutes'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              _showPollingIntervalDialog(context, ref, notifications.pollingIntervalMinutes);
+              _showPollingIntervalDialog(
+                context,
+                ref,
+                notifications.pollingIntervalMinutes,
+              );
             },
           ),
         ],
@@ -261,7 +287,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showPollingIntervalDialog(BuildContext context, WidgetRef ref, int current) {
+  void _showPollingIntervalDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int current,
+  ) {
     final intervals = [15, 30, 60, 120, 240, 480, 1440];
     showDialog(
       context: context,
@@ -276,11 +306,17 @@ class SettingsScreen extends ConsumerWidget {
                 final label = min < 60 ? '$min minutes' : '${min ~/ 60} hours';
                 return ListTile(
                   title: Text(label),
-                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
                   onTap: () {
                     final settings = ref.read(settingsProvider);
-                    ref.read(settingsProvider.notifier).updateNotifications(
-                          settings.notifications.copyWith(pollingIntervalMinutes: min),
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateNotifications(
+                          settings.notifications.copyWith(
+                            pollingIntervalMinutes: min,
+                          ),
                         );
                     context.pop();
                   },
@@ -344,9 +380,9 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             'About',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         FutureBuilder<PackageInfo>(
@@ -363,14 +399,21 @@ class SettingsScreen extends ConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : (updateState.status == UpdateStatus.upToDate
-                      ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-                      : const Icon(Icons.refresh, size: 20)),
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          )
+                        : const Icon(Icons.refresh, size: 20)),
               onTap: updateState.status == UpdateStatus.checking
                   ? null
                   : () async {
-                      await ref.read(updateProvider.notifier).checkForUpdate(force: true);
-                      if (updateState.status == UpdateStatus.upToDate && context.mounted) {
-                         ScaffoldMessenger.of(context).showSnackBar(
+                      await ref
+                          .read(updateProvider.notifier)
+                          .checkForUpdate(force: true);
+                      if (updateState.status == UpdateStatus.upToDate &&
+                          context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('App is up to date')),
                         );
                       }

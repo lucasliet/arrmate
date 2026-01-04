@@ -14,10 +14,7 @@ import 'season_details_screen.dart';
 class SeriesDetailsScreen extends ConsumerWidget {
   final int seriesId;
 
-  const SeriesDetailsScreen({
-    super.key,
-    required this.seriesId,
-  });
+  const SeriesDetailsScreen({super.key, required this.seriesId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,7 +39,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Series series) {
     final instance = ref.watch(currentSonarrInstanceProvider);
-    final fanartUrl = series.images.where((i) => i.coverType == 'fanart').firstOrNull?.url;
+    final fanartUrl = series.images
+        .where((i) => i.coverType == 'fanart')
+        .firstOrNull
+        ?.url;
     final theme = Theme.of(context);
 
     return CustomScrollView(
@@ -57,11 +57,16 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 if (fanartUrl != null && instance != null)
                   CachedNetworkImage(
                     imageUrl: Uri.parse(instance.url)
-                        .replace(path: '${Uri.parse(instance.url).path}$fanartUrl'.replaceAll('//', '/'))
+                        .replace(
+                          path: '${Uri.parse(instance.url).path}$fanartUrl'
+                              .replaceAll('//', '/'),
+                        )
                         .toString(),
                     httpHeaders: instance.authHeaders,
                     fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                    errorWidget: (context, url, error) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                    ),
                   )
                 else
                   Container(color: theme.colorScheme.surfaceContainerHighest),
@@ -84,20 +89,31 @@ class SeriesDetailsScreen extends ConsumerWidget {
           ),
           actions: [
             IconButton(
-              icon: Icon(series.monitored ? Icons.bookmark : Icons.bookmark_border),
+              icon: Icon(
+                series.monitored ? Icons.bookmark : Icons.bookmark_border,
+              ),
               tooltip: series.monitored ? 'Unmonitor' : 'Monitor',
               onPressed: () async {
-                 try {
-                  await ref.read(seriesControllerProvider(seriesId)).toggleMonitor(series);
-                   if (context.mounted) {
+                try {
+                  await ref
+                      .read(seriesControllerProvider(seriesId))
+                      .toggleMonitor(series);
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(series.monitored ? 'Unmonitored' : 'Monitored')),
+                      SnackBar(
+                        content: Text(
+                          series.monitored ? 'Unmonitored' : 'Monitored',
+                        ),
+                      ),
                     );
                   }
                 } catch (e) {
-                   if (context.mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: theme.colorScheme.error),
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
                     );
                   }
                 }
@@ -106,7 +122,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit not implemented')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Edit not implemented')),
+                );
               },
             ),
             PopupMenuButton<String>(
@@ -116,7 +134,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Delete Series'),
-                      content: const Text('Are you sure you want to delete this series?'),
+                      content: const Text(
+                        'Are you sure you want to delete this series?',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -132,17 +152,22 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
                   if (confirm == true) {
                     try {
-                      await ref.read(seriesControllerProvider(seriesId)).deleteSeries();
+                      await ref
+                          .read(seriesControllerProvider(seriesId))
+                          .deleteSeries();
                       if (context.mounted) {
                         context.pop();
-                         ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Series deleted')),
                         );
                       }
                     } catch (e) {
-                       if (context.mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: theme.colorScheme.error),
+                          SnackBar(
+                            content: Text('Failed to delete: $e'),
+                            backgroundColor: theme.colorScheme.error,
+                          ),
                         );
                       }
                     }
@@ -190,7 +215,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
                         children: [
                           Text(
                             series.title,
-                            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           if (series.year > 0) ...[
                             const SizedBox(height: 4),
@@ -214,24 +241,25 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 if (series.overview != null) ...[
                   Text(
                     'Overview',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    series.overview!,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(series.overview!, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 24),
                 ],
                 _buildInfoGrid(context, series),
                 const SizedBox(height: 32),
                 Text(
-                    'Seasons',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  'Seasons',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildSeasonsList(context, series),
-                 const SizedBox(height: 32),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -249,7 +277,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     } else if (series.status == SeriesStatus.continuing) {
       color = Colors.blue;
     } else {
-        color = Colors.grey;
+      color = Colors.grey;
     }
 
     return Container(
@@ -271,20 +299,20 @@ class SeriesDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildRatings(BuildContext context, Series series) {
-      // Series model might not have ratings obj structure same as Movie yet?
-      // Let's check Series model. It has `ratings` field.
-      if (series.ratings == null) return const SizedBox();
+    // Series model might not have ratings obj structure same as Movie yet?
+    // Let's check Series model. It has `ratings` field.
+    if (series.ratings == null) return const SizedBox();
 
     return Row(
       children: [
-          if (series.ratings!.value > 0) ...[
-             const Icon(Icons.star, color: Colors.amber, size: 16),
-             const SizedBox(width: 4),
-             Text(
-               series.ratings!.value.toString(),
-               style: Theme.of(context).textTheme.bodySmall,
-             ),
-          ]
+        if (series.ratings!.value > 0) ...[
+          const Icon(Icons.star, color: Colors.amber, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            series.ratings!.value.toString(),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ],
     );
   }
@@ -293,7 +321,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     final items = [
       if (series.network != null) _InfoItem('Network', series.network!),
       _InfoItem('Status', series.status.name),
-      _InfoItem('Quality Profile', series.qualityProfileId.toString()), 
+      _InfoItem('Quality Profile', series.qualityProfileId.toString()),
       if (series.path != null) _InfoItem('Path', series.path!),
     ];
 
@@ -302,7 +330,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
       runSpacing: 16,
       children: items.map((item) {
         return SizedBox(
-          width: (MediaQuery.of(context).size.width - 48) / 2, 
+          width: (MediaQuery.of(context).size.width - 48) / 2,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -313,10 +341,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                item.value,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(item.value, style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         );
@@ -325,40 +350,39 @@ class SeriesDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildSeasonsList(BuildContext context, Series series) {
-      // We can use a ListView builder inside the Column, but need shrinkWrap: true physics: NeverScrollableScrollPhysics
-      return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: series.seasons.length,
-          itemBuilder: (context, index) {
-              final season = series.seasons[index];
-              if (season.seasonNumber == 0) return const SizedBox(); // Skip specials usually? Or show them at end.
+    // We can use a ListView builder inside the Column, but need shrinkWrap: true physics: NeverScrollableScrollPhysics
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: series.seasons.length,
+      itemBuilder: (context, index) {
+        final season = series.seasons[index];
+        if (season.seasonNumber == 0)
+          return const SizedBox(); // Skip specials usually? Or show them at end.
 
-              return Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                      title: Text('Season ${season.seasonNumber}'),
-                      subtitle: Text('${season.statistics?.episodeCount ?? 0} Episodes'),
-                      trailing: CircularProgressIndicator(
-                          value: (season.statistics?.percentOfEpisodes ?? 0) / 100,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceDim,
-                      ),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => SeasonDetailsScreen(
-                              series: series,
-                              season: season,
-                            ),
-                          ),
-                        );
-                      },
-                  ),
+        return Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: Text('Season ${season.seasonNumber}'),
+            subtitle: Text('${season.statistics?.episodeCount ?? 0} Episodes'),
+            trailing: CircularProgressIndicator(
+              value: (season.statistics?.percentOfEpisodes ?? 0) / 100,
+              backgroundColor: Theme.of(context).colorScheme.surfaceDim,
+            ),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SeasonDetailsScreen(series: series, season: season),
+                ),
               );
-          },
-      );
+            },
+          ),
+        );
+      },
+    );
   }
 }
 

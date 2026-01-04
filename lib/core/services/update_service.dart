@@ -24,12 +24,13 @@ final updateServiceProvider = Provider((ref) => UpdateService(Dio()));
 class UpdateService {
   final Dio _dio;
   static const _lastCheckKey = 'last_update_check';
-  static const _repoUrl = 'https://api.github.com/repos/lucasliet/arrmate/releases/latest';
+  static const _repoUrl =
+      'https://api.github.com/repos/lucasliet/arrmate/releases/latest';
 
   UpdateService(this._dio);
 
   /// Checks if a new update is available on GitHub.
-  /// 
+  ///
   /// Returns [AppUpdateInfo] if a newer version exists, null otherwise.
   /// [force] bypasses the daily check limit.
   Future<AppUpdateInfo?> checkForUpdate({bool force = false}) async {
@@ -51,7 +52,7 @@ class UpdateService {
       final latestVersionStr = (data['tag_name'] as String).replaceAll('v', '');
       final changelog = data['body'] as String;
       final assets = data['assets'] as List;
-      
+
       // Look for an APK asset
       final apkAsset = assets.firstWhereOrNull(
         (asset) => (asset['name'] as String).endsWith('.apk'),
@@ -61,7 +62,9 @@ class UpdateService {
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
       final publishedAtStr = data['published_at'] as String?;
-      final publishedAt = publishedAtStr != null ? DateTime.tryParse(publishedAtStr) ?? DateTime.now() : DateTime.now();
+      final publishedAt = publishedAtStr != null
+          ? DateTime.tryParse(publishedAtStr) ?? DateTime.now()
+          : DateTime.now();
 
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = Version.parse(packageInfo.version);

@@ -35,7 +35,7 @@ void main() {
             'level': 'info',
             'logger': 'Radarr.Api',
             'message': 'Test message',
-          }
+          },
         ],
       };
 
@@ -61,7 +61,10 @@ void main() {
 
       expect(health.source, 'Indexers');
       expect(health.type, 'warning');
-      expect(health.wikiUrl, 'https://wiki.servarr.com/radarr/system-health#indexers');
+      expect(
+        health.wikiUrl,
+        'https://wiki.servarr.com/radarr/system-health#indexers',
+      );
     });
 
     test('Deve lidar com wikiUrl nulo', () {

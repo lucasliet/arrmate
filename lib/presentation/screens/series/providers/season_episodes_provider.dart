@@ -5,7 +5,11 @@ import '../../../providers/data_providers.dart';
 part 'season_episodes_provider.g.dart';
 
 @riverpod
-Future<List<Episode>> seasonEpisodes(SeasonEpisodesRef ref, int seriesId, int seasonNumber) async {
+Future<List<Episode>> seasonEpisodes(
+  SeasonEpisodesRef ref,
+  int seriesId,
+  int seasonNumber,
+) async {
   final api = ref.watch(sonarrApiProvider);
   if (api == null) throw Exception('API not available');
 

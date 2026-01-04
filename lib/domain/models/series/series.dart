@@ -139,22 +139,22 @@ class Episode extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        instanceId,
-        seriesId,
-        tvdbId,
-        seasonNumber,
-        episodeNumber,
-        title,
-        overview,
-        airDate,
-        airDateUtc,
-        runtime,
-        hasFile,
-        monitored,
-        episodeFileId,
-        episodeFile,
-      ];
+    id,
+    instanceId,
+    seriesId,
+    tvdbId,
+    seasonNumber,
+    episodeNumber,
+    title,
+    overview,
+    airDate,
+    airDateUtc,
+    runtime,
+    hasFile,
+    monitored,
+    episodeFileId,
+    episodeFile,
+  ];
 }
 
 class Series extends Equatable {
@@ -321,22 +321,26 @@ class Series extends Equatable {
       network: json['network'] as String?,
       originalLanguage: json['originalLanguage'] != null
           ? MediaLanguage.fromJson(
-              json['originalLanguage'] as Map<String, dynamic>)
+              json['originalLanguage'] as Map<String, dynamic>,
+            )
           : null,
       alternateTitles: (json['alternateTitles'] as List<dynamic>?)
           ?.map((e) => MediaAlternateTitle.fromJson(e as Map<String, dynamic>))
           .toList(),
-      seasons: (json['seasons'] as List<dynamic>?)
+      seasons:
+          (json['seasons'] as List<dynamic>?)
               ?.map((e) => Season.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
-      genres: (json['genres'] as List<dynamic>?)
+      genres:
+          (json['genres'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
-      images: (json['images'] as List<dynamic>?)
+      images:
+          (json['images'] as List<dynamic>?)
               ?.map((e) => MediaImage.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -344,10 +348,14 @@ class Series extends Equatable {
           ? SeriesRatings.fromJson(json['ratings'] as Map<String, dynamic>)
           : null,
       statistics: json['statistics'] != null
-          ? SeriesStatistics.fromJson(json['statistics'] as Map<String, dynamic>)
+          ? SeriesStatistics.fromJson(
+              json['statistics'] as Map<String, dynamic>,
+            )
           : null,
       addOptions: json['addOptions'] != null
-          ? SeriesAddOptions.fromJson(json['addOptions'] as Map<String, dynamic>)
+          ? SeriesAddOptions.fromJson(
+              json['addOptions'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -491,48 +499,48 @@ class Series extends Equatable {
 
   @override
   List<Object?> get props => [
-        guid,
-        instanceId,
-        title,
-        titleSlug,
-        sortTitle,
-        tvdbId,
-        tvRageId,
-        tvMazeId,
-        imdbId,
-        tmdbId,
-        status,
-        seriesType,
-        path,
-        folder,
-        qualityProfileId,
-        rootFolderPath,
-        certification,
-        year,
-        runtime,
-        airTime,
-        ended,
-        seasonFolder,
-        useSceneNumbering,
-        added,
-        firstAired,
-        lastAired,
-        nextAiring,
-        previousAiring,
-        monitored,
-        monitorNewItems,
-        overview,
-        network,
-        originalLanguage,
-        alternateTitles,
-        seasons,
-        tags,
-        genres,
-        images,
-        ratings,
-        statistics,
-        addOptions,
-      ];
+    guid,
+    instanceId,
+    title,
+    titleSlug,
+    sortTitle,
+    tvdbId,
+    tvRageId,
+    tvMazeId,
+    imdbId,
+    tmdbId,
+    status,
+    seriesType,
+    path,
+    folder,
+    qualityProfileId,
+    rootFolderPath,
+    certification,
+    year,
+    runtime,
+    airTime,
+    ended,
+    seasonFolder,
+    useSceneNumbering,
+    added,
+    firstAired,
+    lastAired,
+    nextAiring,
+    previousAiring,
+    monitored,
+    monitorNewItems,
+    overview,
+    network,
+    originalLanguage,
+    alternateTitles,
+    seasons,
+    tags,
+    genres,
+    images,
+    ratings,
+    statistics,
+    addOptions,
+  ];
 }
 
 enum SeriesStatus {
@@ -625,10 +633,7 @@ class SeriesRatings extends Equatable {
   final int votes;
   final double value;
 
-  const SeriesRatings({
-    required this.votes,
-    required this.value,
-  });
+  const SeriesRatings({required this.votes, required this.value});
 
   factory SeriesRatings.fromJson(Map<String, dynamic> json) {
     return SeriesRatings(
@@ -638,10 +643,7 @@ class SeriesRatings extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'votes': votes,
-      'value': value,
-    };
+    return {'votes': votes, 'value': value};
   }
 
   @override
@@ -689,21 +691,19 @@ class SeriesStatistics extends Equatable {
 
   @override
   List<Object?> get props => [
-        sizeOnDisk,
-        seasonCount,
-        episodeCount,
-        episodeFileCount,
-        totalEpisodeCount,
-        percentOfEpisodes,
-      ];
+    sizeOnDisk,
+    seasonCount,
+    episodeCount,
+    episodeFileCount,
+    totalEpisodeCount,
+    percentOfEpisodes,
+  ];
 }
 
 class SeriesAddOptions extends Equatable {
   final SeriesMonitorType monitor;
 
-  const SeriesAddOptions({
-    required this.monitor,
-  });
+  const SeriesAddOptions({required this.monitor});
 
   factory SeriesAddOptions.fromJson(Map<String, dynamic> json) {
     return SeriesAddOptions(
@@ -715,9 +715,7 @@ class SeriesAddOptions extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'monitor': monitor.name,
-    };
+    return {'monitor': monitor.name};
   }
 
   @override

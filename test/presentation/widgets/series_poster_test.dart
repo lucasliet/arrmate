@@ -25,12 +25,7 @@ void main() {
     added: DateTime.now(),
     qualityProfileId: 1,
     seriesType: SeriesType.standard,
-    images: [
-      MediaImage(
-        coverType: 'poster',
-        url: '/MediaCover/1/poster.jpg',
-      ),
-    ],
+    images: [MediaImage(coverType: 'poster', url: '/MediaCover/1/poster.jpg')],
     seasons: [],
   );
 
@@ -105,39 +100,38 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should display placeholder when series has no images',
-      (tester) async {
-        // Given
-        await HttpOverrides.runZoned(
-          () async {
-            await tester.pumpWidget(
-              ProviderScope(
-                overrides: [
-                  currentSonarrInstanceProvider.overrideWithValue(null),
-                ],
-                child: MaterialApp(
-                  home: Scaffold(
-                    body: SizedBox(
-                      width: 100,
-                      height: 150,
-                      child: SeriesPoster(series: testSeriesWithoutImages),
-                    ),
+    testWidgets('should display placeholder when series has no images', (
+      tester,
+    ) async {
+      // Given
+      await HttpOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                currentSonarrInstanceProvider.overrideWithValue(null),
+              ],
+              child: MaterialApp(
+                home: Scaffold(
+                  body: SizedBox(
+                    width: 100,
+                    height: 150,
+                    child: SeriesPoster(series: testSeriesWithoutImages),
                   ),
                 ),
               ),
-            );
+            ),
+          );
 
-            await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-            // Then
-            expect(find.byIcon(Icons.tv), findsOneWidget);
-          },
-          createHttpClient: (context) =>
-              TestHttpOverrides().createHttpClient(context),
-        );
-      },
-    );
+          // Then
+          expect(find.byIcon(Icons.tv), findsOneWidget);
+        },
+        createHttpClient: (context) =>
+            TestHttpOverrides().createHttpClient(context),
+      );
+    });
 
     testWidgets(
       'should display image when series has remote poster (no auth needed)',

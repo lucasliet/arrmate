@@ -101,3 +101,11 @@ The app follows a Clean Architecture-inspired layered approach:
 The `rudarr/` directory contains the Ruddarr iOS app source code for reference.
 It implements similar features in SwiftUI and can be used as a guide for API
 integration and UI patterns.
+
+## Quality Assurance
+
+To ensure project stability, every code change or addition MUST be followed by:
+
+1. **Format**: Run `dart format .` to maintain consistent style.
+2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.
+3. **Test**: Run `flutter test` to ensure no regressions were introduced.

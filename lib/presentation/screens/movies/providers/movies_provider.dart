@@ -9,17 +9,21 @@ final moviesProvider = AsyncNotifierProvider<MoviesNotifier, List<Movie>>(
   MoviesNotifier.new,
 );
 
-final movieSearchProvider = NotifierProvider<MovieSearchNotifier, String>(MovieSearchNotifier.new);
+final movieSearchProvider = NotifierProvider<MovieSearchNotifier, String>(
+  MovieSearchNotifier.new,
+);
 
 class MovieSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
-  
+
   // ignore: use_setters_to_change_properties
   void update(String value) => state = value;
 }
 
-final movieSortProvider = NotifierProvider<MovieSortNotifier, MovieSort>(MovieSortNotifier.new);
+final movieSortProvider = NotifierProvider<MovieSortNotifier, MovieSort>(
+  MovieSortNotifier.new,
+);
 
 class MovieSortNotifier extends Notifier<MovieSort> {
   @override
@@ -63,16 +67,16 @@ class MoviesNotifier extends AsyncNotifier<List<Movie>> {
     if (repository == null) {
       return [];
     }
-    
+
     final movies = await repository.getMovies();
     // Default sort by sortTitle (A-Z)
     movies.sort((a, b) => a.sortTitle.compareTo(b.sortTitle));
-    
+
     return movies;
   }
 
   Future<void> refresh() async {
-    // Invalidating the provider will cause it to dispose and rebuild, 
+    // Invalidating the provider will cause it to dispose and rebuild,
     // triggering the build() method again.
     ref.invalidateSelf();
     await future;

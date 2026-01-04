@@ -1,26 +1,52 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrmate/domain/models/shared/history.dart';
-import 'package:arrmate/domain/models/shared/quality_profile.dart';
 
 void main() {
   group('HistoryEventType', () {
     test('Converte eventos Radarr corretamente', () {
       // Given / When / Then
       expect(HistoryEventType.fromString('grabbed'), HistoryEventType.grabbed);
-      expect(HistoryEventType.fromString('downloadFolderImported'), HistoryEventType.imported);
-      expect(HistoryEventType.fromString('movieFolderImported'), HistoryEventType.imported);
-      expect(HistoryEventType.fromString('downloadFailed'), HistoryEventType.failed);
-      expect(HistoryEventType.fromString('downloadIgnored'), HistoryEventType.ignored);
-      expect(HistoryEventType.fromString('movieFileRenamed'), HistoryEventType.renamed);
-      expect(HistoryEventType.fromString('movieFileDeleted'), HistoryEventType.deleted);
+      expect(
+        HistoryEventType.fromString('downloadFolderImported'),
+        HistoryEventType.imported,
+      );
+      expect(
+        HistoryEventType.fromString('movieFolderImported'),
+        HistoryEventType.imported,
+      );
+      expect(
+        HistoryEventType.fromString('downloadFailed'),
+        HistoryEventType.failed,
+      );
+      expect(
+        HistoryEventType.fromString('downloadIgnored'),
+        HistoryEventType.ignored,
+      );
+      expect(
+        HistoryEventType.fromString('movieFileRenamed'),
+        HistoryEventType.renamed,
+      );
+      expect(
+        HistoryEventType.fromString('movieFileDeleted'),
+        HistoryEventType.deleted,
+      );
     });
 
     test('Converte eventos Sonarr corretamente', () {
       // Given / When / Then
-      expect(HistoryEventType.fromString('seriesFolderImported'), HistoryEventType.imported);
-      expect(HistoryEventType.fromString('episodeFileRenamed'), HistoryEventType.renamed);
-      expect(HistoryEventType.fromString('episodeFileDeleted'), HistoryEventType.deleted);
+      expect(
+        HistoryEventType.fromString('seriesFolderImported'),
+        HistoryEventType.imported,
+      );
+      expect(
+        HistoryEventType.fromString('episodeFileRenamed'),
+        HistoryEventType.renamed,
+      );
+      expect(
+        HistoryEventType.fromString('episodeFileDeleted'),
+        HistoryEventType.deleted,
+      );
     });
 
     test('Retorna unknown para valores desconhecidos', () {
@@ -80,10 +106,7 @@ void main() {
         'languages': [
           {'id': 1, 'name': 'English'},
         ],
-        'data': {
-          'indexer': 'NZBGeek',
-          'downloadClient': 'SABnzbd',
-        },
+        'data': {'indexer': 'NZBGeek', 'downloadClient': 'SABnzbd'},
       };
 
       // When

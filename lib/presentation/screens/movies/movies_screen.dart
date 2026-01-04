@@ -43,13 +43,19 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           sortLabelBuilder: (option) => option.label,
           filterLabelBuilder: (filter) => filter.label,
           onSortChanged: (option) {
-            ref.read(movieSortProvider.notifier).update(currentSort.copyWith(option: option));
+            ref
+                .read(movieSortProvider.notifier)
+                .update(currentSort.copyWith(option: option));
           },
           onAscendingChanged: (ascending) {
-            ref.read(movieSortProvider.notifier).update(currentSort.copyWith(isAscending: ascending));
+            ref
+                .read(movieSortProvider.notifier)
+                .update(currentSort.copyWith(isAscending: ascending));
           },
           onFilterChanged: (filter) {
-            ref.read(movieSortProvider.notifier).update(currentSort.copyWith(filter: filter));
+            ref
+                .read(movieSortProvider.notifier)
+                .update(currentSort.copyWith(filter: filter));
           },
         );
       },
@@ -63,9 +69,9 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-            ref.read(movieSearchProvider.notifier).update('');
-            _searchController.clear();
-            await ref.read(moviesProvider.notifier).refresh();
+          ref.read(movieSearchProvider.notifier).update('');
+          _searchController.clear();
+          await ref.read(moviesProvider.notifier).refresh();
         },
         child: CustomScrollView(
           slivers: [
@@ -78,7 +84,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         hintText: 'Search movies...',
                         border: InputBorder.none,
                       ),
-                      onChanged: (value) => ref.read(movieSearchProvider.notifier).update(value),
+                      onChanged: (value) =>
+                          ref.read(movieSearchProvider.notifier).update(value),
                     )
                   : const Text('Movies'),
               actions: [
@@ -87,8 +94,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       setState(() {
-                         _isSearching = false;
-                         _searchController.clear();
+                        _isSearching = false;
+                        _searchController.clear();
                       });
                       ref.read(movieSearchProvider.notifier).update('');
                     },
@@ -110,14 +117,19 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
               sliver: moviesAsync.when(
                 data: (movies) {
                   if (movies.isEmpty) {
-                    final isFiltered = ref.read(movieSearchProvider).isNotEmpty || 
-                                     ref.read(movieSortProvider).filter != MovieFilter.all;
-                    
+                    final isFiltered =
+                        ref.read(movieSearchProvider).isNotEmpty ||
+                        ref.read(movieSortProvider).filter != MovieFilter.all;
+
                     return SliverFillRemaining(
                       child: EmptyState(
-                        icon: isFiltered ? Icons.filter_list_off : Icons.movie_outlined,
-                        title: isFiltered ? 'No results found' : 'No movies found',
-                        subtitle: isFiltered 
+                        icon: isFiltered
+                            ? Icons.filter_list_off
+                            : Icons.movie_outlined,
+                        title: isFiltered
+                            ? 'No results found'
+                            : 'No movies found',
+                        subtitle: isFiltered
                             ? 'Try parsing your search query or filters.'
                             : 'Add movies to your Radarr library to see them here.',
                       ),
@@ -125,24 +137,22 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   }
 
                   return SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 120,
-                      childAspectRatio: 2 / 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final movie = movies[index];
-                        return MovieCard(
-                          movie: movie,
-                          onTap: () {
-                            context.go('/movies/${movie.id}');
-                          },
-                        );
-                      },
-                      childCount: movies.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 120,
+                          childAspectRatio: 2 / 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final movie = movies[index];
+                      return MovieCard(
+                        movie: movie,
+                        onTap: () {
+                          context.go('/movies/${movie.id}');
+                        },
+                      );
+                    }, childCount: movies.length),
                   );
                 },
                 error: (error, stack) => SliverFillRemaining(
@@ -156,7 +166,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                 ),
               ),
             ),
-             const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
           ],
         ),
       ),

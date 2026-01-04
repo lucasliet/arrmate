@@ -27,7 +27,8 @@ class QueueItems extends Equatable {
       sortKey: json['sortKey'] as String? ?? '',
       sortDirection: json['sortDirection'] as String? ?? 'default',
       totalRecords: json['totalRecords'] as int? ?? 0,
-      records: (json['records'] as List<dynamic>?)
+      records:
+          (json['records'] as List<dynamic>?)
               ?.map((e) => QueueItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -35,7 +36,14 @@ class QueueItems extends Equatable {
   }
 
   @override
-  List<Object?> get props => [page, pageSize, sortKey, sortDirection, totalRecords, records];
+  List<Object?> get props => [
+    page,
+    pageSize,
+    sortKey,
+    sortDirection,
+    totalRecords,
+    records,
+  ];
 }
 
 class QueueItem extends Equatable {
@@ -113,13 +121,17 @@ class QueueItem extends Equatable {
       seasonNumber: json['seasonNumber'] as int?,
       title: json['title'] as String? ?? '',
       status: QueueStatus.values.firstWhere(
-        (e) => e.name.toLowerCase() == (json['status'] as String?)?.toLowerCase(),
+        (e) =>
+            e.name.toLowerCase() == (json['status'] as String?)?.toLowerCase(),
         orElse: () => QueueStatus.unknown,
       ),
       trackedDownloadStatus: json['trackedDownloadStatus'] as String?,
       trackedDownloadState: json['trackedDownloadState'] as String?,
-      statusMessages: (json['statusMessages'] as List<dynamic>?)
-              ?.map((e) => QueueStatusMessage.fromJson(e as Map<String, dynamic>))
+      statusMessages:
+          (json['statusMessages'] as List<dynamic>?)
+              ?.map(
+                (e) => QueueStatusMessage.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
       errorMessage: json['errorMessage'] as String?,
@@ -174,30 +186,30 @@ class QueueItem extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        instanceId,
-        movieId,
-        seriesId,
-        episodeId,
-        seasonNumber,
-        title,
-        status,
-        trackedDownloadStatus,
-        trackedDownloadState,
-        statusMessages,
-        errorMessage,
-        downloadId,
-        protocol,
-        downloadClient,
-        outputPath,
-        size,
-        sizeleft,
-        estimatedCompletionTime,
-        progress,
-        movie,
-        series,
-        episode,
-      ];
+    id,
+    instanceId,
+    movieId,
+    seriesId,
+    episodeId,
+    seasonNumber,
+    title,
+    status,
+    trackedDownloadStatus,
+    trackedDownloadState,
+    statusMessages,
+    errorMessage,
+    downloadId,
+    protocol,
+    downloadClient,
+    outputPath,
+    size,
+    sizeleft,
+    estimatedCompletionTime,
+    progress,
+    movie,
+    series,
+    episode,
+  ];
 }
 
 enum QueueStatus {
@@ -236,15 +248,13 @@ class QueueStatusMessage extends Equatable {
   final String? title;
   final List<String> messages;
 
-  const QueueStatusMessage({
-    this.title,
-    this.messages = const [],
-  });
+  const QueueStatusMessage({this.title, this.messages = const []});
 
   factory QueueStatusMessage.fromJson(Map<String, dynamic> json) {
     return QueueStatusMessage(
       title: json['title'] as String?,
-      messages: (json['messages'] as List<dynamic>?)
+      messages:
+          (json['messages'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

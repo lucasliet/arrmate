@@ -29,7 +29,14 @@ class LogEntry extends Equatable {
   }
 
   @override
-  List<Object?> get props => [time, level, logger, message, exception, exceptionType];
+  List<Object?> get props => [
+    time,
+    level,
+    logger,
+    message,
+    exception,
+    exceptionType,
+  ];
 }
 
 class LogPage extends Equatable {
@@ -53,9 +60,9 @@ class LogPage extends Equatable {
       totalRecords: json['totalRecords'] as int? ?? 0,
       records: recordsJson is List
           ? recordsJson
-              .whereType<Map<String, dynamic>>()
-              .map((e) => LogEntry.fromJson(e))
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map((e) => LogEntry.fromJson(e))
+                .toList()
           : [],
     );
   }

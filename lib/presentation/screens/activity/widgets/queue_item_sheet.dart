@@ -52,17 +52,17 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
               const SizedBox(height: 8),
               Text(
                 item.displayTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (item.episode != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   item.episode!.fullLabel,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               const SizedBox(height: 8),
@@ -86,7 +86,8 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
                 const SizedBox(height: 16),
                 _buildProgressSection(context, item, progress),
               ],
-              if (item.errorMessage != null || item.statusMessages.isNotEmpty) ...[
+              if (item.errorMessage != null ||
+                  item.statusMessages.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildErrorSection(context, item),
               ],
@@ -131,14 +132,18 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       child: Text(
         item.status.label.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  Widget _buildProgressSection(BuildContext context, QueueItem item, double progress) {
+  Widget _buildProgressSection(
+    BuildContext context,
+    QueueItem item,
+    double progress,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -153,26 +158,24 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
               Text(
                 _formatTimeRemaining(item.estimatedCompletionTime!),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 8,
-          ),
+          child: LinearProgressIndicator(value: progress, minHeight: 8),
         ),
       ],
     );
   }
 
   Widget _buildErrorSection(BuildContext context, QueueItem item) {
-    final message = item.errorMessage ?? 
-        item.statusMessages.firstOrNull?.messages.firstOrNull ?? 
+    final message =
+        item.errorMessage ??
+        item.statusMessages.firstOrNull?.messages.firstOrNull ??
         'Unknown error';
 
     return Container(
@@ -192,8 +195,8 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
             ),
           ),
         ],
@@ -207,9 +210,9 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       children: [
         Text(
           'Removal Options',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         SwitchListTile(
@@ -260,9 +263,9 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       children: [
         Text(
           'Information',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _DetailRow(label: 'Protocol', value: item.protocol),
@@ -278,34 +281,38 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     final diff = eta.difference(DateTime.now());
     if (diff.isNegative) return 'Done';
 
-    if (diff.inDays > 0) return '${diff.inDays}d ${diff.inHours % 24}h remaining';
-    if (diff.inHours > 0) return '${diff.inHours}h ${diff.inMinutes % 60}m remaining';
+    if (diff.inDays > 0)
+      return '${diff.inDays}d ${diff.inHours % 24}h remaining';
+    if (diff.inHours > 0)
+      return '${diff.inHours}h ${diff.inMinutes % 60}m remaining';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m remaining';
     return 'Less than a minute';
   }
 
   Future<void> _handleRemove() async {
     final item = widget.item;
-    
+
     try {
-      await ref.read(queueProvider.notifier).removeQueueItem(
+      await ref
+          .read(queueProvider.notifier)
+          .removeQueueItem(
             item.id,
             removeFromClient: _removeFromClient,
             blocklist: _addToBlocklist,
             skipRedownload: !_searchForReplacement,
           );
-      
+
       if (!mounted) return;
-      
+
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item removed from queue')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Item removed from queue')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 }
@@ -326,13 +333,10 @@ class _DetailRow extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

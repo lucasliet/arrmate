@@ -22,7 +22,9 @@ extension DateTimeExtensions on DateTime {
 
   bool get isTomorrow {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-    return year == tomorrow.year && month == tomorrow.month && day == tomorrow.day;
+    return year == tomorrow.year &&
+        month == tomorrow.month &&
+        day == tomorrow.day;
   }
 
   bool get isPast => isBefore(DateTime.now());
@@ -53,8 +55,10 @@ extension DateTimeExtensions on DateTime {
 
     if (difference.inDays == 1) return 'Yesterday';
     if (difference.inDays < 7) return '${difference.inDays}d ago';
-    if (difference.inDays < 30) return '${(difference.inDays / 7).floor()}w ago';
-    if (difference.inDays < 365) return '${(difference.inDays / 30).floor()}mo ago';
+    if (difference.inDays < 30)
+      return '${(difference.inDays / 7).floor()}w ago';
+    if (difference.inDays < 365)
+      return '${(difference.inDays / 30).floor()}mo ago';
 
     return '${(difference.inDays / 365).floor()}y ago';
   }
