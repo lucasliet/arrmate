@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/movies/movies_screen.dart';
+import '../screens/movies/movie_details_screen.dart';
 import '../screens/series/series_screen.dart';
+import '../screens/series/series_details_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 import '../screens/activity/activity_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/settings/instance_edit_screen.dart';
 import '../widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -24,12 +27,30 @@ final appRouter = GoRouter(
           pageBuilder: (context, state) => const NoTransitionPage(
             child: MoviesScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: ':id',
+              builder: (context, state) {
+                final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                return MovieDetailsScreen(movieId: id);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/series',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: SeriesScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: ':id',
+              builder: (context, state) {
+                final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                return SeriesDetailsScreen(seriesId: id);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/calendar',
@@ -43,12 +64,21 @@ final appRouter = GoRouter(
             child: ActivityScreen(),
           ),
         ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SettingsScreen(),
-          ),
-        ),
+         GoRoute(
+           path: '/settings',
+           pageBuilder: (context, state) => const NoTransitionPage(
+             child: SettingsScreen(),
+           ),
+           routes: [
+             GoRoute(
+               path: 'instance/:id',
+               builder: (context, state) {
+                 final id = state.pathParameters['id'];
+                 return InstanceEditScreen(instanceId: id == 'new' ? null : id);
+               },
+             ),
+           ],
+         ),
       ],
     ),
   ],
