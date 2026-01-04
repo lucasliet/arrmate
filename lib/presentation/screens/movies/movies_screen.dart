@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../data/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/sort_bottom_sheet.dart';
+import 'movie_add_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 
@@ -158,6 +159,16 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (context) => const MovieAddSheet(),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

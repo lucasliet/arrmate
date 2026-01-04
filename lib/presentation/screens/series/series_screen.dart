@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../data/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/sort_bottom_sheet.dart';
+import 'series_add_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 
@@ -158,6 +159,16 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (context) => const SeriesAddSheet(),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

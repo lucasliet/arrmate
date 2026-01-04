@@ -44,6 +44,20 @@ class RadarrApi {
     );
   }
 
+  Future<List<QualityProfile>> getQualityProfiles() async {
+    final response = await _client.get('/qualityprofile');
+    return (response as List)
+        .map((e) => QualityProfile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RootFolder>> getRootFolders() async {
+    final response = await _client.get('/rootfolder');
+    return (response as List)
+        .map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<Movie>> lookupMovie(String term) async {
     final response = await _client.get(
       '/movie/lookup',

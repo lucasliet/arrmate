@@ -17,6 +17,10 @@ series).
     the same app.
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
+  - **Add Content**: Search and add new Movies/Series via API lookup, including
+    Quality Profile and Root Folder configuration.
+  - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
+    and download selection.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 

@@ -1,4 +1,5 @@
 export 'shared/shared.dart';
+export 'shared/shared_models.dart';
 export 'instance/instance_models.dart';
 export 'movie/movie.dart';
 export 'movie/movie_sort.dart';
