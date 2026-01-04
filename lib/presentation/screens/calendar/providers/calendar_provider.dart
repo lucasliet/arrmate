@@ -1,8 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../../domain/models/models.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../providers/data_providers.dart';
 
 // Unified Calendar Event Model
@@ -70,7 +69,7 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
           }),
         );
       } catch (e, stack) {
-        debugPrint('calendar: movies fetch failed: $e\n$stack');
+        logger.error('calendar: movies fetch failed', e, stack);
       }
     }
 
@@ -87,7 +86,7 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
           }),
         );
       } catch (e, stack) {
-        debugPrint('calendar: series fetch failed: $e\n$stack');
+        logger.error('calendar: series fetch failed', e, stack);
       }
     }
 

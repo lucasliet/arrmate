@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/models.dart';
+import '../../core/services/logger_service.dart';
 import 'data_providers.dart';
 
 // Logs Provider
@@ -62,14 +63,18 @@ final healthProvider = FutureProvider<List<HealthCheck>>((ref) async {
     try {
       final checks = await movieRepo.getHealth();
       allChecks.addAll(checks);
-    } catch (_) {}
+    } catch (e, stack) {
+      logger.error('health: movies fetch failed', e, stack);
+    }
   }
 
   if (seriesRepo != null) {
     try {
       final checks = await seriesRepo.getHealth();
       allChecks.addAll(checks);
-    } catch (_) {}
+    } catch (e, stack) {
+      logger.error('health: series fetch failed', e, stack);
+    }
   }
 
   return allChecks;

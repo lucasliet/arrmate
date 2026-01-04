@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import '../services/logger_service.dart';
 import 'api_error.dart';
 import '../constants/api_constants.dart';
 
@@ -26,7 +26,7 @@ class ApiClient {
       LogInterceptor(
         requestBody: true,
         responseBody: true,
-        logPrint: (obj) => debugPrint('[API] $obj'),
+        logPrint: (obj) => logger.debug('[API] $obj'),
       ),
     );
   }

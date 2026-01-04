@@ -6,6 +6,7 @@ import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/settings_provider.dart';
+import 'presentation/providers/app_providers.dart'; // Added this import
 
 class ArrmateApp extends ConsumerStatefulWidget {
   const ArrmateApp({super.key});
@@ -20,7 +21,30 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(updateProvider.notifier).checkForUpdate();
+
+      // Check for initialization errors
+      final initError = ref.read(initializationErrorProvider);
+      if (initError != null) {
+        _showErrorDialog(initError);
+      }
     });
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Initialization Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

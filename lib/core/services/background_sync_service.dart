@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../../domain/models/models.dart';
 import '../../domain/models/settings/notification_settings.dart';
 import 'notification_service.dart';
+import 'logger_service.dart';
 import '../../presentation/providers/data_providers.dart';
 import '../../presentation/providers/settings_provider.dart';
 
@@ -61,8 +62,8 @@ void callbackDispatcher() {
               changed = true;
             }
           }
-        } catch (e) {
-          debugPrint('Error polling Radarr: $e');
+        } catch (e, stack) {
+          logger.error('Error polling Radarr', e, stack);
         }
       }
 
@@ -91,8 +92,8 @@ void callbackDispatcher() {
               changed = true;
             }
           }
-        } catch (e) {
-          debugPrint('Error polling Sonarr: $e');
+        } catch (e, stack) {
+          logger.error('Error polling Sonarr', e, stack);
         }
       }
 

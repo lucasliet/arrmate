@@ -4,6 +4,8 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/logger_service.dart';
+
 class DeepLinkListener extends StatefulWidget {
   final Widget child;
 
@@ -54,7 +56,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
     if (path.isNotEmpty) {
       // Assuming arrmate://host/path format, uri.path gives /path
       // If arrmate:///path, uri.path is /path
-      debugPrint(
+      logger.debug(
         'Deep link detected: $path with params ${uri.queryParameters}',
       );
 
@@ -65,8 +67,8 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
           queryParameters: uri.queryParameters,
         ).toString();
         context.go(location);
-      } catch (e) {
-        debugPrint('Failed to navigate to deep link: $e');
+      } catch (e, stack) {
+        logger.error('Failed to navigate to deep link', e, stack);
       }
     }
   }

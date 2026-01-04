@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 import '../../domain/models/settings/notification_settings.dart';
 import '../../core/services/background_sync_service.dart';
+import '../../core/services/logger_service.dart';
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
   return SettingsNotifier();
@@ -94,7 +94,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       final Map<String, dynamic> data = jsonDecode(jsonString);
       return NotificationSettings.fromJson(data);
     } catch (e, stack) {
-      debugPrint('Error parsing notification settings: $e\n$stack');
+      logger.error('Error parsing notification settings', e, stack);
       return const NotificationSettings();
     }
   }

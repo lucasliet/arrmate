@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../providers/data_providers.dart';
 
 final activityHistoryProvider =
@@ -89,7 +89,7 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
     } catch (e, stack) {
       _currentPage--;
       state = AsyncValue.error(e, stack);
-      debugPrint('History loadMore failed: $e\n$stack');
+      logger.error('History loadMore failed', e, stack);
     }
   }
 

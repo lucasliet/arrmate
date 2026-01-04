@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'logger_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,7 +83,7 @@ class UpdateService {
       }
     } catch (e, stack) {
       // Log error for debugging
-      debugPrint('Auto-check update failed: $e\n$stack');
+      logger.error('Auto-check update failed', e, stack);
     }
 
     return null;
