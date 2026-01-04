@@ -6,7 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/update_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/update_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -27,7 +29,8 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildNotificationsSection(context, ref),
           const Divider(),
-          _buildAboutSection(context),
+          const Divider(),
+          _buildAboutSection(context, ref),
         ],
       ),
     );
@@ -329,7 +332,9 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAboutSection(BuildContext context) {
+  Widget _buildAboutSection(BuildContext context, WidgetRef ref) {
+    final updateState = ref.watch(updateProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -343,9 +348,34 @@ class SettingsScreen extends ConsumerWidget {
                 ),
           ),
         ),
-        ListTile(
-          title: const Text('Version'),
-          subtitle: const Text('0.1.0'),
+        FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final version = snapshot.data?.version ?? '...';
+            return ListTile(
+              title: const Text('Version'),
+              subtitle: Text(version),
+              trailing: updateState.status == UpdateStatus.checking
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : (updateState.status == UpdateStatus.upToDate
+                      ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                      : const Icon(Icons.refresh, size: 20)),
+              onTap: updateState.status == UpdateStatus.checking
+                  ? null
+                  : () async {
+                      await ref.read(updateProvider.notifier).checkForUpdate(force: true);
+                      if (updateState.status == UpdateStatus.upToDate && context.mounted) {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('App is up to date')),
+                        );
+                      }
+                    },
+            );
+          },
         ),
         ListTile(
           title: const Text('Source Code'),

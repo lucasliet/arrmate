@@ -29,18 +29,20 @@ series).
     background polling).
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
+  - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 
 ## Project Structure & Module Organization
 
-- `lib/core`: Shared logic, constants, extensions, and utilities.
+- `lib/core`: Shared logic, constants, extensions, and utilities, including
+  background services (`/services`).
 - `lib/data`: Data layer including models (`/models`), API clients (`/api`), and
-  repositories (`/repositories`).
+  repository implementations (`/repositories`).
+- `lib/domain`: Domain layer defining repository interfaces (`/repositories`).
 - `lib/presentation`: UI layer organized by feature (screens, widgets) and
   router configuration.
 - `lib/providers`: State management using Riverpod.
-- `lib/services`: Background services (notifications, sync).
 - `assets/images`: Static image assets and icons.
 
 ## Build, Test, and Development Commands
