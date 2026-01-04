@@ -1,0 +1,48 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: "21"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.5"
+          channel: 'stable'
+          cache: 'true'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate mocks for tests
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run Analyze
+        run: flutter analyze
+        continue-on-error: true
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Generate Icons
+        run: flutter pub run flutter_launcher_icons

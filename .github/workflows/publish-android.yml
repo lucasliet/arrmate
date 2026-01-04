@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  generate-notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    outputs:
+      release_notes: ${{ steps.set_output.outputs.release_notes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Generate Release Notes with Copilot
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          AI_MODEL: gpt-5-mini
+        run: |
+          # Get previous tag or root
+          PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then RANGE="HEAD"; else RANGE="$PREV_TAG..HEAD"; fi
+          
+          # Get Git Log for Context
+          GIT_LOG=$(git log $RANGE --pretty=format:"%h - %s (%an)")
+          
+          # Run Copilot
+          copilot --model $AI_MODEL -p "
+            REPO: ${{ github.repository }}
+            VERSION: ${{ github.ref_name }}
+            
+            CHANGES:
+            $GIT_LOG
+            
+            TASK: Generate meaningful release notes for this version based on the changes above.
+            
+            GUIDELINES:
+            - Answer everything in brazilian portuguese
+            - Start with the title '# ${{ github.repository }} ${{ github.ref_name }}'
+            - Write a brief, engaging summary paragraph explaining what this release achieves.
+            - Group changes into '## Key Features' (if there are any) and '## Bug Fixes' (if there are any).
+            - Use bullet points.
+            - Be concise but descriptive.
+            - Ignore trivial commits (docs, chores) unless significant.
+            - DO NOT USE EMOJIS anywhere in the output. Use standard Markdown only.
+            
+            Output ONLY the markdown content using ---review--- marker as start.
+          " > temp_review.md
+
+      - name: Extract Markdown Body
+        run: |
+          if [ -f temp_review.md ]; then
+            awk '/---review---/{found=1; next} found' temp_review.md > RELEASE_BODY.md
+          fi
+          
+          # Fallback: Use last commit message if extraction failed or file missing
+          if [ ! -s RELEASE_BODY.md ]; then
+            git log -1 --pretty=%B > RELEASE_BODY.md
+          fi
+      
+      - name: Set Output
+        id: set_output
+        run: |
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat RELEASE_BODY.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  build_app:
+    name: Build Android Application
+    needs: generate-notes
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Android keystore
+        id: android_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: upload-keystore.jks
+          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Create key.properties
+        run: |
+          echo "storeFile=${{ steps.android_keystore.outputs.filePath }}" > android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: "21"
+          # cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.5"
+          channel: 'stable'
+          cache: 'true'
+
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Run Analyze
+        run: flutter analyze
+        continue-on-error: true
+      - name: Run Tests
+        run: flutter test
+        continue-on-error: true
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Cache NDK
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/lib/android/sdk/ndk/28.2.13676358
+          key: ${{ runner.os }}-ndk-28.2.13676358
+          restore-keys: |
+            ${{ runner.os }}-ndk-28.2.13676358
+            ${{ runner.os }}-ndk-
+
+      # - name: Build Android App Bundle
+      #   run: >
+      #     flutter build appbundle 
+      #     --build-number=${{ github.run_number }} 
+      #     --build-name=0.0.${{ github.run_number }}
+      
+      # - name: Publish Release to PlayStore internal track
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
+      #     packageName: br.com.lucasliet.blueguava
+      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: draft
+
+      - name: Build APKs
+        run: >
+          flutter build apk --release --split-per-abi
+          --build-number=${{ github.run_number }}
+          --build-name=${{ github.ref_name }}
+
+      - name: Publish Release to Github
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/app-arm*.apk"
+          tag: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          removeArtifacts: true
+          body: |
+            **Commit**
+            ${{ github.event_name }}: ${{ github.event.head_commit.message }}
+
+            **Release Notes**
+            ${{ needs.generate-notes.outputs.release_notes }}
+
+            ---
+            Instruções de instalação
+
+            - Android habilite instalação de fontes desconhecidas e instale o arquivo .apk correspondente, 
+              - **app-arm64-v8a-release.apk** para 64bits (mais que 4GB de RAM)
+              - **app-armeabi-v7a-release.apk** 32 bits
