@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/movie_repository.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';

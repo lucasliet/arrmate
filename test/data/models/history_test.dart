@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:arrmate/data/models/shared/history.dart';
-import 'package:arrmate/data/models/shared/quality_profile.dart';
+import 'package:arrmate/domain/models/shared/history.dart';
+import 'package:arrmate/domain/models/shared/quality_profile.dart';
 
 void main() {
   group('HistoryEventType', () {

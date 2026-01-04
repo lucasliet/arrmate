@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
 // Unified Calendar Event Model

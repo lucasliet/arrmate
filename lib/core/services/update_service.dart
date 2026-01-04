@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:collection/collection.dart';
 
 class AppUpdateInfo {
   final String version;
@@ -37,7 +38,13 @@ class UpdateService {
     }
 
     try {
-      final response = await _dio.get(_repoUrl);
+      final response = await _dio.get(
+        _repoUrl,
+        options: Options(
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
       if (response.statusCode != 200) return null;
 
       final data = response.data;
@@ -46,15 +53,15 @@ class UpdateService {
       final assets = data['assets'] as List;
       
       // Look for an APK asset
-      final apkAsset = assets.firstWhere(
+      final apkAsset = assets.firstWhereOrNull(
         (asset) => (asset['name'] as String).endsWith('.apk'),
-        orElse: () => null,
       );
 
       if (apkAsset == null) return null;
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
-      final publishedAt = DateTime.parse(data['published_at'] as String);
+      final publishedAtStr = data['published_at'] as String?;
+      final publishedAt = publishedAtStr != null ? DateTime.tryParse(publishedAtStr) ?? DateTime.now() : DateTime.now();
 
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = Version.parse(packageInfo.version);

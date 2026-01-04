@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-import '../../data/models/models.dart';
-import '../../data/models/settings/notification_settings.dart';
+import '../../domain/models/models.dart';
+import '../../domain/models/settings/notification_settings.dart';
 import 'notification_service.dart';
 import '../../presentation/providers/data_providers.dart';
 import '../../presentation/providers/settings_provider.dart';
@@ -14,79 +14,83 @@ import '../../presentation/providers/settings_provider.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     final container = ProviderContainer();
-    final settingsRepo = container.read(settingsProvider.notifier);
-    
-    // Manual load since it's a new container
-    final prefs = await SharedPreferences.getInstance();
-    final notificationsJson = prefs.getString('notification_settings');
-    if (notificationsJson == null) return true;
+    try {
+      final settingsRepo = container.read(settingsProvider.notifier);
+      
+      // Manual load since it's a new container
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = prefs.getString('notification_settings');
+      if (notificationsJson == null) return true;
 
-    final settings = NotificationSettings.fromJson(jsonDecode(notificationsJson));
-    if (!settings.enabled) return true;
+      final settings = NotificationSettings.fromJson(jsonDecode(notificationsJson));
+      if (!settings.enabled) return true;
 
-    final movieRepo = container.read(movieRepositoryProvider);
-    final seriesRepo = container.read(seriesRepositoryProvider);
-    final notificationService = container.read(notificationServiceProvider);
-    
-    await notificationService.init();
+      final movieRepo = container.read(movieRepositoryProvider);
+      final seriesRepo = container.read(seriesRepositoryProvider);
+      final notificationService = container.read(notificationServiceProvider);
+      
+      await notificationService.init();
 
-    Map<String, int> newLastIds = Map.from(settings.lastNotifiedIdByInstance);
-    bool changed = false;
+      Map<String, int> newLastIds = Map.from(settings.lastNotifiedIdByInstance);
+      bool changed = false;
 
-    // Check Movies (Radarr)
-    if (movieRepo != null) {
-      try {
-        final history = await movieRepo.getHistory(page: 1, pageSize: 10);
-        final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'radarr'] ?? 0;
-        
-        for (var event in history.records.reversed) {
-          if (event.id > lastId) {
-            if (_shouldNotify(event, settings)) {
-              await notificationService.showNotification(
-                id: event.id,
-                title: event.eventType.label,
-                body: '${event.sourceTitle}\n${event.description}',
-              );
+      // Check Movies (Radarr)
+      if (movieRepo != null) {
+        try {
+          final history = await movieRepo.getHistory(page: 1, pageSize: 10);
+          final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'radarr'] ?? 0;
+          
+          for (var event in history.records.reversed) {
+            if (event.id > lastId) {
+              if (_shouldNotify(event, settings)) {
+                await notificationService.showNotification(
+                  id: event.id ^ 0x52000000, // Radarr prefix
+                  title: event.eventType.label,
+                  body: '${event.sourceTitle}\n${event.description}',
+                );
+              }
+              newLastIds[event.instanceId ?? 'radarr'] = event.id;
+              changed = true;
             }
-            newLastIds[event.instanceId ?? 'radarr'] = event.id;
-            changed = true;
           }
+        } catch (e) {
+          debugPrint('Error polling Radarr: $e');
         }
-      } catch (e) {
-        debugPrint('Error polling Radarr: $e');
       }
-    }
 
-    // Check Series (Sonarr)
-    if (seriesRepo != null) {
-      try {
-        final history = await seriesRepo.getHistory(page: 1, pageSize: 10);
-        final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'sonarr'] ?? 0;
-        
-        for (var event in history.records.reversed) {
-          if (event.id > lastId) {
-            if (_shouldNotify(event, settings)) {
-              await notificationService.showNotification(
-                id: event.id + 1000000, // Offset to avoid ID collision
-                title: event.eventType.label,
-                body: '${event.sourceTitle}\n${event.description}',
-              );
+      // Check Series (Sonarr)
+      if (seriesRepo != null) {
+        try {
+          final history = await seriesRepo.getHistory(page: 1, pageSize: 10);
+          final lastId = settings.lastNotifiedIdByInstance[history.records.firstOrNull?.instanceId ?? 'sonarr'] ?? 0;
+          
+          for (var event in history.records.reversed) {
+            if (event.id > lastId) {
+              if (_shouldNotify(event, settings)) {
+                await notificationService.showNotification(
+                  id: event.id ^ 0x53000000, // Sonarr prefix
+                  title: event.eventType.label,
+                  body: '${event.sourceTitle}\n${event.description}',
+                );
+              }
+              newLastIds[event.instanceId ?? 'sonarr'] = event.id;
+              changed = true;
             }
-            newLastIds[event.instanceId ?? 'sonarr'] = event.id;
-            changed = true;
           }
+        } catch (e) {
+          debugPrint('Error polling Sonarr: $e');
         }
-      } catch (e) {
-        debugPrint('Error polling Sonarr: $e');
       }
-    }
 
-    if (changed) {
-      final updatedSettings = settings.copyWith(lastNotifiedIdByInstance: newLastIds);
-      await prefs.setString('notification_settings', jsonEncode(updatedSettings.toJson()));
-    }
+      if (changed) {
+        final updatedSettings = settings.copyWith(lastNotifiedIdByInstance: newLastIds);
+        await prefs.setString('notification_settings', jsonEncode(updatedSettings.toJson()));
+      }
 
-    return true;
+      return true;
+    } finally {
+      container.dispose();
+    }
   });
 }
 

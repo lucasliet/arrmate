@@ -1,4 +1,4 @@
-import '../../data/models/models.dart';
+import '../../domain/models/models.dart';
 
 abstract class SeriesRepository {
   Future<List<Series>> getSeries();
@@ -29,4 +29,6 @@ abstract class SeriesRepository {
   });
   Future<LogPage> getLogs({int page = 1, int pageSize = 50});
   Future<List<HealthCheck>> getHealth();
+
+  Future<List<QualityProfile>> getQualityProfiles();
 }

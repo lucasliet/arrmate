@@ -1,6 +1,6 @@
 import '../../domain/repositories/movie_repository.dart';
 import '../api/radarr_api.dart';
-import '../models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 
 class MovieRepositoryImpl implements MovieRepository {
   final RadarrApi _api;
@@ -78,5 +78,10 @@ class MovieRepositoryImpl implements MovieRepository {
   @override
   Future<List<HealthCheck>> getHealth() {
     return _api.getHealth();
+  }
+
+  @override
+  Future<List<QualityProfile>> getQualityProfiles() {
+    return _api.getQualityProfiles();
   }
 }

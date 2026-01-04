@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/models/models.dart';
+import '../../../domain/models/models.dart';
 import '../../../core/utils/formatters.dart';
 import 'providers/history_provider.dart';
 
@@ -35,7 +35,7 @@ class HistoryScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               if (index == events.length) {
                 return _LoadMoreButton(
-                  hasMore: ref.read(activityHistoryProvider.notifier).hasMore,
+                  hasMore: ref.watch(activityHistoryProvider.notifier).hasMore,
                   onPressed: () => ref.read(activityHistoryProvider.notifier).loadMore(),
                 );
               }

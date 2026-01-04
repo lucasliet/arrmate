@@ -31,7 +31,9 @@ class NotificationSettings extends Equatable {
       notifyOnImport: notifyOnImport ?? this.notifyOnImport,
       notifyOnDownloadFailed: notifyOnDownloadFailed ?? this.notifyOnDownloadFailed,
       pollingIntervalMinutes: pollingIntervalMinutes ?? this.pollingIntervalMinutes,
-      lastNotifiedIdByInstance: lastNotifiedIdByInstance ?? this.lastNotifiedIdByInstance,
+      lastNotifiedIdByInstance: lastNotifiedIdByInstance != null
+          ? Map<String, int>.from(lastNotifiedIdByInstance)
+          : Map<String, int>.from(this.lastNotifiedIdByInstance),
     );
   }
 

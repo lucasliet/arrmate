@@ -15,10 +15,13 @@ class UpdateDialog extends ConsumerWidget {
 
     final info = updateState.info!;
     final isDownloading = updateState.status == UpdateStatus.downloading;
+    final isInstalling = updateState.status == UpdateStatus.installing;
 
     return AlertDialog(
       title: Text(
-        isDownloading ? 'Baixando Atualização' : 'Nova Versão Disponível',
+        isDownloading
+            ? 'Baixando Atualização'
+            : (isInstalling ? 'Instalando...' : 'Nova Versão Disponível'),
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
         ),
@@ -53,7 +56,7 @@ class UpdateDialog extends ConsumerWidget {
                   style: theme.textTheme.bodySmall,
                 ),
               ),
-            ] else ...[
+            ] else if (isDownloading) ...[
               const SizedBox(height: 16),
               LinearProgressIndicator(
                 value: updateState.progress / 100,
@@ -67,6 +70,17 @@ class UpdateDialog extends ConsumerWidget {
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
+            ] else if (isInstalling) ...[
+              const SizedBox(height: 16),
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Aguarde enquanto a instalação inicia...'),
+                  ],
+                ),
+              ),
             ],
             if (updateState.status == UpdateStatus.error) ...[
               const SizedBox(height: 12),
@@ -78,7 +92,7 @@ class UpdateDialog extends ConsumerWidget {
           ],
         ),
       ),
-      actions: isDownloading
+      actions: (isDownloading || isInstalling)
           ? []
           : [
               TextButton(

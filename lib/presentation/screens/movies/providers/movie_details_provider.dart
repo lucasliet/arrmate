@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
 final movieDetailsProvider = FutureProvider.autoDispose.family<Movie, int>((ref, movieId) async {

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
-import '../../data/models/settings/notification_settings.dart';
+import '../../domain/models/settings/notification_settings.dart';
 import '../../core/services/background_sync_service.dart';
 import 'dart:convert';
 

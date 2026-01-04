@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/widgets/releases_sheet.dart';
 import '../../widgets/common_widgets.dart';

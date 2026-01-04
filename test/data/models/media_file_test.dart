@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arrmate/data/models/shared/media_file.dart';
+import 'package:arrmate/domain/models/shared/media_file.dart';
 
 void main() {
   group('MediaFile Model', () {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 
 void main() {
   group('LogEntry', () {

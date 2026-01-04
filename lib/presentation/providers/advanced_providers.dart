@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/models.dart';
+import '../../domain/models/models.dart';
 import 'data_providers.dart';
 
 // Logs Provider
@@ -37,7 +37,8 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
     
     if (currentPage * 50 >= totalRecords) return;
 
-    state = const AsyncLoading();
+    final previousState = state;
+    state = AsyncLoading<LogPage>().copyWithPrevious(previousState);
     state = await AsyncValue.guard(() async {
       final nextPage = await _fetchLogs(page: currentPage + 1);
       return LogPage(

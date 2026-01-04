@@ -1,4 +1,4 @@
-import '../../data/models/models.dart';
+import '../../domain/models/models.dart';
 
 abstract class MovieRepository {
   Future<List<Movie>> getMovies();
@@ -29,4 +29,6 @@ abstract class MovieRepository {
   Future<LogPage> getLogs({int page = 1, int pageSize = 50});
 
   Future<List<HealthCheck>> getHealth();
+
+  Future<List<QualityProfile>> getQualityProfiles();
 }

@@ -10,11 +10,15 @@ void main() async {
   
   final container = ProviderContainer();
   
-  // Initialize notification service
-  await container.read(notificationServiceProvider).init();
-  
-  // Initialize background sync service
-  await container.read(backgroundSyncServiceProvider).init();
+  try {
+    // Initialize notification service
+    await container.read(notificationServiceProvider).init();
+    
+    // Initialize background sync service
+    await container.read(backgroundSyncServiceProvider).init();
+  } catch (e, stackTrace) {
+    debugPrint('Failed to initialize services: $e\n$stackTrace');
+  }
 
   runApp(
     UncontrolledProviderScope(

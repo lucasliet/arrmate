@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
 // Queue Provider
@@ -69,7 +69,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     state = await AsyncValue.guard(() => _fetchQueue());
   }
 
-  Future<void> removeQueueItem(
+  Future<bool> removeQueueItem(
     int id, {
     bool removeFromClient = true,
     bool blocklist = false,
@@ -77,6 +77,9 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   }) async {
     final movieRepo = ref.read(movieRepositoryProvider);
     final seriesRepo = ref.read(seriesRepositoryProvider);
+
+    bool success = false;
+    Object? lastError;
 
     try {
       if (movieRepo != null) {
@@ -86,25 +89,35 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
           blocklist: blocklist,
           skipRedownload: skipRedownload,
         );
+        success = true;
       }
     } catch (e) {
-      // Item might be from Sonarr, try that
+      lastError = e;
     }
 
-    try {
-      if (seriesRepo != null) {
+    if (!success && seriesRepo != null) {
+      try {
         await seriesRepo.deleteQueueItem(
           id,
           removeFromClient: removeFromClient,
           blocklist: blocklist,
           skipRedownload: skipRedownload,
         );
+        success = true;
+      } catch (e) {
+        lastError = e;
       }
-    } catch (e) {
-      // Item might be from Radarr, already tried
     }
 
-    await refresh();
+    if (success) {
+      await refresh();
+      return true;
+    } else {
+      if (lastError != null) {
+        throw lastError;
+      }
+      return false;
+    }
   }
 }
 

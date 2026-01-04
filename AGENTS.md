@@ -37,9 +37,10 @@ series).
 
 - `lib/core`: Shared logic, constants, extensions, and utilities, including
   background services (`/services`).
-- `lib/data`: Data layer including models (`/models`), API clients (`/api`), and
-  repository implementations (`/repositories`).
-- `lib/domain`: Domain layer defining repository interfaces (`/repositories`).
+- `lib/data`: Data layer including API clients (`/api`) and repository
+  implementations (`/repositories`).
+- `lib/domain`: Domain layer including models (`/models`) and repository
+  interfaces (`/repositories`).
 - `lib/presentation`: UI layer organized by feature (screens, widgets) and
   router configuration.
 - `lib/providers`: State management using Riverpod.

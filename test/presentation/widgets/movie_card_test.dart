@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/screens/movies/widgets/movie_card.dart';
 
 // Mock NetworkImage to avoid HTTP calls in widget tests

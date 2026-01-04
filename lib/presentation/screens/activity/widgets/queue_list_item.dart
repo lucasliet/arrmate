@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import 'queue_item_sheet.dart';
 
 class QueueListItem extends ConsumerWidget {

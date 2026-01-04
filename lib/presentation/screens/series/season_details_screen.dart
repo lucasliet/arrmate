@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/advanced_providers.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'dart:async';
 
 class LogsScreen extends ConsumerStatefulWidget {
@@ -37,7 +38,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
     final logsAsync = ref.watch(logsProvider);
 
     return Scaffold(
-      app_bar: AppBar(
+      appBar: AppBar(
         title: const Text('System Logs'),
         actions: [
           PopupMenuButton<String>(
@@ -84,7 +85,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
                   title: Text(
                     log.message,
                     maxLines: 2,
-                    overflow: TextSelection.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 13,

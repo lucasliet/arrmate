@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/formatters.dart';
-import '../../../../data/models/models.dart';
+import '../../../../domain/models/models.dart';
 import '../providers/activity_provider.dart';
 
 class QueueItemSheet extends ConsumerStatefulWidget {
@@ -286,7 +286,6 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
 
   Future<void> _handleRemove() async {
     final item = widget.item;
-    final navigator = Navigator.of(context);
     
     try {
       await ref.read(queueProvider.notifier).removeQueueItem(
@@ -295,18 +294,18 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
             blocklist: _addToBlocklist,
             skipRedownload: !_searchForReplacement,
           );
-      navigator.pop();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item removed from queue')),
-        );
-      }
+      
+      if (!mounted) return;
+      
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item removed from queue')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 }

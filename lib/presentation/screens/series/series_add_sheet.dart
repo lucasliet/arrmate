@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'providers/series_lookup_provider.dart';
 import 'providers/series_provider.dart';

@@ -1,4 +1,4 @@
-import 'package:arrmate/data/models/movie/movie.dart';
+import 'package:arrmate/domain/models/movie/movie.dart';
 
 class MovieSort {
   final MovieSortOption option;

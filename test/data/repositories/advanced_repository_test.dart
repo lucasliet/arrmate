@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/data/api/radarr_api.dart';
 import 'package:arrmate/data/repositories/movie_repository_impl.dart';
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 
 class MockRadarrApi extends Mock implements RadarrApi {}
 

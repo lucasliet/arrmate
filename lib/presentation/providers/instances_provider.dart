@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-import '../../data/models/instance/instance.dart';
+import '../../domain/models/instance/instance.dart';
 
 final instancesProvider = NotifierProvider<InstancesNotifier, InstancesState>(() {
   return InstancesNotifier();

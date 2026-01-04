@@ -1,6 +1,6 @@
 import '../../domain/repositories/series_repository.dart';
 import '../api/sonarr_api.dart';
-import '../models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 
 class SeriesRepositoryImpl implements SeriesRepository {
   final SonarrApi _api;
@@ -84,5 +84,10 @@ class SeriesRepositoryImpl implements SeriesRepository {
   @override
   Future<List<HealthCheck>> getHealth() {
     return _api.getHealth();
+  }
+
+  @override
+  Future<List<QualityProfile>> getQualityProfiles() {
+    return _api.getQualityProfiles();
   }
 }

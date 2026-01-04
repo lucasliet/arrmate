@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:arrmate/data/models/models.dart';
+import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/widgets/movie_poster.dart';
 import 'package:flutter/material.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
-import '../../../../data/models/instance/instance.dart';
+import '../../../../domain/models/instance/instance.dart';
 import '../../providers/instances_provider.dart';
 
 class InstanceEditScreen extends ConsumerStatefulWidget {

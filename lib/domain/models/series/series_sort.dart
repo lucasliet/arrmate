@@ -1,4 +1,4 @@
-import 'package:arrmate/data/models/series/series.dart';
+import 'package:arrmate/domain/models/series/series.dart';
 
 class SeriesSort {
   final SeriesSortOption option;
