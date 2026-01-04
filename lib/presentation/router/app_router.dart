@@ -9,6 +9,9 @@ import '../screens/calendar/calendar_screen.dart';
 import '../screens/activity/activity_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/instance_edit_screen.dart';
+import '../screens/settings/logs_screen.dart';
+import '../screens/settings/health_screen.dart';
+import '../screens/settings/quality_profiles_screen.dart';
 import '../widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -77,6 +80,18 @@ final appRouter = GoRouter(
                  return InstanceEditScreen(instanceId: id == 'new' ? null : id);
                },
              ),
+              GoRoute(
+                path: 'logs',
+                builder: (context, state) => const LogsScreen(),
+              ),
+              GoRoute(
+                path: 'health',
+                builder: (context, state) => const HealthScreen(),
+              ),
+              GoRoute(
+                path: 'quality-profiles',
+                builder: (context, state) => const QualityProfilesScreen(),
+              ),
            ],
          ),
       ],

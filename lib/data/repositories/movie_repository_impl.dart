@@ -69,4 +69,14 @@ class MovieRepositoryImpl implements MovieRepository {
         blocklist: blocklist,
         skipRedownload: skipRedownload,
       );
+
+  @override
+  Future<LogPage> getLogs({int page = 1, int pageSize = 50}) {
+    return _api.getLogs(page: page, pageSize: pageSize);
+  }
+
+  @override
+  Future<List<HealthCheck>> getHealth() {
+    return _api.getHealth();
+  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_theme.dart';
@@ -21,6 +22,10 @@ class SettingsScreen extends ConsumerWidget {
           _buildInstancesSection(context, ref),
           const Divider(),
           _buildAppearanceSection(context, ref),
+          const Divider(),
+          _buildSystemSection(context),
+          const Divider(),
+          _buildNotificationsSection(context, ref),
           const Divider(),
           _buildAboutSection(context),
         ],
@@ -172,6 +177,155 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notifications = settings.notifications;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Notifications',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ),
+        SwitchListTile(
+          title: const Text('Enable Notifications'),
+          subtitle: const Text('Periodically check for activity updates'),
+          value: notifications.enabled,
+          onChanged: (value) {
+            ref.read(settingsProvider.notifier).updateNotifications(
+                  notifications.copyWith(enabled: value),
+                );
+          },
+        ),
+        if (notifications.enabled) ...[
+          CheckboxListTile(
+            title: const Text('Notify on Grab'),
+            subtitle: const Text('When a new release is sent to download client'),
+            value: notifications.notifyOnGrab,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(settingsProvider.notifier).updateNotifications(
+                      notifications.copyWith(notifyOnGrab: value),
+                    );
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Notify on Import'),
+            subtitle: const Text('When a file is successfully imported'),
+            value: notifications.notifyOnImport,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(settingsProvider.notifier).updateNotifications(
+                      notifications.copyWith(notifyOnImport: value),
+                    );
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Notify on Failure'),
+            subtitle: const Text('When a download fails to import'),
+            value: notifications.notifyOnDownloadFailed,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(settingsProvider.notifier).updateNotifications(
+                      notifications.copyWith(notifyOnDownloadFailed: value),
+                    );
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('Polling Interval'),
+            subtitle: Text('${notifications.pollingIntervalMinutes} minutes'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              _showPollingIntervalDialog(context, ref, notifications.pollingIntervalMinutes);
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showPollingIntervalDialog(BuildContext context, WidgetRef ref, int current) {
+    final intervals = [15, 30, 60, 120, 240, 480, 1440];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Polling Interval'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: intervals.map((min) {
+                final isSelected = min == current;
+                final label = min < 60 ? '$min minutes' : '${min ~/ 60} hours';
+                return ListTile(
+                  title: Text(label),
+                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                  onTap: () {
+                    final settings = ref.read(settingsProvider);
+                    ref.read(settingsProvider.notifier).updateNotifications(
+                          settings.notifications.copyWith(pollingIntervalMinutes: min),
+                        );
+                    context.pop();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSystemSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'SYSTEM MANAGEMENT',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.library_books_outlined),
+          title: const Text('Logs'),
+          subtitle: const Text('System event logs'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/logs'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.health_and_safety_outlined),
+          title: const Text('Health'),
+          subtitle: const Text('System health and issues'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/health'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.high_quality_outlined),
+          title: const Text('Quality Profiles'),
+          subtitle: const Text('Available profiles from instances'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/settings/quality-profiles'),
+        ),
+      ],
     );
   }
 

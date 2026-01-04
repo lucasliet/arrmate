@@ -27,4 +27,6 @@ abstract class SeriesRepository {
     bool blocklist = false,
     bool skipRedownload = false,
   });
+  Future<LogPage> getLogs({int page = 1, int pageSize = 50});
+  Future<List<HealthCheck>> getHealth();
 }

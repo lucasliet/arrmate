@@ -176,4 +176,22 @@ class SonarrApi {
       },
     );
   }
+
+  Future<LogPage> getLogs({int page = 1, int pageSize = 50}) async {
+    final response = await _client.get(
+      '/log',
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+    return LogPage.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<HealthCheck>> getHealth() async {
+    final response = await _client.get('/health');
+    return (response as List)
+        .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
