@@ -40,7 +40,7 @@ class SeriesCard extends StatelessWidget {
                 ),
               ),
             ),
-            _buildStatusIndicator(context),
+            _buildStatusIcons(context),
             Positioned(
               left: 8,
               right: 8,
@@ -76,38 +76,53 @@ class SeriesCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIndicator(BuildContext context) {
-    Color color;
-
-    // Logic for Series status varies slightly from Movies.
-    // Simplifying for now based on 'monitored' and 'status'.
-    if (series.monitored) {
-      if (series.status == SeriesStatus.ended) {
-        color = Colors.green;
-      } else {
-        color = Colors.blue;
-      }
-    } else {
-      color = Colors.grey;
-    }
-
+  Widget _buildStatusIcons(BuildContext context) {
     return Positioned(
-      top: 8,
-      right: 8,
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 4,
+      top: 6,
+      left: 6,
+      right: 6,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Monitored Status
+          if (series.monitored)
+            const Icon(
+              Icons.bookmark,
+              size: 20,
+              color: Colors.white,
+            )
+          else
+            Icon(
+              Icons.bookmark_border,
+              size: 20,
+              color: Colors.white.withValues(alpha: 0.7),
             ),
-          ],
-        ),
+
+          // Right: Download Status
+          if (series.isDownloaded)
+            const Icon(
+              Icons.check_circle,
+              size: 20,
+              color: Colors.white,
+            )
+          else if (series.monitored)
+            if (series.isWaiting)
+              const Icon(
+                Icons.access_time,
+                size: 20,
+                color: Colors.white,
+              )
+            else
+              const Icon(
+                Icons.cancel_outlined,
+                size: 20,
+                color: Colors.white,
+              )
+          else
+            const SizedBox(),
+        ],
       ),
     );
   }
+
 }

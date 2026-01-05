@@ -11,29 +11,43 @@ final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
   return SettingsNotifier();
 });
 
+enum ViewMode {
+  grid,
+  list;
+
+  String get label {
+    switch (this) {
+      case ViewMode.grid:
+        return 'Grid';
+      case ViewMode.list:
+        return 'List';
+    }
+  }
+}
+
 class SettingsState {
   final AppColorScheme colorScheme;
   final AppAppearance appearance;
-  final bool isGridViewCompact;
+  final ViewMode viewMode;
   final NotificationSettings notifications;
 
   const SettingsState({
     this.colorScheme = AppColorScheme.blue,
     this.appearance = AppAppearance.system,
-    this.isGridViewCompact = false,
+    this.viewMode = ViewMode.grid,
     this.notifications = const NotificationSettings(),
   });
 
   SettingsState copyWith({
     AppColorScheme? colorScheme,
     AppAppearance? appearance,
-    bool? isGridViewCompact,
+    ViewMode? viewMode,
     NotificationSettings? notifications,
   }) {
     return SettingsState(
       colorScheme: colorScheme ?? this.colorScheme,
       appearance: appearance ?? this.appearance,
-      isGridViewCompact: isGridViewCompact ?? this.isGridViewCompact,
+      viewMode: viewMode ?? this.viewMode,
       notifications: notifications ?? this.notifications,
     );
   }
@@ -42,15 +56,11 @@ class SettingsState {
 class SettingsNotifier extends Notifier<SettingsState> {
   static const _colorSchemeKey = 'color_scheme';
   static const _appearanceKey = 'appearance';
-  static const _gridViewKey = 'grid_view_compact';
+  static const viewModeKey = 'view_mode';
   static const _notificationsKey = 'notification_settings';
 
   @override
   SettingsState build() {
-    // Carregamento inicial síncrono ou estado padrão.
-    // O carregamento assíncrono será feito separadamente para não bloquear a UI inicial
-    // ou podemos usar AsyncNotifier se quisermos lidar com o estado de loading.
-    // Por enquanto, iniciamos com default e carregamos em background.
     _loadSettings();
     return const SettingsState();
   }
@@ -60,7 +70,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     final colorSchemeName = prefs.getString(_colorSchemeKey);
     final appearanceName = prefs.getString(_appearanceKey);
-    final isCompact = prefs.getBool(_gridViewKey);
+    final viewModeName = prefs.getString(viewModeKey);
     final notificationsJson = prefs.getString(_notificationsKey);
 
     state = state.copyWith(
@@ -76,11 +86,15 @@ class SettingsNotifier extends Notifier<SettingsState> {
               orElse: () => AppAppearance.system,
             )
           : null,
-      isGridViewCompact: isCompact,
+      viewMode: viewModeName != null
+          ? ViewMode.values.firstWhere(
+              (e) => e.name == viewModeName,
+              orElse: () => ViewMode.grid,
+            )
+          : ViewMode.grid,
       notifications: _parseNotificationSettings(notificationsJson),
     );
 
-    // Ensure background task matches settings
     if (state.notifications.enabled) {
       ref
           .read(backgroundSyncServiceProvider)
@@ -111,10 +125,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setString(_appearanceKey, appearance.name);
   }
 
-  Future<void> setGridViewCompact(bool isCompact) async {
-    state = state.copyWith(isGridViewCompact: isCompact);
+  Future<void> setViewMode(ViewMode mode) async {
+    state = state.copyWith(viewMode: mode);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_gridViewKey, isCompact);
+    await prefs.setString(viewModeKey, mode.name);
   }
 
   Future<void> updateNotifications(NotificationSettings notifications) async {

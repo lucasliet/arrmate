@@ -40,7 +40,7 @@ class MovieCard extends StatelessWidget {
                 ),
               ),
             ),
-            _buildStatusIndicator(context),
+            _buildStatusIcons(context),
             Positioned(
               left: 8,
               right: 8,
@@ -76,36 +76,53 @@ class MovieCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIndicator(BuildContext context) {
-    Color color;
-
-    if (movie.isDownloaded) {
-      color = Colors.green;
-    } else if (!movie.monitored) {
-      color = Colors.grey;
-    } else if (movie.isAvailable) {
-      color = Colors.red;
-    } else {
-      color = Colors.blue;
-    }
-
+  Widget _buildStatusIcons(BuildContext context) {
     return Positioned(
-      top: 8,
-      right: 8,
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 4,
+      top: 6,
+      left: 6,
+      right: 6,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Monitored Status
+          if (movie.monitored)
+            const Icon(
+              Icons.bookmark,
+              size: 20,
+              color: Colors.white,
+            )
+          else
+            Icon(
+              Icons.bookmark_border,
+              size: 20,
+              color: Colors.white.withValues(alpha: 0.7),
             ),
-          ],
-        ),
+
+          // Right: Download Status
+          if (movie.isDownloaded)
+            const Icon(
+              Icons.check_circle,
+              size: 20,
+              color: Colors.white,
+            )
+          else if (movie.monitored)
+            if (movie.isWaiting)
+              const Icon(
+                Icons.access_time,
+                size: 20,
+                color: Colors.white,
+              )
+            else
+              const Icon(
+                Icons.cancel_outlined,
+                size: 20,
+                color: Colors.white,
+              )
+          else
+            const SizedBox(),
+        ],
       ),
     );
   }
+
 }

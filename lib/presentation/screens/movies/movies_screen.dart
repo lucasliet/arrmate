@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/sort_bottom_sheet.dart';
+import '../../providers/settings_provider.dart';
 import 'movie_add_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
+import 'widgets/movie_list_tile.dart';
 
 class MoviesScreen extends ConsumerStatefulWidget {
   const MoviesScreen({super.key});
@@ -65,6 +67,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(filteredMoviesProvider);
+    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -109,6 +112,22 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     icon: const Icon(Icons.sort),
                     onPressed: () => _showSortSheet(context, ref),
                   ),
+                  IconButton(
+                    icon: Icon(
+                      settings.viewMode == ViewMode.grid
+                          ? Icons.view_list
+                          : Icons.grid_view,
+                    ),
+                    tooltip: settings.viewMode == ViewMode.grid
+                        ? 'Switch to List'
+                        : 'Switch to Grid',
+                    onPressed: () {
+                      final newMode = settings.viewMode == ViewMode.grid
+                          ? ViewMode.list
+                          : ViewMode.grid;
+                      ref.read(settingsProvider.notifier).setViewMode(newMode);
+                    },
+                  ),
                 ],
               ],
             ),
@@ -133,6 +152,20 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ? 'Try clearing or adjusting your search query or filters.'
                             : 'Add movies to your Radarr library to see them here.',
                       ),
+                    );
+                  }
+
+                  if (settings.viewMode == ViewMode.list) {
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final movie = movies[index];
+                        return MovieListTile(
+                          movie: movie,
+                          onTap: () {
+                            context.go('/movies/${movie.id}');
+                          },
+                        );
+                      }, childCount: movies.length),
                     );
                   }
 

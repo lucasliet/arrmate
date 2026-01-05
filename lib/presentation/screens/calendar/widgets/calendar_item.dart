@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../providers/calendar_provider.dart';
@@ -20,6 +21,7 @@ class CalendarItem extends StatelessWidget {
       elevation: 0,
       color: theme.colorScheme.surfaceContainer,
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           if (isMovie && event.movie != null) {
@@ -29,31 +31,56 @@ class CalendarItem extends StatelessWidget {
             context.go('/series/${event.episode!.seriesId}');
           }
         },
-        borderRadius: BorderRadius.circular(radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: 70,
+              child: event.movie?.remotePoster != null
+                  ? CachedNetworkImage(
+                      imageUrl: event.movie!.remotePoster!,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          isMovie ? Icons.movie_outlined : Icons.tv_outlined,
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        isMovie ? Icons.movie_outlined : Icons.tv_outlined,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      event.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('HH:mm').format(event.releaseDate.toLocal()),
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -61,19 +88,18 @@ class CalendarItem extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                DateFormat('HH:mm').format(event.releaseDate.toLocal()),
-                style: theme.textTheme.labelMedium,
-              ),
-            ],
-          ),
+            ),
+            Container(
+              width: 4,
+              color: color,
+            ),
+          ],
         ),
       ),
     );
