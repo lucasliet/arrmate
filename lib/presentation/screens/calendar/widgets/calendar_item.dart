@@ -22,6 +22,9 @@ class CalendarItem extends StatelessWidget {
       color: theme.colorScheme.surfaceContainer,
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radiusMd),
+      ),
       child: InkWell(
         onTap: () {
           if (isMovie && event.movie != null) {
@@ -32,10 +35,11 @@ class CalendarItem extends StatelessWidget {
           }
         },
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: 70,
+              height: 100,
               child: event.movie?.remotePoster != null
                   ? CachedNetworkImage(
                       imageUrl: event.movie!.remotePoster!,
@@ -77,7 +81,9 @@ class CalendarItem extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          DateFormat('HH:mm').format(event.releaseDate.toLocal()),
+                          DateFormat(
+                            'HH:mm',
+                          ).format(event.releaseDate.toLocal()),
                           style: theme.textTheme.labelMedium,
                         ),
                       ],
@@ -95,10 +101,7 @@ class CalendarItem extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              width: 4,
-              color: color,
-            ),
+            Container(width: 4, color: color),
           ],
         ),
       ),

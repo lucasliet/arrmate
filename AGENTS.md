@@ -19,6 +19,7 @@ series).
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including
     Quality Profile and Root Folder configuration.
+  - **Automatic Search**: Trigger automatic search for movie releases.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.
   - **Activity History**: View historical events (grabbed, imported, failed,
@@ -29,6 +30,10 @@ series).
     background polling).
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
+  - **Manual Import**: Match and import files manually from the queue.
+  - **Movie Files & History**: View detailed file metadata and movie-specific
+    history.
+  - **System Status**: Enhanced instance status and version checks.
   - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
@@ -104,7 +109,7 @@ integration and UI patterns.
 
 ## Quality Assurance
 
-To ensure project stability, every code change or addition MUST be followed by:
+To ensure project stability, every code change or addition MUST be followed by (use dart mcp instead of direct commands if available):
 
 1. **Format**: Run `dart format .` to maintain consistent style.
 2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.
