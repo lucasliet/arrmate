@@ -14,7 +14,8 @@ class LogsScreen extends ConsumerStatefulWidget {
   ConsumerState<LogsScreen> createState() => _LogsScreenState();
 }
 
-class _LogsScreenState extends ConsumerState<LogsScreen> with SingleTickerProviderStateMixin {
+class _LogsScreenState extends ConsumerState<LogsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   String _levelFilter = 'All';
@@ -54,6 +55,19 @@ class _LogsScreenState extends ConsumerState<LogsScreen> with SingleTickerProvid
           ],
         ),
         actions: [
+          if (_tabController.index == 1) // Only show clear button for App Logs
+            IconButton(
+              icon: const Icon(Icons.clear_all),
+              tooltip: 'Clear App Logs',
+              onPressed: () {
+                logger.clearLogs();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('App logs cleared')),
+                  );
+                }
+              },
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
             onSelected: (value) {
@@ -78,10 +92,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> with SingleTickerProvid
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildArrLogs(),
-          _buildAppLogs(),
-        ],
+        children: [_buildArrLogs(), _buildAppLogs()],
       ),
     );
   }
@@ -147,7 +158,8 @@ class _LogsScreenState extends ConsumerState<LogsScreen> with SingleTickerProvid
             : logs
                   .where(
                     (e) =>
-                        e.level.name.toLowerCase() == _levelFilter.toLowerCase(),
+                        e.level.name.toLowerCase() ==
+                        _levelFilter.toLowerCase(),
                   )
                   .toList();
 
@@ -175,16 +187,22 @@ class _LogsScreenState extends ConsumerState<LogsScreen> with SingleTickerProvid
   }
 
   Future<void> _copyAllLogs() async {
-    final currentLogs = _tabController.index == 0 ? ref.read(logsProvider) : ref.read(appLogsProvider);
+    final currentLogs = _tabController.index == 0
+        ? ref.read(logsProvider)
+        : ref.read(appLogsProvider);
     String text = '';
 
     currentLogs.whenData((logs) {
       if (_tabController.index == 0) {
         final records = (logs as LogPage).records;
-        text = records.map((e) => '[${e.time}] ${e.level}: ${e.message}').join('\n');
+        text = records
+            .map((e) => '[${e.time}] ${e.level}: ${e.message}')
+            .join('\n');
       } else {
         final records = logs as List<AppLogEntry>;
-        text = records.map((e) => '[${e.time}] ${e.level.name}: ${e.message}').join('\n');
+        text = records
+            .map((e) => '[${e.time}] ${e.level.name}: ${e.message}')
+            .join('\n');
       }
     });
 
@@ -217,7 +235,8 @@ class _LogTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isError = level.toLowerCase() == 'error';
-    final isWarn = level.toLowerCase() == 'warn' || level.toLowerCase() == 'warning';
+    final isWarn =
+        level.toLowerCase() == 'warn' || level.toLowerCase() == 'warning';
 
     return ListTile(
       title: Text(
@@ -236,9 +255,9 @@ class _LogTile extends StatelessWidget {
         onPressed: () async {
           await Clipboard.setData(ClipboardData(text: message));
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Log message copied')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Log message copied')));
           }
         },
       ),

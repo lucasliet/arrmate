@@ -66,7 +66,12 @@ class LoggerService {
   Stream<List<AppLogEntry>> get logStream => _logController.stream;
   List<AppLogEntry> get logs => List.unmodifiable(_buffer);
 
-  void _addToBuffer(Level level, String message, [dynamic error, StackTrace? stackTrace]) {
+  void _addToBuffer(
+    Level level,
+    String message, [
+    dynamic error,
+    StackTrace? stackTrace,
+  ]) {
     final entry = AppLogEntry(
       time: DateTime.now(),
       level: level,
@@ -74,7 +79,7 @@ class LoggerService {
       error: error,
       stackTrace: stackTrace,
     );
-    
+
     _buffer.insert(0, entry);
     if (_buffer.length > _maxBufferSize) {
       _buffer.removeLast();
@@ -82,10 +87,9 @@ class LoggerService {
     _logController.add(List.unmodifiable(_buffer));
 
     // Async write to file
-    _logFile?.writeAsString(
-      '${entry.toLogString()}\n',
-      mode: FileMode.append,
-    ).catchError((e) => debugPrint('Error writing to log file: $e'));
+    _logFile
+        ?.writeAsString('${entry.toLogString()}\n', mode: FileMode.append)
+        .catchError((e) => debugPrint('Error writing to log file: $e'));
   }
 
   void debug(String message) {
@@ -106,6 +110,11 @@ class LoggerService {
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.e(message, error: error, stackTrace: stackTrace);
     _addToBuffer(Level.error, message, error, stackTrace);
+  }
+
+  void clearLogs() {
+    _buffer.clear();
+    _logController.add(List.unmodifiable(_buffer));
   }
 }
 

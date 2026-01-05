@@ -109,7 +109,7 @@ integration and UI patterns.
 
 ## Quality Assurance
 
-To ensure project stability, every code change or addition MUST be followed by (use dart mcp instead of direct commands if available):
+To ensure project stability, every code change or addition MUST be followed by (use dart-mcp-server instead of direct commands if available):
 
 1. **Format**: Run `dart format .` to maintain consistent style.
 2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.
