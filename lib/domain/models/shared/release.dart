@@ -19,7 +19,7 @@ class Release extends Equatable {
   final bool rejected;
   final List<String> rejections;
   final int age;
-  final double indexerFlags; // Sometimes used for scoring
+  final List<String> indexerFlags; // Sometimes used for scoring
   final String? infoUrl;
   final String? downloadUrl;
   final ReleaseQuality quality;
@@ -37,7 +37,7 @@ class Release extends Equatable {
     this.rejected = false,
     this.rejections = const [],
     required this.age,
-    this.indexerFlags = 0,
+    this.indexerFlags = const [],
     this.infoUrl,
     this.downloadUrl,
     required this.quality,
@@ -61,7 +61,11 @@ class Release extends Equatable {
               .toList() ??
           [],
       age: json['age'] as int? ?? 0,
-      indexerFlags: (json['indexerFlags'] as num?)?.toDouble() ?? 0.0,
+      indexerFlags:
+          (json['indexerFlags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       infoUrl: json['infoUrl'] as String?,
       downloadUrl: json['downloadUrl'] as String?,
       quality: ReleaseQuality.fromJson(json['quality'] as Map<String, dynamic>),
