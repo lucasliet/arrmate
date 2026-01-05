@@ -111,4 +111,12 @@ class SeriesRepositoryImpl implements SeriesRepository {
 
   @override
   Future<void> deleteSeriesFile(int fileId) => _api.deleteSeriesFile(fileId);
+
+  @override
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
+      _api.getImportableFiles(downloadId);
+
+  @override
+  Future<void> manualImport(List<ImportableFile> files) =>
+      _api.manualImport(files);
 }

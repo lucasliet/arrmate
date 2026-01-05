@@ -108,4 +108,12 @@ class MovieRepositoryImpl implements MovieRepository {
 
   @override
   Future<void> deleteMovieFile(int fileId) => _api.deleteMovieFile(fileId);
+
+  @override
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
+      _api.getImportableFiles(downloadId);
+
+  @override
+  Future<void> manualImport(List<ImportableFile> files) =>
+      _api.manualImport(files);
 }

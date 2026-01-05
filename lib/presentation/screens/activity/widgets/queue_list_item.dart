@@ -59,6 +59,14 @@ class QueueListItem extends ConsumerWidget {
                         Row(
                           children: [
                             _buildStatusBadge(context),
+                            if (item.needsManualImport) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 18,
+                                color: Colors.orange,
+                              ),
+                            ],
                             const Spacer(),
                             if (item.status == QueueStatus.downloading &&
                                 item.sizeleft > 0)
@@ -94,7 +102,18 @@ class QueueListItem extends ConsumerWidget {
                   minHeight: 4,
                 ),
               ),
-              if (item.errorMessage != null ||
+              if (item.needsManualImport) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Unable to Import Automatically',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ] else if (item.errorMessage != null ||
                   item.statusMessages.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(

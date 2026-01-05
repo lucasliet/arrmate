@@ -238,4 +238,26 @@ class RadarrApi {
   Future<void> deleteMovieFile(int fileId) async {
     await _client.delete('/moviefile/$fileId');
   }
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) async {
+    final response = await _client.get(
+      '/manualimport',
+      queryParameters: {'downloadId': downloadId, 'filterExistingFiles': false},
+    );
+    return (response as List)
+        .map((e) => ImportableFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> manualImport(List<ImportableFile> files) async {
+    await _client.post(
+      '/command',
+      data: {
+        'name': 'ManualImport',
+        'files': files.map((f) => f.toJson()).toList(),
+        'importMode': 'auto',
+      },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
+  }
 }

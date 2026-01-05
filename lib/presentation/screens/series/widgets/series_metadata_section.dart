@@ -54,32 +54,34 @@ class SeriesMetadataSection extends ConsumerWidget {
             }
             return Column(
               children: files
-                  .map((file) => MediaFileCard(
-                        file: file,
-                        onTap: () => context.showBottomSheet(
-                          MediaFileDetailsSheet(
-                            file: file,
-                            onDelete: () async {
-                              final controller = ref.read(
-                                seriesMetadataControllerProvider(seriesId),
-                              );
-                              await controller.deleteFile(file.id);
-                            },
-                          ),
-                        ),
-                        onDelete: () async {
-                          final shouldDelete = await _confirmDelete(context);
-                          if (shouldDelete == true) {
+                  .map(
+                    (file) => MediaFileCard(
+                      file: file,
+                      onTap: () => context.showBottomSheet(
+                        MediaFileDetailsSheet(
+                          file: file,
+                          onDelete: () async {
                             final controller = ref.read(
                               seriesMetadataControllerProvider(seriesId),
                             );
                             await controller.deleteFile(file.id);
-                            if (context.mounted) {
-                              context.showSnackBar('File deleted');
-                            }
+                          },
+                        ),
+                      ),
+                      onDelete: () async {
+                        final shouldDelete = await _confirmDelete(context);
+                        if (shouldDelete == true) {
+                          final controller = ref.read(
+                            seriesMetadataControllerProvider(seriesId),
+                          );
+                          await controller.deleteFile(file.id);
+                          if (context.mounted) {
+                            context.showSnackBar('File deleted');
                           }
-                        },
-                      ))
+                        }
+                      },
+                    ),
+                  )
                   .toList(),
             );
           },
@@ -137,12 +139,14 @@ class SeriesMetadataSection extends ConsumerWidget {
             final limitedEvents = events.take(10).toList();
             return Column(
               children: limitedEvents
-                  .map((event) => HistoryEventCard(
-                        event: event,
-                        onTap: () => context.showBottomSheet(
-                          HistoryEventDetailsSheet(event: event),
-                        ),
-                      ))
+                  .map(
+                    (event) => HistoryEventCard(
+                      event: event,
+                      onTap: () => context.showBottomSheet(
+                        HistoryEventDetailsSheet(event: event),
+                      ),
+                    ),
+                  )
                   .toList(),
             );
           },

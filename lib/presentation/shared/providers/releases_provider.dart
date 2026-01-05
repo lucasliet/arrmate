@@ -5,10 +5,7 @@ import '../../providers/data_providers.dart';
 part 'releases_provider.g.dart';
 
 @riverpod
-Future<List<Release>> movieReleases(
-  MovieReleasesRef ref,
-  int movieId,
-) async {
+Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
   final api = ref.watch(radarrApiProvider);
   if (api == null) throw Exception('API not available');
   return api.getMovieReleases(movieId);

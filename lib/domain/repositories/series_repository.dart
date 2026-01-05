@@ -41,4 +41,7 @@ abstract class SeriesRepository {
   Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId);
   Future<List<HistoryEvent>> getSeriesHistory(int seriesId);
   Future<void> deleteSeriesFile(int fileId);
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId);
+  Future<void> manualImport(List<ImportableFile> files);
 }

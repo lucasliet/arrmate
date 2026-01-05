@@ -154,4 +154,3 @@ class _SeasonEpisodesProviderElement
   @override
   int get seasonNumber => (origin as SeasonEpisodesProvider).seasonNumber;
 }
-

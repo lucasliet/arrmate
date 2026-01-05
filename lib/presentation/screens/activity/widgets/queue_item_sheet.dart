@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../providers/activity_provider.dart';
+import '../manual_import_screen.dart';
 
 class QueueItemSheet extends ConsumerStatefulWidget {
   final QueueItem item;
@@ -90,6 +91,10 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
                   item.statusMessages.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildErrorSection(context, item),
+              ],
+              if (item.needsManualImport && item.downloadId != null) ...[
+                const SizedBox(height: 24),
+                _buildManualImportSection(context),
               ],
               const SizedBox(height: 24),
               _buildActionsSection(context),
@@ -200,6 +205,50 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildManualImportSection(BuildContext context) {
+    final item = widget.item;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Manual Import Required',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'This download requires manual intervention. Select which files to import.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _showManualImportScreen(context),
+            icon: const Icon(Icons.file_download),
+            label: const Text('Manual Import'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showManualImportScreen(BuildContext context) {
+    Navigator.pop(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ManualImportScreen(
+        downloadId: widget.item.downloadId!,
+        title: widget.item.displayTitle,
       ),
     );
   }
