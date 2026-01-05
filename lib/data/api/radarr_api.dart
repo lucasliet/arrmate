@@ -15,7 +15,10 @@ class RadarrApi {
           );
 
   Future<List<Movie>> getMovies() async {
-    final response = await _client.get('/movie');
+    final response = await _client.get(
+      '/movie',
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
     return (response as List)
         .map((e) => Movie.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -61,7 +64,10 @@ class RadarrApi {
   }
 
   Future<List<RootFolder>> getRootFolders() async {
-    final response = await _client.get('/rootfolder');
+    final response = await _client.get(
+      '/rootfolder',
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
     return (response as List)
         .map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -71,6 +77,7 @@ class RadarrApi {
     final response = await _client.get(
       '/release',
       queryParameters: {'movieId': movieId},
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
     );
     return (response as List)
         .map((e) => Release.fromJson(e as Map<String, dynamic>))
@@ -81,6 +88,7 @@ class RadarrApi {
     await _client.post(
       '/release',
       data: {'guid': guid, 'indexerId': indexerId},
+      customTimeout: instance.timeout(InstanceTimeout.releaseDownload),
     );
   }
 
@@ -101,6 +109,7 @@ class RadarrApi {
         if (start != null) 'start': start.toIso8601String(),
         if (end != null) 'end': end.toIso8601String(),
       },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
     );
     return (response as List)
         .map((e) => Movie.fromJson(e as Map<String, dynamic>))

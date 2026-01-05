@@ -15,7 +15,10 @@ class SonarrApi {
           );
 
   Future<List<Series>> getSeries() async {
-    final response = await _client.get('/series');
+    final response = await _client.get(
+      '/series',
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
     return (response as List)
         .map((e) => Series.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -61,7 +64,10 @@ class SonarrApi {
   }
 
   Future<List<RootFolder>> getRootFolders() async {
-    final response = await _client.get('/rootfolder');
+    final response = await _client.get(
+      '/rootfolder',
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
     return (response as List)
         .map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -71,6 +77,7 @@ class SonarrApi {
     final response = await _client.get(
       '/release',
       queryParameters: {if (episodeId != null) 'episodeId': episodeId},
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
     );
     return (response as List)
         .map((e) => Release.fromJson(e as Map<String, dynamic>))
@@ -81,6 +88,7 @@ class SonarrApi {
     await _client.post(
       '/release',
       data: {'guid': guid, 'indexerId': indexerId},
+      customTimeout: instance.timeout(InstanceTimeout.releaseDownload),
     );
   }
 
@@ -88,6 +96,7 @@ class SonarrApi {
     final response = await _client.get(
       '/series/lookup',
       queryParameters: {'term': term},
+      customTimeout: instance.timeout(InstanceTimeout.slow),
     );
     return (response as List)
         .map((e) => Series.fromJson(e as Map<String, dynamic>))
@@ -118,6 +127,7 @@ class SonarrApi {
         'includeSeries': true,
         'includeEpisodeFile': true,
       },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
     );
 
     // O calendário do Sonarr retorna Episódios, mas precisamos garantir que venha os dados da Série junto se disponível
