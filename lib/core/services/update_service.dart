@@ -33,62 +33,76 @@ class UpdateService {
 
   UpdateService(this._dio);
 
-  /// Checks if a new update is available on GitHub.
-  ///
-  /// Returns [AppUpdateInfo] if a newer version exists, null otherwise.
-  /// [force] bypasses the daily check limit.
   Future<AppUpdateInfo?> checkForUpdate({bool force = false}) async {
+    logger.info('🔍 Starting update check (force: $force)');
+
     if (!force && !await _shouldCheckForUpdate()) {
+      logger.info('⏸️ Skipping check - too soon since last check');
       return null;
     }
 
     try {
+      logger.info('🌐 Fetching latest release from GitHub...');
       final response = await _dio.get(
         _repoUrl,
         options: Options(
           sendTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
         ),
       );
-      if (response.statusCode != 200) return null;
+
+      if (response.statusCode != 200) {
+        logger.warning('❌ GitHub API returned status ${response.statusCode}');
+        return null;
+      }
 
       final data = response.data;
-      final latestVersionStr = (data['tag_name'] as String).replaceAll('v', '');
+      final rawTagName = data['tag_name'] as String;
+      logger.info('🏷️  GitHub latest release tag:  "$rawTagName"');
+
+      final latestVersionStr = rawTagName.replaceAll('v', '');
+      logger.info('🏷️  Latest version (parsed): "$latestVersionStr"');
+
       final changelog = data['body'] as String;
       final assets = data['assets'] as List;
 
-      // Detect architecture
       String? architecture;
       if (Platform.isAndroid) {
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
         final abis = androidInfo.supportedAbis;
-        logger.debug('Supported ABIs: $abis');
+        logger.debug('📱 Supported ABIs: $abis');
+
         if (abis.contains('arm64-v8a')) {
           architecture = 'arm64-v8a';
         } else if (abis.contains('armeabi-v7a')) {
           architecture = 'armeabi-v7a';
         }
+        logger.info('🏗️  Selected architecture: $architecture');
       }
 
-      // Look for a matching APK asset
       final apkAsset = assets.firstWhereOrNull((asset) {
-        final name = (asset['name'] as String).toLowerCase();
-        if (!name.endsWith('.apk')) return false;
+            final name = (asset['name'] as String).toLowerCase();
+            if (!name.endsWith('.apk')) return false;
 
-        // If we detected an architecture, try to find a match in the filename
-        if (architecture != null) {
-          return name.contains(architecture);
-        }
-        return true;
-      }) ?? assets.firstWhereOrNull((asset) => (asset['name'] as String).endsWith('.apk'));
+            if (architecture != null) {
+              return name.contains(architecture);
+            }
+            return true;
+          }) ??
+          assets.firstWhereOrNull(
+              (asset) => (asset['name'] as String).endsWith('.apk'));
 
       if (apkAsset == null) {
-        logger.warning('No matching APK asset found in release');
+        logger.warning('❌ No matching APK asset found in release');
         return null;
       }
 
-      logger.info('Selected APK: ${apkAsset['name']} for architecture: $architecture');
+      logger.info('📦 Selected APK: ${apkAsset['name']}');
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
       final publishedAtStr = data['published_at'] as String?;
@@ -97,22 +111,32 @@ class UpdateService {
           : DateTime.now();
 
       final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = Version.parse(packageInfo.version);
+      final currentVersionStr = packageInfo.version;
+      logger.info('📱 Current app version (raw): "$currentVersionStr"');
+
+      final currentVersion = Version.parse(currentVersionStr.replaceAll('v', ''));
       final latestVersion = Version.parse(latestVersionStr);
+
+      logger.info('🔄 Version comparison:');
+      logger.info('   Current: $currentVersion');
+      logger.info('   Latest:  $latestVersion');
+      logger.info('   Latest > Current? ${latestVersion > currentVersion}');
 
       await _updateLastCheckTime();
 
       if (latestVersion > currentVersion) {
+        logger.info('✅ Update available!');
         return AppUpdateInfo(
           version: latestVersionStr,
           changelog: changelog,
           downloadUrl: downloadUrl,
           publishedAt: publishedAt,
         );
+      } else {
+        logger.info('ℹ️  No update needed - app is up to date');
       }
     } catch (e, stack) {
-      // Log error for debugging
-      logger.error('Auto-check update failed', e, stack);
+      logger.error('❌ Auto-check update failed', e, stack);
     }
 
     return null;
