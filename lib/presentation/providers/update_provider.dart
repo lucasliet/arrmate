@@ -92,7 +92,9 @@ class UpdateNotifier extends Notifier<UpdateState> {
     logger.info('UpdateNotifier: startUpdate() triggered');
     final info = state.info;
     if (info == null) {
-      logger.warning('UpdateNotifier: startUpdate() aborted - info is null in state');
+      logger.warning(
+        'UpdateNotifier: startUpdate() aborted - info is null in state',
+      );
       return;
     }
 
@@ -103,13 +105,12 @@ class UpdateNotifier extends Notifier<UpdateState> {
     try {
       logger.info('UpdateNotifier: Calling OtaUpdate().execute()...');
       _otaSubscription = OtaUpdate()
-          .execute(
-            info.downloadUrl,
-            destinationFilename: 'arrmate_update.apk',
-          )
+          .execute(info.downloadUrl, destinationFilename: 'arrmate_update.apk')
           .listen(
             (OtaEvent event) {
-              logger.debug('UpdateNotifier: OTA Event received: ${event.status} (${event.value})');
+              logger.debug(
+                'UpdateNotifier: OTA Event received: ${event.status} (${event.value})',
+              );
               switch (event.status) {
                 case OtaStatus.DOWNLOADING:
                   state = state.copyWith(

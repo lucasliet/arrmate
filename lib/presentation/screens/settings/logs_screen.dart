@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:logger/logger.dart' as logger_pkg;
+
 import '../../providers/advanced_providers.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/core/services/logger_service.dart';
@@ -294,7 +294,7 @@ class _LogTile extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withAlpha(26),
                 child: Text(
                   message,
                   style: const TextStyle(fontFamily: 'monospace'),
@@ -312,7 +312,7 @@ class _LogTile extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(8),
-                  color: Colors.red.withOpacity(0.05),
+                  color: Colors.red.withAlpha(13),
                   child: Text(
                     exception!,
                     style: const TextStyle(

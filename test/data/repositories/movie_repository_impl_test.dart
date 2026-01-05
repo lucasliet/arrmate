@@ -37,28 +37,36 @@ void main() {
       isAvailable: true,
     );
 
-    test('updateMovie deve chamar API com moveFiles=false por padrão', () async {
-      // Given
-      when(() => mockApi.updateMovie(any(), moveFiles: any(named: 'moveFiles')))
-          .thenAnswer((_) async => tMovie);
+    test(
+      'updateMovie deve chamar API com moveFiles=false por padrão',
+      () async {
+        // Given
+        when(
+          () => mockApi.updateMovie(any(), moveFiles: any(named: 'moveFiles')),
+        ).thenAnswer((_) async => tMovie);
 
-      // When
-      await repository.updateMovie(tMovie);
+        // When
+        await repository.updateMovie(tMovie);
 
-      // Then
-      verify(() => mockApi.updateMovie(tMovie, moveFiles: false)).called(1);
-    });
+        // Then
+        verify(() => mockApi.updateMovie(tMovie, moveFiles: false)).called(1);
+      },
+    );
 
-    test('updateMovie deve repassar moveFiles=true para API quando solicitado', () async {
-      // Given
-      when(() => mockApi.updateMovie(any(), moveFiles: any(named: 'moveFiles')))
-          .thenAnswer((_) async => tMovie);
+    test(
+      'updateMovie deve repassar moveFiles=true para API quando solicitado',
+      () async {
+        // Given
+        when(
+          () => mockApi.updateMovie(any(), moveFiles: any(named: 'moveFiles')),
+        ).thenAnswer((_) async => tMovie);
 
-      // When
-      await repository.updateMovie(tMovie, moveFiles: true);
+        // When
+        await repository.updateMovie(tMovie, moveFiles: true);
 
-      // Then
-      verify(() => mockApi.updateMovie(tMovie, moveFiles: true)).called(1);
-    });
+        // Then
+        verify(() => mockApi.updateMovie(tMovie, moveFiles: true)).called(1);
+      },
+    );
   });
 }

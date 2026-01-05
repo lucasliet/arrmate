@@ -81,13 +81,18 @@ class UpdateDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 updateState.errorMessage ?? 'Ocorreu um erro inesperado.',
-                style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
             const SizedBox(height: 8),
             Text(
               'Status: ${updateState.status.name}',
-              style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.outline,
+              ),
             ),
           ],
         ),
@@ -101,7 +106,9 @@ class UpdateDialog extends ConsumerWidget {
               ),
               FilledButton(
                 onPressed: () {
-                  logger.info('UpdateDialog: Button "Atualizar Agora" clicked. Current status: ${updateState.status.name}');
+                  logger.info(
+                    'UpdateDialog: Button "Atualizar Agora" clicked. Current status: ${updateState.status.name}',
+                  );
                   ref.read(updateProvider.notifier).startUpdate();
                 },
                 child: const Text('Atualizar Agora'),

@@ -18,7 +18,6 @@ class SeriesSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
 
-  // ignore: use_setters_to_change_properties
   void update(String value) => state = value;
 }
 
@@ -30,7 +29,6 @@ class SeriesSortNotifier extends Notifier<SeriesSort> {
   @override
   SeriesSort build() => const SeriesSort();
 
-  // ignore: use_setters_to_change_properties
   void update(SeriesSort value) => state = value;
 }
 

@@ -1,4 +1,3 @@
-
 import 'package:arrmate/domain/models/models.dart';
 
 import 'package:arrmate/presentation/providers/instances_provider.dart';
@@ -18,9 +17,7 @@ final mockInstance = Instance(
   type: InstanceType.sonarr,
 );
 
-Series createMockSeries({
-  List<MediaImage> images = const [],
-}) {
+Series createMockSeries({List<MediaImage> images = const []}) {
   return Series(
     guid: 1,
     tvdbId: 100,
@@ -51,115 +48,109 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'SeriesDetailsScreen should prefer remoteUrl for background if available',
-      (tester) async {
-    const remoteUrl = 'http://remote.com/fanart.jpg';
-    final series = createMockSeries(
-      images: [
-        MediaImage(
-          coverType: 'fanart',
-          url: '/local/fanart.jpg',
-          remoteUrl: remoteUrl,
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentSonarrInstanceProvider.overrideWithValue(mockInstance),
-          seriesDetailsProvider(1).overrideWith((ref) => series),
+    'SeriesDetailsScreen should prefer remoteUrl for background if available',
+    (tester) async {
+      const remoteUrl = 'http://remote.com/fanart.jpg';
+      final series = createMockSeries(
+        images: [
+          MediaImage(
+            coverType: 'fanart',
+            url: '/local/fanart.jpg',
+            remoteUrl: remoteUrl,
+          ),
         ],
-        child: MaterialApp(
-          home: SeriesDetailsScreen(seriesId: 1),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+            seriesDetailsProvider(1).overrideWith((ref) => series),
+          ],
+          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),
-      ),
-    );
+      );
 
-    // Wait for async operations
-    await tester.pump();
+      // Wait for async operations
+      await tester.pump();
 
-    // Find CachedNetworkImage with correct URL
-    final imageFinder = find.byWidgetPredicate((widget) {
-      if (widget is CachedNetworkImage) {
-        return widget.imageUrl == remoteUrl;
-      }
-      return false;
-    });
+      // Find CachedNetworkImage with correct URL
+      final imageFinder = find.byWidgetPredicate((widget) {
+        if (widget is CachedNetworkImage) {
+          return widget.imageUrl == remoteUrl;
+        }
+        return false;
+      });
 
-    expect(imageFinder, findsOneWidget);
-  });
+      expect(imageFinder, findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'SeriesDetailsScreen should fall back to local URL with auth headers if remoteUrl is missing',
-      (tester) async {
-    const localUrl = '/local/fanart.jpg';
-    final series = createMockSeries(
-      images: [
-        MediaImage(
-          coverType: 'fanart',
-          url: localUrl,
-          remoteUrl: null,
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentSonarrInstanceProvider.overrideWithValue(mockInstance),
-          seriesDetailsProvider(1).overrideWith((ref) => series),
+    'SeriesDetailsScreen should fall back to local URL with auth headers if remoteUrl is missing',
+    (tester) async {
+      const localUrl = '/local/fanart.jpg';
+      final series = createMockSeries(
+        images: [
+          MediaImage(coverType: 'fanart', url: localUrl, remoteUrl: null),
         ],
-        child: MaterialApp(
-          home: SeriesDetailsScreen(seriesId: 1),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+            seriesDetailsProvider(1).overrideWith((ref) => series),
+          ],
+          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    final expectedUrl = 'http://localhost:8989/local/fanart.jpg';
+      final expectedUrl = 'http://localhost:8989/local/fanart.jpg';
 
-    final imageFinder = find.byWidgetPredicate((widget) {
-      if (widget is CachedNetworkImage) {
-        return widget.imageUrl == expectedUrl &&
-            widget.httpHeaders?['X-Api-Key'] == 'sonarr_apikey';
-      }
-      return false;
-    });
+      final imageFinder = find.byWidgetPredicate((widget) {
+        if (widget is CachedNetworkImage) {
+          return widget.imageUrl == expectedUrl &&
+              widget.httpHeaders?['X-Api-Key'] == 'sonarr_apikey';
+        }
+        return false;
+      });
 
-    expect(imageFinder, findsOneWidget);
-  });
+      expect(imageFinder, findsOneWidget);
+    },
+  );
 
-  testWidgets('SeriesDetailsScreen should show fallback container if no images',
-      (tester) async {
-    final series = createMockSeries(images: []);
+  testWidgets(
+    'SeriesDetailsScreen should show fallback container if no images',
+    (tester) async {
+      final series = createMockSeries(images: []);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentSonarrInstanceProvider.overrideWithValue(mockInstance),
-          seriesDetailsProvider(1).overrideWith((ref) => series),
-        ],
-        child: MaterialApp(
-          home: SeriesDetailsScreen(seriesId: 1),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+            seriesDetailsProvider(1).overrideWith((ref) => series),
+          ],
+          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    // The background stack is in the SliverAppBar.
-    final backgroundStackFinder = find.descendant(
-      of: find.byType(SliverAppBar),
-      matching: find.byType(Stack),
-    );
-    
-    final cachedImageInBackground = find.descendant(
-      of: backgroundStackFinder,
-      matching: find.byType(CachedNetworkImage),
-    );
+      // The background stack is in the SliverAppBar.
+      final backgroundStackFinder = find.descendant(
+        of: find.byType(SliverAppBar),
+        matching: find.byType(Stack),
+      );
 
-    expect(cachedImageInBackground, findsNothing);
-  });
+      final cachedImageInBackground = find.descendant(
+        of: backgroundStackFinder,
+        matching: find.byType(CachedNetworkImage),
+      );
+
+      expect(cachedImageInBackground, findsNothing);
+    },
+  );
 }

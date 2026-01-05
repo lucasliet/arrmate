@@ -46,7 +46,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                 width: 32,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withAlpha(102),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

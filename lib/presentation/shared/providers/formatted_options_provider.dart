@@ -14,7 +14,9 @@ Future<List<QualityProfile>> movieQualityProfiles(
 }
 
 @riverpod
-Future<List<RootFolder>> movieRootFolders(MovieRootFoldersRef ref) async {
+Future<List<RootFolder>> movieRootFolders(
+  MovieRootFoldersRef ref,
+) async {
   final api = ref.watch(radarrApiProvider);
   if (api == null) return [];
   return api.getRootFolders();
@@ -30,7 +32,9 @@ Future<List<QualityProfile>> seriesQualityProfiles(
 }
 
 @riverpod
-Future<List<RootFolder>> seriesRootFolders(SeriesRootFoldersRef ref) async {
+Future<List<RootFolder>> seriesRootFolders(
+  SeriesRootFoldersRef ref,
+) async {
   final api = ref.watch(sonarrApiProvider);
   if (api == null) return [];
   return api.getRootFolders();

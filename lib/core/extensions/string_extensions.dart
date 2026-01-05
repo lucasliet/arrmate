@@ -38,8 +38,9 @@ extension StringExtensions on String {
 
     if (firstOctet == 10) return true;
 
-    if (firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31)
+    if (firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31) {
       return true;
+    }
 
     if (firstOctet == 192 && secondOctet == 168) return true;
 

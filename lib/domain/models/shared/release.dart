@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:arrmate/domain/models/shared/quality_profile.dart'; // For Quality model if needed, or define Quality inside
 
 // Usually Quality is a shared nested object like { "quality": { "id": 1, "name": "..." }, "revision": ... }
 // I'll check if we already have a generic Quality model or if I should just map it dynamically or define it here.

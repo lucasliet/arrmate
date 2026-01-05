@@ -206,4 +206,38 @@ class SonarrApi {
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<List<MediaFile>> getSeriesFiles(int seriesId) async {
+    final response = await _client.get(
+      '/episodefile',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => MediaFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId) async {
+    final response = await _client.get(
+      '/extrafile',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => SeriesExtraFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<HistoryEvent>> getSeriesHistory(int seriesId) async {
+    final response = await _client.get(
+      '/history/series',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteSeriesFile(int fileId) async {
+    await _client.delete('/episodefile/$fileId');
+  }
 }

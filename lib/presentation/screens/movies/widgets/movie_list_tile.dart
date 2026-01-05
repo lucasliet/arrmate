@@ -6,11 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 
 class MovieListTile extends StatelessWidget {
-  const MovieListTile({
-    super.key,
-    required this.movie,
-    this.onTap,
-  });
+  const MovieListTile({super.key, required this.movie, this.onTap});
 
   final Movie movie;
   final VoidCallback? onTap;
@@ -26,11 +22,7 @@ class MovieListTile extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            SizedBox(
-              width: 80,
-              height: 120,
-              child: _buildPoster(context),
-            ),
+            SizedBox(width: 80, height: 120, child: _buildPoster(context)),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -98,8 +90,7 @@ class MovieListTile extends StatelessWidget {
   Widget _buildSubtitle(BuildContext context) {
     final theme = Theme.of(context);
     final year = movie.yearLabel;
-    final runtime =
-        movie.runtime > 0 ? formatRuntime(movie.runtime) : null;
+    final runtime = movie.runtime > 0 ? formatRuntime(movie.runtime) : null;
 
     return Row(
       children: [
@@ -181,11 +172,7 @@ class MovieListTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         if (movie.hasFile == true)
-          const Icon(
-            Icons.check_circle,
-            size: 18,
-            color: Colors.white,
-          )
+          const Icon(Icons.check_circle, size: 18, color: Colors.white)
         else if (movie.monitored)
           if (movie.isWaiting)
             Icon(

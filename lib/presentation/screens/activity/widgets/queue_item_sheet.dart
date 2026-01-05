@@ -281,10 +281,12 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     final diff = eta.difference(DateTime.now());
     if (diff.isNegative) return 'Done';
 
-    if (diff.inDays > 0)
+    if (diff.inDays > 0) {
       return '${diff.inDays}d ${diff.inHours % 24}h remaining';
-    if (diff.inHours > 0)
+    }
+    if (diff.inHours > 0) {
       return '${diff.inHours}h ${diff.inMinutes % 60}m remaining';
+    }
     if (diff.inMinutes > 0) return '${diff.inMinutes}m remaining';
     return 'Less than a minute';
   }

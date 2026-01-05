@@ -1,4 +1,3 @@
-
 import 'package:arrmate/domain/models/models.dart';
 
 import 'package:arrmate/presentation/providers/instances_provider.dart';
@@ -18,9 +17,7 @@ final mockInstance = Instance(
   type: InstanceType.radarr,
 );
 
-Movie createMockMovie({
-  List<MediaImage> images = const [],
-}) {
+Movie createMockMovie({List<MediaImage> images = const []}) {
   return Movie(
     tmdbId: 123,
     title: 'Test Movie',
@@ -43,113 +40,106 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'MovieDetailsScreen should prefer remoteUrl for background if available',
-      (tester) async {
-    const remoteUrl = 'http://remote.com/image.jpg';
-    final movie = createMockMovie(
-      images: [
-        MediaImage(
-          coverType: 'fanart',
-          url: '/local/image.jpg',
-          remoteUrl: remoteUrl,
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
-          movieDetailsProvider(1).overrideWith((ref) => movie),
+    'MovieDetailsScreen should prefer remoteUrl for background if available',
+    (tester) async {
+      const remoteUrl = 'http://remote.com/image.jpg';
+      final movie = createMockMovie(
+        images: [
+          MediaImage(
+            coverType: 'fanart',
+            url: '/local/image.jpg',
+            remoteUrl: remoteUrl,
+          ),
         ],
-        child: MaterialApp(
-          home: MovieDetailsScreen(movieId: 1),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+            movieDetailsProvider(1).overrideWith((ref) => movie),
+          ],
+          child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    final imageFinder = find.byWidgetPredicate((widget) {
-      if (widget is CachedNetworkImage) {
-        return widget.imageUrl == remoteUrl;
-      }
-      return false;
-    });
+      final imageFinder = find.byWidgetPredicate((widget) {
+        if (widget is CachedNetworkImage) {
+          return widget.imageUrl == remoteUrl;
+        }
+        return false;
+      });
 
-    expect(imageFinder, findsOneWidget);
-  });
+      expect(imageFinder, findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'MovieDetailsScreen should fall back to local URL with auth headers if remoteUrl is missing',
-      (tester) async {
-    const localUrl = '/local/image.jpg';
-    final movie = createMockMovie(
-      images: [
-        MediaImage(
-          coverType: 'fanart',
-          url: localUrl,
-          remoteUrl: null,
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
-          movieDetailsProvider(1).overrideWith((ref) => movie),
+    'MovieDetailsScreen should fall back to local URL with auth headers if remoteUrl is missing',
+    (tester) async {
+      const localUrl = '/local/image.jpg';
+      final movie = createMockMovie(
+        images: [
+          MediaImage(coverType: 'fanart', url: localUrl, remoteUrl: null),
         ],
-        child: MaterialApp(
-          home: MovieDetailsScreen(movieId: 1),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+            movieDetailsProvider(1).overrideWith((ref) => movie),
+          ],
+          child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    final expectedUrl = 'http://localhost:7878/local/image.jpg';
+      final expectedUrl = 'http://localhost:7878/local/image.jpg';
 
-    final imageFinder = find.byWidgetPredicate((widget) {
-      if (widget is CachedNetworkImage) {
-        return widget.imageUrl == expectedUrl &&
-            widget.httpHeaders?['X-Api-Key'] == 'apikey';
-      }
-      return false;
-    });
+      final imageFinder = find.byWidgetPredicate((widget) {
+        if (widget is CachedNetworkImage) {
+          return widget.imageUrl == expectedUrl &&
+              widget.httpHeaders?['X-Api-Key'] == 'apikey';
+        }
+        return false;
+      });
 
-    expect(imageFinder, findsOneWidget);
-  });
+      expect(imageFinder, findsOneWidget);
+    },
+  );
 
-  testWidgets('MovieDetailsScreen should show fallback container if no images',
-      (tester) async {
-    final movie = createMockMovie(images: []);
+  testWidgets(
+    'MovieDetailsScreen should show fallback container if no images',
+    (tester) async {
+      final movie = createMockMovie(images: []);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
-          movieDetailsProvider(1).overrideWith((ref) => movie),
-        ],
-        child: MaterialApp(
-          home: MovieDetailsScreen(movieId: 1),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+            movieDetailsProvider(1).overrideWith((ref) => movie),
+          ],
+          child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    final backgroundStackFinder = find.descendant(
-      of: find.byType(SliverAppBar),
-      matching: find.byType(Stack),
-    );
+      final backgroundStackFinder = find.descendant(
+        of: find.byType(SliverAppBar),
+        matching: find.byType(Stack),
+      );
 
-    final cachedImageInBackground = find.descendant(
-      of: backgroundStackFinder,
-      matching: find.byType(CachedNetworkImage),
-    );
+      final cachedImageInBackground = find.descendant(
+        of: backgroundStackFinder,
+        matching: find.byType(CachedNetworkImage),
+      );
 
-    expect(cachedImageInBackground, findsNothing);
-  });
+      expect(cachedImageInBackground, findsNothing);
+    },
+  );
 }
-

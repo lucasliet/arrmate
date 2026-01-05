@@ -11,6 +11,7 @@ import '../../shared/widgets/releases_sheet.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
 import 'widgets/movie_poster.dart';
+import 'widgets/movie_metadata_section.dart';
 import 'movie_edit_screen.dart';
 
 class MovieDetailsScreen extends ConsumerWidget {
@@ -300,6 +301,8 @@ class MovieDetailsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
                 _buildInfoGrid(context, movie),
+                const SizedBox(height: 24),
+                MovieMetadataSection(movieId: movieId),
                 const SizedBox(height: 32),
               ],
             ),

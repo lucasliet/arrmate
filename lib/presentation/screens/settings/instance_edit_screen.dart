@@ -215,8 +215,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 keyboardType: TextInputType.url,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Required';
-                  if (!value.startsWith('http'))
+                  if (!value.startsWith('http')) {
                     return 'Must start with http:// or https://';
+                  }
                   return null;
                 },
               ),
@@ -239,51 +240,53 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 title: const Text('Advanced Settings'),
                 subtitle: const Text('Custom Headers & Authentication'),
                 children: [
-                   SwitchListTile(
-                     title: const Text('Slow Instance Mode'),
-                     subtitle: const Text('Increase timeouts for slower connections'),
-                     value: _slowMode,
-                     onChanged: (value) => setState(() => _slowMode = value),
-                   ),
-                   const Divider(),
-                   ListView.builder(
-                     shrinkWrap: true,
-                     physics: const NeverScrollableScrollPhysics(),
-                     itemCount: _headers.length,
-                     itemBuilder: (context, index) {
-                       final header = _headers[index];
-                       return ListTile(
-                         title: Text(header.name),
-                         subtitle: Text(header.value),
-                         trailing: IconButton(
-                           icon: const Icon(Icons.delete),
-                           onPressed: () {
-                             setState(() {
-                               _headers.removeAt(index);
-                             });
-                           },
-                         ),
-                       );
-                     },
-                   ),
-                   Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                       children: [
-                         TextButton.icon(
-                           onPressed: _addHeaderDialog,
-                           icon: const Icon(Icons.add),
-                           label: const Text('Add Header'),
-                         ),
-                         TextButton.icon(
-                           onPressed: _addBasicAuthDialog,
-                           icon: const Icon(Icons.lock),
-                           label: const Text('Add Basic Auth'),
-                         ),
-                       ],
-                     ),
-                   ),
+                  SwitchListTile(
+                    title: const Text('Slow Instance Mode'),
+                    subtitle: const Text(
+                      'Increase timeouts for slower connections',
+                    ),
+                    value: _slowMode,
+                    onChanged: (value) => setState(() => _slowMode = value),
+                  ),
+                  const Divider(),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _headers.length,
+                    itemBuilder: (context, index) {
+                      final header = _headers[index];
+                      return ListTile(
+                        title: Text(header.name),
+                        subtitle: Text(header.value),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              _headers.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _addHeaderDialog,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Header'),
+                        ),
+                        TextButton.icon(
+                          onPressed: _addBasicAuthDialog,
+                          icon: const Icon(Icons.lock),
+                          label: const Text('Add Basic Auth'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -328,7 +331,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   Future<void> _addHeaderDialog() async {
     final nameCtrl = TextEditingController();
     final valueCtrl = TextEditingController();
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -354,12 +357,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           TextButton(
             onPressed: () {
               if (nameCtrl.text.isNotEmpty && valueCtrl.text.isNotEmpty) {
-                 setState(() {
-                   _headers.add(InstanceHeader(
-                     name: nameCtrl.text,
-                     value: valueCtrl.text,
-                   ));
-                 });
+                setState(() {
+                  _headers.add(
+                    InstanceHeader(name: nameCtrl.text, value: valueCtrl.text),
+                  );
+                });
               }
               Navigator.pop(context);
             },
@@ -381,8 +383,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-             const Text('Credentials will be encoded to Base64.'),
-             const SizedBox(height: 8),
+            const Text('Credentials will be encoded to Base64.'),
+            const SizedBox(height: 8),
             TextField(
               controller: userCtrl,
               decoration: const InputDecoration(labelText: 'Username'),
@@ -402,14 +404,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           TextButton(
             onPressed: () {
               if (userCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
-                 final raw = '${userCtrl.text}:${passCtrl.text}';
-                 final encoded = base64Encode(utf8.encode(raw));
-                 setState(() {
-                   _headers.add(InstanceHeader(
-                     name: 'Authorization',
-                     value: 'Basic $encoded',
-                   ));
-                 });
+                final raw = '${userCtrl.text}:${passCtrl.text}';
+                final encoded = base64Encode(utf8.encode(raw));
+                setState(() {
+                  _headers.add(
+                    InstanceHeader(
+                      name: 'Authorization',
+                      value: 'Basic $encoded',
+                    ),
+                  );
+                });
               }
               Navigator.pop(context);
             },

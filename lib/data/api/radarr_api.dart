@@ -141,7 +141,10 @@ class RadarrApi {
     return response;
   }
 
-  Future<dynamic> sendCommand(String name, {Map<String, dynamic>? params}) async {
+  Future<dynamic> sendCommand(
+    String name, {
+    Map<String, dynamic>? params,
+  }) async {
     final body = {'name': name, ...?params};
     final response = await _client.post(
       '/command',
@@ -200,5 +203,39 @@ class RadarrApi {
     return (response as List)
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<MediaFile>> getMovieFiles(int movieId) async {
+    final response = await _client.get(
+      '/moviefile',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => MediaFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<MovieExtraFile>> getMovieExtraFiles(int movieId) async {
+    final response = await _client.get(
+      '/extrafile',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => MovieExtraFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<HistoryEvent>> getMovieHistory(int movieId) async {
+    final response = await _client.get(
+      '/history/movie',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteMovieFile(int fileId) async {
+    await _client.delete('/moviefile/$fileId');
   }
 }

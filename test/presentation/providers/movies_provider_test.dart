@@ -24,7 +24,7 @@ void main() {
     when(() => mockRepository.getMovies()).thenAnswer((_) async => []);
 
     // Listen to the provider
-    final listener = container.listen(moviesProvider, (_, __) {});
+    container.listen(moviesProvider, (_, _) {});
 
     // wait for async build
     await container.read(moviesProvider.future);

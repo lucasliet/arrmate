@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/data/api/sonarr_api.dart';
 import 'package:arrmate/data/repositories/series_repository_impl.dart';
 import 'package:arrmate/domain/models/models.dart';
-import 'package:arrmate/domain/models/shared/root_folder.dart';
 
 class MockSonarrApi extends Mock implements SonarrApi {}
 
@@ -33,29 +32,37 @@ void main() {
       added: DateTime(2024, 1, 1),
     );
 
-    test('updateSeries deve chamar API com moveFiles=false por padrão', () async {
-      // Given
-      when(() => mockApi.updateSeries(any(), moveFiles: any(named: 'moveFiles')))
-          .thenAnswer((_) async => tSeries);
+    test(
+      'updateSeries deve chamar API com moveFiles=false por padrão',
+      () async {
+        // Given
+        when(
+          () => mockApi.updateSeries(any(), moveFiles: any(named: 'moveFiles')),
+        ).thenAnswer((_) async => tSeries);
 
-      // When
-      await repository.updateSeries(tSeries);
+        // When
+        await repository.updateSeries(tSeries);
 
-      // Then
-      verify(() => mockApi.updateSeries(tSeries, moveFiles: false)).called(1);
-    });
+        // Then
+        verify(() => mockApi.updateSeries(tSeries, moveFiles: false)).called(1);
+      },
+    );
 
-    test('updateSeries deve repassar moveFiles=true para API quando solicitado', () async {
-      // Given
-      when(() => mockApi.updateSeries(any(), moveFiles: any(named: 'moveFiles')))
-          .thenAnswer((_) async => tSeries);
+    test(
+      'updateSeries deve repassar moveFiles=true para API quando solicitado',
+      () async {
+        // Given
+        when(
+          () => mockApi.updateSeries(any(), moveFiles: any(named: 'moveFiles')),
+        ).thenAnswer((_) async => tSeries);
 
-      // When
-      await repository.updateSeries(tSeries, moveFiles: true);
+        // When
+        await repository.updateSeries(tSeries, moveFiles: true);
 
-      // Then
-      verify(() => mockApi.updateSeries(tSeries, moveFiles: true)).called(1);
-    });
+        // Then
+        verify(() => mockApi.updateSeries(tSeries, moveFiles: true)).called(1);
+      },
+    );
 
     test('getRootFolders deve retornar lista da API', () async {
       // Given

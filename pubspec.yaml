@@ -35,6 +35,7 @@ dependencies:
   logger: ^2.6.2
   device_info_plus: ^12.3.0
   path_provider: ^2.1.5
+  timeago: ^3.7.0
 
 dev_dependencies:
   flutter_test:
