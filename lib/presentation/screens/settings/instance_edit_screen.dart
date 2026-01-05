@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'dart:convert';
-import '../../../../domain/models/instance/instance.dart';
+import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/data_providers.dart';
 
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
@@ -71,39 +71,31 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final url = _urlController.text.trim();
-    final apiKey = _apiKeyController.text.trim();
+    final tempInstance = Instance(
+      label: _nameController.text.trim(),
+      url: _urlController.text.trim(),
+      apiKey: _apiKeyController.text.trim(),
+      type: _type,
+      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
+      headers: _headers,
+    );
 
-    // Simple test: Try to hit system/status
     try {
-      final headersMap = <String, String>{'X-Api-Key': apiKey};
-      for (final header in _headers) {
-        headersMap[header.name] = header.value;
-      }
+      final instanceRepo = ref.read(instanceRepositoryProvider);
 
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: url,
-          connectTimeout: const Duration(seconds: 10),
-          headers: headersMap,
-        ),
-      );
+      final results = await Future.wait([
+        instanceRepo.getSystemStatus(tempInstance),
+        instanceRepo.getTags(tempInstance),
+      ]);
 
-      // Radarr/Sonarr usually have /api/v3/system/status
-      final response = await dio.get('/api/v3/system/status');
+      final status = results[0] as InstanceStatus;
+      final tags = results[1] as List<Tag>;
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _testSuccess = true;
-          _testMessage =
-              'Connection successful! Version: ${response.data['version']}';
-        });
-      } else {
-        setState(() {
-          _testSuccess = false;
-          _testMessage = 'Failed: ${response.statusCode}';
-        });
-      }
+      setState(() {
+        _testSuccess = true;
+        _testMessage =
+            'Connection successful!\nVersion: ${status.version}\nInstance: ${status.instanceName}\nTags: ${tags.length} available';
+      });
     } catch (e) {
       setState(() {
         _testSuccess = false;
@@ -116,11 +108,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final instance = Instance(
-      id: widget.instanceId, // Reuse ID if editing, generated if null
+      id: widget.instanceId,
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
       apiKey: _apiKeyController.text.trim(),
@@ -130,12 +122,20 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     );
 
     if (widget.instanceId != null) {
-      ref.read(instancesProvider.notifier).updateInstance(instance);
+      await ref.read(instancesProvider.notifier).updateInstance(instance);
     } else {
-      ref.read(instancesProvider.notifier).addInstance(instance);
+      await ref.read(instancesProvider.notifier).addInstance(instance);
     }
 
-    context.pop();
+    try {
+      await ref
+          .read(instancesProvider.notifier)
+          .validateAndCacheInstanceData(instance, ref);
+    } catch (_) {}
+
+    if (mounted) {
+      context.pop();
+    }
   }
 
   void _delete() {

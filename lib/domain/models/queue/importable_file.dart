@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../movie/movie.dart';
 import '../series/series.dart';
-import '../shared/media_quality.dart';
+import '../shared/media_file.dart';
 import '../shared/media_language.dart';
 
 class ImportableFile extends Equatable {

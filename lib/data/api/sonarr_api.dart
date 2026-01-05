@@ -262,4 +262,16 @@ class SonarrApi {
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }
+
+  Future<InstanceStatus> getSystemStatus() async {
+    final response = await _client.get('/system/status');
+    return InstanceStatus.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<Tag>> getTags() async {
+    final response = await _client.get('/tag');
+    return (response as List)
+        .map((e) => Tag.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

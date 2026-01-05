@@ -2,18 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'activity_provider.dart';
 
 final manualImportFilesProvider = FutureProvider.autoDispose
     .family<List<ImportableFile>, String>((ref, downloadId) async {
-      final queueItem = ref
-          .watch(queueProvider)
-          .value
-          ?.records
-          .firstWhere((item) => item.downloadId == downloadId);
-
-      if (queueItem == null) {
-        throw Exception('Queue item not found');
-      }
+      final queueItems = await ref.watch(queueProvider.future);
+      final queueItem = queueItems.firstWhere(
+        (item) => item.downloadId == downloadId,
+        orElse: () => throw Exception('Queue item not found'),
+      );
 
       if (queueItem.movieId != null) {
         final repository = ref.watch(movieRepositoryProvider);
@@ -44,15 +41,11 @@ class ManualImportController {
   ManualImportController(this.ref, this.downloadId);
 
   Future<void> importFiles(List<ImportableFile> files) async {
-    final queueItem = ref
-        .read(queueProvider)
-        .value
-        ?.records
-        .firstWhere((item) => item.downloadId == downloadId);
-
-    if (queueItem == null) {
-      throw Exception('Queue item not found');
-    }
+    final queueItems = await ref.read(queueProvider.future);
+    final queueItem = queueItems.firstWhere(
+      (item) => item.downloadId == downloadId,
+      orElse: () => throw Exception('Queue item not found'),
+    );
 
     if (queueItem.movieId != null) {
       final repository = ref.read(movieRepositoryProvider);

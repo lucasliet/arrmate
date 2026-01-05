@@ -49,11 +49,19 @@ class InstanceStatus extends Equatable {
   final String appName;
   final String instanceName;
   final String version;
+  final bool? isDebug;
+  final String? authentication;
+  final DateTime? startTime;
+  final String? urlBase;
 
   const InstanceStatus({
     required this.appName,
     required this.instanceName,
     required this.version,
+    this.isDebug,
+    this.authentication,
+    this.startTime,
+    this.urlBase,
   });
 
   factory InstanceStatus.fromJson(Map<String, dynamic> json) {
@@ -61,11 +69,25 @@ class InstanceStatus extends Equatable {
       appName: json['appName'] as String,
       instanceName: json['instanceName'] as String,
       version: json['version'] as String,
+      isDebug: json['isDebug'] as bool?,
+      authentication: json['authentication'] as String?,
+      startTime: json['startTime'] != null
+          ? DateTime.parse(json['startTime'] as String)
+          : null,
+      urlBase: json['urlBase'] as String?,
     );
   }
 
   @override
-  List<Object?> get props => [appName, instanceName, version];
+  List<Object?> get props => [
+    appName,
+    instanceName,
+    version,
+    isDebug,
+    authentication,
+    startTime,
+    urlBase,
+  ];
 }
 
 class Instance extends Equatable {
