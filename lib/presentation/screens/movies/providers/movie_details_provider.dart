@@ -57,6 +57,12 @@ class MovieController {
   Future<void> refresh() async {
     ref.invalidate(movieDetailsProvider(movieId));
   }
+
+  Future<void> automaticSearch() async {
+    final repository = ref.read(movieRepositoryProvider);
+    if (repository == null) return;
+    await repository.searchMovies([movieId]);
+  }
 }
 
 final movieControllerProvider = Provider.autoDispose

@@ -37,4 +37,5 @@ abstract class MovieRepository {
   Future<List<QualityProfile>> getQualityProfiles();
 
   Future<List<RootFolder>> getRootFolders();
+  Future<void> searchMovies(List<int> movieIds);
 }

@@ -141,6 +141,16 @@ class RadarrApi {
     return response;
   }
 
+  Future<dynamic> sendCommand(String name, {Map<String, dynamic>? params}) async {
+    final body = {'name': name, ...?params};
+    final response = await _client.post(
+      '/command',
+      data: body,
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
+    return response;
+  }
+
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,

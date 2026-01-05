@@ -88,4 +88,9 @@ class MovieRepositoryImpl implements MovieRepository {
   Future<List<QualityProfile>> getQualityProfiles() {
     return _api.getQualityProfiles();
   }
+
+  @override
+  Future<void> searchMovies(List<int> movieIds) {
+    return _api.sendCommand('MoviesSearch', params: {'movieIds': movieIds});
+  }
 }

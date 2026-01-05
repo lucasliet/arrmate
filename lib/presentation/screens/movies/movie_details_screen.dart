@@ -128,8 +128,33 @@ class MovieDetailsScreen extends ConsumerWidget {
               },
             ),
             IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'Automatic Search',
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(movieControllerProvider(movieId))
+                      .automaticSearch();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Search started')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.travel_explore),
-              tooltip: 'Search Releases',
+              tooltip: 'Interactive Search',
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
