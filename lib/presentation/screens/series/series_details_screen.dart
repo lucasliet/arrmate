@@ -40,11 +40,22 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Series series) {
     final instance = ref.watch(currentSonarrInstanceProvider);
-    final fanartUrl = series.images
-        .where((i) => i.coverType == 'fanart')
-        .firstOrNull
-        ?.url;
+    final fanartImage =
+        series.images.where((i) => i.coverType == 'fanart').firstOrNull;
+    final fanartRemoteUrl = fanartImage?.remoteUrl;
+    final fanartLocalUrl = fanartImage?.url;
     final theme = Theme.of(context);
+
+    String? backgroundImageUrl;
+    Map<String, String>? backgroundHeaders;
+
+    if (fanartRemoteUrl != null) {
+      backgroundImageUrl = fanartRemoteUrl;
+    } else if (fanartLocalUrl != null && instance != null) {
+      backgroundImageUrl =
+          '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartLocalUrl';
+      backgroundHeaders = instance.authHeaders;
+    }
 
     return CustomScrollView(
       slivers: [
@@ -55,10 +66,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
             background: Stack(
               fit: StackFit.expand,
               children: [
-                if (fanartUrl != null && instance != null)
+                if (backgroundImageUrl != null)
                   CachedNetworkImage(
-                    imageUrl: '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartUrl',
-                    httpHeaders: instance.authHeaders,
+                    imageUrl: backgroundImageUrl,
+                    httpHeaders: backgroundHeaders,
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) => Container(
                       color: theme.colorScheme.surfaceContainerHighest,

@@ -41,8 +41,21 @@ class MovieDetailsScreen extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Movie movie) {
     final instance = ref.watch(currentRadarrInstanceProvider);
-    final fanartUrl = movie.images.where((i) => i.isFanart).firstOrNull?.url;
+    final fanartImage = movie.images.where((i) => i.isFanart).firstOrNull;
+    final fanartRemoteUrl = fanartImage?.remoteUrl;
+    final fanartLocalUrl = fanartImage?.url;
     final theme = Theme.of(context);
+
+    String? backgroundImageUrl;
+    Map<String, String>? backgroundHeaders;
+
+    if (fanartRemoteUrl != null) {
+      backgroundImageUrl = fanartRemoteUrl;
+    } else if (fanartLocalUrl != null && instance != null) {
+      backgroundImageUrl =
+          '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartLocalUrl';
+      backgroundHeaders = instance.authHeaders;
+    }
 
     return CustomScrollView(
       slivers: [
@@ -53,10 +66,10 @@ class MovieDetailsScreen extends ConsumerWidget {
             background: Stack(
               fit: StackFit.expand,
               children: [
-                if (fanartUrl != null && instance != null)
+                if (backgroundImageUrl != null)
                   CachedNetworkImage(
-                    imageUrl: '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartUrl',
-                    httpHeaders: instance.authHeaders,
+                    imageUrl: backgroundImageUrl,
+                    httpHeaders: backgroundHeaders,
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) => Container(
                       color: theme.colorScheme.surfaceContainerHighest,
