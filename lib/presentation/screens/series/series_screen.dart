@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/sort_bottom_sheet.dart';
+import '../../providers/settings_provider.dart';
 import 'series_add_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
+import 'widgets/series_list_tile.dart';
 
 class SeriesScreen extends ConsumerStatefulWidget {
   const SeriesScreen({super.key});
@@ -65,6 +67,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   @override
   Widget build(BuildContext context) {
     final seriesAsync = ref.watch(filteredSeriesProvider);
+    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -109,6 +112,22 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     icon: const Icon(Icons.sort),
                     onPressed: () => _showSortSheet(context, ref),
                   ),
+                  IconButton(
+                    icon: Icon(
+                      settings.viewMode == ViewMode.grid
+                          ? Icons.view_list
+                          : Icons.grid_view,
+                    ),
+                    tooltip: settings.viewMode == ViewMode.grid
+                        ? 'Switch to List'
+                        : 'Switch to Grid',
+                    onPressed: () {
+                      final newMode = settings.viewMode == ViewMode.grid
+                          ? ViewMode.list
+                          : ViewMode.grid;
+                      ref.read(settingsProvider.notifier).setViewMode(newMode);
+                    },
+                  ),
                 ],
               ],
             ),
@@ -131,6 +150,20 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             ? 'Try parsing your search query or filters.'
                             : 'Add series to your Sonarr library to see them here.',
                       ),
+                    );
+                  }
+
+                  if (settings.viewMode == ViewMode.list) {
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final series = seriesList[index];
+                        return SeriesListTile(
+                          series: series,
+                          onTap: () {
+                            context.go('/series/${series.id}');
+                          },
+                        );
+                      }, childCount: seriesList.length),
                     );
                   }
 
