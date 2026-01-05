@@ -10,6 +10,7 @@ import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
 import 'season_details_screen.dart';
+import 'series_edit_screen.dart';
 
 class SeriesDetailsScreen extends ConsumerWidget {
   final int seriesId;
@@ -56,12 +57,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
               children: [
                 if (fanartUrl != null && instance != null)
                   CachedNetworkImage(
-                    imageUrl: Uri.parse(instance.url)
-                        .replace(
-                          path: '${Uri.parse(instance.url).path}$fanartUrl'
-                              .replaceAll('//', '/'),
-                        )
-                        .toString(),
+                    imageUrl: '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartUrl',
                     httpHeaders: instance.authHeaders,
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) => Container(
@@ -122,8 +118,12 @@ class SeriesDetailsScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Edit not implemented')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SeriesEditScreen(series: series),
+                    fullscreenDialog: true,
+                  ),
                 );
               },
             ),

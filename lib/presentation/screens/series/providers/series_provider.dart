@@ -111,6 +111,13 @@ class SeriesController {
     ref.invalidate(seriesDetailsProvider(seriesId));
   }
 
+  Future<void> updateSeries(Series series, {bool moveFiles = false}) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    await repository.updateSeries(series, moveFiles: moveFiles);
+    ref.invalidate(seriesDetailsProvider(seriesId));
+  }
+
   Future<void> deleteSeries({
     bool deleteFiles = false,
     bool addExclusion = false,

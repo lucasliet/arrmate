@@ -34,10 +34,11 @@ class RadarrApi {
     return Movie.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<Movie> updateMovie(Movie movie) async {
+  Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) async {
     final response = await _client.put(
       '/movie/${movie.id}',
       data: movie.toJson(),
+      queryParameters: {'moveFiles': moveFiles},
     );
     return Movie.fromJson(response as Map<String, dynamic>);
   }

@@ -34,10 +34,11 @@ class SonarrApi {
     return Series.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<Series> updateSeries(Series series) async {
+  Future<Series> updateSeries(Series series, {bool moveFiles = false}) async {
     final response = await _client.put(
       '/series/${series.id}',
       data: series.toJson(),
+      queryParameters: {'moveFiles': moveFiles},
     );
     return Series.fromJson(response as Map<String, dynamic>);
   }

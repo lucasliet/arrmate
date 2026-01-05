@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
+import 'dart:convert';
 import '../../../../domain/models/instance/instance.dart';
 import '../../providers/instances_provider.dart';
 
@@ -20,9 +21,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
   InstanceType _type = InstanceType.radarr;
+  bool _slowMode = false;
   bool _isTesting = false;
   bool _testSuccess = false;
   String? _testMessage;
+  List<InstanceHeader> _headers = [];
 
   @override
   void initState() {
@@ -43,6 +46,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           _apiKeyController.text = existing.apiKey;
           setState(() {
             _type = existing.type;
+            _slowMode = existing.mode == InstanceMode.slow;
+            _headers = List.from(existing.headers);
           });
         }
       }
@@ -71,11 +76,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
     // Simple test: Try to hit system/status
     try {
+      final headersMap = <String, String>{'X-Api-Key': apiKey};
+      for (final header in _headers) {
+        headersMap[header.name] = header.value;
+      }
+
       final dio = Dio(
         BaseOptions(
           baseUrl: url,
           connectTimeout: const Duration(seconds: 10),
-          headers: {'X-Api-Key': apiKey},
+          headers: headersMap,
         ),
       );
 
@@ -115,6 +125,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       url: _urlController.text.trim(),
       apiKey: _apiKeyController.text.trim(),
       type: _type,
+      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
+      headers: _headers,
     );
 
     if (widget.instanceId != null) {
@@ -220,6 +232,60 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Required' : null,
               ),
+              const SizedBox(height: 16),
+
+              // Custom Headers (Advanced)
+              ExpansionTile(
+                title: const Text('Advanced Settings'),
+                subtitle: const Text('Custom Headers & Authentication'),
+                children: [
+                   SwitchListTile(
+                     title: const Text('Slow Instance Mode'),
+                     subtitle: const Text('Increase timeouts for slower connections'),
+                     value: _slowMode,
+                     onChanged: (value) => setState(() => _slowMode = value),
+                   ),
+                   const Divider(),
+                   ListView.builder(
+                     shrinkWrap: true,
+                     physics: const NeverScrollableScrollPhysics(),
+                     itemCount: _headers.length,
+                     itemBuilder: (context, index) {
+                       final header = _headers[index];
+                       return ListTile(
+                         title: Text(header.name),
+                         subtitle: Text(header.value),
+                         trailing: IconButton(
+                           icon: const Icon(Icons.delete),
+                           onPressed: () {
+                             setState(() {
+                               _headers.removeAt(index);
+                             });
+                           },
+                         ),
+                       );
+                     },
+                   ),
+                   Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                     child: Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                       children: [
+                         TextButton.icon(
+                           onPressed: _addHeaderDialog,
+                           icon: const Icon(Icons.add),
+                           label: const Text('Add Header'),
+                         ),
+                         TextButton.icon(
+                           onPressed: _addBasicAuthDialog,
+                           icon: const Icon(Icons.lock),
+                           label: const Text('Add Basic Auth'),
+                         ),
+                       ],
+                     ),
+                   ),
+                ],
+              ),
               const SizedBox(height: 24),
 
               // Test Connection
@@ -255,6 +321,101 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _addHeaderDialog() async {
+    final nameCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Header'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Header Name'),
+            ),
+            TextField(
+              controller: valueCtrl,
+              decoration: const InputDecoration(labelText: 'Header Value'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (nameCtrl.text.isNotEmpty && valueCtrl.text.isNotEmpty) {
+                 setState(() {
+                   _headers.add(InstanceHeader(
+                     name: nameCtrl.text,
+                     value: valueCtrl.text,
+                   ));
+                 });
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addBasicAuthDialog() async {
+    final userCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Basic Authentication'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             const Text('Credentials will be encoded to Base64.'),
+             const SizedBox(height: 8),
+            TextField(
+              controller: userCtrl,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: passCtrl,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (userCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
+                 final raw = '${userCtrl.text}:${passCtrl.text}';
+                 final encoded = base64Encode(utf8.encode(raw));
+                 setState(() {
+                   _headers.add(InstanceHeader(
+                     name: 'Authorization',
+                     value: 'Basic $encoded',
+                   ));
+                 });
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
   }

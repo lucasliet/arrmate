@@ -11,6 +11,7 @@ import '../../shared/widgets/releases_sheet.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
 import 'widgets/movie_poster.dart';
+import 'movie_edit_screen.dart';
 
 class MovieDetailsScreen extends ConsumerWidget {
   final int movieId;
@@ -54,12 +55,7 @@ class MovieDetailsScreen extends ConsumerWidget {
               children: [
                 if (fanartUrl != null && instance != null)
                   CachedNetworkImage(
-                    imageUrl: Uri.parse(instance.url)
-                        .replace(
-                          path: '${Uri.parse(instance.url).path}$fanartUrl'
-                              .replaceAll('//', '/'),
-                        )
-                        .toString(),
+                    imageUrl: '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartUrl',
                     httpHeaders: instance.authHeaders,
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) => Container(
@@ -136,9 +132,10 @@ class MovieDetailsScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                // TODO: Edit movie
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Edit not implemented')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => MovieEditScreen(movie: movie),
+                  ),
                 );
               },
             ),

@@ -4,7 +4,7 @@ abstract class SeriesRepository {
   Future<List<Series>> getSeries();
   Future<Series> getSeriesById(int id);
   Future<Series> addSeries(Series series);
-  Future<Series> updateSeries(Series series);
+  Future<Series> updateSeries(Series series, {bool moveFiles = false});
   Future<void> deleteSeries(
     int id, {
     bool deleteFiles = false,
@@ -35,4 +35,5 @@ abstract class SeriesRepository {
   Future<List<HealthCheck>> getHealth();
 
   Future<List<QualityProfile>> getQualityProfiles();
+  Future<List<RootFolder>> getRootFolders();
 }

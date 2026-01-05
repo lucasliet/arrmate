@@ -17,7 +17,8 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<Series> addSeries(Series series) => _api.addSeries(series);
 
   @override
-  Future<Series> updateSeries(Series series) => _api.updateSeries(series);
+  Future<Series> updateSeries(Series series, {bool moveFiles = false}) =>
+      _api.updateSeries(series, moveFiles: moveFiles);
 
   @override
   Future<void> deleteSeries(
@@ -89,5 +90,10 @@ class SeriesRepositoryImpl implements SeriesRepository {
   @override
   Future<List<QualityProfile>> getQualityProfiles() {
     return _api.getQualityProfiles();
+  }
+
+  @override
+  Future<List<RootFolder>> getRootFolders() {
+    return _api.getRootFolders();
   }
 }

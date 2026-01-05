@@ -17,7 +17,11 @@ class MovieRepositoryImpl implements MovieRepository {
   Future<Movie> addMovie(Movie movie) => _api.addMovie(movie);
 
   @override
-  Future<Movie> updateMovie(Movie movie) => _api.updateMovie(movie);
+  Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) =>
+      _api.updateMovie(movie, moveFiles: moveFiles);
+
+  @override
+  Future<List<RootFolder>> getRootFolders() => _api.getRootFolders();
 
   @override
   Future<void> deleteMovie(

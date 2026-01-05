@@ -4,7 +4,7 @@ abstract class MovieRepository {
   Future<List<Movie>> getMovies();
   Future<Movie> getMovie(int id);
   Future<Movie> addMovie(Movie movie);
-  Future<Movie> updateMovie(Movie movie);
+  Future<Movie> updateMovie(Movie movie, {bool moveFiles = false});
   Future<void> deleteMovie(
     int id, {
     bool deleteFiles = false,
@@ -35,4 +35,6 @@ abstract class MovieRepository {
   Future<List<HealthCheck>> getHealth();
 
   Future<List<QualityProfile>> getQualityProfiles();
+
+  Future<List<RootFolder>> getRootFolders();
 }
