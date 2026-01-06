@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Defines the available color schemes for the application.
 enum AppColorScheme {
   blue('Blue', Colors.blue),
   indigo('Indigo', Colors.indigo),
@@ -11,24 +12,31 @@ enum AppColorScheme {
   green('Green', Colors.green),
   teal('Teal', Colors.teal);
 
+  /// Usage label for the color scheme.
   final String label;
+
+  /// The primary color of the scheme.
   final MaterialColor color;
 
   const AppColorScheme(this.label, this.color);
 
+  /// Generates a [ColorScheme] based on this scheme and the given brightness.
   ColorScheme toColorScheme(Brightness brightness) {
     return ColorScheme.fromSeed(seedColor: color, brightness: brightness);
   }
 }
 
+/// Defines the application theme modes.
 enum AppAppearance {
   system('System'),
   light('Light'),
   dark('Dark');
 
+  /// Usage label for the appearance mode.
   final String label;
   const AppAppearance(this.label);
 
+  /// Returns the corresponding [ThemeMode].
   ThemeMode get themeMode {
     switch (this) {
       case AppAppearance.system:
@@ -41,11 +49,14 @@ enum AppAppearance {
   }
 }
 
+/// Helper class for building the application theme.
 class AppTheme {
+  /// Builds the light theme with the specified color scheme.
   static ThemeData light(AppColorScheme scheme) {
     return _buildTheme(scheme.toColorScheme(Brightness.light));
   }
 
+  /// Builds the dark theme with the specified color scheme.
   static ThemeData dark(AppColorScheme scheme) {
     return _buildTheme(scheme.toColorScheme(Brightness.dark));
   }

@@ -5,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 
+/// A list tile widget for displaying movie details in a list view.
 class MovieListTile extends StatelessWidget {
   const MovieListTile({super.key, required this.movie, this.onTap});
 

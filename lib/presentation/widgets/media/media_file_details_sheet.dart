@@ -3,6 +3,7 @@ import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// A modal sheet displaying detailed information about a media file.
 class MediaFileDetailsSheet extends StatelessWidget {
   final MediaFile file;
   final VoidCallback? onDelete;

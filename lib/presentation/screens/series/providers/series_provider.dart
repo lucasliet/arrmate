@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
-// Series List Provider
+/// Provider that holds the list of series fetched from Sonarr.
 final seriesProvider = AsyncNotifierProvider<SeriesNotifier, List<Series>>(
   SeriesNotifier.new,
 );
@@ -32,6 +32,7 @@ class SeriesSortNotifier extends Notifier<SeriesSort> {
   void update(SeriesSort value) => state = value;
 }
 
+/// Provider that returns the list of series filtered by search query and sorted by options.
 final filteredSeriesProvider = Provider<AsyncValue<List<Series>>>((ref) {
   final seriesState = ref.watch(seriesProvider);
   final searchQuery = ref.watch(seriesSearchProvider).toLowerCase();
@@ -59,6 +60,7 @@ final filteredSeriesProvider = Provider<AsyncValue<List<Series>>>((ref) {
   });
 });
 
+/// Notifier to manage fetching and refreshing the series list.
 class SeriesNotifier extends AsyncNotifier<List<Series>> {
   @override
   FutureOr<List<Series>> build() async {
@@ -80,7 +82,7 @@ class SeriesNotifier extends AsyncNotifier<List<Series>> {
   }
 }
 
-// Single Series Details Provider
+/// Provider for fetching the details of a specific series using its ID.
 final seriesDetailsProvider = FutureProvider.autoDispose.family<Series, int>((
   ref,
   seriesId,
@@ -92,7 +94,7 @@ final seriesDetailsProvider = FutureProvider.autoDispose.family<Series, int>((
   return repository.getSeriesById(seriesId);
 });
 
-// Helper for Series Actions
+/// Controller for managing series actions (monitor, delete, update).
 class SeriesController {
   final Ref ref;
   final int seriesId;

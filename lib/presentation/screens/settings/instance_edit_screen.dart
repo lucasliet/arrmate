@@ -6,6 +6,7 @@ import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/data_providers.dart';
 
+/// Screen for creating, editing, and deleting Radarr/Sonarr instances.
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
 

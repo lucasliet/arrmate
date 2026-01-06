@@ -1,10 +1,12 @@
 import 'dart:async';
+import '../../../../core/services/logger_service.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
+/// Provider that holds the list of movies fetched from Radarr.
 final moviesProvider = AsyncNotifierProvider<MoviesNotifier, List<Movie>>(
   MoviesNotifier.new,
 );
@@ -31,6 +33,7 @@ class MovieSortNotifier extends Notifier<MovieSort> {
   void update(MovieSort value) => state = value;
 }
 
+/// Provider that returns the list of movies filtered by search query and sorted by options.
 final filteredMoviesProvider = Provider<AsyncValue<List<Movie>>>((ref) {
   final moviesState = ref.watch(moviesProvider);
   final searchQuery = ref.watch(movieSearchProvider).toLowerCase();
@@ -58,11 +61,14 @@ final filteredMoviesProvider = Provider<AsyncValue<List<Movie>>>((ref) {
   });
 });
 
+/// Notifier to manage fetching and refreshing the movie list.
 class MoviesNotifier extends AsyncNotifier<List<Movie>> {
   @override
   FutureOr<List<Movie>> build() async {
     final repository = ref.watch(movieRepositoryProvider);
+    logger.debug('[MoviesProvider] Building movie list');
     if (repository == null) {
+      logger.debug('[MoviesProvider] No repository available');
       return [];
     }
 
@@ -74,6 +80,7 @@ class MoviesNotifier extends AsyncNotifier<List<Movie>> {
   }
 
   Future<void> refresh() async {
+    logger.debug('[MoviesProvider] Refreshing movies');
     // Invalidating the provider will cause it to dispose and rebuild,
     // triggering the build() method again.
     ref.invalidateSelf();

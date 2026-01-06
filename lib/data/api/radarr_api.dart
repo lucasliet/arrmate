@@ -2,6 +2,7 @@ import '../../core/network/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// API Client for interacting with Radarr.
 class RadarrApi {
   final ApiClient _client;
   final Instance instance;
@@ -14,6 +15,7 @@ class RadarrApi {
             headers: instance.authHeaders,
           );
 
+  /// Retrieves all movies from the Radarr library.
   Future<List<Movie>> getMovies() async {
     final response = await _client.get(
       '/movie',
@@ -24,16 +26,21 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves a specific movie by its [id].
   Future<Movie> getMovie(int id) async {
     final response = await _client.get('/movie/$id');
     return Movie.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Adds a new movie to the library.
   Future<Movie> addMovie(Movie movie) async {
     final response = await _client.post('/movie', data: movie.toJson());
     return Movie.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Updates an existing movie.
+  ///
+  /// [moveFiles] - If true, moves files to the new path if the path has changed.
   Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) async {
     final response = await _client.put(
       '/movie/${movie.id}',
@@ -43,6 +50,10 @@ class RadarrApi {
     return Movie.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Deletes a movie from the library.
+  ///
+  /// [deleteFiles] - If true, also deletes the movie files from disk.
+  /// [addExclusion] - If true, adds the movie to the exclusion list (prevents re-import).
   Future<void> deleteMovie(
     int id, {
     bool deleteFiles = false,
@@ -57,6 +68,7 @@ class RadarrApi {
     );
   }
 
+  /// Retrieves available quality profiles.
   Future<List<QualityProfile>> getQualityProfiles() async {
     final response = await _client.get('/qualityprofile');
     return (response as List)
@@ -64,6 +76,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves configured root folders.
   Future<List<RootFolder>> getRootFolders() async {
     final response = await _client.get(
       '/rootfolder',
@@ -74,6 +87,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Searches for releases for a specific movie.
   Future<List<Release>> getMovieReleases(int movieId) async {
     final response = await _client.get(
       '/release',
@@ -85,6 +99,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Commands Radarr to download a specific release.
   Future<void> downloadRelease(String guid, String indexerId) async {
     await _client.post(
       '/release',
@@ -93,6 +108,7 @@ class RadarrApi {
     );
   }
 
+  /// Searches for movies by [term].
   Future<List<Movie>> lookupMovie(String term) async {
     final response = await _client.get(
       '/movie/lookup',
@@ -103,6 +119,9 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves upcoming movies from the calendar.
+  ///
+  /// [start] and [end] define the date range.
   Future<List<Movie>> getCalendar({DateTime? start, DateTime? end}) async {
     final response = await _client.get(
       '/calendar',
@@ -117,6 +136,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves the current activity queue.
   Future<QueueItems> getQueue({
     int page = 1,
     int pageSize = 20,
@@ -136,11 +156,16 @@ class RadarrApi {
     return QueueItems.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves the status of a specific command.
   Future<dynamic> getCommand(String id) async {
     final response = await _client.get('/command/$id');
     return response;
   }
 
+  /// Sends a command to Radarr.
+  ///
+  /// [name] is the command name (e.g., 'RefreshMovie').
+  /// [params] are optional parameters for the command.
   Future<dynamic> sendCommand(
     String name, {
     Map<String, dynamic>? params,
@@ -154,6 +179,7 @@ class RadarrApi {
     return response;
   }
 
+  /// Retrieves history events.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
@@ -174,6 +200,11 @@ class RadarrApi {
     );
   }
 
+  /// Deletes an item from the queue.
+  ///
+  /// [removeFromClient] - If true, removes it from the download client.
+  /// [blocklist] - If true, adds the release to the blocklist.
+  /// [skipRedownload] - If true, does not re-download the release.
   Future<void> deleteQueueItem(
     int id, {
     bool removeFromClient = true,
@@ -190,6 +221,7 @@ class RadarrApi {
     );
   }
 
+  /// Retrieves application logs.
   Future<LogPage> getLogs({int page = 1, int pageSize = 50}) async {
     final response = await _client.get(
       '/log',
@@ -198,6 +230,7 @@ class RadarrApi {
     return LogPage.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves health checks.
   Future<List<HealthCheck>> getHealth() async {
     final response = await _client.get('/health');
     return (response as List)
@@ -205,6 +238,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves files for a specific movie.
   Future<List<MediaFile>> getMovieFiles(int movieId) async {
     final response = await _client.get(
       '/moviefile',
@@ -215,6 +249,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves extra files (e.g. subtitles, nfo) for a specific movie.
   Future<List<MovieExtraFile>> getMovieExtraFiles(int movieId) async {
     final response = await _client.get(
       '/extrafile',
@@ -225,6 +260,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Retrieves history for a specific movie.
   Future<List<HistoryEvent>> getMovieHistory(int movieId) async {
     final response = await _client.get(
       '/history/movie',
@@ -235,10 +271,12 @@ class RadarrApi {
         .toList();
   }
 
+  /// Deletes a movie file.
   Future<void> deleteMovieFile(int fileId) async {
     await _client.delete('/moviefile/$fileId');
   }
 
+  /// Retrieves files available for manual import.
   Future<List<ImportableFile>> getImportableFiles(String downloadId) async {
     final response = await _client.get(
       '/manualimport',
@@ -249,6 +287,7 @@ class RadarrApi {
         .toList();
   }
 
+  /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files) async {
     await _client.post(
       '/command',
@@ -261,11 +300,13 @@ class RadarrApi {
     );
   }
 
+  /// Retrieves the system status.
   Future<InstanceStatus> getSystemStatus() async {
     final response = await _client.get('/system/status');
     return InstanceStatus.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves available tags.
   Future<List<Tag>> getTags() async {
     final response = await _client.get('/tag');
     return (response as List)

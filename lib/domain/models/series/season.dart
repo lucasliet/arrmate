@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a season in a TV series.
 class Season extends Equatable {
   final int seasonNumber;
   final bool monitored;
@@ -13,6 +14,7 @@ class Season extends Equatable {
 
   int get id => seasonNumber;
 
+  /// Returns a display label for the season (e.g., 'Season 1' or 'Specials').
   String get label {
     if (seasonNumber == 0) return 'Specials';
     return 'Season $seasonNumber';
@@ -59,6 +61,7 @@ class Season extends Equatable {
   List<Object?> get props => [seasonNumber, monitored, statistics];
 }
 
+/// Contains statistics about a season.
 class SeasonStatistics extends Equatable {
   final int episodeCount;
   final int episodeFileCount;

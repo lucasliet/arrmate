@@ -6,6 +6,7 @@ import '../../widgets/common_widgets.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_item.dart';
 
+/// Displays a timeline of upcoming releases (movies and episodes).
 class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 

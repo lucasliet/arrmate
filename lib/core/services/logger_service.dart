@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
+/// Represents a single log entry in the application.
 class AppLogEntry {
   final DateTime time;
   final Level level;
@@ -19,6 +20,7 @@ class AppLogEntry {
     this.stackTrace,
   });
 
+  /// Formats the log entry into a string suitable for file storage.
   String toLogString() {
     final errStr = error != null ? '\nError: $error' : '';
     final stackStr = stackTrace != null ? '\nStackTrace: $stackTrace' : '';
@@ -26,6 +28,8 @@ class AppLogEntry {
   }
 }
 
+/// A service to handle application logging with support for console output,
+/// in-memory buffering, and file storage.
 class LoggerService {
   late final Logger _logger;
   final List<AppLogEntry> _buffer = [];
@@ -34,6 +38,7 @@ class LoggerService {
 
   static const int _maxBufferSize = 100;
 
+  /// Initializes the logger service, setting up console output and file logging.
   LoggerService() {
     _logger = Logger(
       printer: PrettyPrinter(
@@ -49,6 +54,7 @@ class LoggerService {
     _initFileLogger();
   }
 
+  /// Initializes the file logger by creating or opening the log file in the app documents directory.
   Future<void> _initFileLogger() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -63,7 +69,10 @@ class LoggerService {
     }
   }
 
+  /// A stream of buffered log entries, useful for displaying logs in the UI.
   Stream<List<AppLogEntry>> get logStream => _logController.stream;
+
+  /// The current list of buffered logs.
   List<AppLogEntry> get logs => List.unmodifiable(_buffer);
 
   void _addToBuffer(
@@ -89,29 +98,37 @@ class LoggerService {
     // Async write to file
     _logFile
         ?.writeAsString('${entry.toLogString()}\n', mode: FileMode.append)
-        .catchError((e) => debugPrint('Error writing to log file: $e'));
+        .catchError((e) {
+          debugPrint('Error writing to log file: $e');
+          return _logFile!;
+        });
   }
 
+  /// Logs a debug message.
   void debug(String message) {
     _logger.d(message);
     _addToBuffer(Level.debug, message);
   }
 
+  /// Logs an informational message.
   void info(String message) {
     _logger.i(message);
     _addToBuffer(Level.info, message);
   }
 
+  /// Logs a warning message, optionally with an error and stack trace.
   void warning(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.w(message, error: error, stackTrace: stackTrace);
     _addToBuffer(Level.warning, message, error, stackTrace);
   }
 
+  /// Logs an error message, optionally with an exception and stack trace.
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.e(message, error: error, stackTrace: stackTrace);
     _addToBuffer(Level.error, message, error, stackTrace);
   }
 
+  /// Clears the in-memory log buffer.
   void clearLogs() {
     _buffer.clear();
     _logController.add(List.unmodifiable(_buffer));

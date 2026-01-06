@@ -11,6 +11,7 @@ import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
 
+/// The main screen displaying the list of series in the library, with sorting and filtering.
 class SeriesScreen extends ConsumerStatefulWidget {
   const SeriesScreen({super.key});
 

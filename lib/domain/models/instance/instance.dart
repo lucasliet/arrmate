@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../shared/shared.dart';
 import '../shared/root_folder.dart';
 
+/// Defines the type of Arrmate instance.
 enum InstanceType {
   radarr('Radarr'),
   sonarr('Sonarr');
@@ -12,6 +13,10 @@ enum InstanceType {
   const InstanceType(this.label);
 }
 
+/// Defines the operating mode of the instance.
+///
+/// [normal] - Standard operations.
+/// [slow] - Extended timeouts for slower connections.
 enum InstanceMode {
   normal,
   slow;
@@ -19,9 +24,14 @@ enum InstanceMode {
   bool get isSlow => this == InstanceMode.slow;
 }
 
+/// Represents a custom HTTP header for an instance.
 class InstanceHeader extends Equatable {
   final String id;
+
+  /// Header name (e.g., 'Authorization').
   final String name;
+
+  /// Header value.
   final String value;
 
   InstanceHeader({String? id, required String name, required String value})
@@ -45,10 +55,13 @@ class InstanceHeader extends Equatable {
   List<Object?> get props => [id, name, value];
 }
 
+/// Represents the running status of an instance.
 class InstanceStatus extends Equatable {
   final String appName;
   final String instanceName;
   final String version;
+
+  /// Whether the instance is running in debug mode.
   final bool? isDebug;
   final String? authentication;
   final DateTime? startTime;
@@ -90,13 +103,24 @@ class InstanceStatus extends Equatable {
   ];
 }
 
+/// Represents a connection to a Radarr or Sonarr instance.
 class Instance extends Equatable {
   final String id;
   final InstanceType type;
+
+  /// Connection mode (Normal/Slow).
   final InstanceMode mode;
+
+  /// User-friendly label for the instance.
   final String label;
+
+  /// Base URL of the instance.
   final String url;
+
+  /// API Key for authentication.
   final String apiKey;
+
+  /// Custom headers to include in requests.
   final List<InstanceHeader> headers;
   final List<RootFolder> rootFolders;
   final List<QualityProfile> qualityProfiles;
@@ -175,6 +199,9 @@ class Instance extends Equatable {
     };
   }
 
+  /// Generates the map of headers for HTTP requests.
+  ///
+  /// Includes 'X-Api-Key' and any custom [headers].
   Map<String, String> get authHeaders {
     final map = <String, String>{'X-Api-Key': apiKey};
     for (final header in headers) {
@@ -185,6 +212,9 @@ class Instance extends Equatable {
 
   Uri get baseUri => Uri.parse(url);
 
+  /// Determines the appropriate timeout duration for a given operation.
+  ///
+  /// Varies based on [InstanceMode] and operation type.
   Duration timeout(InstanceTimeout timeout) {
     switch (timeout) {
       case InstanceTimeout.normal:
@@ -255,4 +285,5 @@ class Instance extends Equatable {
   );
 }
 
+/// Defines the type of timeout required for an operation.
 enum InstanceTimeout { normal, slow, releaseSearch, releaseDownload }

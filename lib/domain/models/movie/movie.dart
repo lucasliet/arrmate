@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../shared/shared.dart';
 
+/// Defines the release status of a movie.
 enum MovieStatus {
   tba,
   announced,
@@ -25,6 +26,7 @@ enum MovieStatus {
   }
 }
 
+/// Represents a rating value and vote count.
 class MovieRating extends Equatable {
   final int votes;
   final double value;
@@ -42,6 +44,7 @@ class MovieRating extends Equatable {
   List<Object?> get props => [votes, value];
 }
 
+/// Aggregates ratings from various sources.
 class MovieRatings extends Equatable {
   final MovieRating? imdb;
   final MovieRating? tmdb;
@@ -76,7 +79,9 @@ class MovieRatings extends Equatable {
   List<Object?> get props => [imdb, tmdb, metacritic, rottenTomatoes];
 }
 
+/// Represents a Movie entity in Radarr.
 class Movie extends Equatable {
+  /// Radarr internal ID.
   final int? guid;
   final String? instanceId;
   final int tmdbId;
@@ -85,6 +90,8 @@ class Movie extends Equatable {
   final String sortTitle;
   final String? studio;
   final int year;
+
+  /// Runtime in minutes.
   final int runtime;
   final String? overview;
   final String? certification;
@@ -95,8 +102,12 @@ class Movie extends Equatable {
   final MovieRatings? ratings;
   final double? popularity;
   final MovieStatus status;
+
+  /// Whether the movie is considered available for download.
   final bool isAvailable;
   final MovieStatus minimumAvailability;
+
+  /// Whether the movie is monitored by Radarr.
   final bool monitored;
   final int qualityProfileId;
   final int? sizeOnDisk;
@@ -151,12 +162,16 @@ class Movie extends Equatable {
     this.movieFile,
   });
 
+  /// Returns the internal ID, using [guid] or falling back to [tmdbId].
   int get id => guid ?? (tmdbId + 100000);
 
+  /// Checks if the movie exists in the database.
   bool get exists => guid != null;
 
+  /// Checks if a movie file is present.
   bool get isDownloaded => movieFile != null;
 
+  /// Checks if the movie is waiting for release.
   bool get isWaiting {
     switch (status) {
       case MovieStatus.tba:
@@ -170,6 +185,7 @@ class Movie extends Equatable {
     }
   }
 
+  /// Computes a label for the current movie state.
   String get stateLabel {
     if (isDownloaded) return 'Downloaded';
     if (isWaiting) {
@@ -182,13 +198,16 @@ class Movie extends Equatable {
     return 'Unwanted';
   }
 
+  /// Returns the year as a string or 'TBA'.
   String get yearLabel => year > 0 ? '$year' : 'TBA';
 
+  /// Retrieves the URL of the first poster image.
   String? get remotePoster {
     final poster = images.where((i) => i.isPoster).firstOrNull;
     return poster?.remoteURL;
   }
 
+  /// Calculates a weighted rating score.
   double get ratingScore {
     final imdbVal = ratings?.imdb?.value;
     final rtVal = ratings?.rottenTomatoes?.value;

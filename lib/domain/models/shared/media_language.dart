@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a language definition.
 class MediaLanguage extends Equatable {
   final int id;
   final String? name;

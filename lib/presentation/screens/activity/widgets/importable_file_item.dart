@@ -4,9 +4,15 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 
+/// A selectable list item for manual import files, showing file details and quality.
 class ImportableFileItem extends StatelessWidget {
+  /// The file to display.
   final ImportableFile file;
+
+  /// Whether this file is currently selected for import.
   final bool isSelected;
+
+  /// Callback when the selection state changes.
   final ValueChanged<bool> onChanged;
 
   const ImportableFileItem({

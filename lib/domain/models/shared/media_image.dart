@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents an image associated with media (poster, fanart, etc.).
 class MediaImage extends Equatable {
   final String coverType;
   final String? url;
@@ -23,10 +24,16 @@ class MediaImage extends Equatable {
     };
   }
 
+  /// The URL helper for remote images.
   String? get remoteURL => remoteUrl;
 
+  /// Returns true if this is a poster.
   bool get isPoster => coverType == 'poster';
+
+  /// Returns true if this is fanart / background.
   bool get isFanart => coverType == 'fanart';
+
+  /// Returns true if this is a banner.
   bool get isBanner => coverType == 'banner';
 
   @override

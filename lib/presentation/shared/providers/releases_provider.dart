@@ -4,6 +4,7 @@ import '../../providers/data_providers.dart';
 
 part 'releases_provider.g.dart';
 
+/// Fetches current releases (search results) for a movie.
 @riverpod
 Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
   final api = ref.watch(radarrApiProvider);
@@ -11,6 +12,7 @@ Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
   return api.getMovieReleases(movieId);
 }
 
+/// Fetches current releases (search results) for an episode.
 @riverpod
 Future<List<Release>> episodeReleases(
   EpisodeReleasesRef ref,
@@ -25,6 +27,7 @@ Future<List<Release>> episodeReleases(
 // Using a Notifier for the "Grab" action state might be overkill if it's just a fire-and-forget with loading overlay.
 // I'll keep it simple in the UI or a simple controller.
 
+/// Controller for handling release actions like downloading.
 @riverpod
 class ReleaseActions extends _$ReleaseActions {
   @override

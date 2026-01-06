@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a system health check warning or error.
 class HealthCheck extends Equatable {
   final String source;
   final String type;

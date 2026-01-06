@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a quality profile which dictates allowed qualities for media.
 class QualityProfile extends Equatable {
   final int id;
   final String name;

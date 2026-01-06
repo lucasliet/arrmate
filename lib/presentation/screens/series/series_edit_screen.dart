@@ -4,6 +4,7 @@ import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import 'providers/series_provider.dart';
 
+/// Screen for editing an existing series' configuration (monitor status, profile, path).
 class SeriesEditScreen extends ConsumerStatefulWidget {
   final Series series;
 

@@ -84,6 +84,47 @@ series).
 - **Lints**: Adhere to rules defined in `analysis_options.yaml` (based on
   `flutter_lints`).
 
+## Logging Guidelines
+
+All logging must be meaningful, useful, and secure. We use `LoggerService`
+(accessed via global `logger`).
+
+### DO NOT
+
+- Use `print`, `debugPrint` or `stderr`.
+- Log sensitive information (API Keys, tokens, passwords). **Mask these values**
+  if logging headers or config objects.
+- Log generic messages like "Error" without context or stack trace.
+
+### DO
+
+- Use the `[Component]` prefix in all log messages.
+  - Good: `[MovieRepository] Fetching movies for instance: 1`
+  - Bad: `Fetching movies`
+- Use appropriate log levels:
+  - `logger.debug`: detailed flow information, API request/response details
+    (sanitized), state changes.
+  - `logger.info`: high-level events (app started, user logged in, movie added).
+  - `logger.warning`: unexpected but handled situations (retries, timeouts).
+  - `logger.error`: exceptions that might impact user experience. Always pass
+    `error` and `stackTrace`.
+- Be consistent with the pattern: `[ServiceName] Action/State: Details` (e.g.,
+  `[NtfyService] Connecting to topic: ...`).
+
+## Documentation Guidelines
+
+- **Language**: English (US) for all code comments and documentation.
+- **DartDoc**: All public classes, methods, and fields must have DartDoc
+  comments (`///`).
+  - **Classes**: Describe the purpose of the class.
+  - **Methods**: Describe what the method does, its parameters, and return
+    value.
+  - **Fields**: Describe what the field represents.
+- **Comments**: Use `//` for implementation details inside methods if necessary,
+  but prefer clean code that explains itself.
+- **Formatting**: Keep comments concise and clear. Use referencing (e.g.,
+  `[MyClass]`) when referring to other code elements.
+
 ## Testing Guidelines
 
 - **Framework**: `flutter_test`.

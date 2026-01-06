@@ -5,6 +5,7 @@ import '../series/series.dart';
 import '../shared/media_file.dart';
 import '../shared/media_language.dart';
 
+/// Represents a file waiting for manual import.
 class ImportableFile extends Equatable {
   final int id;
   final String? name;
@@ -36,6 +37,7 @@ class ImportableFile extends Equatable {
     this.episodes,
   });
 
+  /// Checks if there are any reasons why this file cannot be imported automatically.
   bool get hasRejections => rejections.isNotEmpty;
 
   factory ImportableFile.fromJson(Map<String, dynamic> json) {
@@ -111,6 +113,7 @@ class ImportableFile extends Equatable {
   ];
 }
 
+/// Represents a reason why a file was rejected for automatic import.
 class ImportableFileRejection extends Equatable {
   final String reason;
   final String type;

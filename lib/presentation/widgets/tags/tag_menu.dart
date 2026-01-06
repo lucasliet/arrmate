@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/models/models.dart';
 
+/// A dropdown menu for selecting tags.
 class TagMenu extends StatelessWidget {
   final List<Tag> tags;
   final Set<int> selectedTagIds;

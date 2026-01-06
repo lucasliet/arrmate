@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// A centered loading indicator with an optional message.
 class LoadingIndicator extends StatelessWidget {
   final String? message;
 
@@ -27,6 +28,7 @@ class LoadingIndicator extends StatelessWidget {
   }
 }
 
+/// A centered error display with an icon, message, and optional retry button.
 class ErrorDisplay extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -65,6 +67,7 @@ class ErrorDisplay extends StatelessWidget {
   }
 }
 
+/// A centered empty state display with an icon, title, subtitle, and optional action.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;

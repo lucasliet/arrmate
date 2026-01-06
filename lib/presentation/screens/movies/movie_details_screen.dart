@@ -14,6 +14,7 @@ import 'widgets/movie_poster.dart';
 import 'widgets/movie_metadata_section.dart';
 import 'movie_edit_screen.dart';
 
+/// Displays detailed information about a specific movie, including options to manage it.
 class MovieDetailsScreen extends ConsumerWidget {
   final int movieId;
 

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:arrmate/domain/models/shared/media_custom_format.dart';
 
+/// Represents a media file on disk.
 class MediaFile extends Equatable {
   final int id;
   final String? relativePath;
@@ -84,6 +85,7 @@ class MediaFile extends Equatable {
   ];
 }
 
+/// Detailed technical information about a media file.
 class FileMediaInfo extends Equatable {
   final int? audioBitrate;
   final int? audioStreamCount;
@@ -181,6 +183,7 @@ class FileMediaInfo extends Equatable {
   ];
 }
 
+/// Wraps [QualityInfo] with revision information.
 class MediaQuality extends Equatable {
   final QualityInfo quality;
   final int revision;
@@ -206,6 +209,7 @@ class MediaQuality extends Equatable {
   List<Object?> get props => [quality, revision];
 }
 
+/// Describes the quality of the media (e.g., 1080p, 4k).
 class QualityInfo extends Equatable {
   final int id;
   final String name;
@@ -241,6 +245,7 @@ class QualityInfo extends Equatable {
   List<Object?> get props => [id, name, source, resolution];
 }
 
+/// Represents the language of a media file.
 class MediaLanguageInfo extends Equatable {
   final int id;
   final String name;

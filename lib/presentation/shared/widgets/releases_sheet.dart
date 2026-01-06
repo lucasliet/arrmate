@@ -4,6 +4,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 
+/// A modal sheet that searches for and displays available releases for a movie or episode.
 class ReleasesSheet extends ConsumerStatefulWidget {
   final int id;
   final bool isMovie; // true for Movie, failure for Episode

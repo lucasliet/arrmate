@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a message received from ntfy.
 class NtfyMessage extends Equatable {
   final String id;
   final int time;
@@ -67,6 +68,7 @@ class NtfyMessage extends Equatable {
     );
   }
 
+  /// Safely tries to parse a JSON map into an [NtfyMessage], returning null on failure.
   static NtfyMessage? tryParse(Map<String, dynamic> json) {
     try {
       return NtfyMessage.fromJson(json);
@@ -89,10 +91,16 @@ class NtfyMessage extends Equatable {
     };
   }
 
+  /// Checks if this is a standard message event.
   bool get isMessage => event == 'message';
+
+  /// Checks if this is an 'open' event (connection established).
   bool get isOpen => event == 'open';
+
+  /// Checks if this is a 'keepalive' event.
   bool get isKeepalive => event == 'keepalive';
 
+  /// Returns the message timestamp as a [DateTime].
   DateTime get timestamp => DateTime.fromMillisecondsSinceEpoch(time * 1000);
 
   @override

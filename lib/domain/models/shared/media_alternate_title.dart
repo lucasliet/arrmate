@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents an alternative title for a media item.
 class MediaAlternateTitle extends Equatable {
   final String title;
   final int? seasonNumber;

@@ -4,6 +4,7 @@ import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+/// A card widget displaying a summary of a history event.
 class HistoryEventCard extends StatelessWidget {
   final HistoryEvent event;
   final VoidCallback? onTap;

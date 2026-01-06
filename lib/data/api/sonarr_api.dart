@@ -2,6 +2,7 @@ import '../../core/network/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// API Client for interacting with Sonarr.
 class SonarrApi {
   final ApiClient _client;
   final Instance instance;
@@ -14,6 +15,7 @@ class SonarrApi {
             headers: instance.authHeaders,
           );
 
+  /// Retrieves all series from the Sonarr library.
   Future<List<Series>> getSeries() async {
     final response = await _client.get(
       '/series',
@@ -24,16 +26,21 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves a specific series by its [id].
   Future<Series> getSeriesById(int id) async {
     final response = await _client.get('/series/$id');
     return Series.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Adds a new series to the library.
   Future<Series> addSeries(Series series) async {
     final response = await _client.post('/series', data: series.toJson());
     return Series.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Updates an existing series.
+  ///
+  /// [moveFiles] - If true, moves files to the new path if the path has changed.
   Future<Series> updateSeries(Series series, {bool moveFiles = false}) async {
     final response = await _client.put(
       '/series/${series.id}',
@@ -43,6 +50,10 @@ class SonarrApi {
     return Series.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Deletes a series from the library.
+  ///
+  /// [deleteFiles] - If true, also deletes the series files from disk.
+  /// [addExclusion] - If true, adds the series to the exclusion list (prevents re-import).
   Future<void> deleteSeries(
     int id, {
     bool deleteFiles = false,
@@ -57,6 +68,7 @@ class SonarrApi {
     );
   }
 
+  /// Retrieves available quality profiles.
   Future<List<QualityProfile>> getQualityProfiles() async {
     final response = await _client.get('/qualityprofile');
     return (response as List)
@@ -64,6 +76,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves configured root folders.
   Future<List<RootFolder>> getRootFolders() async {
     final response = await _client.get(
       '/rootfolder',
@@ -74,6 +87,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Searches for releases for a specific episode or series.
   Future<List<Release>> getSeriesReleases({int? episodeId}) async {
     final response = await _client.get(
       '/release',
@@ -85,6 +99,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Commands Sonarr to download a specific release.
   Future<void> downloadRelease(String guid, String indexerId) async {
     await _client.post(
       '/release',
@@ -93,6 +108,7 @@ class SonarrApi {
     );
   }
 
+  /// Searches for series by [term].
   Future<List<Series>> lookupSeries(String term) async {
     final response = await _client.get(
       '/series/lookup',
@@ -104,6 +120,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves episodes for a specific series.
   Future<List<Episode>> getEpisodes(int seriesId) async {
     final response = await _client.get(
       '/episode',
@@ -114,11 +131,15 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves a specific episode by its [id].
   Future<Episode> getEpisode(int id) async {
     final response = await _client.get('/episode/$id');
     return Episode.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves upcoming episodes from the calendar.
+  ///
+  /// [start] and [end] define the date range.
   Future<List<Episode>> getCalendar({DateTime? start, DateTime? end}) async {
     final response = await _client.get(
       '/calendar',
@@ -137,6 +158,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves the current activity queue.
   Future<QueueItems> getQueue({
     int page = 1,
     int pageSize = 20,
@@ -156,6 +178,7 @@ class SonarrApi {
     return QueueItems.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves history events.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
@@ -176,6 +199,11 @@ class SonarrApi {
     );
   }
 
+  /// Deletes an item from the queue.
+  ///
+  /// [removeFromClient] - If true, removes it from the download client.
+  /// [blocklist] - If true, adds the release to the blocklist.
+  /// [skipRedownload] - If true, does not re-download the release.
   Future<void> deleteQueueItem(
     int id, {
     bool removeFromClient = true,
@@ -192,6 +220,7 @@ class SonarrApi {
     );
   }
 
+  /// Retrieves application logs.
   Future<LogPage> getLogs({int page = 1, int pageSize = 50}) async {
     final response = await _client.get(
       '/log',
@@ -200,6 +229,7 @@ class SonarrApi {
     return LogPage.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves health checks.
   Future<List<HealthCheck>> getHealth() async {
     final response = await _client.get('/health');
     return (response as List)
@@ -207,6 +237,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves files for a specific series.
   Future<List<MediaFile>> getSeriesFiles(int seriesId) async {
     final response = await _client.get(
       '/episodefile',
@@ -217,6 +248,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves extra files (e.g. subtitles, nfo) for a specific series.
   Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId) async {
     final response = await _client.get(
       '/extrafile',
@@ -227,6 +259,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves history for a specific series.
   Future<List<HistoryEvent>> getSeriesHistory(int seriesId) async {
     final response = await _client.get(
       '/history/series',
@@ -237,10 +270,12 @@ class SonarrApi {
         .toList();
   }
 
+  /// Deletes an episode file.
   Future<void> deleteSeriesFile(int fileId) async {
     await _client.delete('/episodefile/$fileId');
   }
 
+  /// Retrieves files available for manual import.
   Future<List<ImportableFile>> getImportableFiles(String downloadId) async {
     final response = await _client.get(
       '/manualimport',
@@ -251,6 +286,7 @@ class SonarrApi {
         .toList();
   }
 
+  /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files) async {
     await _client.post(
       '/command',
@@ -263,11 +299,13 @@ class SonarrApi {
     );
   }
 
+  /// Retrieves the system status.
   Future<InstanceStatus> getSystemStatus() async {
     final response = await _client.get('/system/status');
     return InstanceStatus.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Retrieves available tags.
   Future<List<Tag>> getTags() async {
     final response = await _client.get('/tag');
     return (response as List)

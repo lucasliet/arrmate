@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
 import 'logger_service.dart';
 
+/// Contains information about a new application update.
 class AppUpdateInfo {
   // ...
   final String version;
@@ -25,6 +26,7 @@ class AppUpdateInfo {
 
 final updateServiceProvider = Provider((ref) => UpdateService(Dio()));
 
+/// Service for checking and retrieving application updates from GitHub Releases.
 class UpdateService {
   final Dio _dio;
   static const _lastCheckKey = 'last_update_check';
@@ -33,16 +35,22 @@ class UpdateService {
 
   UpdateService(this._dio);
 
+  /// Checks if a new update is available.
+  ///
+  /// [force] - If true, bypasses the daily check limit.
+  /// Returns [AppUpdateInfo] if an update is available, null otherwise.
   Future<AppUpdateInfo?> checkForUpdate({bool force = false}) async {
-    logger.info('🔍 Starting update check (force: $force)');
+    logger.debug('[UpdateService] Starting update check (force: $force)');
 
     if (!force && !await _shouldCheckForUpdate()) {
-      logger.info('⏸️ Skipping check - too soon since last check');
+      logger.debug(
+        '[UpdateService] Skipping check - too soon since last check',
+      );
       return null;
     }
 
     try {
-      logger.info('🌐 Fetching latest release from GitHub...');
+      logger.debug('[UpdateService] Fetching latest release from GitHub...');
       final response = await _dio.get(
         _repoUrl,
         options: Options(
@@ -53,16 +61,20 @@ class UpdateService {
       );
 
       if (response.statusCode != 200) {
-        logger.warning('❌ GitHub API returned status ${response.statusCode}');
+        logger.warning(
+          '[UpdateService] GitHub API returned status ${response.statusCode}',
+        );
         return null;
       }
 
       final data = response.data;
       final rawTagName = data['tag_name'] as String;
-      logger.info('🏷️  GitHub latest release tag:  "$rawTagName"');
+      logger.debug('[UpdateService] GitHub latest release tag: "$rawTagName"');
 
       final latestVersionStr = rawTagName.replaceAll('v', '');
-      logger.info('🏷️  Latest version (parsed): "$latestVersionStr"');
+      logger.debug(
+        '[UpdateService] Latest version (parsed): "$latestVersionStr"',
+      );
 
       final changelog = data['body'] as String;
       final assets = data['assets'] as List;
@@ -72,14 +84,14 @@ class UpdateService {
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
         final abis = androidInfo.supportedAbis;
-        logger.debug('📱 Supported ABIs: $abis');
+        logger.debug('[UpdateService] Supported ABIs: $abis');
 
         if (abis.contains('arm64-v8a')) {
           architecture = 'arm64-v8a';
         } else if (abis.contains('armeabi-v7a')) {
           architecture = 'armeabi-v7a';
         }
-        logger.info('🏗️  Selected architecture: $architecture');
+        logger.debug('[UpdateService] Selected architecture: $architecture');
       }
 
       // Look for a matching APK asset
@@ -99,12 +111,14 @@ class UpdateService {
           );
 
       if (apkAsset == null) {
-        logger.warning('❌ No matching APK asset found in release');
+        logger.warning(
+          '[UpdateService] No matching APK asset found in release',
+        );
         return null;
       }
 
       logger.info(
-        '📦 Selected APK: ${apkAsset['name']} for architecture: $architecture',
+        '[UpdateService] Selected APK: ${apkAsset['name']} for architecture: $architecture',
       );
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
@@ -115,22 +129,23 @@ class UpdateService {
 
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersionStr = packageInfo.version;
-      logger.info('📱 Current app version (raw): "$currentVersionStr"');
+      logger.debug(
+        '[UpdateService] Current app version (raw): "$currentVersionStr"',
+      );
 
       final currentVersion = Version.parse(
         currentVersionStr.replaceAll('v', ''),
       );
       final latestVersion = Version.parse(latestVersionStr);
 
-      logger.info('🔄 Version comparison:');
-      logger.info('   Current: $currentVersion');
-      logger.info('   Latest:  $latestVersion');
-      logger.info('   Latest > Current? ${latestVersion > currentVersion}');
+      logger.debug(
+        '[UpdateService] Version comparison: Current: $currentVersion | Latest: $latestVersion',
+      );
 
       await _updateLastCheckTime();
 
       if (latestVersion > currentVersion) {
-        logger.info('✅ Update available!');
+        logger.info('[UpdateService] Update available!');
         return AppUpdateInfo(
           version: latestVersionStr,
           changelog: changelog,
@@ -138,10 +153,10 @@ class UpdateService {
           publishedAt: publishedAt,
         );
       } else {
-        logger.info('ℹ️  No update needed - app is up to date');
+        logger.info('[UpdateService] No update needed - app is up to date');
       }
     } catch (e, stack) {
-      logger.error('❌ Auto-check update failed', e, stack);
+      logger.error('[UpdateService] Auto-check update failed', e, stack);
     }
 
     return null;

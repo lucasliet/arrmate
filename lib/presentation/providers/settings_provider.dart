@@ -7,14 +7,17 @@ import '../../domain/models/settings/notification_settings.dart';
 import '../../core/services/ntfy_service.dart';
 import '../../core/services/logger_service.dart';
 
+/// Provider for managing application settings (theme, layout, notifications).
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
   return SettingsNotifier();
 });
 
+/// Defines the layout mode for lists (Grid or List).
 enum ViewMode {
   grid,
   list;
 
+  /// Returns the display label for the view mode.
   String get label {
     switch (this) {
       case ViewMode.grid:
@@ -25,10 +28,18 @@ enum ViewMode {
   }
 }
 
+/// State for [SettingsNotifier].
 class SettingsState {
+  /// The current color scheme.
   final AppColorScheme colorScheme;
+
+  /// The current appearance setting (light/dark/system).
   final AppAppearance appearance;
+
+  /// The preference for item display in lists (Grid/List).
   final ViewMode viewMode;
+
+  /// The current notification settings.
   final NotificationSettings notifications;
 
   const SettingsState({
@@ -53,6 +64,7 @@ class SettingsState {
   }
 }
 
+/// Manages user settings and persists them to SharedPreferences.
 class SettingsNotifier extends Notifier<SettingsState> {
   static const _colorSchemeKey = 'color_scheme';
   static const _appearanceKey = 'appearance';
@@ -114,24 +126,28 @@ class SettingsNotifier extends Notifier<SettingsState> {
     }
   }
 
+  /// Sets and persists the app color scheme.
   Future<void> setColorScheme(AppColorScheme scheme) async {
     state = state.copyWith(colorScheme: scheme);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_colorSchemeKey, scheme.name);
   }
 
+  /// Sets and persists the app appearance (Light, Dark, System).
   Future<void> setAppearance(AppAppearance appearance) async {
     state = state.copyWith(appearance: appearance);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_appearanceKey, appearance.name);
   }
 
+  /// Sets and persists the list view mode (Grid, List).
   Future<void> setViewMode(ViewMode mode) async {
     state = state.copyWith(viewMode: mode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(viewModeKey, mode.name);
   }
 
+  /// Updates notification settings and manages the ntfy connection.
   Future<void> updateNotifications(NotificationSettings notifications) async {
     state = state.copyWith(notifications: notifications);
     final prefs = await SharedPreferences.getInstance();
@@ -151,6 +167,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     }
   }
 
+  /// Generates a random topic for ntfy and enables notifications.
   Future<void> generateNtfyTopic() async {
     final topic = NtfyService.generateTopic();
     final updated = state.notifications.copyWith(

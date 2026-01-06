@@ -4,6 +4,7 @@ import '../../../../presentation/providers/data_providers.dart';
 
 part 'movie_lookup_provider.g.dart';
 
+/// Notifier for looking up movies from an external provider (TMDB via Radarr).
 @riverpod
 class MovieLookup extends _$MovieLookup {
   @override

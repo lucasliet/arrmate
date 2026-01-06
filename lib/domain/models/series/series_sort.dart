@@ -1,5 +1,6 @@
 import 'package:arrmate/domain/models/series/series.dart';
 
+/// Encapsulates sorting and filtering options for series lists.
 class SeriesSort {
   final SeriesSortOption option;
   final bool isAscending;
@@ -24,6 +25,7 @@ class SeriesSort {
   }
 }
 
+/// Available options for sorting series.
 enum SeriesSortOption {
   byTitle,
   byYear,
@@ -64,6 +66,7 @@ enum SeriesSortOption {
   }
 }
 
+/// Available filters for series lists.
 enum SeriesFilter {
   all,
   monitored,

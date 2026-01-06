@@ -6,15 +6,18 @@ import '../../../../domain/models/models.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../providers/data_providers.dart';
 
+/// Provider for fetching and paginating history events.
 final activityHistoryProvider =
     AsyncNotifierProvider.autoDispose<HistoryNotifier, List<HistoryEvent>>(
       HistoryNotifier.new,
     );
 
+/// Provider to filter history events by their type (e.g., Grabbed, Failed).
 final historyEventTypeFilterProvider = StateProvider<HistoryEventType?>(
   (ref) => null,
 );
 
+/// Notifier to manage history events and pagination.
 class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
   int _currentPage = 1;
   bool _hasMoreRadarr = true;
@@ -70,8 +73,10 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
     return events;
   }
 
+  /// Checks if there are more pages available to load.
   bool get hasMore => _hasMoreRadarr || _hasMoreSonarr;
 
+  /// Loads the next page of history events and appends them to the list.
   Future<void> loadMore() async {
     if (!hasMore) return;
     if (state.isLoading) return;
@@ -93,6 +98,7 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
     }
   }
 
+  /// Refreshes the history list, resetting pagination.
   Future<void> refresh() async {
     _currentPage = 1;
     _hasMoreRadarr = true;

@@ -4,6 +4,7 @@ import '../../../../domain/models/models.dart';
 import '../../../../core/constants/app_constants.dart';
 import 'movie_poster.dart';
 
+/// A card widget displaying a movie poster and status, utilized in grid view.
 class MovieCard extends StatelessWidget {
   final Movie movie;
   final VoidCallback? onTap;

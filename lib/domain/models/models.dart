@@ -1,3 +1,4 @@
+/// Domain models for using in the app.
 export 'shared/shared.dart';
 export 'shared/shared_models.dart';
 export 'shared/release.dart';

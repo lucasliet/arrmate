@@ -4,6 +4,7 @@ import '../../../providers/data_providers.dart';
 
 part 'season_episodes_provider.g.dart';
 
+/// Fetches episodes for a specific series and season number from Sonarr.
 @riverpod
 Future<List<Episode>> seasonEpisodes(
   SeasonEpisodesRef ref,

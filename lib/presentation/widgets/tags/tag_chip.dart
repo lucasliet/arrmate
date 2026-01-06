@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/models/models.dart';
 
+/// A chip widget representing a tag.
 class TagChip extends StatelessWidget {
   final Tag tag;
   final VoidCallback? onTap;

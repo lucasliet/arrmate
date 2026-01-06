@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
 import 'series_poster.dart';
 
+/// A card widget displaying a series poster and status, utilized in grid view.
 class SeriesCard extends StatelessWidget {
   final Series series;
   final VoidCallback? onTap;

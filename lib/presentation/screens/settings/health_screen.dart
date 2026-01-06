@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/advanced_providers.dart';
 
+/// Displays system health checks and warnings from connected instances.
 class HealthScreen extends ConsumerWidget {
   const HealthScreen({super.key});
 

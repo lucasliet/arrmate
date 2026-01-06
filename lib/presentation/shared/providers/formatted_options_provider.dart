@@ -4,6 +4,7 @@ import '../../providers/data_providers.dart';
 
 part 'formatted_options_provider.g.dart';
 
+/// Fetches available quality profiles for movies (Radarr).
 @riverpod
 Future<List<QualityProfile>> movieQualityProfiles(
   MovieQualityProfilesRef ref,
@@ -13,6 +14,7 @@ Future<List<QualityProfile>> movieQualityProfiles(
   return api.getQualityProfiles();
 }
 
+/// Fetches configured root folders for movies (Radarr).
 @riverpod
 Future<List<RootFolder>> movieRootFolders(MovieRootFoldersRef ref) async {
   final api = ref.watch(radarrApiProvider);
@@ -20,6 +22,7 @@ Future<List<RootFolder>> movieRootFolders(MovieRootFoldersRef ref) async {
   return api.getRootFolders();
 }
 
+/// Fetches available quality profiles for series (Sonarr).
 @riverpod
 Future<List<QualityProfile>> seriesQualityProfiles(
   SeriesQualityProfilesRef ref,
@@ -29,6 +32,7 @@ Future<List<QualityProfile>> seriesQualityProfiles(
   return api.getQualityProfiles();
 }
 
+/// Fetches configured root folders for series (Sonarr).
 @riverpod
 Future<List<RootFolder>> seriesRootFolders(SeriesRootFoldersRef ref) async {
   final api = ref.watch(sonarrApiProvider);

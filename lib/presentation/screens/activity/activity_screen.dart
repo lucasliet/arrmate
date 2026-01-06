@@ -7,6 +7,7 @@ import 'providers/history_provider.dart';
 import 'widgets/queue_list_item.dart';
 import 'history_screen.dart';
 
+/// Main screen showing current download queue and history.
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
 

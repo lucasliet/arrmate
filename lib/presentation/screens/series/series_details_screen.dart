@@ -13,6 +13,7 @@ import 'widgets/series_metadata_section.dart';
 import 'season_details_screen.dart';
 import 'series_edit_screen.dart';
 
+/// Displays detailed information about a specific series, including seasons and options.
 class SeriesDetailsScreen extends ConsumerWidget {
   final int seriesId;
 

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a root folder where media is stored.
 class RootFolder extends Equatable {
   final int id;
   final String path;
@@ -42,6 +43,7 @@ class RootFolder extends Equatable {
   List<Object?> get props => [id, path, freeSpace, unmappedFolders];
 }
 
+/// Represents a folder within a root folder that is not mapped to any series/movie.
 class UnmappedFolder extends Equatable {
   final String name;
   final String path;

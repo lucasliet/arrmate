@@ -4,12 +4,19 @@ import '../../../../domain/models/models.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../providers/data_providers.dart';
 
-// Unified Calendar Event Model
+/// Represents a unified calendar item (either a movie release or an episode).
 class CalendarEvent extends Equatable {
+  /// The date and time of the release/airing.
   final DateTime releaseDate;
+
+  /// The movie associated with this event (if any).
   final Movie? movie;
+
+  /// The episode associated with this event (if any).
   final Episode? episode;
-  final Series? series; // For episode context
+
+  /// The series associated with this event (if any, for episodes).
+  final Series? series;
 
   const CalendarEvent({
     required this.releaseDate,
@@ -18,11 +25,17 @@ class CalendarEvent extends Equatable {
     this.series,
   });
 
+  /// Returns true if this event is for a movie.
   bool get isMovie => movie != null;
+
+  /// Returns true if this event is for an episode.
   bool get isEpisode => episode != null;
 
+  /// Returns the title of the event (Movie title or Series title).
   String get title =>
       isMovie ? movie!.title : series?.title ?? 'Unknown Series';
+
+  /// Returns the subtitle (Year for movies, SxxExx - Title for episodes).
   String get subtitle => isMovie
       ? (movie!.year > 0 ? '${movie!.year}' : '')
       : '${episode!.seasonNumber}x${episode!.episodeNumber.toString().padLeft(2, '0')} - ${episode!.title}';
@@ -31,17 +44,13 @@ class CalendarEvent extends Equatable {
   List<Object?> get props => [releaseDate, movie, episode, series];
 }
 
+/// Provider for fetching calendar events from both Radarr and Sonarr.
 final calendarProvider =
     AsyncNotifierProvider.autoDispose<CalendarNotifier, List<CalendarEvent>>(
       CalendarNotifier.new,
     );
 
-// Changed to AsyncNotifier, provider.autoDispose handles part of it,
-// but technically for autoDispose provider we usually extend AutoDisposeAsyncNotifier.
-// If that class is missing (older riverpod?), we might need to check.
-// Using AsyncNotifier with autoDispose provider works if we don't need 'ref.keepAlive' specifically inside?
-// Actually Dart requires specific class for type safety in provider.
-// If 'AutoDisposeAsyncNotifier' is undefined, I will try just 'AsyncNotifier'.
+/// Manages fetching and grouping of calendar events.
 class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   @override
   Future<List<CalendarEvent>> build() async {
@@ -95,6 +104,7 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
     return events;
   }
 
+  /// Refreshes the calendar data.
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;

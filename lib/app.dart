@@ -8,6 +8,10 @@ import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/app_providers.dart'; // Added this import
 
+/// The root widget of the application.
+///
+/// This widget sets up the [MaterialApp] with the router, theme, and global providers.
+/// It also handles global initialization checks (like updates and startup errors).
 class ArrmateApp extends ConsumerStatefulWidget {
   const ArrmateApp({super.key});
 

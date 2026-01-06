@@ -3,6 +3,7 @@ import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// A card widget displaying details of a media file (movie or episode file).
 class MediaFileCard extends StatelessWidget {
   final MediaFile file;
   final VoidCallback? onTap;

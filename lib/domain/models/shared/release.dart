@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 // Checking `media_file.dart` or similar might give a hint, but I'll define a simple one here or reuse if existing.
 // I'll assume Quality Model needs to be robust.
 
+/// Represents a release found by an indexer.
 class Release extends Equatable {
   final String guid;
   final String title;
@@ -75,6 +76,7 @@ class Release extends Equatable {
   List<Object?> get props => [guid, title, size, indexer, seeders, rejected];
 }
 
+/// Describes the quality of a release.
 class ReleaseQuality extends Equatable {
   final ReleaseQualityItem quality;
   final ReleaseQualityRevision revision;
@@ -99,6 +101,7 @@ class ReleaseQuality extends Equatable {
       '${quality.name} ${revision.version > 1 ? "v${revision.version}" : ""}';
 }
 
+/// Details about the quality profile item of a release.
 class ReleaseQualityItem extends Equatable {
   final int id;
   final String name;
@@ -125,6 +128,7 @@ class ReleaseQualityItem extends Equatable {
   List<Object?> get props => [id, name];
 }
 
+/// Details about the version/revision of a release quality.
 class ReleaseQualityRevision extends Equatable {
   final int version;
   final int real;

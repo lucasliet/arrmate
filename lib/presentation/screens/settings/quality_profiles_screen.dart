@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/advanced_providers.dart';
 
+/// Lists available quality profiles from connected instances.
 class QualityProfilesScreen extends ConsumerWidget {
   const QualityProfilesScreen({super.key});
 

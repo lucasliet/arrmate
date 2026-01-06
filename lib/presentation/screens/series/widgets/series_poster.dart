@@ -6,6 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../../core/network/custom_cache_manager.dart';
 
+/// Helper widget to display a series poster, handling caching and auth headers.
 class SeriesPoster extends ConsumerWidget {
   final Series series;
   final BoxFit fit;

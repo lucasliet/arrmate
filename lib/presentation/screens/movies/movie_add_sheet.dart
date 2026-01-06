@@ -7,6 +7,7 @@ import 'providers/movies_provider.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import '../../../../presentation/shared/providers/formatted_options_provider.dart';
 
+/// A modal sheet for searching and adding new movies to Radarr.
 class MovieAddSheet extends ConsumerStatefulWidget {
   const MovieAddSheet({super.key});
 

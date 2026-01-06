@@ -6,7 +6,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../providers/calendar_provider.dart';
 
+/// A card widget displaying a single calendar event with poster and details.
 class CalendarItem extends StatelessWidget {
+  /// The calendar event to display.
   final CalendarEvent event;
 
   const CalendarItem({super.key, required this.event});

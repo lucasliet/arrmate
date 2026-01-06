@@ -11,6 +11,7 @@ import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
 
+/// The main screen displaying the list of movies in the library, with sorting and filtering.
 class MoviesScreen extends ConsumerStatefulWidget {
   const MoviesScreen({super.key});
 

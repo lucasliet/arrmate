@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../shared/shared.dart';
 import 'season.dart';
 
+/// Represents an episode in a TV series.
 class Episode extends Equatable {
   final int id;
   final String? instanceId;
@@ -40,13 +41,17 @@ class Episode extends Equatable {
     this.series,
   });
 
+  /// Formats the episode number as SxxExx.
   String get episodeLabel =>
       'S${seasonNumber.toString().padLeft(2, '0')}E${episodeNumber.toString().padLeft(2, '0')}';
 
+  /// Returns a full label including episode number and title.
   String get fullLabel => '$episodeLabel - ${title ?? 'TBA'}';
 
+  /// Checks if the episode file is present.
   bool get isDownloaded => hasFile || episodeFile != null;
 
+  /// Checks if the episode has already aired.
   bool get isAired {
     if (airDateUtc == null) return false;
     return airDateUtc!.isBefore(DateTime.now());
@@ -157,7 +162,9 @@ class Episode extends Equatable {
   ];
 }
 
+/// Represents a TV Series in Sonarr.
 class Series extends Equatable {
+  /// Sonarr internal ID.
   final int? guid;
   final String? instanceId;
   final String title;
@@ -244,19 +251,25 @@ class Series extends Equatable {
     this.addOptions,
   });
 
+  /// Returns the internal ID, using [guid] or falling back to [tvdbId].
   int get id => guid ?? (tvdbId + 100000);
 
+  /// Checks if the series exists in the database.
   bool get exists => guid != null;
 
+  /// Checks if all episodes are downloaded.
   bool get isDownloaded => (statistics?.percentOfEpisodes ?? 0) >= 100;
 
+  /// Checks if the series is upcoming or waiting for episodes.
   bool get isWaiting {
     if (firstAired != null && firstAired!.isAfter(DateTime.now())) return true;
     return status == SeriesStatus.upcoming || year == 0 || seasons.isEmpty;
   }
 
+  /// Returns the year as a string or 'TBA'.
   String get yearLabel => year > 0 ? '$year' : 'TBA';
 
+  /// Retrieves the URL of the first poster image.
   String? get remotePoster {
     final poster = images.where((i) => i.isPoster).firstOrNull;
     return poster?.remoteURL;
@@ -543,6 +556,7 @@ class Series extends Equatable {
   ];
 }
 
+/// Defines the status of a series.
 enum SeriesStatus {
   continuing,
   ended,
@@ -563,6 +577,7 @@ enum SeriesStatus {
   }
 }
 
+/// Defines the type of series (Standard, Daily, Anime).
 enum SeriesType {
   standard,
   daily,
@@ -580,8 +595,10 @@ enum SeriesType {
   }
 }
 
+/// Options for monitoring new items.
 enum SeriesMonitorNewItems { all, none }
 
+/// Defines the monitoring strategy for a series.
 enum SeriesMonitorType {
   unknown,
   all,
@@ -629,6 +646,7 @@ enum SeriesMonitorType {
   }
 }
 
+/// Represents series ratings.
 class SeriesRatings extends Equatable {
   final int votes;
   final double value;
@@ -650,6 +668,7 @@ class SeriesRatings extends Equatable {
   List<Object?> get props => [votes, value];
 }
 
+/// Contains statistics about a series.
 class SeriesStatistics extends Equatable {
   final int sizeOnDisk;
   final int seasonCount;
@@ -700,6 +719,7 @@ class SeriesStatistics extends Equatable {
   ];
 }
 
+/// Options used when adding a new series.
 class SeriesAddOptions extends Equatable {
   final SeriesMonitorType monitor;
 

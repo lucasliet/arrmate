@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
+/// Provider for fetching the media files associated with a movie.
 final movieFilesProvider = FutureProvider.autoDispose
     .family<List<MediaFile>, int>((ref, movieId) async {
       final repository = ref.watch(movieRepositoryProvider);
@@ -21,6 +22,7 @@ final movieExtraFilesProvider = FutureProvider.autoDispose
       return repository.getMovieExtraFiles(movieId);
     });
 
+/// Provider for fetching specific history events for a movie.
 final movieHistoryProvider = FutureProvider.autoDispose
     .family<List<HistoryEvent>, int>((ref, movieId) async {
       final repository = ref.watch(movieRepositoryProvider);
@@ -35,6 +37,7 @@ final movieMetadataControllerProvider = Provider.autoDispose
       return MovieMetadataController(ref, movieId);
     });
 
+/// Controller for movie metadata operations like deleting files.
 class MovieMetadataController {
   final Ref ref;
   final int movieId;

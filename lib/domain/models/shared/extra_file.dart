@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Types of extra files associated with media.
 enum ExtraFileType {
   subtitle,
   metadata,
@@ -13,6 +14,7 @@ enum ExtraFileType {
   }
 }
 
+/// Represents an extra file (e.g., subtitle) linked to a movie.
 class MovieExtraFile extends Equatable {
   final int id;
   final int? movieId;
@@ -65,6 +67,7 @@ class MovieExtraFile extends Equatable {
   ];
 }
 
+/// Represents an extra file (e.g., subtitle) linked to a series/episode.
 class SeriesExtraFile extends Equatable {
   final int id;
   final int? seriesId;

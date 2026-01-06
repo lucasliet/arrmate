@@ -5,6 +5,7 @@ import '../../../domain/models/models.dart';
 import '../../../core/utils/formatters.dart';
 import 'providers/history_provider.dart';
 
+/// Displays a list of recent history events (grabs, imports, failures).
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 

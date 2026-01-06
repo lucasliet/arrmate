@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Configuration settings for app notifications (via ntfy).
 class NotificationSettings extends Equatable {
   final bool enabled;
   final String? ntfyTopic;
@@ -19,12 +20,15 @@ class NotificationSettings extends Equatable {
     this.notifyOnHealthIssue = false,
   });
 
+  /// Returns the full URL for the ntfy topic.
   String? get ntfyTopicUrl =>
       ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic' : null;
 
+  /// Returns the WebSocket URL for listening to notifications.
   String? get ntfyWebSocketUrl =>
       ntfyTopic != null ? 'wss://$ntfyServer/$ntfyTopic/ws' : null;
 
+  /// Returns the JSON stream URL for listening to notifications (SSE).
   String? get ntfyJsonStreamUrl =>
       ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic/json' : null;
 

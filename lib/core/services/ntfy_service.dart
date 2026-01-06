@@ -16,6 +16,7 @@ final ntfyServiceProvider = Provider<NtfyService>((ref) {
   return NtfyService(notificationService);
 });
 
+/// Service for connecting to an ntfy server to receive real-time notifications via SSE (Server-Sent Events).
 class NtfyService {
   final NotificationService _notificationService;
   final Dio _dio = Dio();
@@ -23,15 +24,22 @@ class NtfyService {
   StreamSubscription<dynamic>? _subscription;
 
   bool _isConnected = false;
+
+  /// Returns true if the service is currently connected to an ntfy stream.
   bool get isConnected => _isConnected;
 
   String? _currentTopic;
+
+  /// The topic currently subscribed to.
   String? get currentTopic => _currentTopic;
 
   int _notificationIdCounter = 0;
 
   NtfyService(this._notificationService);
 
+  /// Connects to the specified [topic] on the ntfy server.
+  ///
+  /// Disconnects from any existing connection before establishing a new one.
   Future<void> connect(String topic) async {
     if (_currentTopic == topic && _isConnected) {
       logger.debug('[NtfyService] Already connected to topic: $topic');
@@ -81,6 +89,7 @@ class NtfyService {
     }
   }
 
+  /// Handles incoming messages from the SSE stream.
   @visibleForTesting
   void onMessage(dynamic event) {
     try {
@@ -169,6 +178,7 @@ class NtfyService {
     });
   }
 
+  /// Disconnects from the current topic and stops any reconnection attempts.
   Future<void> disconnect() async {
     logger.debug('[NtfyService] Disconnecting...');
     _reconnectTimer?.cancel();
@@ -186,6 +196,7 @@ class NtfyService {
     logger.debug('[NtfyService] Disconnected');
   }
 
+  /// Generates a random topic ID for new setups.
   static String generateTopic() {
     final uuid = const Uuid().v4().replaceAll('-', '').substring(0, 12);
     final topic = 'arrmate-$uuid';
@@ -193,6 +204,7 @@ class NtfyService {
     return topic;
   }
 
+  /// Tests the connection to a specific [topic].
   Future<void> testConnection(String topic) async {
     logger.info('[NtfyService] Testing connection to topic: $topic');
     try {

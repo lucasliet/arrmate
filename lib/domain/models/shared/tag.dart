@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a tag used to organize media.
 class Tag extends Equatable {
   final int id;
   final String label;

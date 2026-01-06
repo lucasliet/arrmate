@@ -8,8 +8,12 @@ import '../../widgets/common_widgets.dart';
 import 'providers/manual_import_provider.dart';
 import 'widgets/importable_file_item.dart';
 
+/// A modal sheet for manually importing files from a download.
 class ManualImportScreen extends ConsumerStatefulWidget {
+  /// The ID of the download to import files from.
   final String downloadId;
+
+  /// The title of the import operation/download.
   final String title;
 
   const ManualImportScreen({

@@ -6,6 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import 'providers/movie_details_provider.dart';
 
+/// Screen for editing an existing movie's configuration (monitor status, profile, path).
 class MovieEditScreen extends ConsumerStatefulWidget {
   final Movie movie;
 

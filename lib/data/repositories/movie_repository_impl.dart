@@ -1,24 +1,36 @@
+import '../../core/services/logger_service.dart';
 import '../../domain/repositories/movie_repository.dart';
 import '../api/radarr_api.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// Implementation of [MovieRepository] using [RadarrApi].
 class MovieRepositoryImpl implements MovieRepository {
   final RadarrApi _api;
 
   MovieRepositoryImpl(this._api);
 
   @override
-  Future<List<Movie>> getMovies() => _api.getMovies();
+  Future<List<Movie>> getMovies() async {
+    logger.debug('[MovieRepository] Fetching all movies');
+    return _api.getMovies();
+  }
 
   @override
   Future<Movie> getMovie(int id) => _api.getMovie(id);
 
   @override
-  Future<Movie> addMovie(Movie movie) => _api.addMovie(movie);
+  Future<Movie> addMovie(Movie movie) async {
+    logger.info('[MovieRepository] Adding movie: ${movie.title}');
+    return _api.addMovie(movie);
+  }
 
   @override
-  Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) =>
-      _api.updateMovie(movie, moveFiles: moveFiles);
+  Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) async {
+    logger.info(
+      '[MovieRepository] Updating movie: ${movie.title} (id: ${movie.id})',
+    );
+    return _api.updateMovie(movie, moveFiles: moveFiles);
+  }
 
   @override
   Future<List<RootFolder>> getRootFolders() => _api.getRootFolders();
@@ -28,14 +40,22 @@ class MovieRepositoryImpl implements MovieRepository {
     int id, {
     bool deleteFiles = false,
     bool addExclusion = false,
-  }) => _api.deleteMovie(
-    id,
-    deleteFiles: deleteFiles,
-    addExclusion: addExclusion,
-  );
+  }) async {
+    logger.info(
+      '[MovieRepository] Deleting movie: $id (files: $deleteFiles, exclude: $addExclusion)',
+    );
+    return _api.deleteMovie(
+      id,
+      deleteFiles: deleteFiles,
+      addExclusion: addExclusion,
+    );
+  }
 
   @override
-  Future<List<Movie>> lookupMovie(String term) => _api.lookupMovie(term);
+  Future<List<Movie>> lookupMovie(String term) async {
+    logger.debug('[MovieRepository] Looking up movie: $term');
+    return _api.lookupMovie(term);
+  }
 
   @override
   Future<List<Movie>> getCalendar({DateTime? start, DateTime? end}) =>
@@ -90,7 +110,8 @@ class MovieRepositoryImpl implements MovieRepository {
   }
 
   @override
-  Future<void> searchMovies(List<int> movieIds) {
+  Future<void> searchMovies(List<int> movieIds) async {
+    logger.info('[MovieRepository] Triggering search for movies: $movieIds');
     return _api.sendCommand('MoviesSearch', params: {'movieIds': movieIds});
   }
 

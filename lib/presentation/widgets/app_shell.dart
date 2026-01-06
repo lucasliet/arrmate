@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../router/app_router.dart';
 import 'deep_link_listener.dart';
 
+/// Main shell widget containing the app scaffold, navigation bar, and deep link listener.
 class AppShell extends StatelessWidget {
   final Widget child;
 

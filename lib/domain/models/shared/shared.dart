@@ -1,3 +1,4 @@
+/// Shared domain models used across different modules.
 export 'tag.dart';
 export 'quality_profile.dart';
 export 'media_language.dart';

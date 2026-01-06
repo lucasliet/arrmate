@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
+/// Provider for fetching media files for a specific series.
 final seriesFilesProvider = FutureProvider.autoDispose
     .family<List<MediaFile>, int>((ref, seriesId) async {
       final repository = ref.watch(seriesRepositoryProvider);
@@ -21,6 +22,7 @@ final seriesExtraFilesProvider = FutureProvider.autoDispose
       return repository.getSeriesExtraFiles(seriesId);
     });
 
+/// Provider for fetching history events for a specific series.
 final seriesHistoryProvider = FutureProvider.autoDispose
     .family<List<HistoryEvent>, int>((ref, seriesId) async {
       final repository = ref.watch(seriesRepositoryProvider);
@@ -35,6 +37,7 @@ final seriesMetadataControllerProvider = Provider.autoDispose
       return SeriesMetadataController(ref, seriesId);
     });
 
+/// Controller for managing metadata operations (e.g. deleting files) for a series.
 class SeriesMetadataController {
   final Ref ref;
   final int seriesId;

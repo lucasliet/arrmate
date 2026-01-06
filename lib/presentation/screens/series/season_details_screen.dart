@@ -6,6 +6,7 @@ import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
 
+/// Screens that lists episodes for a specific season of a series.
 class SeasonDetailsScreen extends ConsumerWidget {
   final Series series; // We pass the full series or at least ID
   final Season season;

@@ -1,14 +1,27 @@
 import 'package:dio/dio.dart';
-import '../services/logger_service.dart';
+
 import 'api_error.dart';
 import '../constants/api_constants.dart';
+import 'secure_log_interceptor.dart';
 
+/// A wrapper around [Dio] for making HTTP requests with standardized error handling and logging.
 class ApiClient {
   final Dio _dio;
+
+  /// The base URL for the API.
   final String baseUrl;
+
+  /// The default headers to include in every request.
   final Map<String, String> headers;
+
+  /// The default timeout for requests.
   final Duration timeout;
 
+  /// Creates a new [ApiClient] instance.
+  ///
+  /// [baseUrl] is the root URL for the API.
+  /// [headers] are standard headers (e.g., API Key).
+  /// [timeout] defaults to [ApiConstants.defaultTimeout].
   ApiClient({
     required this.baseUrl,
     required this.headers,
@@ -22,15 +35,14 @@ class ApiClient {
            headers: headers,
          ),
        ) {
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (obj) => logger.debug('[API] $obj'),
-      ),
-    );
+    _dio.interceptors.add(SecureLogInterceptor());
   }
 
+  /// Performs a GET request.
+  ///
+  /// [path] is the endpoint path (relative to [baseUrl]).
+  /// [queryParameters] are optional query parameters.
+  /// [customTimeout] overrides the default timeout for this specific request.
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -45,6 +57,12 @@ class ApiClient {
     );
   }
 
+  /// Performs a POST request.
+  ///
+  /// [path] is the endpoint path.
+  /// [data] is the request body.
+  /// [queryParameters] are optional query parameters.
+  /// [customTimeout] overrides the default timeout.
   Future<T> post<T>(
     String path, {
     dynamic data,
@@ -61,6 +79,12 @@ class ApiClient {
     );
   }
 
+  /// Performs a PUT request.
+  ///
+  /// [path] is the endpoint path.
+  /// [data] is the request body.
+  /// [queryParameters] are optional query parameters.
+  /// [customTimeout] overrides the default timeout.
   Future<T> put<T>(
     String path, {
     dynamic data,
@@ -77,6 +101,12 @@ class ApiClient {
     );
   }
 
+  /// Performs a DELETE request.
+  ///
+  /// [path] is the endpoint path.
+  /// [data] is the optional request body.
+  /// [queryParameters] are optional query parameters.
+  /// [customTimeout] overrides the default timeout.
   Future<T> delete<T>(
     String path, {
     dynamic data,
@@ -93,11 +123,13 @@ class ApiClient {
     );
   }
 
+  /// Creates Dio [Options] with a custom timeout if one is provided.
   Options? _optionsWithTimeout(Duration? customTimeout) {
     if (customTimeout == null) return null;
     return Options(receiveTimeout: customTimeout, sendTimeout: customTimeout);
   }
 
+  /// Wraps a Dio request with error handling to throw [ApiError]s.
   Future<T> _request<T>(Future<Response<dynamic>> Function() request) async {
     try {
       final response = await request();
@@ -107,6 +139,7 @@ class ApiClient {
     }
   }
 
+  /// Maps a [DioException] to a strictly typed [ApiError].
   ApiError _mapDioError(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
@@ -124,6 +157,7 @@ class ApiClient {
     }
   }
 
+  /// Maps HTTP status codes to specific [ApiError] subclasses.
   ApiError _mapStatusCode(int? statusCode, dynamic data) {
     final message = _extractErrorMessage(data);
 
@@ -146,6 +180,7 @@ class ApiClient {
     }
   }
 
+  /// Extracts a human-readable error message from the response data.
   String? _extractErrorMessage(dynamic data) {
     if (data == null) return null;
     if (data is String) return data;

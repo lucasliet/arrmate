@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import 'shared.dart';
 
+/// Represents a paginated list of history events.
 class HistoryPage extends Equatable {
   final int page;
   final int pageSize;
@@ -40,6 +41,7 @@ class HistoryPage extends Equatable {
   List<Object?> get props => [page, pageSize, totalRecords, records];
 }
 
+/// Represents a single history event (e.g., download, import, failure).
 class HistoryEvent extends Equatable {
   final int id;
   final HistoryEventType eventType;
@@ -74,7 +76,10 @@ class HistoryEvent extends Equatable {
     this.data,
   });
 
+  /// Checks if the event is related to a movie.
   bool get isMovie => movieId != null;
+
+  /// Checks if the event is related to an episode.
   bool get isEpisode => episodeId != null;
 
   String get languageLabel {
@@ -98,6 +103,7 @@ class HistoryEvent extends Equatable {
     return data![key];
   }
 
+  /// Returns a human-readable description of the event.
   String get description {
     final mediaNoun = isMovie ? 'Movie' : 'Episode';
     final indexerName = indexer ?? 'indexer';
@@ -174,6 +180,7 @@ class HistoryEvent extends Equatable {
   ];
 }
 
+/// Defines the type of history event.
 enum HistoryEventType {
   unknown,
   grabbed,

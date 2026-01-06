@@ -10,6 +10,7 @@ import 'package:arrmate/presentation/widgets/media/media_file_details_sheet.dart
 import 'package:arrmate/presentation/widgets/media/history_event_details_sheet.dart';
 import '../providers/series_metadata_provider.dart';
 
+/// A section widget displaying related files and history for a series.
 class SeriesMetadataSection extends ConsumerWidget {
   final int seriesId;
 

@@ -5,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 
+/// A list tile widget for displaying series details in a list view.
 class SeriesListTile extends StatelessWidget {
   const SeriesListTile({super.key, required this.series, this.onTap});
 

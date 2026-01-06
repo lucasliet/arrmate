@@ -6,6 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../providers/activity_provider.dart';
 import '../manual_import_screen.dart';
 
+/// Detailed bottom sheet for a queue item, allowing management (remove, blocklist).
 class QueueItemSheet extends ConsumerStatefulWidget {
   final QueueItem item;
 

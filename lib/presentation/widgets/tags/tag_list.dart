@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/models/models.dart';
 
+/// A list widget for displaying and selecting tags.
 class TagList extends StatelessWidget {
   final List<Tag> tags;
   final Set<int> selectedTagIds;

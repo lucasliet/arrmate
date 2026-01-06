@@ -4,6 +4,7 @@ import '../../../../presentation/providers/data_providers.dart';
 
 part 'series_lookup_provider.g.dart';
 
+/// Notifier for looking up series from an external provider (TVDB via Sonarr).
 @riverpod
 class SeriesLookup extends _$SeriesLookup {
   @override

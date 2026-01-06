@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a custom format assigned to a media file.
 class MediaCustomFormat extends Equatable {
   final int id;
   final String name;

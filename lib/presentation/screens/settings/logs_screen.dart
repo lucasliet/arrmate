@@ -7,6 +7,7 @@ import 'package:arrmate/core/services/logger_service.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 
+/// Displays both internal app logs and remote system logs from instances.
 class LogsScreen extends ConsumerStatefulWidget {
   const LogsScreen({super.key});
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// A card widget displaying details of an extra file (subtitle, metadata, etc.).
 class ExtraFileCard extends StatelessWidget {
   final String relativePath;
   final String? extension;

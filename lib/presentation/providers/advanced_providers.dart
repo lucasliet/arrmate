@@ -3,11 +3,12 @@ import '../../domain/models/models.dart';
 import '../../core/services/logger_service.dart';
 import 'data_providers.dart';
 
-// Logs Provider
+/// Provider for fetching and paginating system logs.
 final logsProvider = AsyncNotifierProvider<LogsNotifier, LogPage>(() {
   return LogsNotifier();
 });
 
+/// Manages the state and pagination of system logs.
 class LogsNotifier extends AsyncNotifier<LogPage> {
   @override
   Future<LogPage> build() async {
@@ -18,8 +19,7 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
     final movieRepo = ref.watch(movieRepositoryProvider);
     final seriesRepo = ref.watch(seriesRepositoryProvider);
 
-    // Simplificação: Pegamos logs de uma instância ou combinamos.
-    // Para simplificar a UI no início, pegaremos da primeira instância Radarr disponível.
+    // Simplified: Fetches logs from the first available instance (Radarr or Sonarr).
     if (movieRepo != null) {
       return movieRepo.getLogs(page: page);
     } else if (seriesRepo != null) {
@@ -29,6 +29,7 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
     return const LogPage(page: 1, pageSize: 50, totalRecords: 0, records: []);
   }
 
+  /// Fetches the next page of logs and appends it to the current list.
   Future<void> fetchNextPage() async {
     final currentStatus = state;
     if (currentStatus.value == null) return;
@@ -52,7 +53,7 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
   }
 }
 
-// Health Provider
+/// Provider for fetching system health checks from all active instances.
 final healthProvider = FutureProvider<List<HealthCheck>>((ref) async {
   final movieRepo = ref.watch(movieRepositoryProvider);
   final seriesRepo = ref.watch(seriesRepositoryProvider);
@@ -80,7 +81,7 @@ final healthProvider = FutureProvider<List<HealthCheck>>((ref) async {
   return allChecks;
 });
 
-// Quality Profiles Provider (Fetching from instances)
+/// Provider for fetching Radarr quality profiles.
 final movieQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
   ref,
 ) async {
@@ -89,6 +90,7 @@ final movieQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
   return movieRepo.getQualityProfiles();
 });
 
+/// Provider for fetching Sonarr quality profiles.
 final seriesQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
   ref,
 ) async {
@@ -97,7 +99,7 @@ final seriesQualityProfilesProvider = FutureProvider<List<QualityProfile>>((
   return seriesRepo.getQualityProfiles();
 });
 
-// App Logs Provider (Internal logs from LoggerService)
+/// Provider that streams internal application logs.
 final appLogsProvider = StreamProvider<List<AppLogEntry>>((ref) async* {
   yield logger.logs;
   yield* logger.logStream;

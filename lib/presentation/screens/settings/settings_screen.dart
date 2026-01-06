@@ -12,6 +12,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../theme/app_theme.dart';
 
+/// Main settings screen for configuring instances, appearance, notifications, and about info.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 

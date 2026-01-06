@@ -7,6 +7,7 @@ import 'providers/series_provider.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import '../../../../presentation/shared/providers/formatted_options_provider.dart';
 
+/// A modal sheet for searching and adding new series to Sonarr.
 class SeriesAddSheet extends ConsumerStatefulWidget {
   const SeriesAddSheet({super.key});
 

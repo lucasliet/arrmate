@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 
+/// A customizable bottom sheet for sorting and filtering lists.
 class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
+  /// The title of the sheet.
   final String title;
+
+  /// The current sort option.
   final T currentSort;
+
+  /// Whether the sort is ascending.
   final bool isAscending;
+
+  /// The current filter option.
   final F currentFilter;
+
+  /// List of available sort options.
   final List<T> sortOptions;
+
+  /// List of available filter options.
   final List<F> filterOptions;
+
+  /// Builder for sort option labels.
   final String Function(T) sortLabelBuilder;
+
+  /// Builder for filter option labels.
   final String Function(F) filterLabelBuilder;
+
+  /// Callback when sort option changes.
   final Function(T) onSortChanged;
+
+  /// Callback when sort order changes.
   final Function(bool) onAscendingChanged;
+
+  /// Callback when filter option changes.
   final Function(F) onFilterChanged;
 
   const SortBottomSheet({

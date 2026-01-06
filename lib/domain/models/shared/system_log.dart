@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+/// Represents a system log entry from the server.
 class LogEntry extends Equatable {
   final DateTime time;
   final String level;
@@ -39,6 +40,7 @@ class LogEntry extends Equatable {
   ];
 }
 
+/// Represents a paginated list of system logs.
 class LogPage extends Equatable {
   final int page;
   final int pageSize;

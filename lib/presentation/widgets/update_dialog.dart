@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/update_provider.dart';
 import '../../core/services/logger_service.dart';
 
+/// Dialog displayed when an application update is available.
 class UpdateDialog extends ConsumerWidget {
   const UpdateDialog({super.key});
 

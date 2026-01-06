@@ -6,7 +6,9 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import 'queue_item_sheet.dart';
 
+/// A card widget displaying a summary of a download queue item.
 class QueueListItem extends ConsumerWidget {
+  /// The queue item to display.
   final QueueItem item;
 
   const QueueListItem({super.key, required this.item});

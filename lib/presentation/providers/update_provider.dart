@@ -6,6 +6,7 @@ import '../../core/services/logger_service.dart';
 
 // ... (UpdateStatus and UpdateState same as before)
 
+/// Enumerates the possible statuses of the update process.
 enum UpdateStatus {
   idle,
   checking,
@@ -16,6 +17,7 @@ enum UpdateStatus {
   upToDate,
 }
 
+/// State for [UpdateNotifier].
 class UpdateState {
   final UpdateStatus status;
   final AppUpdateInfo? info;
@@ -44,6 +46,7 @@ class UpdateState {
   }
 }
 
+/// Manages the application update process, including checking, downloading, and installing updates.
 final updateProvider = NotifierProvider<UpdateNotifier, UpdateState>(() {
   return UpdateNotifier();
 });

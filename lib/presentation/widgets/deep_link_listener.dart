@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/services/logger_service.dart';
 
+/// Widget that listens for deep links and handles navigation.
 class DeepLinkListener extends StatefulWidget {
   final Widget child;
 

@@ -1,38 +1,58 @@
+import '../../core/services/logger_service.dart';
 import '../../domain/repositories/series_repository.dart';
 import '../api/sonarr_api.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+/// Implementation of [SeriesRepository] using [SonarrApi].
 class SeriesRepositoryImpl implements SeriesRepository {
   final SonarrApi _api;
 
   SeriesRepositoryImpl(this._api);
 
   @override
-  Future<List<Series>> getSeries() => _api.getSeries();
+  Future<List<Series>> getSeries() async {
+    logger.debug('[SeriesRepository] Fetching all series');
+    return _api.getSeries();
+  }
 
   @override
   Future<Series> getSeriesById(int id) => _api.getSeriesById(id);
 
   @override
-  Future<Series> addSeries(Series series) => _api.addSeries(series);
+  Future<Series> addSeries(Series series) async {
+    logger.info('[SeriesRepository] Adding series: ${series.title}');
+    return _api.addSeries(series);
+  }
 
   @override
-  Future<Series> updateSeries(Series series, {bool moveFiles = false}) =>
-      _api.updateSeries(series, moveFiles: moveFiles);
+  Future<Series> updateSeries(Series series, {bool moveFiles = false}) async {
+    logger.info(
+      '[SeriesRepository] Updating series: ${series.title} (id: ${series.id})',
+    );
+    return _api.updateSeries(series, moveFiles: moveFiles);
+  }
 
   @override
   Future<void> deleteSeries(
     int id, {
     bool deleteFiles = false,
     bool addExclusion = false,
-  }) => _api.deleteSeries(
-    id,
-    deleteFiles: deleteFiles,
-    addExclusion: addExclusion,
-  );
+  }) async {
+    logger.info(
+      '[SeriesRepository] Deleting series: $id (files: $deleteFiles, exclude: $addExclusion)',
+    );
+    return _api.deleteSeries(
+      id,
+      deleteFiles: deleteFiles,
+      addExclusion: addExclusion,
+    );
+  }
 
   @override
-  Future<List<Series>> lookupSeries(String term) => _api.lookupSeries(term);
+  Future<List<Series>> lookupSeries(String term) async {
+    logger.debug('[SeriesRepository] Looking up series: $term');
+    return _api.lookupSeries(term);
+  }
 
   @override
   Future<List<Episode>> getEpisodes(int seriesId) => _api.getEpisodes(seriesId);

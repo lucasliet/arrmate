@@ -6,11 +6,13 @@ import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
 // Queue Provider
+/// Provider for fetching and managing the download queue, auto-refreshes every 5 seconds.
 final queueProvider =
     AsyncNotifierProvider.autoDispose<QueueNotifier, List<QueueItem>>(
       QueueNotifier.new,
     );
 
+/// Notifier to manage the download queue state.
 class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Timer? _timer;
 
@@ -70,6 +72,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     return items;
   }
 
+  /// Manually refreshes the queue.
   Future<void> refresh() async {
     // Silent refresh if already loaded?
     // Using ref.invalidateSelf() triggers loading state. W
@@ -81,6 +84,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     state = await AsyncValue.guard(() => _fetchQueue());
   }
 
+  /// Removes an item from the queue with optional parameters.
   Future<bool> removeQueueItem(
     int id, {
     bool removeFromClient = true,

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../movie/movie.dart';
 import '../series/series.dart';
 
+/// Represents a paginated list of queue items.
 class QueueItems extends Equatable {
   final int page;
   final int pageSize;
@@ -46,6 +47,7 @@ class QueueItems extends Equatable {
   ];
 }
 
+/// Represents a single item in the activity queue.
 class QueueItem extends Equatable {
   final int id;
   final String? instanceId;
@@ -97,21 +99,27 @@ class QueueItem extends Equatable {
     this.episode,
   });
 
+  /// Checks if the item has a warning status.
   bool get hasWarning => trackedDownloadStatus == 'warning';
+
+  /// Checks if the item has a critical error.
   bool get hasError => trackedDownloadStatus == 'error' || errorMessage != null;
 
+  /// Checks if user intervention is required (e.g., manual import).
   bool get needsManualImport =>
       downloadId != null &&
       trackedDownloadStatus == 'warning' &&
       (trackedDownloadState == 'importPending' ||
           trackedDownloadState == 'importBlocked');
 
+  /// Calculates the download percentage (0-100).
   double get progressPercent {
     if (progress != null) return progress!;
     if (size == null || size == 0) return 0;
     return ((size! - sizeleft) / size!) * 100;
   }
 
+  /// Returns a display title based on the context (Movie, Series, or fallback).
   String get displayTitle {
     if (movie != null) return movie!.title;
     if (series != null) return series!.title;
@@ -218,6 +226,7 @@ class QueueItem extends Equatable {
   ];
 }
 
+/// Defines the current status of a queue item.
 enum QueueStatus {
   unknown,
   queued,
@@ -250,6 +259,7 @@ enum QueueStatus {
   }
 }
 
+/// Contains messages related to the queue item status (e.g., failure reasons).
 class QueueStatusMessage extends Equatable {
   final String? title;
   final List<String> messages;

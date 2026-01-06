@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
+/// Provider for fetching the details of a specific movie using its ID.
 final movieDetailsProvider = FutureProvider.autoDispose.family<Movie, int>((
   ref,
   movieId,
@@ -15,6 +16,7 @@ final movieDetailsProvider = FutureProvider.autoDispose.family<Movie, int>((
 });
 
 // Helper for actions (monitor, delete, etc)
+/// Controller for managing movie actions (monitoring, deleting, updating).
 class MovieController {
   final Ref ref;
   final int movieId;
@@ -65,6 +67,7 @@ class MovieController {
   }
 }
 
+/// Provider for accessing the MovieController.
 final movieControllerProvider = Provider.autoDispose
     .family<MovieController, int>((ref, movieId) {
       return MovieController(ref, movieId);

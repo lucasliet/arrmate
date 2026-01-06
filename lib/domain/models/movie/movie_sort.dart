@@ -1,5 +1,6 @@
 import 'package:arrmate/domain/models/movie/movie.dart';
 
+/// Encapsulates sorting and filtering options for movie lists.
 class MovieSort {
   final MovieSortOption option;
   final bool isAscending;
@@ -24,6 +25,7 @@ class MovieSort {
   }
 }
 
+/// Available options for sorting movies.
 enum MovieSortOption {
   byTitle,
   byYear,
@@ -67,6 +69,7 @@ enum MovieSortOption {
   }
 }
 
+/// Available filters for movie lists.
 enum MovieFilter {
   all,
   monitored,
