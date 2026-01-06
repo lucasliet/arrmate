@@ -72,7 +72,7 @@ class InstanceStatus extends Equatable {
       isDebug: json['isDebug'] as bool?,
       authentication: json['authentication'] as String?,
       startTime: json['startTime'] != null
-          ? DateTime.parse(json['startTime'] as String)
+          ? DateTime.tryParse(json['startTime'] as String)
           : null,
       urlBase: json['urlBase'] as String?,
     );

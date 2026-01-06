@@ -165,23 +165,23 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
   }
 
   Future<void> _handleImport() async {
-    final filesState = await ref.read(
-      manualImportFilesProvider(widget.downloadId).future,
-    );
-    final selectedFiles = filesState
-        .where((f) => _selectedFileIds.contains(f.id))
-        .toList();
-
-    if (selectedFiles.isEmpty) {
-      if (mounted) {
-        context.showErrorSnackBar('No files selected');
-      }
-      return;
-    }
-
-    setState(() => _isImporting = true);
-
     try {
+      final filesState = await ref.read(
+        manualImportFilesProvider(widget.downloadId).future,
+      );
+      final selectedFiles = filesState
+          .where((f) => _selectedFileIds.contains(f.id))
+          .toList();
+
+      if (selectedFiles.isEmpty) {
+        if (mounted) {
+          context.showErrorSnackBar('No files selected');
+        }
+        return;
+      }
+
+      setState(() => _isImporting = true);
+
       final controller = ref.read(
         manualImportControllerProvider(widget.downloadId),
       );

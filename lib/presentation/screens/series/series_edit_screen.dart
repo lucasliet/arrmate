@@ -50,7 +50,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
           builder: (context) => AlertDialog(
             title: const Text('Move Files?'),
             content: const Text(
-              'You verifyed the root folder. Do you want to move existing files to the new location?',
+              'You changed the root folder. Do you want to move existing files to the new location?',
             ),
             actions: [
               TextButton(

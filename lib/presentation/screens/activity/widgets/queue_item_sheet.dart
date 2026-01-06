@@ -210,8 +210,6 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
   }
 
   Widget _buildManualImportSection(BuildContext context) {
-    final item = widget.item;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

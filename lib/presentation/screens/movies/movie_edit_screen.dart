@@ -24,6 +24,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
 
   bool _isSaving = false;
   Future<(List<QualityProfile>, List<RootFolder>)>? _dataFuture;
+  bool _hasSyncedRootFolder = false;
 
   @override
   void initState() {
@@ -47,6 +48,16 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
           (value) =>
               (value[0] as List<QualityProfile>, value[1] as List<RootFolder>),
         );
+  }
+
+  void _syncRootFolderIfNeeded(List<RootFolder> rootFolders) {
+    if (_hasSyncedRootFolder) return;
+    _hasSyncedRootFolder = true;
+
+    if (!rootFolders.any((f) => f.path == _rootFolderPath) &&
+        rootFolders.isNotEmpty) {
+      _rootFolderPath = rootFolders.first.path;
+    }
   }
 
   Future<void> _save() async {
@@ -160,15 +171,14 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                 final qualityProfiles = snapshot.data!.$1;
                 final rootFolders = snapshot.data!.$2;
 
-                // Sync state if root folder is not in list
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!rootFolders.any((f) => f.path == _rootFolderPath) &&
-                      rootFolders.isNotEmpty) {
-                    setState(() {
-                      _rootFolderPath = rootFolders.first.path;
-                    });
-                  }
-                });
+                _syncRootFolderIfNeeded(rootFolders);
+
+                final effectiveRootFolder =
+                    rootFolders.any((f) => f.path == _rootFolderPath)
+                    ? _rootFolderPath
+                    : rootFolders.isNotEmpty
+                    ? rootFolders.first.path
+                    : null;
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -234,12 +244,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                             helperText:
                                 'Changing this will move files if confirmed',
                           ),
-                          initialValue:
-                              rootFolders.any((f) => f.path == _rootFolderPath)
-                              ? _rootFolderPath
-                              : rootFolders.isNotEmpty
-                              ? rootFolders.first.path
-                              : null,
+                          initialValue: effectiveRootFolder,
                           items: rootFolders
                               .map(
                                 (f) => DropdownMenuItem(
