@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'dart:convert';
-import '../../../../domain/models/instance/instance.dart';
+import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/data_providers.dart';
 
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
@@ -71,39 +71,31 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final url = _urlController.text.trim();
-    final apiKey = _apiKeyController.text.trim();
+    final tempInstance = Instance(
+      label: _nameController.text.trim(),
+      url: _urlController.text.trim(),
+      apiKey: _apiKeyController.text.trim(),
+      type: _type,
+      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
+      headers: _headers,
+    );
 
-    // Simple test: Try to hit system/status
     try {
-      final headersMap = <String, String>{'X-Api-Key': apiKey};
-      for (final header in _headers) {
-        headersMap[header.name] = header.value;
-      }
+      final instanceRepo = ref.read(instanceRepositoryProvider);
 
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: url,
-          connectTimeout: const Duration(seconds: 10),
-          headers: headersMap,
-        ),
-      );
+      final results = await Future.wait([
+        instanceRepo.getSystemStatus(tempInstance),
+        instanceRepo.getTags(tempInstance),
+      ]);
 
-      // Radarr/Sonarr usually have /api/v3/system/status
-      final response = await dio.get('/api/v3/system/status');
+      final status = results[0] as InstanceStatus;
+      final tags = results[1] as List<Tag>;
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _testSuccess = true;
-          _testMessage =
-              'Connection successful! Version: ${response.data['version']}';
-        });
-      } else {
-        setState(() {
-          _testSuccess = false;
-          _testMessage = 'Failed: ${response.statusCode}';
-        });
-      }
+      setState(() {
+        _testSuccess = true;
+        _testMessage =
+            'Connection successful!\nVersion: ${status.version}\nInstance: ${status.instanceName}\nTags: ${tags.length} available';
+      });
     } catch (e) {
       setState(() {
         _testSuccess = false;
@@ -116,11 +108,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final instance = Instance(
-      id: widget.instanceId, // Reuse ID if editing, generated if null
+      id: widget.instanceId,
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
       apiKey: _apiKeyController.text.trim(),
@@ -130,12 +122,22 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     );
 
     if (widget.instanceId != null) {
-      ref.read(instancesProvider.notifier).updateInstance(instance);
+      await ref.read(instancesProvider.notifier).updateInstance(instance);
     } else {
-      ref.read(instancesProvider.notifier).addInstance(instance);
+      await ref.read(instancesProvider.notifier).addInstance(instance);
     }
 
-    context.pop();
+    try {
+      await ref
+          .read(instancesProvider.notifier)
+          .validateAndCacheInstanceData(instance, ref);
+    } catch (e) {
+      debugPrint('Failed to validate and cache instance data: $e');
+    }
+
+    if (mounted) {
+      context.pop();
+    }
   }
 
   void _delete() {
@@ -215,8 +217,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 keyboardType: TextInputType.url,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Required';
-                  if (!value.startsWith('http'))
+                  if (!value.startsWith('http')) {
                     return 'Must start with http:// or https://';
+                  }
                   return null;
                 },
               ),
@@ -239,51 +242,53 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 title: const Text('Advanced Settings'),
                 subtitle: const Text('Custom Headers & Authentication'),
                 children: [
-                   SwitchListTile(
-                     title: const Text('Slow Instance Mode'),
-                     subtitle: const Text('Increase timeouts for slower connections'),
-                     value: _slowMode,
-                     onChanged: (value) => setState(() => _slowMode = value),
-                   ),
-                   const Divider(),
-                   ListView.builder(
-                     shrinkWrap: true,
-                     physics: const NeverScrollableScrollPhysics(),
-                     itemCount: _headers.length,
-                     itemBuilder: (context, index) {
-                       final header = _headers[index];
-                       return ListTile(
-                         title: Text(header.name),
-                         subtitle: Text(header.value),
-                         trailing: IconButton(
-                           icon: const Icon(Icons.delete),
-                           onPressed: () {
-                             setState(() {
-                               _headers.removeAt(index);
-                             });
-                           },
-                         ),
-                       );
-                     },
-                   ),
-                   Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                       children: [
-                         TextButton.icon(
-                           onPressed: _addHeaderDialog,
-                           icon: const Icon(Icons.add),
-                           label: const Text('Add Header'),
-                         ),
-                         TextButton.icon(
-                           onPressed: _addBasicAuthDialog,
-                           icon: const Icon(Icons.lock),
-                           label: const Text('Add Basic Auth'),
-                         ),
-                       ],
-                     ),
-                   ),
+                  SwitchListTile(
+                    title: const Text('Slow Instance Mode'),
+                    subtitle: const Text(
+                      'Increase timeouts for slower connections',
+                    ),
+                    value: _slowMode,
+                    onChanged: (value) => setState(() => _slowMode = value),
+                  ),
+                  const Divider(),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _headers.length,
+                    itemBuilder: (context, index) {
+                      final header = _headers[index];
+                      return ListTile(
+                        title: Text(header.name),
+                        subtitle: Text(header.value),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              _headers.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _addHeaderDialog,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Header'),
+                        ),
+                        TextButton.icon(
+                          onPressed: _addBasicAuthDialog,
+                          icon: const Icon(Icons.lock),
+                          label: const Text('Add Basic Auth'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -328,7 +333,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   Future<void> _addHeaderDialog() async {
     final nameCtrl = TextEditingController();
     final valueCtrl = TextEditingController();
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -354,12 +359,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           TextButton(
             onPressed: () {
               if (nameCtrl.text.isNotEmpty && valueCtrl.text.isNotEmpty) {
-                 setState(() {
-                   _headers.add(InstanceHeader(
-                     name: nameCtrl.text,
-                     value: valueCtrl.text,
-                   ));
-                 });
+                setState(() {
+                  _headers.add(
+                    InstanceHeader(name: nameCtrl.text, value: valueCtrl.text),
+                  );
+                });
               }
               Navigator.pop(context);
             },
@@ -381,8 +385,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-             const Text('Credentials will be encoded to Base64.'),
-             const SizedBox(height: 8),
+            const Text('Credentials will be encoded to Base64.'),
+            const SizedBox(height: 8),
             TextField(
               controller: userCtrl,
               decoration: const InputDecoration(labelText: 'Username'),
@@ -402,14 +406,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           TextButton(
             onPressed: () {
               if (userCtrl.text.isNotEmpty && passCtrl.text.isNotEmpty) {
-                 final raw = '${userCtrl.text}:${passCtrl.text}';
-                 final encoded = base64Encode(utf8.encode(raw));
-                 setState(() {
-                   _headers.add(InstanceHeader(
-                     name: 'Authorization',
-                     value: 'Basic $encoded',
-                   ));
-                 });
+                final raw = '${userCtrl.text}:${passCtrl.text}';
+                final encoded = base64Encode(utf8.encode(raw));
+                setState(() {
+                  _headers.add(
+                    InstanceHeader(
+                      name: 'Authorization',
+                      value: 'Basic $encoded',
+                    ),
+                  );
+                });
               }
               Navigator.pop(context);
             },

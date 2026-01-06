@@ -4,12 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/update_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -53,13 +51,20 @@ class SettingsScreen extends ConsumerWidget {
         if (instancesState.instances.isEmpty)
           const PasteMessage(message: 'No instances configured'),
         ...instancesState.instances.map((instance) {
+          final versionInfo = instance.version != null
+              ? ' · v${instance.version}'
+              : '';
+          final tagsInfo = instance.tags.isNotEmpty
+              ? ' · ${instance.tags.length} tags'
+              : '';
+
           return ListTile(
             leading: Icon(
               instance.type.name == 'radarr' ? Icons.movie : Icons.tv,
               color: Theme.of(context).colorScheme.primary,
             ),
             title: Text(instance.label),
-            subtitle: Text(instance.url),
+            subtitle: Text(instance.url + versionInfo + tagsInfo),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               context.push('/settings/instance/${instance.id}');

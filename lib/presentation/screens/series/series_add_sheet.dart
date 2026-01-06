@@ -44,8 +44,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
   Future<void> _submit() async {
     if (_selectedSeries == null ||
         _qualityProfileId == null ||
-        _rootFolderPath == null)
+        _rootFolderPath == null) {
       return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -69,7 +70,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Series added successfully')),
         );
-        ref.refresh(seriesProvider);
+        ref.invalidate(seriesProvider);
       }
     } catch (e) {
       if (mounted) {
@@ -81,7 +82,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -229,7 +232,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<SeriesType>(
                     decoration: const InputDecoration(labelText: 'Series Type'),
-                    value: _seriesType,
+                    initialValue: _seriesType,
                     items: SeriesType.values.map((type) {
                       return DropdownMenuItem(
                         value: type,
@@ -249,17 +252,18 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     data: (profiles) {
                       if (_qualityProfileId == null && profiles.isNotEmpty) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted)
+                          if (mounted) {
                             setState(
                               () => _qualityProfileId = profiles.first.id,
                             );
+                          }
                         });
                       }
                       return DropdownButtonFormField<int>(
                         decoration: const InputDecoration(
                           labelText: 'Quality Profile',
                         ),
-                        value: _qualityProfileId,
+                        initialValue: _qualityProfileId,
                         items: profiles
                             .map(
                               (p) => DropdownMenuItem(
@@ -282,17 +286,18 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                       if (_rootFolderPath == null &&
                           rootFolderList.isNotEmpty) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted)
+                          if (mounted) {
                             setState(
                               () => _rootFolderPath = rootFolderList.first.path,
                             );
+                          }
                         });
                       }
                       return DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
                           labelText: 'Root Folder',
                         ),
-                        value: _rootFolderPath,
+                        initialValue: _rootFolderPath,
                         items: rootFolderList.map((f) {
                           final freeSpaceGb =
                               (f.freeSpace ?? 0) / 1024 / 1024 / 1024;

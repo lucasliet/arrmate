@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-// ignore: depend_on_referenced_packages
 import 'package:http/io_client.dart';
 
 class CustomCacheManager {

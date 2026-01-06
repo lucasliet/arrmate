@@ -30,3 +30,7 @@ final seriesRepositoryProvider = Provider<SeriesRepository?>((ref) {
   if (api == null) return null;
   return SeriesRepositoryImpl(api);
 });
+
+final instanceRepositoryProvider = Provider<InstanceRepository>((ref) {
+  return InstanceRepositoryImpl();
+});

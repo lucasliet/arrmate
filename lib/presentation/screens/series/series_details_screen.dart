@@ -9,6 +9,7 @@ import '../../providers/instances_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
+import 'widgets/series_metadata_section.dart';
 import 'season_details_screen.dart';
 import 'series_edit_screen.dart';
 
@@ -40,8 +41,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Series series) {
     final instance = ref.watch(currentSonarrInstanceProvider);
-    final fanartImage =
-        series.images.where((i) => i.coverType == 'fanart').firstOrNull;
+    final fanartImage = series.images
+        .where((i) => i.coverType == 'fanart')
+        .firstOrNull;
     final fanartRemoteUrl = fanartImage?.remoteUrl;
     final fanartLocalUrl = fanartImage?.url;
     final theme = Theme.of(context);
@@ -261,6 +263,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
                 _buildInfoGrid(context, series),
+                const SizedBox(height: 24),
+                SeriesMetadataSection(seriesId: seriesId),
                 const SizedBox(height: 32),
                 Text(
                   'Seasons',
@@ -368,8 +372,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
       itemCount: series.seasons.length,
       itemBuilder: (context, index) {
         final season = series.seasons[index];
-        if (season.seasonNumber == 0)
-          return const SizedBox(); // Skip specials usually? Or show them at end.
+        if (season.seasonNumber == 0) {
+          return const SizedBox.shrink(); // Skip specials usually? Or show them at end.
+        }
 
         return Card(
           elevation: 0,

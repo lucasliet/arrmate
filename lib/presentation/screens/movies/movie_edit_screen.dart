@@ -23,6 +23,8 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
   late MovieStatus _minimumAvailability;
 
   bool _isSaving = false;
+  Future<(List<QualityProfile>, List<RootFolder>)>? _dataFuture;
+  bool _hasSyncedRootFolder = false;
 
   @override
   void initState() {
@@ -33,6 +35,38 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
     _minimumAvailability = widget.movie.minimumAvailability;
   }
 
+  void _initDataFuture() {
+    if (_dataFuture != null) return;
+    final repository = ref.read(movieRepositoryProvider);
+    if (repository == null) return;
+
+    _dataFuture =
+        Future.wait([
+          repository.getQualityProfiles(),
+          repository.getRootFolders(),
+        ]).then((value) {
+          final rootFolders = value[1] as List<RootFolder>;
+          _syncRootFolderIfNeeded(rootFolders);
+          return (value[0] as List<QualityProfile>, rootFolders);
+        });
+  }
+
+  void _syncRootFolderIfNeeded(List<RootFolder> rootFolders) {
+    if (_hasSyncedRootFolder) return;
+    _hasSyncedRootFolder = true;
+
+    if (!rootFolders.any((f) => f.path == _rootFolderPath) &&
+        rootFolders.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _rootFolderPath = rootFolders.first.path;
+          });
+        }
+      });
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -41,29 +75,13 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
     });
 
     try {
-
-      // Rudarr logic: detects if root folder changed. In Radarr API, if you change 'rootFolderPath' 
-      // AND 'moveFiles=true', it moves. But Movie object usually has 'path' (full path) and 'rootFolderPath' (prefix).
-      // Wait, the API usually expects 'rootFolderPath' to be updated if we are moving?
-      // Actually, looking at Radarr API docs/behavior:
-      // To move, we update 'rootFolderPath' property in the JSON to the new parent folder.
-      // The 'path' property is usually read-only or derived.
-      
       bool rootFolderChanged = false;
-      // We need to compare specific logic or just trust the user selection.
-      // Let's check if the current path starts with the selected root folder.
-      // Or just check if _rootFolderPath is different from initial.
-      
-      // Simplification: We check if the user selected a different root folder than what was implied.
-      // However, `movie.rootFolderPath` comes from API.
-      
       if (widget.movie.rootFolderPath != _rootFolderPath) {
         rootFolderChanged = true;
       }
 
       bool moveFiles = false;
       if (rootFolderChanged && widget.movie.isDownloaded) {
-        // Ask usage
         final confirmMove = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -73,11 +91,11 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false), // No, just update DB
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text('No'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true), // Yes, move files
+                onPressed: () => Navigator.pop(context, true),
                 child: const Text('Yes'),
               ),
             ],
@@ -93,14 +111,15 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
         minimumAvailability: _minimumAvailability,
       );
 
-      await ref.read(movieControllerProvider(widget.movie.id))
+      await ref
+          .read(movieControllerProvider(widget.movie.id))
           .updateMovie(updatedMovie, moveFiles: moveFiles);
 
       if (mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Movie updated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Movie updated')));
       }
     } catch (e) {
       if (mounted) {
@@ -122,32 +141,32 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // We need to fetch profiles and root folders
     final repository = ref.watch(movieRepositoryProvider);
-    
-    // We can use FutureBuilder or define a provider.
-    // For simplicity in this edit screen, let's use FutureBuilder inside the build or just assume loading state.
-    // Better: Helper provider.
-    
+
+    if (repository != null) {
+      _initDataFuture();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Movie'),
         actions: [
           IconButton(
-            icon: _isSaving 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.save),
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save),
             onPressed: _isSaving ? null : _save,
           ),
         ],
       ),
-      body: repository == null 
+      body: repository == null || _dataFuture == null
           ? const Center(child: CircularProgressIndicator())
           : FutureBuilder<(List<QualityProfile>, List<RootFolder>)>(
-              future: Future.wait([
-                repository.getQualityProfiles(),
-                repository.getRootFolders(),
-              ]).then((value) => (value[0] as List<QualityProfile>, value[1] as List<RootFolder>)),
+              future: _dataFuture,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
@@ -159,6 +178,13 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                 final qualityProfiles = snapshot.data!.$1;
                 final rootFolders = snapshot.data!.$2;
 
+                final effectiveRootFolder =
+                    rootFolders.any((f) => f.path == _rootFolderPath)
+                    ? _rootFolderPath
+                    : rootFolders.isNotEmpty
+                    ? rootFolders.first.path
+                    : null;
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Form(
@@ -166,64 +192,74 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Monitored Toggle
                         SwitchListTile(
                           title: const Text('Monitored'),
                           value: _monitored,
                           onChanged: (val) => setState(() => _monitored = val),
                         ),
                         const Divider(),
-                        
-                        // Quality Profile
+
                         DropdownButtonFormField<int>(
                           decoration: const InputDecoration(
                             labelText: 'Quality Profile',
                             border: OutlineInputBorder(),
                           ),
-                          value: _qualityProfileId,
-                          items: qualityProfiles.map((p) => DropdownMenuItem(
-                            value: p.id,
-                            child: Text(p.name),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _qualityProfileId = val!),
+                          initialValue: _qualityProfileId,
+                          items: qualityProfiles
+                              .map(
+                                (p) => DropdownMenuItem(
+                                  value: p.id,
+                                  child: Text(p.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _qualityProfileId = val!),
                         ),
                         const SizedBox(height: 16),
 
-                        // Minimum Availability
                         DropdownButtonFormField<MovieStatus>(
                           decoration: const InputDecoration(
                             labelText: 'Minimum Availability',
                             border: OutlineInputBorder(),
                           ),
-                          value: _minimumAvailability,
-                          items: [
-                            MovieStatus.announced,
-                            MovieStatus.inCinemas,
-                            MovieStatus.released,
-                          ].map((s) => DropdownMenuItem(
-                            value: s,
-                            child: Text(s.label),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _minimumAvailability = val!),
+                          initialValue: _minimumAvailability,
+                          items:
+                              [
+                                    MovieStatus.announced,
+                                    MovieStatus.inCinemas,
+                                    MovieStatus.released,
+                                  ]
+                                  .map(
+                                    (s) => DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s.label),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (val) =>
+                              setState(() => _minimumAvailability = val!),
                         ),
                         const SizedBox(height: 16),
 
-                        // Root Folder
                         DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
                             labelText: 'Root Folder',
                             border: OutlineInputBorder(),
-                            helperText: 'Changing this will move files if confirmed',
+                            helperText:
+                                'Changing this will move files if confirmed',
                           ),
-                          value: rootFolders.any((f) => f.path == _rootFolderPath) 
-                              ? _rootFolderPath 
-                              : (rootFolders.firstOrNull?.path ?? _rootFolderPath),
-                              // Fallback if current path is not in list (strange but possible)
-                          items: rootFolders.map((f) => DropdownMenuItem(
-                            value: f.path,
-                            child: Text(f.path ?? 'Unknown'),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _rootFolderPath = val!),
+                          initialValue: effectiveRootFolder,
+                          items: rootFolders
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f.path,
+                                  child: Text(f.path),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _rootFolderPath = val!),
                         ),
                       ],
                     ),

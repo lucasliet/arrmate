@@ -6,11 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 
 class SeriesListTile extends StatelessWidget {
-  const SeriesListTile({
-    super.key,
-    required this.series,
-    this.onTap,
-  });
+  const SeriesListTile({super.key, required this.series, this.onTap});
 
   final Series series;
   final VoidCallback? onTap;
@@ -26,11 +22,7 @@ class SeriesListTile extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            SizedBox(
-              width: 80,
-              height: 120,
-              child: _buildPoster(context),
-            ),
+            SizedBox(width: 80, height: 120, child: _buildPoster(context)),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -98,8 +90,7 @@ class SeriesListTile extends StatelessWidget {
   Widget _buildSubtitle(BuildContext context) {
     final theme = Theme.of(context);
     final year = series.yearLabel;
-    final runtime =
-        series.runtime > 0 ? formatRuntime(series.runtime) : null;
+    final runtime = series.runtime > 0 ? formatRuntime(series.runtime) : null;
 
     return Row(
       children: [
@@ -171,11 +162,7 @@ class SeriesListTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         if (series.isDownloaded)
-          const Icon(
-            Icons.check_circle,
-            size: 18,
-            color: Colors.white,
-          )
+          const Icon(Icons.check_circle, size: 18, color: Colors.white)
         else if (series.monitored)
           if (series.isWaiting)
             Icon(

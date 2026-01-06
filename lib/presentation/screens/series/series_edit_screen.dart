@@ -20,7 +20,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   late int? _qualityProfileId;
   late String? _rootFolderPath;
 
-
   bool _isSaving = false;
 
   @override
@@ -41,7 +40,8 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final moveFiles = _rootFolderPath != widget.series.rootFolderPath &&
+      final moveFiles =
+          _rootFolderPath != widget.series.rootFolderPath &&
           _rootFolderPath != widget.series.path;
 
       if (moveFiles) {
@@ -50,14 +50,17 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
           builder: (context) => AlertDialog(
             title: const Text('Move Files?'),
             content: const Text(
-                'You verifyed the root folder. Do you want to move existing files to the new location?'),
+              'You changed the root folder. Do you want to move existing files to the new location?',
+            ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false), // No, just update DB
+                onPressed: () =>
+                    Navigator.pop(context, false), // No, just update DB
                 child: const Text('No'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true), // Yes, move files
+                onPressed: () =>
+                    Navigator.pop(context, true), // Yes, move files
                 child: const Text('Yes, Move Files'),
               ),
             ],
@@ -68,7 +71,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
           setState(() => _isSaving = false);
           return; // Cancelled
         }
-        
+
         await _performUpdate(moveFiles: confirm);
       } else {
         await _performUpdate(moveFiles: false);
@@ -76,7 +79,10 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating series: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error updating series: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
         setState(() => _isSaving = false);
       }
@@ -126,17 +132,20 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
             )
           else
-            TextButton(
-              onPressed: _save,
-              child: const Text('Save'),
-            ),
+            TextButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
       body: FutureBuilder<(List<QualityProfile>, List<RootFolder>)>(
-        future: Future.wait([
-          repository.getQualityProfiles(),
-          repository.getRootFolders(),
-        ]).then((value) => (value[0] as List<QualityProfile>, value[1] as List<RootFolder>)),
+        future:
+            Future.wait([
+              repository.getQualityProfiles(),
+              repository.getRootFolders(),
+            ]).then(
+              (value) => (
+                value[0] as List<QualityProfile>,
+                value[1] as List<RootFolder>,
+              ),
+            ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -229,8 +238,8 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
                 subtitle: Text(_rootFolderPath ?? 'Select Path'),
                 trailing: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: rootFolders.any((f) => f.path == _rootFolderPath) 
-                        ? _rootFolderPath 
+                    value: rootFolders.any((f) => f.path == _rootFolderPath)
+                        ? _rootFolderPath
                         : null, // Handle case where current path isn't in available root folders
                     hint: const Text('Select'),
                     onChanged: (String? newValue) {

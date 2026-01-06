@@ -141,7 +141,10 @@ class RadarrApi {
     return response;
   }
 
-  Future<dynamic> sendCommand(String name, {Map<String, dynamic>? params}) async {
+  Future<dynamic> sendCommand(
+    String name, {
+    Map<String, dynamic>? params,
+  }) async {
     final body = {'name': name, ...?params};
     final response = await _client.post(
       '/command',
@@ -199,6 +202,74 @@ class RadarrApi {
     final response = await _client.get('/health');
     return (response as List)
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<MediaFile>> getMovieFiles(int movieId) async {
+    final response = await _client.get(
+      '/moviefile',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => MediaFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<MovieExtraFile>> getMovieExtraFiles(int movieId) async {
+    final response = await _client.get(
+      '/extrafile',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => MovieExtraFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<HistoryEvent>> getMovieHistory(int movieId) async {
+    final response = await _client.get(
+      '/history/movie',
+      queryParameters: {'movieId': movieId},
+    );
+    return (response as List)
+        .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteMovieFile(int fileId) async {
+    await _client.delete('/moviefile/$fileId');
+  }
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) async {
+    final response = await _client.get(
+      '/manualimport',
+      queryParameters: {'downloadId': downloadId, 'filterExistingFiles': false},
+    );
+    return (response as List)
+        .map((e) => ImportableFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> manualImport(List<ImportableFile> files) async {
+    await _client.post(
+      '/command',
+      data: {
+        'name': 'ManualImport',
+        'files': files.map((f) => f.toJson()).toList(),
+        'importMode': 'auto',
+      },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
+  }
+
+  Future<InstanceStatus> getSystemStatus() async {
+    final response = await _client.get('/system/status');
+    return InstanceStatus.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<Tag>> getTags() async {
+    final response = await _client.get('/tag');
+    return (response as List)
+        .map((e) => Tag.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }

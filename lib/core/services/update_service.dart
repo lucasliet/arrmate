@@ -9,7 +9,7 @@ import 'package:collection/collection.dart';
 import 'logger_service.dart';
 
 class AppUpdateInfo {
-// ...
+  // ...
   final String version;
   final String changelog;
   final String downloadUrl;
@@ -48,10 +48,7 @@ class UpdateService {
         options: Options(
           sendTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
+          headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
         ),
       );
 
@@ -85,24 +82,30 @@ class UpdateService {
         logger.info('🏗️  Selected architecture: $architecture');
       }
 
-      final apkAsset = assets.firstWhereOrNull((asset) {
+      // Look for a matching APK asset
+      final apkAsset =
+          assets.firstWhereOrNull((asset) {
             final name = (asset['name'] as String).toLowerCase();
             if (!name.endsWith('.apk')) return false;
 
+            // If we detected an architecture, try to find a match in the filename
             if (architecture != null) {
               return name.contains(architecture);
             }
             return true;
           }) ??
           assets.firstWhereOrNull(
-              (asset) => (asset['name'] as String).endsWith('.apk'));
+            (asset) => (asset['name'] as String).endsWith('.apk'),
+          );
 
       if (apkAsset == null) {
         logger.warning('❌ No matching APK asset found in release');
         return null;
       }
 
-      logger.info('📦 Selected APK: ${apkAsset['name']}');
+      logger.info(
+        '📦 Selected APK: ${apkAsset['name']} for architecture: $architecture',
+      );
 
       final downloadUrl = apkAsset['browser_download_url'] as String;
       final publishedAtStr = data['published_at'] as String?;
@@ -114,7 +117,9 @@ class UpdateService {
       final currentVersionStr = packageInfo.version;
       logger.info('📱 Current app version (raw): "$currentVersionStr"');
 
-      final currentVersion = Version.parse(currentVersionStr.replaceAll('v', ''));
+      final currentVersion = Version.parse(
+        currentVersionStr.replaceAll('v', ''),
+      );
       final latestVersion = Version.parse(latestVersionStr);
 
       logger.info('🔄 Version comparison:');

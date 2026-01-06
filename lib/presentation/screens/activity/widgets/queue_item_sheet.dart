@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../providers/activity_provider.dart';
+import '../manual_import_screen.dart';
 
 class QueueItemSheet extends ConsumerStatefulWidget {
   final QueueItem item;
@@ -90,6 +91,10 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
                   item.statusMessages.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildErrorSection(context, item),
+              ],
+              if (item.needsManualImport && item.downloadId != null) ...[
+                const SizedBox(height: 24),
+                _buildManualImportSection(context),
               ],
               const SizedBox(height: 24),
               _buildActionsSection(context),
@@ -204,6 +209,53 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     );
   }
 
+  Widget _buildManualImportSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Manual Import Required',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'This download requires manual intervention. Select which files to import.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _showManualImportScreen(context),
+            icon: const Icon(Icons.file_download),
+            label: const Text('Manual Import'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showManualImportScreen(BuildContext context) {
+    final downloadId = widget.item.downloadId!;
+    final title = widget.item.displayTitle;
+
+    Navigator.pop(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (sheetContext) =>
+            ManualImportScreen(downloadId: downloadId, title: title),
+      );
+    });
+  }
+
   Widget _buildActionsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,10 +333,12 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     final diff = eta.difference(DateTime.now());
     if (diff.isNegative) return 'Done';
 
-    if (diff.inDays > 0)
+    if (diff.inDays > 0) {
       return '${diff.inDays}d ${diff.inHours % 24}h remaining';
-    if (diff.inHours > 0)
+    }
+    if (diff.inHours > 0) {
       return '${diff.inHours}h ${diff.inMinutes % 60}m remaining';
+    }
     if (diff.inMinutes > 0) return '${diff.inMinutes}m remaining';
     return 'Less than a minute';
   }

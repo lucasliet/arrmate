@@ -8,3 +8,4 @@ export 'series/series.dart';
 export 'series/season.dart';
 export 'series/series_sort.dart';
 export 'queue/queue.dart';
+export 'queue/importable_file.dart';

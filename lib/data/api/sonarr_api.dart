@@ -206,4 +206,72 @@ class SonarrApi {
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<List<MediaFile>> getSeriesFiles(int seriesId) async {
+    final response = await _client.get(
+      '/episodefile',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => MediaFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId) async {
+    final response = await _client.get(
+      '/extrafile',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => SeriesExtraFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<HistoryEvent>> getSeriesHistory(int seriesId) async {
+    final response = await _client.get(
+      '/history/series',
+      queryParameters: {'seriesId': seriesId},
+    );
+    return (response as List)
+        .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteSeriesFile(int fileId) async {
+    await _client.delete('/episodefile/$fileId');
+  }
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) async {
+    final response = await _client.get(
+      '/manualimport',
+      queryParameters: {'downloadId': downloadId, 'filterExistingFiles': false},
+    );
+    return (response as List)
+        .map((e) => ImportableFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> manualImport(List<ImportableFile> files) async {
+    await _client.post(
+      '/command',
+      data: {
+        'name': 'ManualImport',
+        'files': files.map((f) => f.toJson()).toList(),
+        'importMode': 'auto',
+      },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
+  }
+
+  Future<InstanceStatus> getSystemStatus() async {
+    final response = await _client.get('/system/status');
+    return InstanceStatus.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<Tag>> getTags() async {
+    final response = await _client.get('/tag');
+    return (response as List)
+        .map((e) => Tag.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

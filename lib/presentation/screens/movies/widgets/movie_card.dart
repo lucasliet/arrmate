@@ -86,11 +86,7 @@ class MovieCard extends StatelessWidget {
         children: [
           // Left: Monitored Status
           if (movie.monitored)
-            const Icon(
-              Icons.bookmark,
-              size: 20,
-              color: Colors.white,
-            )
+            const Icon(Icons.bookmark, size: 20, color: Colors.white)
           else
             Icon(
               Icons.bookmark_border,
@@ -100,29 +96,16 @@ class MovieCard extends StatelessWidget {
 
           // Right: Download Status
           if (movie.isDownloaded)
-            const Icon(
-              Icons.check_circle,
-              size: 20,
-              color: Colors.white,
-            )
+            const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (movie.monitored)
             if (movie.isWaiting)
-              const Icon(
-                Icons.access_time,
-                size: 20,
-                color: Colors.white,
-              )
+              const Icon(Icons.access_time, size: 20, color: Colors.white)
             else
-              const Icon(
-                Icons.cancel_outlined,
-                size: 20,
-                color: Colors.white,
-              )
+              const Icon(Icons.cancel_outlined, size: 20, color: Colors.white)
           else
             const SizedBox(),
         ],
       ),
     );
   }
-
 }

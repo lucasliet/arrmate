@@ -1,0 +1,133 @@
+import 'package:equatable/equatable.dart';
+
+import '../movie/movie.dart';
+import '../series/series.dart';
+import '../shared/media_file.dart';
+import '../shared/media_language.dart';
+
+class ImportableFile extends Equatable {
+  final int id;
+  final String? name;
+  final String? path;
+  final String? relativePath;
+  final int size;
+  final MediaQuality? quality;
+  final List<MediaLanguage>? languages;
+  final String? releaseGroup;
+  final String? downloadId;
+  final List<ImportableFileRejection> rejections;
+  final Movie? movie;
+  final Series? series;
+  final List<Episode>? episodes;
+
+  const ImportableFile({
+    required this.id,
+    this.name,
+    this.path,
+    this.relativePath,
+    required this.size,
+    this.quality,
+    this.languages,
+    this.releaseGroup,
+    this.downloadId,
+    this.rejections = const [],
+    this.movie,
+    this.series,
+    this.episodes,
+  });
+
+  bool get hasRejections => rejections.isNotEmpty;
+
+  factory ImportableFile.fromJson(Map<String, dynamic> json) {
+    return ImportableFile(
+      id: json['id'] as int,
+      name: json['name'] as String?,
+      path: json['path'] as String?,
+      relativePath: json['relativePath'] as String?,
+      size: json['size'] as int? ?? 0,
+      quality: json['quality'] != null
+          ? MediaQuality.fromJson(json['quality'] as Map<String, dynamic>)
+          : null,
+      languages: (json['languages'] as List<dynamic>?)
+          ?.map((e) => MediaLanguage.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      releaseGroup: json['releaseGroup'] as String?,
+      downloadId: json['downloadId'] as String?,
+      rejections:
+          (json['rejections'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    ImportableFileRejection.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      movie: json['movie'] != null
+          ? Movie.fromJson(json['movie'] as Map<String, dynamic>)
+          : null,
+      series: json['series'] != null
+          ? Series.fromJson(json['series'] as Map<String, dynamic>)
+          : null,
+      episodes: (json['episodes'] as List<dynamic>?)
+          ?.map((e) => Episode.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      if (name != null) 'name': name,
+      if (path != null) 'path': path,
+      if (relativePath != null) 'relativePath': relativePath,
+      'size': size,
+      if (quality != null) 'quality': quality!.toJson(),
+      if (languages != null)
+        'languages': languages!.map((e) => e.toJson()).toList(),
+      if (releaseGroup != null) 'releaseGroup': releaseGroup,
+      if (downloadId != null) 'downloadId': downloadId,
+      'rejections': rejections.map((e) => e.toJson()).toList(),
+      if (movie != null) 'movie': movie!.toJson(),
+      if (series != null) 'series': series!.toJson(),
+      if (episodes != null)
+        'episodes': episodes!.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    name,
+    path,
+    relativePath,
+    size,
+    quality,
+    languages,
+    releaseGroup,
+    downloadId,
+    rejections,
+    movie,
+    series,
+    episodes,
+  ];
+}
+
+class ImportableFileRejection extends Equatable {
+  final String reason;
+  final String type;
+
+  const ImportableFileRejection({required this.reason, required this.type});
+
+  factory ImportableFileRejection.fromJson(Map<String, dynamic> json) {
+    return ImportableFileRejection(
+      reason: json['reason'] as String? ?? '',
+      type: json['type'] as String? ?? 'unknown',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'reason': reason, 'type': type};
+  }
+
+  @override
+  List<Object?> get props => [reason, type];
+}

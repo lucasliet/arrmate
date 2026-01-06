@@ -93,4 +93,27 @@ class MovieRepositoryImpl implements MovieRepository {
   Future<void> searchMovies(List<int> movieIds) {
     return _api.sendCommand('MoviesSearch', params: {'movieIds': movieIds});
   }
+
+  @override
+  Future<List<MediaFile>> getMovieFiles(int movieId) =>
+      _api.getMovieFiles(movieId);
+
+  @override
+  Future<List<MovieExtraFile>> getMovieExtraFiles(int movieId) =>
+      _api.getMovieExtraFiles(movieId);
+
+  @override
+  Future<List<HistoryEvent>> getMovieHistory(int movieId) =>
+      _api.getMovieHistory(movieId);
+
+  @override
+  Future<void> deleteMovieFile(int fileId) => _api.deleteMovieFile(fileId);
+
+  @override
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
+      _api.getImportableFiles(downloadId);
+
+  @override
+  Future<void> manualImport(List<ImportableFile> files) =>
+      _api.manualImport(files);
 }

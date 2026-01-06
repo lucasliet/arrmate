@@ -50,7 +50,7 @@ class _MockHttpClientResponse extends Mock implements HttpClientResponse {
     ).thenAnswer((invocation) {
       final onData =
           invocation.positionalArguments[0] as void Function(List<int>);
-      final onDone = invocation.namedArguments['onDone'] as void Function()?;
+      final onDone = invocation.namedArguments[#onDone] as void Function()?;
       onData(_transparentImage);
       onDone?.call();
       return Stream<List<int>>.fromIterable([_transparentImage]).listen(null);

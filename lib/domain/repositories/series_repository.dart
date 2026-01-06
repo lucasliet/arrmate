@@ -36,4 +36,12 @@ abstract class SeriesRepository {
 
   Future<List<QualityProfile>> getQualityProfiles();
   Future<List<RootFolder>> getRootFolders();
+
+  Future<List<MediaFile>> getSeriesFiles(int seriesId);
+  Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId);
+  Future<List<HistoryEvent>> getSeriesHistory(int seriesId);
+  Future<void> deleteSeriesFile(int fileId);
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId);
+  Future<void> manualImport(List<ImportableFile> files);
 }

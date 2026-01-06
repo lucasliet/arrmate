@@ -86,11 +86,7 @@ class SeriesCard extends StatelessWidget {
         children: [
           // Left: Monitored Status
           if (series.monitored)
-            const Icon(
-              Icons.bookmark,
-              size: 20,
-              color: Colors.white,
-            )
+            const Icon(Icons.bookmark, size: 20, color: Colors.white)
           else
             Icon(
               Icons.bookmark_border,
@@ -100,29 +96,16 @@ class SeriesCard extends StatelessWidget {
 
           // Right: Download Status
           if (series.isDownloaded)
-            const Icon(
-              Icons.check_circle,
-              size: 20,
-              color: Colors.white,
-            )
+            const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (series.monitored)
             if (series.isWaiting)
-              const Icon(
-                Icons.access_time,
-                size: 20,
-                color: Colors.white,
-              )
+              const Icon(Icons.access_time, size: 20, color: Colors.white)
             else
-              const Icon(
-                Icons.cancel_outlined,
-                size: 20,
-                color: Colors.white,
-              )
+              const Icon(Icons.cancel_outlined, size: 20, color: Colors.white)
           else
             const SizedBox(),
         ],
       ),
     );
   }
-
 }

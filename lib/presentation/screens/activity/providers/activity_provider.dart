@@ -55,10 +55,15 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
 
     items.sort((a, b) {
       if (a.estimatedCompletionTime == null &&
-          b.estimatedCompletionTime == null)
+          b.estimatedCompletionTime == null) {
         return 0;
-      if (a.estimatedCompletionTime == null) return 1;
-      if (b.estimatedCompletionTime == null) return -1;
+      }
+      if (a.estimatedCompletionTime == null) {
+        return 1;
+      }
+      if (b.estimatedCompletionTime == null) {
+        return -1;
+      }
       return a.estimatedCompletionTime!.compareTo(b.estimatedCompletionTime!);
     });
 

@@ -38,4 +38,12 @@ abstract class MovieRepository {
 
   Future<List<RootFolder>> getRootFolders();
   Future<void> searchMovies(List<int> movieIds);
+
+  Future<List<MediaFile>> getMovieFiles(int movieId);
+  Future<List<MovieExtraFile>> getMovieExtraFiles(int movieId);
+  Future<List<HistoryEvent>> getMovieHistory(int movieId);
+  Future<void> deleteMovieFile(int fileId);
+
+  Future<List<ImportableFile>> getImportableFiles(String downloadId);
+  Future<void> manualImport(List<ImportableFile> files);
 }

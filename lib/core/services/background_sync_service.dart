@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,15 +8,12 @@ import '../../domain/models/settings/notification_settings.dart';
 import 'notification_service.dart';
 import 'logger_service.dart';
 import '../../presentation/providers/data_providers.dart';
-import '../../presentation/providers/settings_provider.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     final container = ProviderContainer();
     try {
-      final settingsRepo = container.read(settingsProvider.notifier);
-
       // Manual load since it's a new container
       final prefs = await SharedPreferences.getInstance();
       final notificationsJson = prefs.getString('notification_settings');
@@ -131,10 +127,7 @@ class BackgroundSyncService {
   static const taskName = 'arrmate.sync_task';
 
   Future<void> init() async {
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: kDebugMode,
-    );
+    await Workmanager().initialize(callbackDispatcher);
   }
 
   Future<void> registerTask(int intervalMinutes) async {

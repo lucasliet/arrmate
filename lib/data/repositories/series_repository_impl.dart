@@ -96,4 +96,27 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<List<RootFolder>> getRootFolders() {
     return _api.getRootFolders();
   }
+
+  @override
+  Future<List<MediaFile>> getSeriesFiles(int seriesId) =>
+      _api.getSeriesFiles(seriesId);
+
+  @override
+  Future<List<SeriesExtraFile>> getSeriesExtraFiles(int seriesId) =>
+      _api.getSeriesExtraFiles(seriesId);
+
+  @override
+  Future<List<HistoryEvent>> getSeriesHistory(int seriesId) =>
+      _api.getSeriesHistory(seriesId);
+
+  @override
+  Future<void> deleteSeriesFile(int fileId) => _api.deleteSeriesFile(fileId);
+
+  @override
+  Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
+      _api.getImportableFiles(downloadId);
+
+  @override
+  Future<void> manualImport(List<ImportableFile> files) =>
+      _api.manualImport(files);
 }

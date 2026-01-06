@@ -46,7 +46,7 @@ class MovieController {
       addExclusion: addExclusion,
     );
   }
-  
+
   Future<void> updateMovie(Movie movie, {bool moveFiles = false}) async {
     final repository = ref.read(movieRepositoryProvider);
     if (repository == null) return;

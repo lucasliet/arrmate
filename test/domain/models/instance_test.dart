@@ -38,7 +38,7 @@ void main() {
     group('Timeouts', () {
       test('Normal mode returns default timeouts', () {
         final instance = Instance(mode: InstanceMode.normal);
-        
+
         expect(instance.timeout(InstanceTimeout.normal).inSeconds, 10);
         expect(instance.timeout(InstanceTimeout.slow).inSeconds, 10);
         expect(instance.timeout(InstanceTimeout.releaseSearch).inSeconds, 90);
@@ -46,7 +46,7 @@ void main() {
 
       test('Slow mode returns increased timeouts', () {
         final instance = Instance(mode: InstanceMode.slow);
-        
+
         expect(instance.timeout(InstanceTimeout.normal).inSeconds, 10);
         // Should be 300s (5 mins) for slow operations
         expect(instance.timeout(InstanceTimeout.slow).inSeconds, 300);

@@ -101,6 +101,22 @@ The app follows a Clean Architecture-inspired layered approach:
    logic in UI code.
 4. **Services**: Background tasks for notifications and sync.
 
+## Design Guidelines
+
+**See**: @DESIGN_GUIDELINE.md
+
+This file contains comprehensive UI/UX patterns, component templates, and design
+system constants for maintaining consistency across the app. Always consult it
+before creating new widgets or screens:
+
+- **Design System**: Padding, spacing, border radius, colors
+- **Card Patterns**: Grid cards, list tiles, progress cards
+- **Bottom Sheets**: Draggable sheets, status badges, error containers
+- **Common Widgets**: LoadingIndicator, ErrorDisplay, EmptyState
+- **Formatters**: Bytes, durations, dates, custom scores
+- **Images**: Cache patterns, placeholders, fallbacks
+- **Best Practices**: Spacing rules, theme usage, Riverpod patterns
+
 ## Reference Implementation
 
 The `rudarr/` directory contains the Ruddarr iOS app source code for reference.

@@ -100,6 +100,12 @@ class QueueItem extends Equatable {
   bool get hasWarning => trackedDownloadStatus == 'warning';
   bool get hasError => trackedDownloadStatus == 'error' || errorMessage != null;
 
+  bool get needsManualImport =>
+      downloadId != null &&
+      trackedDownloadStatus == 'warning' &&
+      (trackedDownloadState == 'importPending' ||
+          trackedDownloadState == 'importBlocked');
+
   double get progressPercent {
     if (progress != null) return progress!;
     if (size == null || size == 0) return 0;

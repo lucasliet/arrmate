@@ -17,7 +17,6 @@ class MovieSearchNotifier extends Notifier<String> {
   @override
   String build() => '';
 
-  // ignore: use_setters_to_change_properties
   void update(String value) => state = value;
 }
 
@@ -29,7 +28,6 @@ class MovieSortNotifier extends Notifier<MovieSort> {
   @override
   MovieSort build() => const MovieSort();
 
-  // ignore: use_setters_to_change_properties
   void update(MovieSort value) => state = value;
 }
 
