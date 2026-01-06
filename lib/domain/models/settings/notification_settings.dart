@@ -19,9 +19,14 @@ class NotificationSettings extends Equatable {
     this.notifyOnHealthIssue = false,
   });
 
-  String get ntfyTopicUrl => 'https://$ntfyServer/$ntfyTopic';
-  String get ntfyWebSocketUrl => 'wss://$ntfyServer/$ntfyTopic/ws';
-  String get ntfyJsonStreamUrl => 'https://$ntfyServer/$ntfyTopic/json';
+  String? get ntfyTopicUrl =>
+      ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic' : null;
+
+  String? get ntfyWebSocketUrl =>
+      ntfyTopic != null ? 'wss://$ntfyServer/$ntfyTopic/ws' : null;
+
+  String? get ntfyJsonStreamUrl =>
+      ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic/json' : null;
 
   NotificationSettings copyWith({
     bool? enabled,

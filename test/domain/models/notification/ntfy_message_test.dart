@@ -55,18 +55,141 @@ void main() {
         expect(message.click, isNull);
       });
 
-      test('should provide default values for missing required fields', () {
+      test('should throw FormatException for missing id', () {
         // Given
-        final json = <String, dynamic>{};
+        final json = {
+          'time': 1704067200,
+          'event': 'message',
+          'topic': 'test-topic',
+        };
+
+        // When/Then
+        expect(
+          () => NtfyMessage.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('id'),
+            ),
+          ),
+        );
+      });
+
+      test('should throw FormatException for missing time', () {
+        // Given
+        final json = {
+          'id': 'test123',
+          'event': 'message',
+          'topic': 'test-topic',
+        };
+
+        // When/Then
+        expect(
+          () => NtfyMessage.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('time'),
+            ),
+          ),
+        );
+      });
+
+      test('should throw FormatException for missing event', () {
+        // Given
+        final json = {
+          'id': 'test123',
+          'time': 1704067200,
+          'topic': 'test-topic',
+        };
+
+        // When/Then
+        expect(
+          () => NtfyMessage.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('event'),
+            ),
+          ),
+        );
+      });
+
+      test('should throw FormatException for missing topic', () {
+        // Given
+        final json = {'id': 'test123', 'time': 1704067200, 'event': 'message'};
+
+        // When/Then
+        expect(
+          () => NtfyMessage.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('topic'),
+            ),
+          ),
+        );
+      });
+
+      test('should throw FormatException for empty id', () {
+        // Given
+        final json = {
+          'id': '',
+          'time': 1704067200,
+          'event': 'message',
+          'topic': 'test-topic',
+        };
+
+        // When/Then
+        expect(
+          () => NtfyMessage.fromJson(json),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    group('tryParse', () {
+      test('should return NtfyMessage for valid JSON', () {
+        // Given
+        final json = {
+          'id': 'valid123',
+          'time': 1704067200,
+          'event': 'message',
+          'topic': 'test-topic',
+        };
 
         // When
-        final message = NtfyMessage.fromJson(json);
+        final message = NtfyMessage.tryParse(json);
 
         // Then
-        expect(message.id, '');
-        expect(message.time, 0);
-        expect(message.event, 'message');
-        expect(message.topic, '');
+        expect(message, isNotNull);
+        expect(message!.id, 'valid123');
+      });
+
+      test('should return null for invalid JSON', () {
+        // Given
+        final json = <String, dynamic>{'invalid': 'data'};
+
+        // When
+        final message = NtfyMessage.tryParse(json);
+
+        // Then
+        expect(message, isNull);
+      });
+
+      test('should return null for missing required fields', () {
+        // Given
+        final json = {'id': 'test', 'time': 123};
+
+        // When
+        final message = NtfyMessage.tryParse(json);
+
+        // Then
+        expect(message, isNull);
       });
     });
 

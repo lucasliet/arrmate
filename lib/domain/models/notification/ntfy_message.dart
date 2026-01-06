@@ -24,17 +24,55 @@ class NtfyMessage extends Equatable {
   });
 
   factory NtfyMessage.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    if (id == null || id is! String || id.isEmpty) {
+      throw FormatException('NtfyMessage: missing or invalid "id" field');
+    }
+
+    final time = json['time'];
+    if (time == null || time is! int) {
+      throw FormatException('NtfyMessage: missing or invalid "time" field');
+    }
+
+    final event = json['event'];
+    if (event == null || event is! String || event.isEmpty) {
+      throw FormatException('NtfyMessage: missing or invalid "event" field');
+    }
+
+    final topic = json['topic'];
+    if (topic == null || topic is! String || topic.isEmpty) {
+      throw FormatException('NtfyMessage: missing or invalid "topic" field');
+    }
+
+    List<String>? tags;
+    final rawTags = json['tags'];
+    if (rawTags != null) {
+      if (rawTags is List) {
+        tags = rawTags.whereType<String>().toList();
+      } else {
+        throw FormatException('NtfyMessage: "tags" field must be a list');
+      }
+    }
+
     return NtfyMessage(
-      id: json['id'] as String? ?? '',
-      time: json['time'] as int? ?? 0,
-      event: json['event'] as String? ?? 'message',
-      topic: json['topic'] as String? ?? '',
+      id: id,
+      time: time,
+      event: event,
+      topic: topic,
       title: json['title'] as String?,
       message: json['message'] as String?,
       priority: json['priority'] as int?,
-      tags: (json['tags'] as List<dynamic>?)?.cast<String>(),
+      tags: tags,
       click: json['click'] as String?,
     );
+  }
+
+  static NtfyMessage? tryParse(Map<String, dynamic> json) {
+    try {
+      return NtfyMessage.fromJson(json);
+    } on FormatException {
+      return null;
+    }
   }
 
   Map<String, dynamic> toJson() {

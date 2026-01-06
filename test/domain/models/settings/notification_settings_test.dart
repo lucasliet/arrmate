@@ -46,7 +46,7 @@ void main() {
     });
 
     group('URL getters', () {
-      test('ntfyTopicUrl should return correct URL', () {
+      test('ntfyTopicUrl should return correct URL when topic is set', () {
         // Given
         const settings = NotificationSettings(ntfyTopic: 'my-topic');
 
@@ -54,20 +54,50 @@ void main() {
         expect(settings.ntfyTopicUrl, 'https://ntfy.sh/my-topic');
       });
 
-      test('ntfyWebSocketUrl should return correct WebSocket URL', () {
+      test('ntfyTopicUrl should return null when topic is null', () {
         // Given
-        const settings = NotificationSettings(ntfyTopic: 'my-topic');
+        const settings = NotificationSettings();
 
         // Then
-        expect(settings.ntfyWebSocketUrl, 'wss://ntfy.sh/my-topic/ws');
+        expect(settings.ntfyTopicUrl, isNull);
       });
 
-      test('ntfyJsonStreamUrl should return correct JSON stream URL', () {
+      test(
+        'ntfyWebSocketUrl should return correct WebSocket URL when topic is set',
+        () {
+          // Given
+          const settings = NotificationSettings(ntfyTopic: 'my-topic');
+
+          // Then
+          expect(settings.ntfyWebSocketUrl, 'wss://ntfy.sh/my-topic/ws');
+        },
+      );
+
+      test('ntfyWebSocketUrl should return null when topic is null', () {
         // Given
-        const settings = NotificationSettings(ntfyTopic: 'my-topic');
+        const settings = NotificationSettings();
 
         // Then
-        expect(settings.ntfyJsonStreamUrl, 'https://ntfy.sh/my-topic/json');
+        expect(settings.ntfyWebSocketUrl, isNull);
+      });
+
+      test(
+        'ntfyJsonStreamUrl should return correct JSON stream URL when topic is set',
+        () {
+          // Given
+          const settings = NotificationSettings(ntfyTopic: 'my-topic');
+
+          // Then
+          expect(settings.ntfyJsonStreamUrl, 'https://ntfy.sh/my-topic/json');
+        },
+      );
+
+      test('ntfyJsonStreamUrl should return null when topic is null', () {
+        // Given
+        const settings = NotificationSettings();
+
+        // Then
+        expect(settings.ntfyJsonStreamUrl, isNull);
       });
     });
 

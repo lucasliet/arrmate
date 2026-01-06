@@ -116,7 +116,7 @@ void main() {
         // Then
         verify(
           () => mockNotificationService.showNotification(
-            id: 'test123'.hashCode,
+            id: any(named: 'id'),
             title: 'Movie Downloaded',
             body: 'Inception has been downloaded',
             payload: 'arrmate://movie/123',
@@ -223,7 +223,7 @@ void main() {
         // Then
         verify(
           () => mockNotificationService.showNotification(
-            id: 'str123'.hashCode,
+            id: any(named: 'id'),
             title: 'Test',
             body: 'Test msg',
             payload: null,

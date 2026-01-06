@@ -28,6 +28,8 @@ class NtfyService {
   String? _currentTopic;
   String? get currentTopic => _currentTopic;
 
+  int _notificationIdCounter = 0;
+
   NtfyService(this._notificationService);
 
   Future<void> connect(String topic) async {
@@ -45,7 +47,7 @@ class NtfyService {
       _client = NtflutteryService();
 
       final url =
-          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1&since=all';
+          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1';
       logger.debug('[NtfyService] Stream URL: $url');
 
       final result = await _client!.get(url);
@@ -85,7 +87,12 @@ class NtfyService {
         return;
       }
 
-      final message = NtfyMessage.fromJson(json);
+      final message = NtfyMessage.tryParse(json);
+      if (message == null) {
+        logger.warning('[NtfyService] Invalid message format: $json');
+        return;
+      }
+
       logger.debug(
         '[NtfyService] Parsed message: event=${message.event}, title=${message.title}',
       );
@@ -95,7 +102,7 @@ class NtfyService {
           '[NtfyService] Showing notification: ${message.title ?? "Arrmate"}',
         );
         _notificationService.showNotification(
-          id: message.id.hashCode,
+          id: _nextNotificationId(),
           title: message.title ?? 'Arrmate',
           body: message.message ?? '',
           payload: message.click,
@@ -108,6 +115,14 @@ class NtfyService {
     } catch (e, stackTrace) {
       logger.error('[NtfyService] Error processing message', e, stackTrace);
     }
+  }
+
+  int _nextNotificationId() {
+    _notificationIdCounter++;
+    if (_notificationIdCounter > 0x7FFFFFFF) {
+      _notificationIdCounter = 0;
+    }
+    return _notificationIdCounter;
   }
 
   void _onError(Object error, [StackTrace? stackTrace]) {
@@ -128,10 +143,14 @@ class NtfyService {
     if (_currentTopic == null) return;
 
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+    _reconnectTimer = Timer(const Duration(seconds: 5), () async {
       if (_currentTopic != null && !_isConnected) {
         logger.info('[NtfyService] Attempting reconnection...');
-        connect(_currentTopic!);
+        try {
+          await connect(_currentTopic!);
+        } catch (e, stackTrace) {
+          logger.error('[NtfyService] Reconnection failed', e, stackTrace);
+        }
       }
     });
   }
@@ -162,8 +181,14 @@ class NtfyService {
     try {
       final client = NtflutteryService();
       final url =
-          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1';
-      await client.get(url);
+          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=0';
+      await client
+          .get(url)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Connection test timed out'),
+          );
       logger.info('[NtfyService] Connection test successful');
     } catch (e, stackTrace) {
       logger.error('[NtfyService] Connection test failed', e, stackTrace);
