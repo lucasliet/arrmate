@@ -8,6 +8,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/widgets/releases_sheet.dart';
+import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
 import 'widgets/movie_poster.dart';
@@ -301,7 +302,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                   Text(movie.overview!, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 24),
                 ],
-                _buildInfoGrid(context, movie),
+                _buildInfoGrid(context, ref, movie),
                 const SizedBox(height: 24),
                 MovieMetadataSection(movieId: movieId),
                 const SizedBox(height: 32),
@@ -375,14 +376,22 @@ class MovieDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoGrid(BuildContext context, Movie movie) {
+  Widget _buildInfoGrid(BuildContext context, WidgetRef ref, Movie movie) {
+    final qualityProfilesAsync = ref.watch(movieQualityProfilesProvider);
+    final qualityProfileLabel = qualityProfilesAsync.maybeWhen(
+      data: (profiles) =>
+          profiles
+              .where((p) => p.id == movie.qualityProfileId)
+              .firstOrNull
+              ?.name ??
+          movie.qualityProfileId.toString(),
+      orElse: () => movie.qualityProfileId.toString(),
+    );
+
     final items = [
       if (movie.studio != null) _InfoItem('Studio', movie.studio!),
       _InfoItem('Status', movie.status.label),
-      _InfoItem(
-        'Quality Profile',
-        movie.qualityProfileId.toString(),
-      ), // TODO: Lookup profile name
+      _InfoItem('Quality Profile', qualityProfileLabel),
       if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0)
         _InfoItem('Size', formatBytes(movie.sizeOnDisk!)),
       if (movie.path != null) _InfoItem('Path', movie.path!),

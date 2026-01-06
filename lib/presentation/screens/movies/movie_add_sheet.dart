@@ -19,7 +19,6 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
   final _searchController = TextEditingController();
   Movie? _selectedMovie;
 
-  // Form State
   bool _monitored = true;
   MovieStatus _minimumAvailability = MovieStatus.announced;
   int? _qualityProfileId;

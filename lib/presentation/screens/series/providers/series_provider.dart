@@ -140,10 +140,16 @@ class SeriesController {
     ref.invalidate(seriesDetailsProvider(seriesId));
   }
 
+  Future<void> automaticSearch() async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    await repository.searchSeries(seriesId);
+  }
+
   /// Toggles the monitoring status for a specific season of the series.
   ///
   /// This updates the season's `monitored` field and pushes the entire series
-  /// to the Sonarr API, following the same pattern as the Rudarr iOS app.
+  /// to the Sonarr API, following the same pattern as the reference iOS app.
   Future<void> toggleSeasonMonitor(Series series, int seasonNumber) async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;

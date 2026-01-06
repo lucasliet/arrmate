@@ -30,7 +30,6 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   Future<void> _onDownload(Release release) async {
     try {
       // Show loading or confirmation?
-      // Rudarr just downloads when clicked or asks confirmation.
       // I'll ask for confirmation.
       final confirmed = await showDialog<bool>(
         context: context,
@@ -219,7 +218,7 @@ class _ReleaseTile extends StatelessWidget {
             ? null
             : onTap, // Prevent click if rejected? or allow override?
         // Usually allow override or just show rejection reason.
-        // For now, disable if rejected to prevent accidental bad downloads, or allow user to force (Rudarr allows force).
+        // For now, disable if rejected to prevent accidental bad downloads.
         // I'll disable for simplicity but could show dialog explaining "Rejected: ..."
         enabled: !isRejected,
         trailing: IconButton(

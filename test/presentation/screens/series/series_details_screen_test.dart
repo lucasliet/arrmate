@@ -3,6 +3,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_metadata_provider.dart';
+import 'package:arrmate/presentation/shared/providers/formatted_options_provider.dart';
 import 'package:arrmate/presentation/screens/series/series_details_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -70,6 +71,7 @@ void main() {
             seriesFilesProvider(1).overrideWith((ref) async => []),
             seriesExtraFilesProvider(1).overrideWith((ref) async => []),
             seriesHistoryProvider(1).overrideWith((ref) async => []),
+            seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),
@@ -108,6 +110,7 @@ void main() {
             seriesFilesProvider(1).overrideWith((ref) async => []),
             seriesExtraFilesProvider(1).overrideWith((ref) async => []),
             seriesHistoryProvider(1).overrideWith((ref) async => []),
+            seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),
@@ -142,6 +145,7 @@ void main() {
             seriesFilesProvider(1).overrideWith((ref) async => []),
             seriesExtraFilesProvider(1).overrideWith((ref) async => []),
             seriesHistoryProvider(1).overrideWith((ref) async => []),
+            seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
         ),

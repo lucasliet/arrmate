@@ -162,7 +162,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Monitored
               SwitchListTile(
                 title: const Text('Monitored'),
                 subtitle: const Text('Monitor episodes for this series'),
@@ -171,7 +170,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
               const Divider(),
 
-              // Season Folder
               SwitchListTile(
                 title: const Text('Season Folders'),
                 subtitle: const Text('Use Season folders (e.g. Season 01/...)'),
@@ -180,7 +178,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
               const Divider(),
 
-              // Series Type
               ListTile(
                 title: const Text('Series Type'),
                 subtitle: Text(_seriesType.label),
@@ -203,7 +200,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
               const Divider(),
 
-              // Quality Profile
               ListTile(
                 title: const Text('Quality Profile'),
                 subtitle: Text(
@@ -233,7 +229,6 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
               const Divider(),
 
-              // Root Folder
               ListTile(
                 title: const Text('Root Folder'),
                 subtitle: Text(_rootFolderPath ?? 'Select Path'),

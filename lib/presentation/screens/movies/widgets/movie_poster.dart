@@ -34,7 +34,7 @@ class MoviePoster extends ConsumerWidget {
     // 2. Local URL - Needs auth, served by Radarr.
 
     // Radarr API returns `remoteUrl` (http://tmdb...) and `url` (/MediaCover/...).
-    // Rudarr prefers `remoteUrl`. Let's allow utilizing it if available.
+    // Prefer `remoteUrl`. Let's allow utilizing it if available.
 
     final remotePoster = movie.remotePoster;
     if (remotePoster != null && remotePoster.isNotEmpty) {

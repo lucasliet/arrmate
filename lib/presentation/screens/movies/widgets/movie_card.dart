@@ -85,7 +85,6 @@ class MovieCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Monitored Status
           if (movie.monitored)
             const Icon(Icons.bookmark, size: 20, color: Colors.white)
           else
@@ -95,7 +94,6 @@ class MovieCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.7),
             ),
 
-          // Right: Download Status
           if (movie.isDownloaded)
             const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (movie.monitored)

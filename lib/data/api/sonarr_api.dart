@@ -120,6 +120,15 @@ class SonarrApi {
         .toList();
   }
 
+  /// Commands Sonarr to search for a specific series.
+  Future<void> seriesSearch(int seriesId) async {
+    await _client.post(
+      '/command',
+      data: {'name': 'SeriesSearch', 'seriesId': seriesId},
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
+    );
+  }
+
   /// Retrieves episodes for a specific series.
   Future<List<Episode>> getEpisodes(int seriesId) async {
     final response = await _client.get(
@@ -152,7 +161,7 @@ class SonarrApi {
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
 
-    // O calendário do Sonarr retorna Episódios, mas precisamos garantir que venha os dados da Série junto se disponível
+    // The Sonarr calendar returns Episodes, but we need to ensure that the Series data is included if available
     return (response as List)
         .map((e) => Episode.fromJson(e as Map<String, dynamic>))
         .toList();

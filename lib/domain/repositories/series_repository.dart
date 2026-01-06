@@ -24,6 +24,9 @@ abstract class SeriesRepository {
   /// Searches for series by [term].
   Future<List<Series>> lookupSeries(String term);
 
+  /// Triggers an automatic search for a specific series.
+  Future<void> searchSeries(int seriesId);
+
   /// Retrieves episodes for a specific [seriesId].
   Future<List<Episode>> getEpisodes(int seriesId);
 

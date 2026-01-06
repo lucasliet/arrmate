@@ -4,6 +4,7 @@ import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/movie_details_screen.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_details_provider.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_metadata_provider.dart';
+import 'package:arrmate/presentation/shared/providers/formatted_options_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,6 +63,7 @@ void main() {
             movieFilesProvider(1).overrideWith((ref) async => []),
             movieExtraFilesProvider(1).overrideWith((ref) async => []),
             movieHistoryProvider(1).overrideWith((ref) async => []),
+            movieQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
@@ -98,6 +100,7 @@ void main() {
             movieFilesProvider(1).overrideWith((ref) async => []),
             movieExtraFilesProvider(1).overrideWith((ref) async => []),
             movieHistoryProvider(1).overrideWith((ref) async => []),
+            movieQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
@@ -132,6 +135,7 @@ void main() {
             movieFilesProvider(1).overrideWith((ref) async => []),
             movieExtraFilesProvider(1).overrideWith((ref) async => []),
             movieHistoryProvider(1).overrideWith((ref) async => []),
+            movieQualityProfilesProvider.overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),

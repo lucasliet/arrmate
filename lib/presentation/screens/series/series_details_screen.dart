@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
@@ -123,6 +124,31 @@ class SeriesDetailsScreen extends ConsumerWidget {
                       SnackBar(
                         content: Text('Error: $e'),
                         backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'Automatic Search',
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(seriesControllerProvider(seriesId))
+                      .automaticSearch();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Search started')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
                       ),
                     );
                   }
@@ -263,7 +289,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   Text(series.overview!, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 24),
                 ],
-                _buildInfoGrid(context, series),
+                _buildInfoGrid(context, ref, series),
                 const SizedBox(height: 24),
                 SeriesMetadataSection(seriesId: seriesId),
                 const SizedBox(height: 32),
@@ -396,11 +422,22 @@ class SeriesDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoGrid(BuildContext context, Series series) {
+  Widget _buildInfoGrid(BuildContext context, WidgetRef ref, Series series) {
+    final qualityProfilesAsync = ref.watch(seriesQualityProfilesProvider);
+    final qualityProfileLabel = qualityProfilesAsync.maybeWhen(
+      data: (profiles) =>
+          profiles
+              .where((p) => p.id == series.qualityProfileId)
+              .firstOrNull
+              ?.name ??
+          series.qualityProfileId.toString(),
+      orElse: () => series.qualityProfileId.toString(),
+    );
+
     final items = [
       if (series.network != null) _InfoItem('Network', series.network!),
       _InfoItem('Status', series.status.name),
-      _InfoItem('Quality Profile', series.qualityProfileId.toString()),
+      _InfoItem('Quality Profile', qualityProfileLabel),
       if (series.path != null) _InfoItem('Path', series.path!),
     ];
 

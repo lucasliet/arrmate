@@ -170,7 +170,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Type Selection
               SegmentedButton<InstanceType>(
                 segments: const [
                   ButtonSegment(
@@ -193,7 +192,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Name
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -206,7 +204,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              // URL
               TextFormField(
                 controller: _urlController,
                 decoration: const InputDecoration(
@@ -226,7 +223,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              // API Key
               TextFormField(
                 controller: _apiKeyController,
                 decoration: const InputDecoration(
@@ -238,7 +234,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Custom Headers (Advanced)
               ExpansionTile(
                 title: const Text('Advanced Settings'),
                 subtitle: const Text('Custom Headers & Authentication'),
@@ -294,7 +289,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Test Connection
               OutlinedButton.icon(
                 onPressed: _isTesting ? null : _testConnection,
                 icon: _isTesting
@@ -319,7 +313,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
               const SizedBox(height: 32),
 
-              // Save Button
               FilledButton(
                 onPressed: _save,
                 child: const Text('Save Instance'),

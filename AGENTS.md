@@ -169,11 +169,17 @@ before creating new widgets or screens:
 - **Images**: Cache patterns, placeholders, fallbacks
 - **Best Practices**: Spacing rules, theme usage, Riverpod patterns
 
-## Reference Implementation
+## Feature Parity
 
-The `rudarr/` directory contains the Ruddarr iOS app source code for reference.
-It implements similar features in SwiftUI and can be used as a guide for API
-integration and UI patterns.
+- **Consistency**: When implementing features for **Movies (Radarr)**, always
+  verify if the equivalent feature exists and should be implemented for **Series
+  (Sonarr)**, and vice-versa.
+- **UI/UX**: Ensure that similar screens (e.g., `MovieDetailsScreen` and
+  `SeriesDetailsScreen`) have consistent layouts, actions, and information
+  display.
+- **Naming**: Use consistent naming conventions for providers, controllers, and
+  widgets across both domains (e.g., `movieControllerProvider` vs
+  `seriesControllerProvider`).
 
 ## Quality Assurance
 
