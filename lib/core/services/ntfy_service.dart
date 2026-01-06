@@ -48,8 +48,12 @@ class NtfyService {
 
       final url = 'https://${NotificationSettings.ntfyServer}/$topic/json';
       logger.debug('[NtfyService] Stream URL: $url');
+      logger.debug(
+        '[NtfyService] Requesting connection (awaiting response)...',
+      );
 
       final result = await _client!.get(url);
+      logger.debug('[NtfyService] Connection established, stream ready');
 
       _subscription = result.$1.listen(
         onMessage,
