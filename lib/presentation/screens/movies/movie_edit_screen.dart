@@ -44,10 +44,11 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
         Future.wait([
           repository.getQualityProfiles(),
           repository.getRootFolders(),
-        ]).then(
-          (value) =>
-              (value[0] as List<QualityProfile>, value[1] as List<RootFolder>),
-        );
+        ]).then((value) {
+          final rootFolders = value[1] as List<RootFolder>;
+          _syncRootFolderIfNeeded(rootFolders);
+          return (value[0] as List<QualityProfile>, rootFolders);
+        });
   }
 
   void _syncRootFolderIfNeeded(List<RootFolder> rootFolders) {
@@ -56,7 +57,13 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
 
     if (!rootFolders.any((f) => f.path == _rootFolderPath) &&
         rootFolders.isNotEmpty) {
-      _rootFolderPath = rootFolders.first.path;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _rootFolderPath = rootFolders.first.path;
+          });
+        }
+      });
     }
   }
 
@@ -170,8 +177,6 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
 
                 final qualityProfiles = snapshot.data!.$1;
                 final rootFolders = snapshot.data!.$2;
-
-                _syncRootFolderIfNeeded(rootFolders);
 
                 final effectiveRootFolder =
                     rootFolders.any((f) => f.path == _rootFolderPath)
