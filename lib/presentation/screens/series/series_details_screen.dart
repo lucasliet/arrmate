@@ -267,14 +267,77 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 SeriesMetadataSection(seriesId: seriesId),
                 const SizedBox(height: 32),
-                Text(
-                  'Seasons',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Seasons',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: series.monitored
+                          ? () async {
+                              try {
+                                await ref
+                                    .read(seriesControllerProvider(seriesId))
+                                    .monitorAllSeasons(series, true);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('All seasons monitored'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: theme.colorScheme.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          : null,
+                      icon: const Icon(Icons.bookmark, size: 18),
+                      label: const Text('All'),
+                    ),
+                    TextButton.icon(
+                      onPressed: series.monitored
+                          ? () async {
+                              try {
+                                await ref
+                                    .read(seriesControllerProvider(seriesId))
+                                    .monitorAllSeasons(series, false);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('All seasons unmonitored'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: theme.colorScheme.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          : null,
+                      icon: const Icon(Icons.bookmark_border, size: 18),
+                      label: const Text('None'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
-                _buildSeasonsList(context, series),
+                _buildSeasonsList(context, ref, series),
                 const SizedBox(height: 32),
               ],
             ),
@@ -365,8 +428,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSeasonsList(BuildContext context, Series series) {
-    // We can use a ListView builder inside the Column, but need shrinkWrap: true physics: NeverScrollableScrollPhysics
+  Widget _buildSeasonsList(BuildContext context, WidgetRef ref, Series series) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -374,7 +436,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
       itemBuilder: (context, index) {
         final season = series.seasons[index];
         if (season.seasonNumber == 0) {
-          return const SizedBox.shrink(); // Skip specials usually? Or show them at end.
+          return const SizedBox.shrink();
         }
 
         return Card(
@@ -384,9 +446,63 @@ class SeriesDetailsScreen extends ConsumerWidget {
           child: ListTile(
             title: Text('Season ${season.seasonNumber}'),
             subtitle: Text('${season.statistics?.episodeCount ?? 0} Episodes'),
-            trailing: CircularProgressIndicator(
-              value: (season.statistics?.percentOfEpisodes ?? 0) / 100,
-              backgroundColor: Theme.of(context).colorScheme.surfaceDim,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    value: (season.statistics?.percentOfEpisodes ?? 0) / 100,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceDim,
+                    strokeWidth: 3,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: Icon(
+                    season.monitored ? Icons.bookmark : Icons.bookmark_border,
+                    color: series.monitored
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                  tooltip: season.monitored ? 'Unmonitor' : 'Monitor',
+                  onPressed: series.monitored
+                      ? () async {
+                          try {
+                            await ref
+                                .read(seriesControllerProvider(seriesId))
+                                .toggleSeasonMonitor(
+                                  series,
+                                  season.seasonNumber,
+                                );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    season.monitored
+                                        ? 'Unmonitored'
+                                        : 'Monitored',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                ),
+              ],
             ),
             onTap: () {
               Navigator.of(context).push(

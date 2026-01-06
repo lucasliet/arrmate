@@ -134,6 +134,43 @@ class SeriesController {
   Future<void> refresh() async {
     ref.invalidate(seriesDetailsProvider(seriesId));
   }
+
+  /// Toggles the monitoring status for a specific season of the series.
+  ///
+  /// This updates the season's `monitored` field and pushes the entire series
+  /// to the Sonarr API, following the same pattern as the Rudarr iOS app.
+  Future<void> toggleSeasonMonitor(Series series, int seasonNumber) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+
+    final updatedSeasons = series.seasons.map((season) {
+      if (season.seasonNumber == seasonNumber) {
+        return season.copyWith(monitored: !season.monitored);
+      }
+      return season;
+    }).toList();
+
+    final updatedSeries = series.copyWith(seasons: updatedSeasons);
+    await repository.updateSeries(updatedSeries);
+    ref.invalidate(seriesDetailsProvider(seriesId));
+  }
+
+  /// Sets the monitoring status for all seasons of the series.
+  ///
+  /// When [monitored] is true, all seasons will be monitored.
+  /// When [monitored] is false, all seasons will be unmonitored.
+  Future<void> monitorAllSeasons(Series series, bool monitored) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+
+    final updatedSeasons = series.seasons.map((season) {
+      return season.copyWith(monitored: monitored);
+    }).toList();
+
+    final updatedSeries = series.copyWith(seasons: updatedSeasons);
+    await repository.updateSeries(updatedSeries);
+    ref.invalidate(seriesDetailsProvider(seriesId));
+  }
 }
 
 final seriesControllerProvider = Provider.autoDispose
