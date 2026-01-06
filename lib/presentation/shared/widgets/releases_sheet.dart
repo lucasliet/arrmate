@@ -7,7 +7,7 @@ import 'package:arrmate/presentation/widgets/common_widgets.dart';
 /// A modal sheet that searches for and displays available releases for a movie or episode.
 class ReleasesSheet extends ConsumerStatefulWidget {
   final int id;
-  final bool isMovie; // true for Movie, failure for Episode
+  final bool isMovie; // true for Movie, false for Episode
   final String title;
   final String? episodeCode; // e.g., S01E01 for subtitle
 
@@ -24,13 +24,56 @@ class ReleasesSheet extends ConsumerStatefulWidget {
 }
 
 class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
-  // Sorting state can be added here (e.g., sort by seeds, size, age)
-  // For now, list as returned by API (usually weighted score)
+  ReleaseSortOption _sortOption = ReleaseSortOption.score;
+  bool _sortAscending = false;
+  // ignore: unused_field
+  final bool _showRejected = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to score descending (best first), rejected handling is done in sort
+  }
+
+  List<Release> _sortReleases(List<Release> releases) {
+    if (releases.isEmpty) return [];
+
+    final sorted = List<Release>.from(releases);
+
+    sorted.sort((a, b) {
+      // Always push rejected to bottom unless we strictly want to sort by other criteria regardless
+      // But typically "Non-rejected first" is a heavy weight rule.
+      if (a.rejected != b.rejected) {
+        return a.rejected ? 1 : -1; // Rejected comes last
+      }
+
+      int comparison = 0;
+      switch (_sortOption) {
+        case ReleaseSortOption.score:
+          comparison = a.score.compareTo(b.score);
+          break;
+        case ReleaseSortOption.seeders:
+          comparison = a.seeders.compareTo(b.seeders);
+          break;
+        case ReleaseSortOption.age:
+          comparison = a.age.compareTo(b.age);
+          break;
+        case ReleaseSortOption.size:
+          comparison = a.size.compareTo(b.size);
+          break;
+        case ReleaseSortOption.indexer:
+          comparison = a.indexer.compareTo(b.indexer);
+          break;
+      }
+
+      return _sortAscending ? comparison : -comparison;
+    });
+
+    return sorted;
+  }
 
   Future<void> _onDownload(Release release) async {
     try {
-      // Show loading or confirmation?
-      // I'll ask for confirmation.
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -116,6 +159,56 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                 ),
               ],
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  PopupMenuButton<ReleaseSortOption>(
+                    icon: const Icon(Icons.sort),
+                    initialValue: _sortOption,
+                    tooltip: 'Sort by',
+                    onSelected: (value) => setState(() => _sortOption = value),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: ReleaseSortOption.score,
+                        child: Text('Score'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReleaseSortOption.seeders,
+                        child: Text('Seeders'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReleaseSortOption.age,
+                        child: Text('Age'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReleaseSortOption.size,
+                        child: Text('Size'),
+                      ),
+                      const PopupMenuItem(
+                        value: ReleaseSortOption.indexer,
+                        child: Text('Indexer'),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _sortAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                    ),
+                    tooltip: _sortAscending ? 'Ascending' : 'Descending',
+                    onPressed: () =>
+                        setState(() => _sortAscending = !_sortAscending),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_sortReleases(releaseListAsync.valueOrNull ?? []).length} results',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
             const Divider(height: 1),
             Expanded(
               child: releaseListAsync.when(
@@ -124,14 +217,13 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                     return const Center(child: Text('No releases found'));
                   }
 
-                  // Sort by rejected last, then score/seeds
-                  // API usually returns sorted, but we want rejected visible but de-emphasized.
+                  final sortedReleases = _sortReleases(releases);
 
                   return ListView.builder(
                     controller: scrollController,
-                    itemCount: releases.length,
+                    itemCount: sortedReleases.length,
                     itemBuilder: (context, index) {
-                      final release = releases[index];
+                      final release = sortedReleases[index];
                       return _ReleaseTile(
                         release: release,
                         onTap: () => _onDownload(release),
@@ -214,12 +306,7 @@ class _ReleaseTile extends StatelessWidget {
               ),
           ],
         ),
-        onTap: isRejected
-            ? null
-            : onTap, // Prevent click if rejected? or allow override?
-        // Usually allow override or just show rejection reason.
-        // For now, disable if rejected to prevent accidental bad downloads.
-        // I'll disable for simplicity but could show dialog explaining "Rejected: ..."
+        onTap: isRejected ? null : onTap,
         enabled: !isRejected,
         trailing: IconButton(
           icon: const Icon(Icons.download),
@@ -256,3 +343,5 @@ class _Badge extends StatelessWidget {
     );
   }
 }
+
+enum ReleaseSortOption { score, seeders, age, size, indexer }

@@ -22,6 +22,7 @@ class Release extends Equatable {
   final List<String> indexerFlags; // Sometimes used for scoring
   final String? infoUrl;
   final String? downloadUrl;
+  final int score;
   final ReleaseQuality quality;
 
   const Release({
@@ -40,6 +41,7 @@ class Release extends Equatable {
     this.indexerFlags = const [],
     this.infoUrl,
     this.downloadUrl,
+    this.score = 0,
     required this.quality,
   });
 
@@ -55,25 +57,30 @@ class Release extends Equatable {
       leechers: json['leechers'] as int? ?? 0,
       protocol: json['protocol'] as String? ?? 'torrent',
       rejected: json['rejected'] as bool? ?? false,
-      rejections:
-          (json['rejections'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      rejections: (json['rejections'] is List)
+          ? (json['rejections'] as List).map((e) => e.toString()).toList()
+          : [],
       age: json['age'] as int? ?? 0,
-      indexerFlags:
-          (json['indexerFlags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      indexerFlags: (json['indexerFlags'] is List)
+          ? (json['indexerFlags'] as List).map((e) => e.toString()).toList()
+          : [],
       infoUrl: json['infoUrl'] as String?,
       downloadUrl: json['downloadUrl'] as String?,
+      score: json['score'] as int? ?? 0,
       quality: ReleaseQuality.fromJson(json['quality'] as Map<String, dynamic>),
     );
   }
 
   @override
-  List<Object?> get props => [guid, title, size, indexer, seeders, rejected];
+  List<Object?> get props => [
+    guid,
+    title,
+    size,
+    indexer,
+    seeders,
+    rejected,
+    score,
+  ];
 }
 
 /// Describes the quality of a release.
