@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ntfluttery/ntfluttery.dart';
 import 'package:uuid/uuid.dart';
@@ -50,7 +51,7 @@ class NtfyService {
       final result = await _client!.get(url);
 
       _subscription = result.$1.listen(
-        _onMessage,
+        onMessage,
         onError: _onError,
         onDone: _onDone,
       );
@@ -64,7 +65,8 @@ class NtfyService {
     }
   }
 
-  void _onMessage(dynamic event) {
+  @visibleForTesting
+  void onMessage(dynamic event) {
     try {
       logger.debug('[NtfyService] Received event: $event');
 
