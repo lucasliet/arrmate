@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   generate-notes:
@@ -109,7 +110,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: "21"
-          # cache: 'gradle'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -162,6 +162,7 @@ jobs:
 
       - name: Publish Release to Github
         uses: ncipollo/release-action@v1
+        if: github.ref_type == 'tag' 
         with:
           artifacts: "build/app/outputs/flutter-apk/app-arm*.apk"
           tag: ${{ github.ref_name }}
