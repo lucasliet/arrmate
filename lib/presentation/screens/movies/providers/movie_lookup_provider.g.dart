@@ -8,7 +8,9 @@ part of 'movie_lookup_provider.dart';
 
 String _$movieLookupHash() => r'40ffe400e5d16cd8b9f71ed794a2da221be57f0b';
 
-/// See also [MovieLookup].
+/// Notifier for looking up movies from an external provider (TMDB via Radarr).
+///
+/// Copied from [MovieLookup].
 @ProviderFor(MovieLookup)
 final movieLookupProvider =
     AutoDisposeAsyncNotifierProvider<MovieLookup, List<Movie>>.internal(

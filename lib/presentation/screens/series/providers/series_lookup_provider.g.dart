@@ -8,7 +8,9 @@ part of 'series_lookup_provider.dart';
 
 String _$seriesLookupHash() => r'3da3498ef1603f530a0ee2deff6d495a166ed048';
 
-/// See also [SeriesLookup].
+/// Notifier for looking up series from an external provider (TVDB via Sonarr).
+///
+/// Copied from [SeriesLookup].
 @ProviderFor(SeriesLookup)
 final seriesLookupProvider =
     AutoDisposeAsyncNotifierProvider<SeriesLookup, List<Series>>.internal(

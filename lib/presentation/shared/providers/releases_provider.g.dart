@@ -6,7 +6,7 @@ part of 'releases_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$movieReleasesHash() => r'7681f88cabcec1a057eafcfba7140c8fab2d16cb';
+String _$movieReleasesHash() => r'e160a1fbbe9fe84fb55dc2a6ba37f03ea44c03aa';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -25,16 +25,24 @@ class _SystemHash {
   }
 }
 
-/// See also [movieReleases].
+/// Fetches current releases (search results) for a movie.
+///
+/// Copied from [movieReleases].
 @ProviderFor(movieReleases)
 const movieReleasesProvider = MovieReleasesFamily();
 
-/// See also [movieReleases].
+/// Fetches current releases (search results) for a movie.
+///
+/// Copied from [movieReleases].
 class MovieReleasesFamily extends Family<AsyncValue<List<Release>>> {
-  /// See also [movieReleases].
+  /// Fetches current releases (search results) for a movie.
+  ///
+  /// Copied from [movieReleases].
   const MovieReleasesFamily();
 
-  /// See also [movieReleases].
+  /// Fetches current releases (search results) for a movie.
+  ///
+  /// Copied from [movieReleases].
   MovieReleasesProvider call(int movieId) {
     return MovieReleasesProvider(movieId);
   }
@@ -61,9 +69,13 @@ class MovieReleasesFamily extends Family<AsyncValue<List<Release>>> {
   String? get name => r'movieReleasesProvider';
 }
 
-/// See also [movieReleases].
+/// Fetches current releases (search results) for a movie.
+///
+/// Copied from [movieReleases].
 class MovieReleasesProvider extends AutoDisposeFutureProvider<List<Release>> {
-  /// See also [movieReleases].
+  /// Fetches current releases (search results) for a movie.
+  ///
+  /// Copied from [movieReleases].
   MovieReleasesProvider(int movieId)
     : this._internal(
         (ref) => movieReleases(ref as MovieReleasesRef, movieId),
@@ -142,18 +154,26 @@ class _MovieReleasesProviderElement
   int get movieId => (origin as MovieReleasesProvider).movieId;
 }
 
-String _$episodeReleasesHash() => r'499df8667e7669271f05bc0b7cdbf7b6a5fb75c5';
+String _$episodeReleasesHash() => r'8df9aae327862f0b4854e4febdccdd8e3f108a20';
 
-/// See also [episodeReleases].
+/// Fetches current releases (search results) for an episode.
+///
+/// Copied from [episodeReleases].
 @ProviderFor(episodeReleases)
 const episodeReleasesProvider = EpisodeReleasesFamily();
 
-/// See also [episodeReleases].
+/// Fetches current releases (search results) for an episode.
+///
+/// Copied from [episodeReleases].
 class EpisodeReleasesFamily extends Family<AsyncValue<List<Release>>> {
-  /// See also [episodeReleases].
+  /// Fetches current releases (search results) for an episode.
+  ///
+  /// Copied from [episodeReleases].
   const EpisodeReleasesFamily();
 
-  /// See also [episodeReleases].
+  /// Fetches current releases (search results) for an episode.
+  ///
+  /// Copied from [episodeReleases].
   EpisodeReleasesProvider call(int episodeId) {
     return EpisodeReleasesProvider(episodeId);
   }
@@ -180,9 +200,13 @@ class EpisodeReleasesFamily extends Family<AsyncValue<List<Release>>> {
   String? get name => r'episodeReleasesProvider';
 }
 
-/// See also [episodeReleases].
+/// Fetches current releases (search results) for an episode.
+///
+/// Copied from [episodeReleases].
 class EpisodeReleasesProvider extends AutoDisposeFutureProvider<List<Release>> {
-  /// See also [episodeReleases].
+  /// Fetches current releases (search results) for an episode.
+  ///
+  /// Copied from [episodeReleases].
   EpisodeReleasesProvider(int episodeId)
     : this._internal(
         (ref) => episodeReleases(ref as EpisodeReleasesRef, episodeId),
@@ -263,7 +287,9 @@ class _EpisodeReleasesProviderElement
 
 String _$releaseActionsHash() => r'63270c2b784eae59f0e5918d1e5e0fcb606b4fa8';
 
-/// See also [ReleaseActions].
+/// Controller for handling release actions like downloading.
+///
+/// Copied from [ReleaseActions].
 @ProviderFor(ReleaseActions)
 final releaseActionsProvider =
     AutoDisposeNotifierProvider<ReleaseActions, void>.internal(

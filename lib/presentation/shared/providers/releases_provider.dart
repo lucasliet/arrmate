@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 
@@ -6,7 +7,7 @@ part 'releases_provider.g.dart';
 
 /// Fetches current releases (search results) for a movie.
 @riverpod
-Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
+Future<List<Release>> movieReleases(Ref ref, int movieId) async {
   final api = ref.watch(radarrApiProvider);
   if (api == null) throw Exception('API not available');
   return api.getMovieReleases(movieId);
@@ -14,10 +15,7 @@ Future<List<Release>> movieReleases(MovieReleasesRef ref, int movieId) async {
 
 /// Fetches current releases (search results) for an episode.
 @riverpod
-Future<List<Release>> episodeReleases(
-  EpisodeReleasesRef ref,
-  int episodeId,
-) async {
+Future<List<Release>> episodeReleases(Ref ref, int episodeId) async {
   final api = ref.watch(sonarrApiProvider);
   if (api == null) throw Exception('API not available');
   return api.getSeriesReleases(episodeId: episodeId);

@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 
@@ -7,7 +8,7 @@ part 'season_episodes_provider.g.dart';
 /// Fetches episodes for a specific series and season number from Sonarr.
 @riverpod
 Future<List<Episode>> seasonEpisodes(
-  SeasonEpisodesRef ref,
+  Ref ref,
   int seriesId,
   int seasonNumber,
 ) async {

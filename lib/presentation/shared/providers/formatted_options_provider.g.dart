@@ -7,9 +7,11 @@ part of 'formatted_options_provider.dart';
 // **************************************************************************
 
 String _$movieQualityProfilesHash() =>
-    r'51bb9eaddddbb2e64ea155339cd5e06d254c1c12';
+    r'9d169371b12d92693988704753c69759cd5f1b93';
 
-/// See also [movieQualityProfiles].
+/// Fetches available quality profiles for movies (Radarr).
+///
+/// Copied from [movieQualityProfiles].
 @ProviderFor(movieQualityProfiles)
 final movieQualityProfilesProvider =
     AutoDisposeFutureProvider<List<QualityProfile>>.internal(
@@ -25,9 +27,11 @@ final movieQualityProfilesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 typedef MovieQualityProfilesRef =
     AutoDisposeFutureProviderRef<List<QualityProfile>>;
-String _$movieRootFoldersHash() => r'07b5a33eb7c29169652fe80abfb636f53e03bef4';
+String _$movieRootFoldersHash() => r'34669b943fbdf0ade8885a988a13f34a80d519c0';
 
-/// See also [movieRootFolders].
+/// Fetches configured root folders for movies (Radarr).
+///
+/// Copied from [movieRootFolders].
 @ProviderFor(movieRootFolders)
 final movieRootFoldersProvider =
     AutoDisposeFutureProvider<List<RootFolder>>.internal(
@@ -43,9 +47,11 @@ final movieRootFoldersProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 typedef MovieRootFoldersRef = AutoDisposeFutureProviderRef<List<RootFolder>>;
 String _$seriesQualityProfilesHash() =>
-    r'4880733b0bfd6e005e1cf0243fda6a32dc97981f';
+    r'e36a80c0448a94185a1b7c5e4c4c10971f0eec23';
 
-/// See also [seriesQualityProfiles].
+/// Fetches available quality profiles for series (Sonarr).
+///
+/// Copied from [seriesQualityProfiles].
 @ProviderFor(seriesQualityProfiles)
 final seriesQualityProfilesProvider =
     AutoDisposeFutureProvider<List<QualityProfile>>.internal(
@@ -61,9 +67,11 @@ final seriesQualityProfilesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 typedef SeriesQualityProfilesRef =
     AutoDisposeFutureProviderRef<List<QualityProfile>>;
-String _$seriesRootFoldersHash() => r'63361ce2f7aea5d9ac9120f185f1484545f049f0';
+String _$seriesRootFoldersHash() => r'd5ab4d8474d7e562e98a69bf319db2cf914a3845';
 
-/// See also [seriesRootFolders].
+/// Fetches configured root folders for series (Sonarr).
+///
+/// Copied from [seriesRootFolders].
 @ProviderFor(seriesRootFolders)
 final seriesRootFoldersProvider =
     AutoDisposeFutureProvider<List<RootFolder>>.internal(

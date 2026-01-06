@@ -6,7 +6,7 @@ part of 'season_episodes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$seasonEpisodesHash() => r'8b8a8db29d2ea8a1617c5a0aeb40b71392a14414';
+String _$seasonEpisodesHash() => r'8c5e5f7f6ce55b2a0780abf7c634ff4a53f564c7';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -25,16 +25,24 @@ class _SystemHash {
   }
 }
 
-/// See also [seasonEpisodes].
+/// Fetches episodes for a specific series and season number from Sonarr.
+///
+/// Copied from [seasonEpisodes].
 @ProviderFor(seasonEpisodes)
 const seasonEpisodesProvider = SeasonEpisodesFamily();
 
-/// See also [seasonEpisodes].
+/// Fetches episodes for a specific series and season number from Sonarr.
+///
+/// Copied from [seasonEpisodes].
 class SeasonEpisodesFamily extends Family<AsyncValue<List<Episode>>> {
-  /// See also [seasonEpisodes].
+  /// Fetches episodes for a specific series and season number from Sonarr.
+  ///
+  /// Copied from [seasonEpisodes].
   const SeasonEpisodesFamily();
 
-  /// See also [seasonEpisodes].
+  /// Fetches episodes for a specific series and season number from Sonarr.
+  ///
+  /// Copied from [seasonEpisodes].
   SeasonEpisodesProvider call(int seriesId, int seasonNumber) {
     return SeasonEpisodesProvider(seriesId, seasonNumber);
   }
@@ -61,9 +69,13 @@ class SeasonEpisodesFamily extends Family<AsyncValue<List<Episode>>> {
   String? get name => r'seasonEpisodesProvider';
 }
 
-/// See also [seasonEpisodes].
+/// Fetches episodes for a specific series and season number from Sonarr.
+///
+/// Copied from [seasonEpisodes].
 class SeasonEpisodesProvider extends AutoDisposeFutureProvider<List<Episode>> {
-  /// See also [seasonEpisodes].
+  /// Fetches episodes for a specific series and season number from Sonarr.
+  ///
+  /// Copied from [seasonEpisodes].
   SeasonEpisodesProvider(int seriesId, int seasonNumber)
     : this._internal(
         (ref) =>
