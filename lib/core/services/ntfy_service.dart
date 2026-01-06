@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/models/notification/ntfy_message.dart';
 import '../../domain/models/settings/notification_settings.dart';
+import 'background_notification_service.dart';
 import 'logger_service.dart';
 import 'notification_service.dart';
 
@@ -131,6 +132,8 @@ class NtfyService extends ChangeNotifier {
           body: message.message ?? '',
           payload: message.click,
         );
+        // Update shared timestamp so background polling doesn't re-fetch this
+        BackgroundNotificationService.updateLastPollTimestamp();
       } else if (message.isOpen) {
         logger.debug('[NtfyService] Connection opened');
       } else if (message.isKeepalive) {

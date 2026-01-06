@@ -15,6 +15,8 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isTrue);
         expect(settings.notifyOnHealthIssue, isFalse);
+        expect(settings.batterySaverMode, isFalse);
+        expect(settings.pollingIntervalMinutes, 30);
       });
 
       test('should accept custom values', () {
@@ -26,6 +28,8 @@ void main() {
           notifyOnImport: false,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          batterySaverMode: true,
+          pollingIntervalMinutes: 15,
         );
 
         // Then
@@ -35,6 +39,8 @@ void main() {
         expect(settings.notifyOnImport, isFalse);
         expect(settings.notifyOnDownloadFailed, isFalse);
         expect(settings.notifyOnHealthIssue, isTrue);
+        expect(settings.batterySaverMode, isTrue);
+        expect(settings.pollingIntervalMinutes, 15);
       });
     });
 
@@ -111,6 +117,8 @@ void main() {
           notifyOnImport: false,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          batterySaverMode: true,
+          pollingIntervalMinutes: 60,
         );
 
         // When
@@ -123,6 +131,8 @@ void main() {
         expect(copy.notifyOnImport, original.notifyOnImport);
         expect(copy.notifyOnDownloadFailed, original.notifyOnDownloadFailed);
         expect(copy.notifyOnHealthIssue, original.notifyOnHealthIssue);
+        expect(copy.batterySaverMode, original.batterySaverMode);
+        expect(copy.pollingIntervalMinutes, original.pollingIntervalMinutes);
       });
 
       test('should override specified values only', () {
@@ -152,6 +162,8 @@ void main() {
           'notifyOnImport': true,
           'notifyOnDownloadFailed': false,
           'notifyOnHealthIssue': true,
+          'batterySaverMode': true,
+          'pollingIntervalMinutes': 15,
         };
 
         // When
@@ -164,6 +176,8 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isFalse);
         expect(settings.notifyOnHealthIssue, isTrue);
+        expect(settings.batterySaverMode, isTrue);
+        expect(settings.pollingIntervalMinutes, 15);
       });
 
       test('should use default values for missing fields', () {
@@ -180,6 +194,8 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isTrue);
         expect(settings.notifyOnHealthIssue, isFalse);
+        expect(settings.batterySaverMode, isFalse);
+        expect(settings.pollingIntervalMinutes, 30);
       });
 
       test('should handle legacy data without ntfyTopic', () {
@@ -206,6 +222,8 @@ void main() {
           notifyOnImport: true,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          batterySaverMode: true,
+          pollingIntervalMinutes: 60,
         );
 
         // When
@@ -218,6 +236,8 @@ void main() {
         expect(json['notifyOnImport'], isTrue);
         expect(json['notifyOnDownloadFailed'], isFalse);
         expect(json['notifyOnHealthIssue'], isTrue);
+        expect(json['batterySaverMode'], isTrue);
+        expect(json['pollingIntervalMinutes'], 60);
       });
 
       test('should serialize null ntfyTopic', () {

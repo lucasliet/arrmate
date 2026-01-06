@@ -27,8 +27,8 @@ series).
   - **Queue Management**: View active downloads with detailed status, remove
     tasks with blocklist option.
   - **Notifications**: Real-time push notifications via ntfy.sh integration with
-    unique multi-device synchronization and automatic configuration for new
-    instances.
+    unique multi-device synchronization, automatic configuration for new
+    instances, and background polling (every 30 min) with battery saver mode.
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
   - **Manual Import**: Match and import files manually from the queue.

@@ -27,7 +27,8 @@ efficient user experience.
   server connections.
 - **Notifications**: Receive real-time push notifications via
   [ntfy.sh](https://ntfy.sh) integration with **unique multi-device
-  synchronization** and **automatic configuration**.
+  synchronization**, **automatic configuration**, and **background polling**
+  (every 30 min) with optional Battery Saver mode.
 - **Multi-Instance Support**: Manage multiple Radarr and Sonarr server instances
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and

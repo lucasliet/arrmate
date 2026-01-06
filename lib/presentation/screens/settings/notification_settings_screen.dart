@@ -178,6 +178,51 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
+              const Divider(),
+              SwitchListTile(
+                title: const Text('Battery Saver Mode'),
+                subtitle: const Text(
+                  'Disable background polling. Notifications only when app is open.',
+                ),
+                secondary: const Icon(Icons.battery_saver),
+                value: notifications.batterySaverMode,
+                onChanged: (value) {
+                  final updated = notifications.copyWith(
+                    batterySaverMode: value,
+                  );
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateNotifications(updated);
+                },
+              ),
+              if (!notifications.batterySaverMode)
+                ListTile(
+                  leading: const Icon(Icons.timer),
+                  title: const Text('Polling Interval'),
+                  subtitle: const Text('How often to check for notifications'),
+                  trailing: DropdownButton<int>(
+                    value: notifications.pollingIntervalMinutes,
+                    underline: const SizedBox.shrink(),
+                    items: NotificationSettings.pollingIntervalOptions
+                        .map(
+                          (interval) => DropdownMenuItem(
+                            value: interval,
+                            child: Text('$interval min'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        final updated = notifications.copyWith(
+                          pollingIntervalMinutes: value,
+                        );
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateNotifications(updated);
+                      }
+                    },
+                  ),
+                ),
             ],
           ],
         ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/core/services/ntfy_service.dart';
@@ -11,6 +12,23 @@ class MockNotificationService extends Mock implements NotificationService {}
 class MockDio extends Mock implements Dio {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mock SharedPreferences for BackgroundNotificationService calls
+  const MethodChannel channel = MethodChannel(
+    'plugins.flutter.io/shared_preferences',
+  );
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+        if (methodCall.method == 'getAll') {
+          return <String, dynamic>{};
+        }
+        if (methodCall.method == 'setInt') {
+          return true;
+        }
+        return null;
+      });
+
   group('NtfyService', () {
     late MockNotificationService mockNotificationService;
     late MockDio mockDio;
