@@ -242,15 +242,20 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
   }
 
   void _showManualImportScreen(BuildContext context) {
+    final downloadId = widget.item.downloadId!;
+    final title = widget.item.displayTitle;
+
     Navigator.pop(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => ManualImportScreen(
-        downloadId: widget.item.downloadId!,
-        title: widget.item.displayTitle,
-      ),
-    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (sheetContext) =>
+            ManualImportScreen(downloadId: downloadId, title: title),
+      );
+    });
   }
 
   Widget _buildActionsSection(BuildContext context) {

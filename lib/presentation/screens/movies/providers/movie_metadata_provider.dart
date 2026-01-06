@@ -43,7 +43,9 @@ class MovieMetadataController {
 
   Future<void> deleteFile(int fileId) async {
     final repository = ref.read(movieRepositoryProvider);
-    if (repository == null) return;
+    if (repository == null) {
+      throw StateError('Movie repository not available');
+    }
 
     await repository.deleteMovieFile(fileId);
     ref.invalidate(movieFilesProvider(movieId));

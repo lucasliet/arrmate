@@ -43,7 +43,9 @@ class SeriesMetadataController {
 
   Future<void> deleteFile(int fileId) async {
     final repository = ref.read(seriesRepositoryProvider);
-    if (repository == null) return;
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
 
     await repository.deleteSeriesFile(fileId);
     ref.invalidate(seriesFilesProvider(seriesId));

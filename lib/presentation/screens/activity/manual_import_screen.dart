@@ -194,8 +194,8 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
         );
       }
     } catch (e) {
-      setState(() => _isImporting = false);
       if (mounted) {
+        setState(() => _isImporting = false);
         context.showErrorSnackBar('Failed to import: $e');
       }
     }

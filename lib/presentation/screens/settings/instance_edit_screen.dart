@@ -131,7 +131,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       await ref
           .read(instancesProvider.notifier)
           .validateAndCacheInstanceData(instance, ref);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to validate and cache instance data: $e');
+    }
 
     if (mounted) {
       context.pop();

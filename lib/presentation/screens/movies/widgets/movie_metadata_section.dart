@@ -61,10 +61,25 @@ class MovieMetadataSection extends ConsumerWidget {
                         MediaFileDetailsSheet(
                           file: file,
                           onDelete: () async {
-                            final controller = ref.read(
-                              movieMetadataControllerProvider(movieId),
-                            );
-                            await controller.deleteFile(file.id);
+                            final shouldDelete = await _confirmDelete(context);
+                            if (shouldDelete == true) {
+                              try {
+                                final controller = ref.read(
+                                  movieMetadataControllerProvider(movieId),
+                                );
+                                await controller.deleteFile(file.id);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  context.showSnackBar('File deleted');
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  context.showErrorSnackBar(
+                                    'Failed to delete: $e',
+                                  );
+                                }
+                              }
+                            }
                           },
                         ),
                       ),

@@ -48,10 +48,7 @@ class UpdateService {
         options: Options(
           sendTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
+          headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
         ),
       );
 
@@ -120,7 +117,9 @@ class UpdateService {
       final currentVersionStr = packageInfo.version;
       logger.info('📱 Current app version (raw): "$currentVersionStr"');
 
-      final currentVersion = Version.parse(currentVersionStr.replaceAll('v', ''));
+      final currentVersion = Version.parse(
+        currentVersionStr.replaceAll('v', ''),
+      );
       final latestVersion = Version.parse(latestVersionStr);
 
       logger.info('🔄 Version comparison:');

@@ -83,21 +83,22 @@ class HistoryEventCard extends StatelessWidget {
   }
 
   (IconData, Color) _getEventIconAndColor(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
     switch (event.eventType) {
       case HistoryEventType.grabbed:
-        return (Icons.download_outlined, Colors.blue);
+        return (Icons.download_outlined, colorScheme.primary);
       case HistoryEventType.imported:
-        return (Icons.check_circle_outline, Colors.green);
+        return (Icons.check_circle_outline, colorScheme.tertiary);
       case HistoryEventType.failed:
-        return (Icons.error_outline, theme.colorScheme.error);
+        return (Icons.error_outline, colorScheme.error);
       case HistoryEventType.deleted:
-        return (Icons.delete_outline, Colors.orange);
+        return (Icons.delete_outline, colorScheme.secondary);
       case HistoryEventType.renamed:
-        return (Icons.drive_file_rename_outline, Colors.purple);
+        return (Icons.drive_file_rename_outline, colorScheme.inversePrimary);
       case HistoryEventType.ignored:
-        return (Icons.block_outlined, Colors.grey);
+        return (Icons.block_outlined, colorScheme.outline);
       case HistoryEventType.unknown:
-        return (Icons.help_outline, theme.colorScheme.onSurfaceVariant);
+        return (Icons.help_outline, colorScheme.onSurfaceVariant);
     }
   }
 
