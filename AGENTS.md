@@ -31,8 +31,18 @@ series).
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
   - **Manual Import**: Match and import files manually from the queue.
-  - **Movie Files & History**: View detailed file metadata and movie-specific
-    history.
+  - **Movie & Series Files**: View detailed file metadata (quality, size,
+    codecs) and extra files for both movies and series.
+  - **Media History**: View movie-specific and series-specific historical
+    events.
+  - **Metadata Management**: Delete individual media files with confirmation
+    dialogs and error handling.
+  - **Edit Media**: Update monitoring, quality profile, root folder, and series
+    type settings for movies and series.
+  - **Move Files**: Option to physically move files when changing root folder
+    during media edit.
+  - **Slow Instance Mode**: Configurable extended timeout (90s) for slow or
+    remote server connections.
   - **System Status**: Enhanced instance status and version checks.
   - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
@@ -125,7 +135,8 @@ integration and UI patterns.
 
 ## Quality Assurance
 
-To ensure project stability, every code change or addition MUST be followed by (use dart-mcp-server instead of direct commands if available):
+To ensure project stability, every code change or addition MUST be followed by
+(use dart-mcp-server instead of direct commands if available):
 
 1. **Format**: Run `dart format .` to maintain consistent style.
 2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.

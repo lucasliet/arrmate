@@ -79,6 +79,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         child: CustomScrollView(
           slivers: [
             SliverAppBar.medium(
+              pinned: _isSearching,
+              floating: _isSearching,
               title: _isSearching
                   ? TextField(
                       controller: _searchController,
