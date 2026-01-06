@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 jobs:
   generate-notes:
@@ -13,8 +12,7 @@ jobs:
     outputs:
       release_notes: ${{ steps.set_output.outputs.release_notes }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -84,7 +82,6 @@ jobs:
     name: Build Android Application
     needs: generate-notes
     runs-on: ubuntu-latest
-    
     permissions:
       contents: write
 
@@ -124,15 +121,6 @@ jobs:
       - name: Generate Icons
         run: dart run flutter_launcher_icons
 
-      - name: Cache NDK
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/lib/android/sdk/ndk/28.2.13676358
-          key: ${{ runner.os }}-ndk-28.2.13676358
-          restore-keys: |
-            ${{ runner.os }}-ndk-28.2.13676358
-            ${{ runner.os }}-ndk-
-
       # - name: Build Android App Bundle
       #   run: >
       #     flutter build appbundle 
@@ -156,7 +144,7 @@ jobs:
 
       - name: Publish Release to Github
         uses: ncipollo/release-action@v1
-        if: github.ref_type == 'tag' 
+        if: github.ref_type == 'tag'
         with:
           artifacts: "build/app/outputs/flutter-apk/app-arm*.apk"
           tag: ${{ github.ref_name }}
