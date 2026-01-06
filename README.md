@@ -26,7 +26,8 @@ efficient user experience.
 - **Slow Instance Mode**: Extended timeout support (90s) for remote or slow
   server connections.
 - **Notifications**: Receive real-time push notifications via
-  [ntfy.sh](https://ntfy.sh) integration.
+  [ntfy.sh](https://ntfy.sh) integration with **unique multi-device
+  synchronization** and **automatic configuration**.
 - **Multi-Instance Support**: Manage multiple Radarr and Sonarr server instances
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
@@ -74,12 +75,17 @@ To use Arrmate, follow these steps:
 
 Arrmate supports real-time push notifications via [ntfy.sh](https://ntfy.sh):
 
-1. Open Arrmate > Settings > Notifications
-2. Tap "Setup Push Notifications" to generate your unique topic
-3. Configure ntfy in your Radarr/Sonarr (Settings > Connect > ntfy):
-   - Server URL: `https://ntfy.sh`
-   - Topic: Your generated topic from Arrmate
-4. Done! You'll receive instant notifications for grabs, imports, and failures.
+1. Open **Arrmate** > **Settings** > **Notifications**.
+2. Tap **Setup Push Notifications** to generate your unique topic.
+3. Tap *_Auto-configure _arr instances__ to automatically set up webhooks in all
+   your connected Radarr/Sonarr servers.
+4. **Done!** Arrmate uses a unique naming scheme `Arrmate (suffix)` to ensure
+   multiple devices can coexist on the same server without overwriting each
+   other's settings.
+
+> [!TIP]
+> Once notifications are enabled, any new instance you add to Arrmate will be
+> **automatically configured** with the required webhooks.
 
 ## 🤝 Contributing
 

@@ -12,6 +12,7 @@ import '../screens/settings/instance_edit_screen.dart';
 import '../screens/settings/logs_screen.dart';
 import '../screens/settings/health_screen.dart';
 import '../screens/settings/quality_profiles_screen.dart';
+import '../screens/settings/notification_settings_screen.dart';
 import '../widgets/app_shell.dart';
 
 /// Global key for the root navigator.
@@ -88,6 +89,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'quality-profiles',
               builder: (context, state) => const QualityProfilesScreen(),
+            ),
+            GoRoute(
+              path: 'notifications',
+              builder: (context, state) => const NotificationSettingsScreen(),
             ),
           ],
         ),

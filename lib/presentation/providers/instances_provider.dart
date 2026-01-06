@@ -1,10 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/services/logger_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/services/logger_service.dart';
+import '../../core/services/remote_notification_setup_service.dart';
 import '../../domain/models/models.dart';
 import 'data_providers.dart';
+import 'settings_provider.dart';
 
 /// Provider that manages the list of configured [Instance]s.
 final instancesProvider = NotifierProvider<InstancesNotifier, InstancesState>(
@@ -61,6 +63,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
     return const InstancesState();
   }
 
+  /// Loads persisted instances from SharedPreferences.
   Future<void> _loadInstances() async {
     final prefs = await SharedPreferences.getInstance();
     final instancesJson = prefs.getString(_instancesKey);
@@ -82,6 +85,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
     }
   }
 
+  /// Persists the current list of instances to SharedPreferences.
   Future<void> _saveInstances() async {
     final prefs = await SharedPreferences.getInstance();
     final instancesJson = json.encode(
@@ -91,12 +95,35 @@ class InstancesNotifier extends Notifier<InstancesState> {
   }
 
   /// Adds a new instance to the list and persists it.
+  ///
+  /// If notifications are enabled in global settings, it automatically
+  /// triggers the auto-configuration for this new instance.
   Future<void> addInstance(Instance instance) async {
     logger.info(
       '[InstancesNotifier] Adding instance: ${instance.name ?? instance.id}',
     );
     state = state.copyWith(instances: [...state.instances, instance]);
     await _saveInstances();
+
+    // Auto-configure notifications if enabled
+    final settings = ref.read(settingsProvider);
+    if (settings.notifications.enabled &&
+        settings.notifications.ntfyTopic != null) {
+      logger.info(
+        '[InstancesNotifier] Auto-configuring notifications for new instance',
+      );
+      final notificationService = ref.read(remoteNotificationServiceProvider);
+      // We run this in background (no await) to not block the UI,
+      // but we log failures inside the service.
+      notificationService.configureInstance(instance).catchError((e, st) {
+        logger.error(
+          '[InstancesNotifier] Auto-config failed for new instance',
+          e,
+          st,
+        );
+        return NotificationSetupResult.failure(e.toString());
+      });
+    }
   }
 
   /// Updates an existing instance in the list.
@@ -116,17 +143,24 @@ class InstancesNotifier extends Notifier<InstancesState> {
     await _saveInstances();
   }
 
-  /// Helper to find an instance by ID.
+  /// Returns an instance by its ID, or null if not found.
   Instance? getInstanceById(String id) {
     return state.instances.where((i) => i.id == id).firstOrNull;
   }
 
   /// Connects to the instance to fetch system status and tags, then updates it.
+  ///
+  /// This is typically called after adding or editing an instance to refresh its
+  /// metadata (like version and tags).
   /// Throws if connection or validation fails.
-  Future<Instance> validateAndCacheInstanceData(Instance instance, ref) async {
+  Future<Instance> validateAndCacheInstanceData(
+    Instance instance,
+    WidgetRef? widgetRef,
+  ) async {
     logger.debug(
       '[InstancesNotifier] Validating instance data: ${instance.name ?? instance.id}',
     );
+    // Use ref from Notifier if widgetRef is not provided
     final instanceRepo = ref.read(instanceRepositoryProvider);
 
     try {

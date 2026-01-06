@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/services/ntfy_service.dart';
-import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
@@ -53,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         if (instancesState.instances.isEmpty)
-          const PasteMessage(message: 'No instances configured'),
+          const _PasteMessage(message: 'No instances configured'),
         ...instancesState.instances.map((instance) {
           final versionInfo = instance.version != null
               ? ' · v${instance.version}'
@@ -209,7 +206,6 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifications = settings.notifications;
-    final ntfyService = ref.watch(ntfyServiceProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,168 +220,23 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ),
-        if (notifications.ntfyTopic == null) ...[
-          ListTile(
-            leading: const Icon(Icons.notifications_none),
-            title: const Text('Setup Push Notifications'),
-            subtitle: const Text('Tap to generate your unique topic'),
-            trailing: const Icon(Icons.add_circle_outline),
-            onTap: () =>
-                ref.read(settingsProvider.notifier).generateNtfyTopic(),
+        ListTile(
+          leading: Icon(
+            notifications.enabled
+                ? Icons.notifications_active
+                : Icons.notifications_none,
+            color: notifications.enabled
+                ? Theme.of(context).colorScheme.primary
+                : null,
           ),
-        ] else ...[
-          SwitchListTile(
-            title: const Text('Enable Notifications'),
-            subtitle: Text(
-              ntfyService.isConnected ? 'Connected to ntfy.sh' : 'Disconnected',
-            ),
-            secondary: Icon(
-              ntfyService.isConnected ? Icons.cloud_done : Icons.cloud_off,
-              color: ntfyService.isConnected ? Colors.green : Colors.grey,
-            ),
-            value: notifications.enabled,
-            onChanged: (value) {
-              ref
-                  .read(settingsProvider.notifier)
-                  .updateNotifications(notifications.copyWith(enabled: value));
-            },
+          title: const Text('Push Notifications'),
+          subtitle: Text(
+            notifications.enabled ? 'Enabled · ntfy.sh' : 'Setup notifications',
           ),
-          ListTile(
-            title: const Text('Your Topic'),
-            subtitle: Text(notifications.ntfyTopic!),
-            trailing: IconButton(
-              icon: const Icon(Icons.copy),
-              tooltip: 'Copy topic',
-              onPressed: () {
-                Clipboard.setData(
-                  ClipboardData(text: notifications.ntfyTopic!),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Topic copied to clipboard')),
-                );
-              },
-            ),
-          ),
-          _buildSetupInstructions(context, notifications),
-          if (notifications.enabled) ...[
-            const Divider(),
-            CheckboxListTile(
-              title: const Text('Notify on Grab'),
-              subtitle: const Text('When a release is sent to download client'),
-              value: notifications.notifyOnGrab,
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateNotifications(
-                        notifications.copyWith(notifyOnGrab: value),
-                      );
-                }
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Notify on Import'),
-              subtitle: const Text('When a file is successfully imported'),
-              value: notifications.notifyOnImport,
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateNotifications(
-                        notifications.copyWith(notifyOnImport: value),
-                      );
-                }
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Notify on Failure'),
-              subtitle: const Text('When a download fails to import'),
-              value: notifications.notifyOnDownloadFailed,
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateNotifications(
-                        notifications.copyWith(notifyOnDownloadFailed: value),
-                      );
-                }
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Notify on Health Issue'),
-              subtitle: const Text('When system health issues are detected'),
-              value: notifications.notifyOnHealthIssue,
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateNotifications(
-                        notifications.copyWith(notifyOnHealthIssue: value),
-                      );
-                }
-              },
-            ),
-          ],
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSetupInstructions(
-    BuildContext context,
-    NotificationSettings settings,
-  ) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Setup in Radarr/Sonarr',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text('1. Go to Settings > Connect'),
-            const Text('2. Add new connection > ntfy'),
-            const Text('3. Configure:'),
-            const SizedBox(height: 8),
-            _buildConfigRow('Server URL', 'https://ntfy.sh'),
-            _buildConfigRow('Topic', settings.ntfyTopic ?? ''),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('ntfy documentation'),
-              onPressed: () =>
-                  launchUrl(Uri.parse('https://docs.ntfy.sh/integrations/')),
-            ),
-          ],
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/notifications'),
         ),
-      ),
-    );
-  }
-
-  Widget _buildConfigRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, top: 4),
-      child: Row(
-        children: [
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontFamily: 'monospace')),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -409,21 +260,21 @@ class SettingsScreen extends ConsumerWidget {
           title: const Text('Logs'),
           subtitle: const Text('System event logs'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/logs'),
+          onTap: () => context.push('/settings/logs'),
         ),
         ListTile(
           leading: const Icon(Icons.health_and_safety_outlined),
           title: const Text('Health'),
           subtitle: const Text('System health and issues'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/health'),
+          onTap: () => context.push('/settings/health'),
         ),
         ListTile(
           leading: const Icon(Icons.high_quality_outlined),
           title: const Text('Quality Profiles'),
           subtitle: const Text('Available profiles from instances'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/quality-profiles'),
+          onTap: () => context.push('/settings/quality-profiles'),
         ),
       ],
     );
@@ -494,9 +345,9 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class PasteMessage extends StatelessWidget {
+class _PasteMessage extends StatelessWidget {
   final String message;
-  const PasteMessage({super.key, required this.message});
+  const _PasteMessage({required this.message});
 
   @override
   Widget build(BuildContext context) {

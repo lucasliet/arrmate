@@ -1,5 +1,6 @@
 /// Domain models for using in the app.
 library;
+
 export 'shared/shared.dart';
 export 'shared/shared_models.dart';
 export 'shared/release.dart';
@@ -11,3 +12,4 @@ export 'series/season.dart';
 export 'series/series_sort.dart';
 export 'queue/queue.dart';
 export 'queue/importable_file.dart';
+export 'shared/notification_resource.dart';

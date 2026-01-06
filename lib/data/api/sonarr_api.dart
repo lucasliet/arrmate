@@ -312,4 +312,42 @@ class SonarrApi {
         .map((e) => Tag.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  /// Retrieves notification schemas.
+  Future<List<NotificationResource>> getNotificationSchemas() async {
+    final response = await _client.get('/notification/schema');
+    return (response as List)
+        .map((e) => NotificationResource.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Retrieves all notification settings.
+  Future<List<NotificationResource>> getNotifications() async {
+    final response = await _client.get('/notification');
+    return (response as List)
+        .map((e) => NotificationResource.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Creates a new notification setting.
+  Future<NotificationResource> createNotification(
+    NotificationResource notification,
+  ) async {
+    final response = await _client.post(
+      '/notification',
+      data: notification.toJson(),
+    );
+    return NotificationResource.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Updates an existing notification setting.
+  Future<NotificationResource> updateNotification(
+    NotificationResource notification,
+  ) async {
+    final response = await _client.put(
+      '/notification/${notification.id}',
+      data: notification.toJson(),
+    );
+    return NotificationResource.fromJson(response as Map<String, dynamic>);
+  }
 }
