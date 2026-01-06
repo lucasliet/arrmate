@@ -168,9 +168,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           removeArtifacts: true
           body: |
-            **Commit**
-            ${{ github.event_name }}: ${{ github.event.head_commit.message }}
-
             **Release Notes**
             ${{ needs.generate-notes.outputs.release_notes }}
 
