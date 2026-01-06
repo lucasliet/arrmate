@@ -69,4 +69,94 @@ void main() {
       },
     );
   });
+
+  group('MovieRepositoryImpl - Files & History', () {
+    test('getMovieFiles deve chamar API com movieId', () async {
+      // Given
+      final expectedFiles = <MediaFile>[];
+      when(
+        () => mockApi.getMovieFiles(any()),
+      ).thenAnswer((_) async => expectedFiles);
+
+      // When
+      final result = await repository.getMovieFiles(100);
+
+      // Then
+      expect(result, expectedFiles);
+      verify(() => mockApi.getMovieFiles(100)).called(1);
+    });
+
+    test('getMovieExtraFiles deve chamar API com movieId', () async {
+      // Given
+      final expectedFiles = <MovieExtraFile>[];
+      when(
+        () => mockApi.getMovieExtraFiles(any()),
+      ).thenAnswer((_) async => expectedFiles);
+
+      // When
+      final result = await repository.getMovieExtraFiles(100);
+
+      // Then
+      expect(result, expectedFiles);
+      verify(() => mockApi.getMovieExtraFiles(100)).called(1);
+    });
+
+    test('getMovieHistory deve chamar API com movieId', () async {
+      // Given
+      final expectedHistory = <HistoryEvent>[];
+      when(
+        () => mockApi.getMovieHistory(any()),
+      ).thenAnswer((_) async => expectedHistory);
+
+      // When
+      final result = await repository.getMovieHistory(100);
+
+      // Then
+      expect(result, expectedHistory);
+      verify(() => mockApi.getMovieHistory(100)).called(1);
+    });
+
+    test('deleteMovieFile deve chamar API com fileId', () async {
+      // Given
+      when(() => mockApi.deleteMovieFile(any())).thenAnswer((_) async {});
+
+      // When
+      await repository.deleteMovieFile(50);
+
+      // Then
+      verify(() => mockApi.deleteMovieFile(50)).called(1);
+    });
+  });
+
+  group('MovieRepositoryImpl - Manual Import', () {
+    test('getImportableFiles deve chamar API com downloadId', () async {
+      // Given
+      final expectedFiles = <ImportableFile>[];
+      when(
+        () => mockApi.getImportableFiles(any()),
+      ).thenAnswer((_) async => expectedFiles);
+
+      // When
+      final result = await repository.getImportableFiles('download123');
+
+      // Then
+      expect(result, expectedFiles);
+      verify(() => mockApi.getImportableFiles('download123')).called(1);
+    });
+
+    test('manualImport deve chamar API com lista de arquivos', () async {
+      // Given
+      final files = [
+        ImportableFile(id: 1, size: 1000),
+        ImportableFile(id: 2, size: 2000),
+      ];
+      when(() => mockApi.manualImport(any())).thenAnswer((_) async {});
+
+      // When
+      await repository.manualImport(files);
+
+      // Then
+      verify(() => mockApi.manualImport(files)).called(1);
+    });
+  });
 }

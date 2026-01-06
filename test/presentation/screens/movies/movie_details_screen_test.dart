@@ -3,6 +3,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/movie_details_screen.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_details_provider.dart';
+import 'package:arrmate/presentation/screens/movies/providers/movie_metadata_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,6 +59,9 @@ void main() {
           overrides: [
             currentRadarrInstanceProvider.overrideWithValue(mockInstance),
             movieDetailsProvider(1).overrideWith((ref) => movie),
+            movieFilesProvider(1).overrideWith((ref) async => []),
+            movieExtraFilesProvider(1).overrideWith((ref) async => []),
+            movieHistoryProvider(1).overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
@@ -91,6 +95,9 @@ void main() {
           overrides: [
             currentRadarrInstanceProvider.overrideWithValue(mockInstance),
             movieDetailsProvider(1).overrideWith((ref) => movie),
+            movieFilesProvider(1).overrideWith((ref) async => []),
+            movieExtraFilesProvider(1).overrideWith((ref) async => []),
+            movieHistoryProvider(1).overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
@@ -122,6 +129,9 @@ void main() {
           overrides: [
             currentRadarrInstanceProvider.overrideWithValue(mockInstance),
             movieDetailsProvider(1).overrideWith((ref) => movie),
+            movieFilesProvider(1).overrideWith((ref) async => []),
+            movieExtraFilesProvider(1).overrideWith((ref) async => []),
+            movieHistoryProvider(1).overrideWith((ref) async => []),
           ],
           child: MaterialApp(home: MovieDetailsScreen(movieId: 1)),
         ),
