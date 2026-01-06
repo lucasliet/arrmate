@@ -192,6 +192,7 @@ class SonarrApi {
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
+    int? episodeId,
   }) async {
     final response = await _client.get(
       '/history',
@@ -200,6 +201,7 @@ class SonarrApi {
         'pageSize': pageSize,
         if (eventType != null && eventType.toSonarrEventType() != null)
           'eventType': eventType.toSonarrEventType(),
+        if (episodeId != null) 'episodeId': episodeId,
       },
     );
     return HistoryPage.fromJson(
@@ -282,6 +284,12 @@ class SonarrApi {
   /// Deletes an episode file.
   Future<void> deleteSeriesFile(int fileId) async {
     await _client.delete('/episodefile/$fileId');
+  }
+
+  /// Retrieves a specific episode file by its [id].
+  Future<MediaFile> getEpisodeFile(int id) async {
+    final response = await _client.get('/episodefile/$id');
+    return MediaFile.fromJson(response as Map<String, dynamic>);
   }
 
   /// Retrieves files available for manual import.

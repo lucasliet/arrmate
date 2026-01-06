@@ -5,6 +5,7 @@ import '../../../../core/utils/formatters.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
+import 'package:arrmate/presentation/screens/series/widgets/episode_details_sheet.dart';
 
 /// Screens that lists episodes for a specific season of a series.
 class SeasonDetailsScreen extends ConsumerWidget {
@@ -118,7 +119,11 @@ class _EpisodeTile extends StatelessWidget {
         ],
       ),
       onTap: () {
-        // Show episode details bottom sheet?
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) => EpisodeDetailsSheet(episode: episode),
+        );
       },
     );
   }

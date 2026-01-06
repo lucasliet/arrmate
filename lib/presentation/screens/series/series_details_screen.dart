@@ -10,7 +10,7 @@ import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
-import 'widgets/series_metadata_section.dart';
+
 import 'season_details_screen.dart';
 import 'series_edit_screen.dart';
 
@@ -291,7 +291,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 ],
                 _buildInfoGrid(context, ref, series),
                 const SizedBox(height: 24),
-                SeriesMetadataSection(seriesId: seriesId),
+
                 const SizedBox(height: 32),
                 Row(
                   children: [

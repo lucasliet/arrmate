@@ -25,6 +25,7 @@ final movieQualityProfilesProvider =
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef MovieQualityProfilesRef =
     AutoDisposeFutureProviderRef<List<QualityProfile>>;
 String _$movieRootFoldersHash() => r'34669b943fbdf0ade8885a988a13f34a80d519c0';
@@ -45,6 +46,7 @@ final movieRootFoldersProvider =
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef MovieRootFoldersRef = AutoDisposeFutureProviderRef<List<RootFolder>>;
 String _$seriesQualityProfilesHash() =>
     r'e36a80c0448a94185a1b7c5e4c4c10971f0eec23';
@@ -65,6 +67,7 @@ final seriesQualityProfilesProvider =
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef SeriesQualityProfilesRef =
     AutoDisposeFutureProviderRef<List<QualityProfile>>;
 String _$seriesRootFoldersHash() => r'd5ab4d8474d7e562e98a69bf319db2cf914a3845';
@@ -85,4 +88,7 @@ final seriesRootFoldersProvider =
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef SeriesRootFoldersRef = AutoDisposeFutureProviderRef<List<RootFolder>>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
