@@ -11,15 +11,15 @@ import '../../domain/models/settings/notification_settings.dart';
 import 'logger_service.dart';
 import 'notification_service.dart';
 
-final ntfyServiceProvider = Provider<NtfyService>((ref) {
+final ntfyServiceProvider = ChangeNotifierProvider<NtfyService>((ref) {
   final notificationService = ref.read(notificationServiceProvider);
   return NtfyService(notificationService);
 });
 
 /// Service for connecting to an ntfy server to receive real-time notifications via SSE (Server-Sent Events).
-class NtfyService {
+class NtfyService extends ChangeNotifier {
   final NotificationService _notificationService;
-  final Dio _dio = Dio();
+  final Dio _dio;
   CancelToken? _cancelToken;
   StreamSubscription<dynamic>? _subscription;
 
@@ -35,7 +35,14 @@ class NtfyService {
 
   int _notificationIdCounter = 0;
 
-  NtfyService(this._notificationService);
+  NtfyService(this._notificationService, {Dio? dio}) : _dio = dio ?? Dio();
+
+  void _setConnected(bool value) {
+    if (_isConnected != value) {
+      _isConnected = value;
+      notifyListeners();
+    }
+  }
 
   /// Connects to the specified [topic] on the ntfy server.
   ///
@@ -75,14 +82,14 @@ class NtfyService {
           .transform(const LineSplitter())
           .listen(onMessage, onError: _onError, onDone: _onDone);
 
-      _isConnected = true;
+      _setConnected(true);
       logger.info('[NtfyService] Connected successfully to topic: $topic');
     } catch (e, stackTrace) {
       if (e is DioException && CancelToken.isCancel(e)) {
         logger.debug('[NtfyService] Connection cancelled');
       } else {
         logger.error('[NtfyService] Failed to connect', e, stackTrace);
-        _isConnected = false;
+        _setConnected(false);
         _scheduleReconnect();
         rethrow;
       }
@@ -146,13 +153,13 @@ class NtfyService {
     if (error is DioException && CancelToken.isCancel(error)) return;
 
     logger.error('[NtfyService] Stream error', error, stackTrace);
-    _isConnected = false;
+    _setConnected(false);
     _scheduleReconnect();
   }
 
   void _onDone() {
     logger.warning('[NtfyService] Stream closed');
-    _isConnected = false;
+    _setConnected(false);
     _scheduleReconnect();
   }
 
@@ -190,7 +197,7 @@ class NtfyService {
     await _subscription?.cancel();
     _subscription = null;
 
-    _isConnected = false;
+    _setConnected(false);
     _currentTopic = null;
 
     logger.debug('[NtfyService] Disconnected');

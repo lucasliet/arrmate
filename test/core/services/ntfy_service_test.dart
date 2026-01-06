@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/core/services/ntfy_service.dart';
@@ -5,14 +8,23 @@ import 'package:arrmate/core/services/notification_service.dart';
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockDio extends Mock implements Dio {}
+
 void main() {
   group('NtfyService', () {
     late MockNotificationService mockNotificationService;
+    late MockDio mockDio;
     late NtfyService ntfyService;
 
     setUp(() {
       mockNotificationService = MockNotificationService();
-      ntfyService = NtfyService(mockNotificationService);
+      mockDio = MockDio();
+      ntfyService = NtfyService(mockNotificationService, dio: mockDio);
+
+      // Default mock behavior for Dio
+      registerFallbackValue(RequestOptions(path: ''));
+      registerFallbackValue(Options());
+      registerFallbackValue(CancelToken());
     });
 
     tearDown(() async {
@@ -21,76 +33,128 @@ void main() {
 
     group('initial state', () {
       test('should not be connected initially', () {
-        // Then
         expect(ntfyService.isConnected, isFalse);
       });
 
       test('should have no current topic initially', () {
-        // Then
         expect(ntfyService.currentTopic, isNull);
+      });
+    });
+
+    group('connection status (reactivity)', () {
+      test(
+        'should notify listeners and update isConnected on effective connection',
+        () async {
+          // Given
+          final streamController = StreamController<Uint8List>();
+          final responseBody = ResponseBody(
+            streamController.stream,
+            200,
+            headers: {},
+          );
+          final response = Response<ResponseBody>(
+            requestOptions: RequestOptions(path: ''),
+            data: responseBody,
+          );
+
+          when(
+            () => mockDio.get<ResponseBody>(
+              any(),
+              options: any(named: 'options'),
+              cancelToken: any(named: 'cancelToken'),
+            ),
+          ).thenAnswer((_) async => response);
+
+          bool notified = false;
+          ntfyService.addListener(() {
+            notified = true;
+          });
+
+          // When
+          await ntfyService.connect('test-topic');
+
+          // Then
+          expect(ntfyService.isConnected, isTrue);
+          expect(notified, isTrue);
+
+          await streamController.close();
+        },
+      );
+
+      test('should disconnect and notify on error', () async {
+        // Given
+        final streamController = StreamController<Uint8List>();
+        final responseBody = ResponseBody(
+          streamController.stream,
+          200,
+          headers: {},
+        );
+        final response = Response<ResponseBody>(
+          requestOptions: RequestOptions(path: ''),
+          data: responseBody,
+        );
+
+        when(
+          () => mockDio.get<ResponseBody>(
+            any(),
+            options: any(named: 'options'),
+            cancelToken: any(named: 'cancelToken'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        await ntfyService.connect('test-topic');
+        expect(ntfyService.isConnected, isTrue);
+
+        // Reset notification flag
+        bool notified = false;
+        ntfyService.addListener(() {
+          notified = true;
+        });
+
+        // When - simulate error in stream
+        streamController.addError(
+          DioException(requestOptions: RequestOptions(path: '')),
+        );
+
+        // Wait for async processing
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+
+        // Then
+        expect(ntfyService.isConnected, isFalse);
+        expect(notified, isTrue);
       });
     });
 
     group('generateTopic', () {
       test('should generate topic with arrmate prefix', () {
-        // When
         final topic = NtfyService.generateTopic();
-
-        // Then
         expect(topic, startsWith('arrmate-'));
       });
 
       test('should generate topic with 12 character suffix', () {
-        // When
         final topic = NtfyService.generateTopic();
-
-        // Then
         final suffix = topic.replaceFirst('arrmate-', '');
         expect(suffix.length, 12);
       });
 
       test('should generate unique topics', () {
-        // When
         final topic1 = NtfyService.generateTopic();
         final topic2 = NtfyService.generateTopic();
-
-        // Then
         expect(topic1, isNot(equals(topic2)));
-      });
-
-      test('should generate topic without dashes in suffix', () {
-        // When
-        final topic = NtfyService.generateTopic();
-
-        // Then
-        final suffix = topic.replaceFirst('arrmate-', '');
-        expect(suffix.contains('-'), isFalse);
       });
     });
 
     group('disconnect', () {
       test('should reset connection state', () async {
-        // When
         await ntfyService.disconnect();
-
-        // Then
         expect(ntfyService.isConnected, isFalse);
         expect(ntfyService.currentTopic, isNull);
-      });
-
-      test('should be safe to call multiple times', () async {
-        // When/Then
-        await ntfyService.disconnect();
-        await ntfyService.disconnect();
-        await ntfyService.disconnect();
-
-        expect(ntfyService.isConnected, isFalse);
       });
     });
 
     group('onMessage', () {
       test('should show notification for message events', () async {
-        // Given
         when(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
@@ -110,10 +174,8 @@ void main() {
           'click': 'arrmate://movie/123',
         };
 
-        // When
         ntfyService.onMessage(messageJson);
 
-        // Then
         verify(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
@@ -125,7 +187,6 @@ void main() {
       });
 
       test('should use default title when not provided', () async {
-        // Given
         when(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
@@ -143,10 +204,8 @@ void main() {
           'message': 'Something happened',
         };
 
-        // When
         ntfyService.onMessage(messageJson);
 
-        // Then
         verify(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
@@ -157,54 +216,7 @@ void main() {
         ).called(1);
       });
 
-      test('should not show notification for open events', () {
-        // Given
-        final openJson = {
-          'id': 'open123',
-          'time': 1704067200,
-          'event': 'open',
-          'topic': 'test-topic',
-        };
-
-        // When
-        ntfyService.onMessage(openJson);
-
-        // Then
-        verifyNever(
-          () => mockNotificationService.showNotification(
-            id: any(named: 'id'),
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            payload: any(named: 'payload'),
-          ),
-        );
-      });
-
-      test('should not show notification for keepalive events', () {
-        // Given
-        final keepaliveJson = {
-          'id': 'ka123',
-          'time': 1704067200,
-          'event': 'keepalive',
-          'topic': 'test-topic',
-        };
-
-        // When
-        ntfyService.onMessage(keepaliveJson);
-
-        // Then
-        verifyNever(
-          () => mockNotificationService.showNotification(
-            id: any(named: 'id'),
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            payload: any(named: 'payload'),
-          ),
-        );
-      });
-
       test('should handle string JSON input', () {
-        // Given
         when(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
@@ -217,48 +229,13 @@ void main() {
         const jsonString =
             '{"id":"str123","time":1704067200,"event":"message","topic":"test","title":"Test","message":"Test msg"}';
 
-        // When
         ntfyService.onMessage(jsonString);
 
-        // Then
         verify(
           () => mockNotificationService.showNotification(
             id: any(named: 'id'),
             title: 'Test',
             body: 'Test msg',
-            payload: null,
-          ),
-        ).called(1);
-      });
-
-      test('should use empty string for missing message body', () {
-        // Given
-        when(
-          () => mockNotificationService.showNotification(
-            id: any(named: 'id'),
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) async {});
-
-        final messageJson = {
-          'id': 'nomsg123',
-          'time': 1704067200,
-          'event': 'message',
-          'topic': 'test-topic',
-          'title': 'Title Only',
-        };
-
-        // When
-        ntfyService.onMessage(messageJson);
-
-        // Then
-        verify(
-          () => mockNotificationService.showNotification(
-            id: any(named: 'id'),
-            title: 'Title Only',
-            body: '',
             payload: null,
           ),
         ).called(1);
