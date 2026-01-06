@@ -82,15 +82,21 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                 ? SliverAppBar(
                     pinned: true,
                     floating: true,
-                    title: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Search movies...',
-                        border: InputBorder.none,
+                    toolbarHeight: 64,
+                    title: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Search movies...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (value) => ref
+                            .read(movieSearchProvider.notifier)
+                            .update(value),
                       ),
-                      onChanged: (value) =>
-                          ref.read(movieSearchProvider.notifier).update(value),
                     ),
                     actions: [
                       IconButton(
