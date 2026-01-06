@@ -25,8 +25,8 @@ efficient user experience.
   types with optional file moving.
 - **Slow Instance Mode**: Extended timeout support (90s) for remote or slow
   server connections.
-- **Notifications**: Stay updated with local push notifications powered by
-  periodic background polling.
+- **Notifications**: Receive real-time push notifications via
+  [ntfy.sh](https://ntfy.sh) integration.
 - **Multi-Instance Support**: Manage multiple Radarr and Sonarr server instances
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
@@ -44,8 +44,7 @@ efficient user experience.
   APIs.
 - **SharedPreferences**: Employs local persistence for settings, filters, and
   notification state.
-- **Workmanager**: Native background task scheduling for periodic activity
-  polling.
+- **ntfluttery**: Client library for ntfy.sh push notifications.
 - **Flutter Local Notifications**: Handles local push notifications for download
   and system events.
 - **Go Router**: Utilizes a declarative routing system for smooth navigation
@@ -71,6 +70,16 @@ To use Arrmate, follow these steps:
 4. **Remote Management**: Update monitoring status, trigger searches, and manage
    your library settings directly from the app.
 
+## 🔔 Push Notifications
+
+Arrmate supports real-time push notifications via [ntfy.sh](https://ntfy.sh):
+
+1. Open Arrmate > Settings > Notifications
+2. Tap "Setup Push Notifications" to generate your unique topic
+3. Configure ntfy in your Radarr/Sonarr (Settings > Connect > ntfy):
+   - Server URL: `https://ntfy.sh`
+   - Topic: Your generated topic from Arrmate
+4. Done! You'll receive instant notifications for grabs, imports, and failures.
 
 ## 🤝 Contributing
 

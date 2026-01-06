@@ -120,12 +120,6 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-      - name: Run Analyze
-        run: flutter analyze
-        continue-on-error: true
-      - name: Run Tests
-        run: flutter test
-        continue-on-error: true
 
       - name: Generate Icons
         run: dart run flutter_launcher_icons

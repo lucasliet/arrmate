@@ -26,8 +26,7 @@ series).
     deleted) with filtering by event type.
   - **Queue Management**: View active downloads with detailed status, remove
     tasks with blocklist option.
-  - **Notifications**: Local push notifications for download events (via
-    background polling).
+  - **Notifications**: Real-time push notifications via ntfy.sh integration.
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
   - **Manual Import**: Match and import files manually from the queue.
