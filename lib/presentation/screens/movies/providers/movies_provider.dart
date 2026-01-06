@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:arrmate/presentation/providers/settings_provider.dart';
+
 import '../../../../core/services/logger_service.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,9 +30,13 @@ final movieSortProvider = NotifierProvider<MovieSortNotifier, MovieSort>(
 
 class MovieSortNotifier extends Notifier<MovieSort> {
   @override
-  MovieSort build() => const MovieSort();
+  MovieSort build() {
+    return ref.watch(settingsProvider.select((s) => s.movieSort));
+  }
 
-  void update(MovieSort value) => state = value;
+  void update(MovieSort value) {
+    ref.read(settingsProvider.notifier).setMovieSort(value);
+  }
 }
 
 /// Provider that returns the list of movies filtered by search query and sorted by options.

@@ -19,87 +19,98 @@ import '../widgets/app_shell.dart';
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-/// The application router configuration.
-final appRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
-  initialLocation: '/movies',
-  routes: [
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) => AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/movies',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: MoviesScreen()),
-          routes: [
-            GoRoute(
-              path: ':id',
-              builder: (context, state) {
-                final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                return MovieDetailsScreen(movieId: id);
-              },
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/series',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: SeriesScreen()),
-          routes: [
-            GoRoute(
-              path: ':id',
-              builder: (context, state) {
-                final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                return SeriesDetailsScreen(seriesId: id);
-              },
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/calendar',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: CalendarScreen()),
-        ),
-        GoRoute(
-          path: '/activity',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: ActivityScreen()),
-        ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: SettingsScreen()),
-          routes: [
-            GoRoute(
-              path: 'instance/:id',
-              builder: (context, state) {
-                final id = state.pathParameters['id'];
-                return InstanceEditScreen(instanceId: id == 'new' ? null : id);
-              },
-            ),
-            GoRoute(
-              path: 'logs',
-              builder: (context, state) => const LogsScreen(),
-            ),
-            GoRoute(
-              path: 'health',
-              builder: (context, state) => const HealthScreen(),
-            ),
-            GoRoute(
-              path: 'quality-profiles',
-              builder: (context, state) => const QualityProfilesScreen(),
-            ),
-            GoRoute(
-              path: 'notifications',
-              builder: (context, state) => const NotificationSettingsScreen(),
-            ),
-          ],
-        ),
-      ],
-    ),
-  ],
-);
+/// Late-initialized router, configured with the user's home tab preference.
+late final GoRouter appRouter;
+
+/// Initializes the app router with the given [initialLocation].
+///
+/// This must be called once before using [appRouter].
+void initializeRouter(String initialLocation) {
+  appRouter = GoRouter(
+    navigatorKey: rootNavigatorKey,
+    initialLocation: initialLocation,
+    routes: [
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) => AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/movies',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: MoviesScreen()),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final id =
+                      int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return MovieDetailsScreen(movieId: id);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/series',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SeriesScreen()),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final id =
+                      int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return SeriesDetailsScreen(seriesId: id);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/calendar',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: CalendarScreen()),
+          ),
+          GoRoute(
+            path: '/activity',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: ActivityScreen()),
+          ),
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SettingsScreen()),
+            routes: [
+              GoRoute(
+                path: 'instance/:id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id'];
+                  return InstanceEditScreen(
+                    instanceId: id == 'new' ? null : id,
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'logs',
+                builder: (context, state) => const LogsScreen(),
+              ),
+              GoRoute(
+                path: 'health',
+                builder: (context, state) => const HealthScreen(),
+              ),
+              GoRoute(
+                path: 'quality-profiles',
+                builder: (context, state) => const QualityProfilesScreen(),
+              ),
+              GoRoute(
+                path: 'notifications',
+                builder: (context, state) => const NotificationSettingsScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
 
 /// Enum representing the bottom navigation tabs.
 enum AppTab {

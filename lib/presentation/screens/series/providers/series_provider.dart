@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:arrmate/presentation/providers/settings_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,9 +28,13 @@ final seriesSortProvider = NotifierProvider<SeriesSortNotifier, SeriesSort>(
 
 class SeriesSortNotifier extends Notifier<SeriesSort> {
   @override
-  SeriesSort build() => const SeriesSort();
+  SeriesSort build() {
+    return ref.watch(settingsProvider.select((s) => s.seriesSort));
+  }
 
-  void update(SeriesSort value) => state = value;
+  void update(SeriesSort value) {
+    ref.read(settingsProvider.notifier).setSeriesSort(value);
+  }
 }
 
 /// Provider that returns the list of series filtered by search query and sorted by options.

@@ -1,7 +1,8 @@
 import 'package:arrmate/domain/models/movie/movie.dart';
+import 'package:equatable/equatable.dart';
 
 /// Encapsulates sorting and filtering options for movie lists.
-class MovieSort {
+class MovieSort extends Equatable {
   final MovieSortOption option;
   final bool isAscending;
   final MovieFilter filter;
@@ -23,6 +24,31 @@ class MovieSort {
       filter: filter ?? this.filter,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'option': option.name,
+      'isAscending': isAscending,
+      'filter': filter.name,
+    };
+  }
+
+  factory MovieSort.fromJson(Map<String, dynamic> json) {
+    return MovieSort(
+      option: MovieSortOption.values.firstWhere(
+        (e) => e.name == json['option'],
+        orElse: () => MovieSortOption.byAdded,
+      ),
+      isAscending: json['isAscending'] as bool? ?? false,
+      filter: MovieFilter.values.firstWhere(
+        (e) => e.name == json['filter'],
+        orElse: () => MovieFilter.all,
+      ),
+    );
+  }
+
+  @override
+  List<Object?> get props => [option, isAscending, filter];
 }
 
 /// Available options for sorting movies.

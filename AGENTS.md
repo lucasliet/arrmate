@@ -177,9 +177,36 @@ integration and UI patterns.
 
 ## Quality Assurance
 
-To ensure project stability, every code change or addition MUST be followed by
-(use dart-mcp-server instead of direct commands if available):
+> [!IMPORTANT]
+> **ALWAYS use the Dart MCP Server tools instead of direct shell commands.**
+> Direct `flutter` or `dart` CLI commands should NEVER be your first choice. The
+> MCP tools provide better integration, structured output, and error handling.
 
-1. **Format**: Run `dart format .` to maintain consistent style.
-2. **Analyze**: Run `dart analyze` to catch potential errors and lint warnings.
-3. **Test**: Run `flutter test` to ensure no regressions were introduced.
+To ensure project stability, every code change or addition MUST be followed by:
+
+1. **Format**: Use `mcp_dart-mcp-server_dart_format` tool.
+   - ❌ Do NOT run `dart format .` directly.
+2. **Analyze**: Use `mcp_dart-mcp-server_analyze_files` tool.
+   - ❌ Do NOT run `dart analyze` or `flutter analyze` directly.
+3. **Test**: Use `mcp_dart-mcp-server_run_tests` tool.
+   - ❌ Do NOT run `flutter test` or `dart test` directly.
+4. **Pub Commands**: Use `mcp_dart-mcp-server_pub` tool for `get`, `add`,
+   `upgrade`, etc.
+   - ❌ Do NOT run `flutter pub get` or `dart pub add` directly.
+
+### MCP Tool Reference
+
+| Action           | MCP Tool                                   | ❌ Avoid          |
+| ---------------- | ------------------------------------------ | ----------------- |
+| Format code      | `mcp_dart-mcp-server_dart_format`          | `dart format`     |
+| Analyze code     | `mcp_dart-mcp-server_analyze_files`        | `dart analyze`    |
+| Run tests        | `mcp_dart-mcp-server_run_tests`            | `flutter test`    |
+| Get dependencies | `mcp_dart-mcp-server_pub` (command: `get`) | `flutter pub get` |
+| Add packages     | `mcp_dart-mcp-server_pub` (command: `add`) | `flutter pub add` |
+| Search pub.dev   | `mcp_dart-mcp-server_pub_dev_search`       | browser search    |
+| Launch app       | `mcp_dart-mcp-server_launch_app`           | `flutter run`     |
+| Hot reload       | `mcp_dart-mcp-server_hot_reload`           | manual restart    |
+
+> [!CAUTION]
+> Only fall back to direct CLI commands if the MCP server is unavailable or
+> explicitly returns an error indicating a tool limitation.

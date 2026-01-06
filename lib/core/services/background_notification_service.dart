@@ -37,7 +37,7 @@ class BackgroundNotificationService {
   /// Initializes WorkManager with the callback dispatcher.
   static Future<void> initialize() async {
     logger.info('[BackgroundNotificationService] Initializing WorkManager');
-    await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+    await Workmanager().initialize(callbackDispatcher);
   }
 
   /// Starts periodic background polling for the given [topic].
@@ -65,7 +65,7 @@ class BackgroundNotificationService {
       _backgroundPollingTaskName,
       frequency: Duration(minutes: intervalMinutes),
       constraints: Constraints(networkType: NetworkType.connected),
-      existingWorkPolicy: ExistingWorkPolicy.replace,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
     );
     logger.info('[BackgroundNotificationService] Periodic task registered');
   }

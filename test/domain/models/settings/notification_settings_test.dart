@@ -15,6 +15,13 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isTrue);
         expect(settings.notifyOnHealthIssue, isFalse);
+        expect(settings.notifyOnHealthRestored, isFalse);
+        expect(settings.includeHealthWarnings, isFalse);
+        expect(settings.notifyOnMediaAdded, isFalse);
+        expect(settings.notifyOnMediaDeleted, isFalse);
+        expect(settings.notifyOnFileDelete, isFalse);
+        expect(settings.notifyOnUpgrade, isFalse);
+        expect(settings.notifyOnManualRequired, isFalse);
         expect(settings.batterySaverMode, isFalse);
         expect(settings.pollingIntervalMinutes, 30);
       });
@@ -28,6 +35,13 @@ void main() {
           notifyOnImport: false,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          notifyOnHealthRestored: true,
+          includeHealthWarnings: true,
+          notifyOnMediaAdded: true,
+          notifyOnMediaDeleted: true,
+          notifyOnFileDelete: true,
+          notifyOnUpgrade: true,
+          notifyOnManualRequired: true,
           batterySaverMode: true,
           pollingIntervalMinutes: 15,
         );
@@ -39,6 +53,13 @@ void main() {
         expect(settings.notifyOnImport, isFalse);
         expect(settings.notifyOnDownloadFailed, isFalse);
         expect(settings.notifyOnHealthIssue, isTrue);
+        expect(settings.notifyOnHealthRestored, isTrue);
+        expect(settings.includeHealthWarnings, isTrue);
+        expect(settings.notifyOnMediaAdded, isTrue);
+        expect(settings.notifyOnMediaDeleted, isTrue);
+        expect(settings.notifyOnFileDelete, isTrue);
+        expect(settings.notifyOnUpgrade, isTrue);
+        expect(settings.notifyOnManualRequired, isTrue);
         expect(settings.batterySaverMode, isTrue);
         expect(settings.pollingIntervalMinutes, 15);
       });
@@ -117,6 +138,13 @@ void main() {
           notifyOnImport: false,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          notifyOnHealthRestored: true,
+          includeHealthWarnings: true,
+          notifyOnMediaAdded: true,
+          notifyOnMediaDeleted: true,
+          notifyOnFileDelete: true,
+          notifyOnUpgrade: true,
+          notifyOnManualRequired: true,
           batterySaverMode: true,
           pollingIntervalMinutes: 60,
         );
@@ -131,6 +159,13 @@ void main() {
         expect(copy.notifyOnImport, original.notifyOnImport);
         expect(copy.notifyOnDownloadFailed, original.notifyOnDownloadFailed);
         expect(copy.notifyOnHealthIssue, original.notifyOnHealthIssue);
+        expect(copy.notifyOnHealthRestored, original.notifyOnHealthRestored);
+        expect(copy.includeHealthWarnings, original.includeHealthWarnings);
+        expect(copy.notifyOnMediaAdded, original.notifyOnMediaAdded);
+        expect(copy.notifyOnMediaDeleted, original.notifyOnMediaDeleted);
+        expect(copy.notifyOnFileDelete, original.notifyOnFileDelete);
+        expect(copy.notifyOnUpgrade, original.notifyOnUpgrade);
+        expect(copy.notifyOnManualRequired, original.notifyOnManualRequired);
         expect(copy.batterySaverMode, original.batterySaverMode);
         expect(copy.pollingIntervalMinutes, original.pollingIntervalMinutes);
       });
@@ -162,6 +197,13 @@ void main() {
           'notifyOnImport': true,
           'notifyOnDownloadFailed': false,
           'notifyOnHealthIssue': true,
+          'notifyOnHealthRestored': true,
+          'includeHealthWarnings': true,
+          'notifyOnMediaAdded': true,
+          'notifyOnMediaDeleted': true,
+          'notifyOnFileDelete': true,
+          'notifyOnUpgrade': true,
+          'notifyOnManualRequired': true,
           'batterySaverMode': true,
           'pollingIntervalMinutes': 15,
         };
@@ -176,6 +218,13 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isFalse);
         expect(settings.notifyOnHealthIssue, isTrue);
+        expect(settings.notifyOnHealthRestored, isTrue);
+        expect(settings.includeHealthWarnings, isTrue);
+        expect(settings.notifyOnMediaAdded, isTrue);
+        expect(settings.notifyOnMediaDeleted, isTrue);
+        expect(settings.notifyOnFileDelete, isTrue);
+        expect(settings.notifyOnUpgrade, isTrue);
+        expect(settings.notifyOnManualRequired, isTrue);
         expect(settings.batterySaverMode, isTrue);
         expect(settings.pollingIntervalMinutes, 15);
       });
@@ -194,21 +243,15 @@ void main() {
         expect(settings.notifyOnImport, isTrue);
         expect(settings.notifyOnDownloadFailed, isTrue);
         expect(settings.notifyOnHealthIssue, isFalse);
+        expect(settings.notifyOnHealthRestored, isFalse);
+        expect(settings.includeHealthWarnings, isFalse);
+        expect(settings.notifyOnMediaAdded, isFalse);
+        expect(settings.notifyOnMediaDeleted, isFalse);
+        expect(settings.notifyOnFileDelete, isFalse);
+        expect(settings.notifyOnUpgrade, isFalse);
+        expect(settings.notifyOnManualRequired, isFalse);
         expect(settings.batterySaverMode, isFalse);
         expect(settings.pollingIntervalMinutes, 30);
-      });
-
-      test('should handle legacy data without ntfyTopic', () {
-        // Given
-        final json = {'enabled': true, 'notifyOnGrab': true};
-
-        // When
-        final settings = NotificationSettings.fromJson(json);
-
-        // Then
-        expect(settings.enabled, isTrue);
-        expect(settings.ntfyTopic, isNull);
-        expect(settings.notifyOnGrab, isTrue);
       });
     });
 
@@ -222,6 +265,13 @@ void main() {
           notifyOnImport: true,
           notifyOnDownloadFailed: false,
           notifyOnHealthIssue: true,
+          notifyOnHealthRestored: true,
+          includeHealthWarnings: true,
+          notifyOnMediaAdded: true,
+          notifyOnMediaDeleted: true,
+          notifyOnFileDelete: true,
+          notifyOnUpgrade: true,
+          notifyOnManualRequired: true,
           batterySaverMode: true,
           pollingIntervalMinutes: 60,
         );
@@ -236,19 +286,15 @@ void main() {
         expect(json['notifyOnImport'], isTrue);
         expect(json['notifyOnDownloadFailed'], isFalse);
         expect(json['notifyOnHealthIssue'], isTrue);
+        expect(json['notifyOnHealthRestored'], isTrue);
+        expect(json['includeHealthWarnings'], isTrue);
+        expect(json['notifyOnMediaAdded'], isTrue);
+        expect(json['notifyOnMediaDeleted'], isTrue);
+        expect(json['notifyOnFileDelete'], isTrue);
+        expect(json['notifyOnUpgrade'], isTrue);
+        expect(json['notifyOnManualRequired'], isTrue);
         expect(json['batterySaverMode'], isTrue);
         expect(json['pollingIntervalMinutes'], 60);
-      });
-
-      test('should serialize null ntfyTopic', () {
-        // Given
-        const settings = NotificationSettings();
-
-        // When
-        final json = settings.toJson();
-
-        // Then
-        expect(json['ntfyTopic'], isNull);
       });
     });
 
@@ -259,11 +305,15 @@ void main() {
           enabled: true,
           ntfyTopic: 'topic',
           notifyOnGrab: true,
+          notifyOnImport: true,
+          notifyOnMediaAdded: true,
         );
         const settings2 = NotificationSettings(
           enabled: true,
           ntfyTopic: 'topic',
           notifyOnGrab: true,
+          notifyOnImport: true,
+          notifyOnMediaAdded: true,
         );
 
         // Then

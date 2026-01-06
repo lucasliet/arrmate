@@ -37,6 +37,15 @@ class NotificationResource {
   /// Whether to notify on system health issues.
   final bool onHealthIssue;
 
+  final bool onMovieAdded;
+  final bool onSeriesAdded;
+  final bool onMovieDelete;
+  final bool onSeriesDelete;
+  final bool onMovieFileDelete;
+  final bool onEpisodeFileDelete;
+  final bool onManualInteractionRequired;
+  final bool includeHealthWarnings;
+
   /// Preservation of fields not explicitly mapped in this model.
   final Map<String, dynamic> extra;
 
@@ -52,6 +61,14 @@ class NotificationResource {
     this.onDownloadFailure = false,
     this.onApplicationUpdate = false,
     this.onHealthIssue = false,
+    this.onMovieAdded = false,
+    this.onSeriesAdded = false,
+    this.onMovieDelete = false,
+    this.onSeriesDelete = false,
+    this.onMovieFileDelete = false,
+    this.onEpisodeFileDelete = false,
+    this.onManualInteractionRequired = false,
+    this.includeHealthWarnings = false,
     this.extra = const {},
   });
 
@@ -71,6 +88,14 @@ class NotificationResource {
       'onDownloadFailure',
       'onApplicationUpdate',
       'onHealthIssue',
+      'onMovieAdded',
+      'onSeriesAdded',
+      'onMovieDelete',
+      'onSeriesDelete',
+      'onMovieFileDelete',
+      'onEpisodeFileDelete',
+      'onManualInteractionRequired',
+      'includeHealthWarnings',
     };
     final extra = Map<String, dynamic>.from(json)
       ..removeWhere((key, value) => knownKeys.contains(key));
@@ -93,6 +118,15 @@ class NotificationResource {
       onDownloadFailure: json['onDownloadFailure'] as bool? ?? false,
       onApplicationUpdate: json['onApplicationUpdate'] as bool? ?? false,
       onHealthIssue: json['onHealthIssue'] as bool? ?? false,
+      onMovieAdded: json['onMovieAdded'] as bool? ?? false,
+      onSeriesAdded: json['onSeriesAdded'] as bool? ?? false,
+      onMovieDelete: json['onMovieDelete'] as bool? ?? false,
+      onSeriesDelete: json['onSeriesDelete'] as bool? ?? false,
+      onMovieFileDelete: json['onMovieFileDelete'] as bool? ?? false,
+      onEpisodeFileDelete: json['onEpisodeFileDelete'] as bool? ?? false,
+      onManualInteractionRequired:
+          json['onManualInteractionRequired'] as bool? ?? false,
+      includeHealthWarnings: json['includeHealthWarnings'] as bool? ?? false,
       extra: extra,
     );
   }
@@ -112,6 +146,14 @@ class NotificationResource {
       'onDownloadFailure': onDownloadFailure,
       'onApplicationUpdate': onApplicationUpdate,
       'onHealthIssue': onHealthIssue,
+      'onMovieAdded': onMovieAdded,
+      'onSeriesAdded': onSeriesAdded,
+      'onMovieDelete': onMovieDelete,
+      'onSeriesDelete': onSeriesDelete,
+      'onMovieFileDelete': onMovieFileDelete,
+      'onEpisodeFileDelete': onEpisodeFileDelete,
+      'onManualInteractionRequired': onManualInteractionRequired,
+      'includeHealthWarnings': includeHealthWarnings,
     };
   }
 
@@ -128,6 +170,14 @@ class NotificationResource {
     bool? onDownloadFailure,
     bool? onApplicationUpdate,
     bool? onHealthIssue,
+    bool? onMovieAdded,
+    bool? onSeriesAdded,
+    bool? onMovieDelete,
+    bool? onSeriesDelete,
+    bool? onMovieFileDelete,
+    bool? onEpisodeFileDelete,
+    bool? onManualInteractionRequired,
+    bool? includeHealthWarnings,
     Map<String, dynamic>? extra,
   }) {
     return NotificationResource(
@@ -142,6 +192,16 @@ class NotificationResource {
       onDownloadFailure: onDownloadFailure ?? this.onDownloadFailure,
       onApplicationUpdate: onApplicationUpdate ?? this.onApplicationUpdate,
       onHealthIssue: onHealthIssue ?? this.onHealthIssue,
+      onMovieAdded: onMovieAdded ?? this.onMovieAdded,
+      onSeriesAdded: onSeriesAdded ?? this.onSeriesAdded,
+      onMovieDelete: onMovieDelete ?? this.onMovieDelete,
+      onSeriesDelete: onSeriesDelete ?? this.onSeriesDelete,
+      onMovieFileDelete: onMovieFileDelete ?? this.onMovieFileDelete,
+      onEpisodeFileDelete: onEpisodeFileDelete ?? this.onEpisodeFileDelete,
+      onManualInteractionRequired:
+          onManualInteractionRequired ?? this.onManualInteractionRequired,
+      includeHealthWarnings:
+          includeHealthWarnings ?? this.includeHealthWarnings,
       extra: extra ?? this.extra,
     );
   }

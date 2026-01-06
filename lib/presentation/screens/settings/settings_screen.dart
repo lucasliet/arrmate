@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
+import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
 
 /// Main settings screen for configuring instances, appearance, notifications, and about info.
@@ -115,6 +116,14 @@ class SettingsScreen extends ConsumerWidget {
             _showColorSchemeDialog(context, ref, settings.colorScheme);
           },
         ),
+        ListTile(
+          title: const Text('Home Tab'),
+          subtitle: Text(settings.homeTab.label),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            _showHomeTabDialog(context, ref, settings.homeTab);
+          },
+        ),
       ],
     );
   }
@@ -194,6 +203,39 @@ class SettingsScreen extends ConsumerWidget {
                           : null,
                     ),
                   ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showHomeTabDialog(BuildContext context, WidgetRef ref, AppTab current) {
+    final selectableTabs = AppTab.values
+        .where((t) => t != AppTab.settings)
+        .toList();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Home Tab'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: selectableTabs.map((tab) {
+                final isSelected = tab == current;
+                return ListTile(
+                  title: Text(tab.label),
+                  leading: Icon(tab.icon),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    ref.read(settingsProvider.notifier).setHomeTab(tab);
+                    context.pop();
+                  },
                 );
               }).toList(),
             ),

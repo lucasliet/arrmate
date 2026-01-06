@@ -20,6 +20,27 @@ class NotificationSettings extends Equatable {
   /// Notify on system health issues.
   final bool notifyOnHealthIssue;
 
+  /// Notify when a health issue is resolved.
+  final bool notifyOnHealthRestored;
+
+  /// Include warnings in health issue notifications.
+  final bool includeHealthWarnings;
+
+  /// Notify when a movie/number is added.
+  final bool notifyOnMediaAdded;
+
+  /// Notify when a movie/series is deleted.
+  final bool notifyOnMediaDeleted;
+
+  /// Notify when a file is deleted.
+  final bool notifyOnFileDelete;
+
+  /// Notify when the application is updated.
+  final bool notifyOnUpgrade;
+
+  /// Notify when manual interaction is required.
+  final bool notifyOnManualRequired;
+
   /// When enabled, disables background polling to save battery.
   /// Notifications will only be received while the app is open.
   final bool batterySaverMode;
@@ -40,6 +61,13 @@ class NotificationSettings extends Equatable {
     this.notifyOnImport = true,
     this.notifyOnDownloadFailed = true,
     this.notifyOnHealthIssue = false,
+    this.notifyOnHealthRestored = false,
+    this.includeHealthWarnings = false,
+    this.notifyOnMediaAdded = false,
+    this.notifyOnMediaDeleted = false,
+    this.notifyOnFileDelete = false,
+    this.notifyOnUpgrade = false,
+    this.notifyOnManualRequired = false,
     this.batterySaverMode = false,
     this.pollingIntervalMinutes = 30,
   });
@@ -63,6 +91,13 @@ class NotificationSettings extends Equatable {
     bool? notifyOnImport,
     bool? notifyOnDownloadFailed,
     bool? notifyOnHealthIssue,
+    bool? notifyOnHealthRestored,
+    bool? includeHealthWarnings,
+    bool? notifyOnMediaAdded,
+    bool? notifyOnMediaDeleted,
+    bool? notifyOnFileDelete,
+    bool? notifyOnUpgrade,
+    bool? notifyOnManualRequired,
     bool? batterySaverMode,
     int? pollingIntervalMinutes,
   }) {
@@ -74,6 +109,16 @@ class NotificationSettings extends Equatable {
       notifyOnDownloadFailed:
           notifyOnDownloadFailed ?? this.notifyOnDownloadFailed,
       notifyOnHealthIssue: notifyOnHealthIssue ?? this.notifyOnHealthIssue,
+      notifyOnHealthRestored:
+          notifyOnHealthRestored ?? this.notifyOnHealthRestored,
+      includeHealthWarnings:
+          includeHealthWarnings ?? this.includeHealthWarnings,
+      notifyOnMediaAdded: notifyOnMediaAdded ?? this.notifyOnMediaAdded,
+      notifyOnMediaDeleted: notifyOnMediaDeleted ?? this.notifyOnMediaDeleted,
+      notifyOnFileDelete: notifyOnFileDelete ?? this.notifyOnFileDelete,
+      notifyOnUpgrade: notifyOnUpgrade ?? this.notifyOnUpgrade,
+      notifyOnManualRequired:
+          notifyOnManualRequired ?? this.notifyOnManualRequired,
       batterySaverMode: batterySaverMode ?? this.batterySaverMode,
       pollingIntervalMinutes:
           pollingIntervalMinutes ?? this.pollingIntervalMinutes,
@@ -88,6 +133,13 @@ class NotificationSettings extends Equatable {
       notifyOnImport: json['notifyOnImport'] as bool? ?? true,
       notifyOnDownloadFailed: json['notifyOnDownloadFailed'] as bool? ?? true,
       notifyOnHealthIssue: json['notifyOnHealthIssue'] as bool? ?? false,
+      notifyOnHealthRestored: json['notifyOnHealthRestored'] as bool? ?? false,
+      includeHealthWarnings: json['includeHealthWarnings'] as bool? ?? false,
+      notifyOnMediaAdded: json['notifyOnMediaAdded'] as bool? ?? false,
+      notifyOnMediaDeleted: json['notifyOnMediaDeleted'] as bool? ?? false,
+      notifyOnFileDelete: json['notifyOnFileDelete'] as bool? ?? false,
+      notifyOnUpgrade: json['notifyOnUpgrade'] as bool? ?? false,
+      notifyOnManualRequired: json['notifyOnManualRequired'] as bool? ?? false,
       batterySaverMode: json['batterySaverMode'] as bool? ?? false,
       pollingIntervalMinutes: json['pollingIntervalMinutes'] as int? ?? 30,
     );
@@ -101,6 +153,13 @@ class NotificationSettings extends Equatable {
       'notifyOnImport': notifyOnImport,
       'notifyOnDownloadFailed': notifyOnDownloadFailed,
       'notifyOnHealthIssue': notifyOnHealthIssue,
+      'notifyOnHealthRestored': notifyOnHealthRestored,
+      'includeHealthWarnings': includeHealthWarnings,
+      'notifyOnMediaAdded': notifyOnMediaAdded,
+      'notifyOnMediaDeleted': notifyOnMediaDeleted,
+      'notifyOnFileDelete': notifyOnFileDelete,
+      'notifyOnUpgrade': notifyOnUpgrade,
+      'notifyOnManualRequired': notifyOnManualRequired,
       'batterySaverMode': batterySaverMode,
       'pollingIntervalMinutes': pollingIntervalMinutes,
     };
@@ -114,6 +173,13 @@ class NotificationSettings extends Equatable {
     notifyOnImport,
     notifyOnDownloadFailed,
     notifyOnHealthIssue,
+    notifyOnHealthRestored,
+    includeHealthWarnings,
+    notifyOnMediaAdded,
+    notifyOnMediaDeleted,
+    notifyOnFileDelete,
+    notifyOnUpgrade,
+    notifyOnManualRequired,
     batterySaverMode,
     pollingIntervalMinutes,
   ];

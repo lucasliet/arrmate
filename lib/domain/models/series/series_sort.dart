@@ -1,7 +1,8 @@
 import 'package:arrmate/domain/models/series/series.dart';
+import 'package:equatable/equatable.dart';
 
 /// Encapsulates sorting and filtering options for series lists.
-class SeriesSort {
+class SeriesSort extends Equatable {
   final SeriesSortOption option;
   final bool isAscending;
   final SeriesFilter filter;
@@ -23,6 +24,31 @@ class SeriesSort {
       filter: filter ?? this.filter,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'option': option.name,
+      'isAscending': isAscending,
+      'filter': filter.name,
+    };
+  }
+
+  factory SeriesSort.fromJson(Map<String, dynamic> json) {
+    return SeriesSort(
+      option: SeriesSortOption.values.firstWhere(
+        (e) => e.name == json['option'],
+        orElse: () => SeriesSortOption.byAdded,
+      ),
+      isAscending: json['isAscending'] as bool? ?? false,
+      filter: SeriesFilter.values.firstWhere(
+        (e) => e.name == json['filter'],
+        orElse: () => SeriesFilter.all,
+      ),
+    );
+  }
+
+  @override
+  List<Object?> get props => [option, isAscending, filter];
 }
 
 /// Available options for sorting series.

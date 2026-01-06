@@ -51,18 +51,17 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
               value: notifications.enabled,
               onChanged: (value) async {
-                final updatedSettings = notifications.copyWith(enabled: value);
+                final updated = notifications.copyWith(enabled: value);
                 await ref
                     .read(settingsProvider.notifier)
-                    .updateNotifications(updatedSettings);
+                    .updateNotifications(updated);
 
                 if (value && context.mounted) {
-                  // Trigger auto-configure when enabled
                   _handleAutoConfigure(
                     context,
                     ref,
                     silent: true,
-                    settings: updatedSettings,
+                    settings: updated,
                   );
                 }
               },
@@ -86,98 +85,117 @@ class NotificationSettingsScreen extends ConsumerWidget {
             _buildSetupInstructions(context, notifications, ref),
             if (notifications.enabled) ...[
               const Divider(),
-              CheckboxListTile(
-                title: const Text('Notify on Grab'),
-                subtitle: const Text(
-                  'When a release is sent to download client',
+              _buildSectionHeader(context, 'Downloads'),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Notify on Grab',
+                'When a release is sent to download client',
+                notifications.notifyOnGrab,
+                (v) => notifications.copyWith(notifyOnGrab: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Notify on Import',
+                'When a file is successfully imported',
+                notifications.notifyOnImport,
+                (v) => notifications.copyWith(notifyOnImport: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Notify on Failure',
+                'When a download fails to import',
+                notifications.notifyOnDownloadFailed,
+                (v) => notifications.copyWith(notifyOnDownloadFailed: v),
+              ),
+
+              const Divider(),
+              _buildSectionHeader(context, 'Media Updates'),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Movie/Series Added',
+                'When a movie or series is added',
+                notifications.notifyOnMediaAdded,
+                (v) => notifications.copyWith(notifyOnMediaAdded: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Movie/Series Deleted',
+                'When a movie or series is deleted',
+                notifications.notifyOnMediaDeleted,
+                (v) => notifications.copyWith(notifyOnMediaDeleted: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'File Deleted',
+                'When a media file is deleted',
+                notifications.notifyOnFileDelete,
+                (v) => notifications.copyWith(notifyOnFileDelete: v),
+              ),
+
+              const Divider(),
+              _buildSectionHeader(context, 'System'),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Application Update',
+                'When Arrmate is updated',
+                notifications.notifyOnUpgrade,
+                (v) => notifications.copyWith(notifyOnUpgrade: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Manual Interaction',
+                'When manual intervention is required',
+                notifications.notifyOnManualRequired,
+                (v) => notifications.copyWith(notifyOnManualRequired: v),
+              ),
+              _buildNotificationToggle(
+                context,
+                ref,
+                notifications,
+                'Health Issues',
+                'When system health issues are detected',
+                notifications.notifyOnHealthIssue,
+                (v) => notifications.copyWith(notifyOnHealthIssue: v),
+              ),
+              if (notifications.notifyOnHealthIssue) ...[
+                _buildNotificationToggle(
+                  context,
+                  ref,
+                  notifications,
+                  'Include Warnings',
+                  'Also notify on health warnings',
+                  notifications.includeHealthWarnings,
+                  (v) => notifications.copyWith(includeHealthWarnings: v),
+                  indent: true,
                 ),
-                value: notifications.notifyOnGrab,
-                onChanged: (value) async {
-                  if (value != null) {
-                    final updated = notifications.copyWith(notifyOnGrab: value);
-                    await ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(updated);
-                    if (context.mounted) {
-                      _handleAutoConfigure(
-                        context,
-                        ref,
-                        silent: true,
-                        settings: updated,
-                      );
-                    }
-                  }
-                },
-              ),
-              CheckboxListTile(
-                title: const Text('Notify on Import'),
-                subtitle: const Text('When a file is successfully imported'),
-                value: notifications.notifyOnImport,
-                onChanged: (value) async {
-                  if (value != null) {
-                    final updated = notifications.copyWith(
-                      notifyOnImport: value,
-                    );
-                    await ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(updated);
-                    if (context.mounted) {
-                      _handleAutoConfigure(
-                        context,
-                        ref,
-                        silent: true,
-                        settings: updated,
-                      );
-                    }
-                  }
-                },
-              ),
-              CheckboxListTile(
-                title: const Text('Notify on Failure'),
-                subtitle: const Text('When a download fails to import'),
-                value: notifications.notifyOnDownloadFailed,
-                onChanged: (value) async {
-                  if (value != null) {
-                    final updated = notifications.copyWith(
-                      notifyOnDownloadFailed: value,
-                    );
-                    await ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(updated);
-                    if (context.mounted) {
-                      _handleAutoConfigure(
-                        context,
-                        ref,
-                        silent: true,
-                        settings: updated,
-                      );
-                    }
-                  }
-                },
-              ),
-              CheckboxListTile(
-                title: const Text('Notify on Health Issue'),
-                subtitle: const Text('When system health issues are detected'),
-                value: notifications.notifyOnHealthIssue,
-                onChanged: (value) async {
-                  if (value != null) {
-                    final updated = notifications.copyWith(
-                      notifyOnHealthIssue: value,
-                    );
-                    await ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(updated);
-                    if (context.mounted) {
-                      _handleAutoConfigure(
-                        context,
-                        ref,
-                        silent: true,
-                        settings: updated,
-                      );
-                    }
-                  }
-                },
-              ),
+                _buildNotificationToggle(
+                  context,
+                  ref,
+                  notifications,
+                  'Health Restored',
+                  'When a health issue is resolved',
+                  notifications.notifyOnHealthRestored,
+                  (v) => notifications.copyWith(notifyOnHealthRestored: v),
+                  indent: true,
+                ),
+              ],
+
               const Divider(),
               SwitchListTile(
                 title: const Text('Battery Saver Mode'),
@@ -227,6 +245,51 @@ class NotificationSettingsScreen extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationToggle(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationSettings currentSettings,
+    String title,
+    String subtitle,
+    bool value,
+    NotificationSettings Function(bool value) onUpdate, {
+    bool indent = false,
+  }) {
+    return CheckboxListTile(
+      contentPadding: indent
+          ? const EdgeInsets.only(left: 32, right: 16)
+          : const EdgeInsets.symmetric(horizontal: 16),
+      title: Text(title, style: TextStyle(fontSize: indent ? 14 : 16)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: indent ? 12 : 14)),
+      value: value,
+      onChanged: (newValue) async {
+        if (newValue != null) {
+          final updated = onUpdate(newValue);
+          await ref
+              .read(settingsProvider.notifier)
+              .updateNotifications(updated);
+          if (context.mounted) {
+            _handleAutoConfigure(context, ref, silent: true, settings: updated);
+          }
+        }
+      },
     );
   }
 
