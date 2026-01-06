@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/services/ntfy_service.dart';
+import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
@@ -205,6 +208,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifications = settings.notifications;
+    final ntfyService = ref.watch(ntfyServiceProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,117 +223,168 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ),
-        SwitchListTile(
-          title: const Text('Enable Notifications'),
-          subtitle: const Text('Periodically check for activity updates'),
-          value: notifications.enabled,
-          onChanged: (value) {
-            ref
-                .read(settingsProvider.notifier)
-                .updateNotifications(notifications.copyWith(enabled: value));
-          },
-        ),
-        if (notifications.enabled) ...[
-          CheckboxListTile(
-            title: const Text('Notify on Grab'),
-            subtitle: const Text(
-              'When a new release is sent to download client',
+        if (notifications.ntfyTopic == null) ...[
+          ListTile(
+            leading: const Icon(Icons.notifications_none),
+            title: const Text('Setup Push Notifications'),
+            subtitle: const Text('Tap to generate your unique topic'),
+            trailing: const Icon(Icons.add_circle_outline),
+            onTap: () =>
+                ref.read(settingsProvider.notifier).generateNtfyTopic(),
+          ),
+        ] else ...[
+          SwitchListTile(
+            title: const Text('Enable Notifications'),
+            subtitle: Text(
+              ntfyService.isConnected ? 'Connected to ntfy.sh' : 'Disconnected',
             ),
-            value: notifications.notifyOnGrab,
+            secondary: Icon(
+              ntfyService.isConnected ? Icons.cloud_done : Icons.cloud_off,
+              color: ntfyService.isConnected ? Colors.green : Colors.grey,
+            ),
+            value: notifications.enabled,
             onChanged: (value) {
-              if (value != null) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .updateNotifications(
-                      notifications.copyWith(notifyOnGrab: value),
-                    );
-              }
-            },
-          ),
-          CheckboxListTile(
-            title: const Text('Notify on Import'),
-            subtitle: const Text('When a file is successfully imported'),
-            value: notifications.notifyOnImport,
-            onChanged: (value) {
-              if (value != null) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .updateNotifications(
-                      notifications.copyWith(notifyOnImport: value),
-                    );
-              }
-            },
-          ),
-          CheckboxListTile(
-            title: const Text('Notify on Failure'),
-            subtitle: const Text('When a download fails to import'),
-            value: notifications.notifyOnDownloadFailed,
-            onChanged: (value) {
-              if (value != null) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .updateNotifications(
-                      notifications.copyWith(notifyOnDownloadFailed: value),
-                    );
-              }
+              ref
+                  .read(settingsProvider.notifier)
+                  .updateNotifications(notifications.copyWith(enabled: value));
             },
           ),
           ListTile(
-            title: const Text('Polling Interval'),
-            subtitle: Text('${notifications.pollingIntervalMinutes} minutes'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              _showPollingIntervalDialog(
-                context,
-                ref,
-                notifications.pollingIntervalMinutes,
-              );
-            },
+            title: const Text('Your Topic'),
+            subtitle: Text(notifications.ntfyTopic!),
+            trailing: IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Copy topic',
+              onPressed: () {
+                Clipboard.setData(
+                  ClipboardData(text: notifications.ntfyTopic!),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Topic copied to clipboard')),
+                );
+              },
+            ),
           ),
+          _buildSetupInstructions(context, notifications),
+          if (notifications.enabled) ...[
+            const Divider(),
+            CheckboxListTile(
+              title: const Text('Notify on Grab'),
+              subtitle: const Text('When a release is sent to download client'),
+              value: notifications.notifyOnGrab,
+              onChanged: (value) {
+                if (value != null) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateNotifications(
+                        notifications.copyWith(notifyOnGrab: value),
+                      );
+                }
+              },
+            ),
+            CheckboxListTile(
+              title: const Text('Notify on Import'),
+              subtitle: const Text('When a file is successfully imported'),
+              value: notifications.notifyOnImport,
+              onChanged: (value) {
+                if (value != null) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateNotifications(
+                        notifications.copyWith(notifyOnImport: value),
+                      );
+                }
+              },
+            ),
+            CheckboxListTile(
+              title: const Text('Notify on Failure'),
+              subtitle: const Text('When a download fails to import'),
+              value: notifications.notifyOnDownloadFailed,
+              onChanged: (value) {
+                if (value != null) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateNotifications(
+                        notifications.copyWith(notifyOnDownloadFailed: value),
+                      );
+                }
+              },
+            ),
+            CheckboxListTile(
+              title: const Text('Notify on Health Issue'),
+              subtitle: const Text('When system health issues are detected'),
+              value: notifications.notifyOnHealthIssue,
+              onChanged: (value) {
+                if (value != null) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateNotifications(
+                        notifications.copyWith(notifyOnHealthIssue: value),
+                      );
+                }
+              },
+            ),
+          ],
         ],
       ],
     );
   }
 
-  void _showPollingIntervalDialog(
+  Widget _buildSetupInstructions(
     BuildContext context,
-    WidgetRef ref,
-    int current,
+    NotificationSettings settings,
   ) {
-    final intervals = [15, 30, 60, 120, 240, 480, 1440];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Polling Interval'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: intervals.map((min) {
-                final isSelected = min == current;
-                final label = min < 60 ? '$min minutes' : '${min ~/ 60} hours';
-                return ListTile(
-                  title: Text(label),
-                  trailing: isSelected
-                      ? const Icon(Icons.check, color: Colors.blue)
-                      : null,
-                  onTap: () {
-                    final settings = ref.read(settingsProvider);
-                    ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(
-                          settings.notifications.copyWith(
-                            pollingIntervalMinutes: min,
-                          ),
-                        );
-                    context.pop();
-                  },
-                );
-              }).toList(),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Setup in Radarr/Sonarr',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            const Text('1. Go to Settings > Connect'),
+            const Text('2. Add new connection > ntfy'),
+            const Text('3. Configure:'),
+            const SizedBox(height: 8),
+            _buildConfigRow('Server URL', 'https://ntfy.sh'),
+            _buildConfigRow('Topic', settings.ntfyTopic ?? ''),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('ntfy documentation'),
+              onPressed: () =>
+                  launchUrl(Uri.parse('https://docs.ntfy.sh/integrations/')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfigRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 4),
+      child: Row(
+        children: [
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontFamily: 'monospace')),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

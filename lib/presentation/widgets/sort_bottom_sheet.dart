@@ -61,27 +61,31 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   _buildSectionHeader(context, 'Sort By'),
-                  ...sortOptions.map(
-                    (option) => RadioListTile<T>(
-                      title: Text(sortLabelBuilder(option)),
-                      value: option,
-                      groupValue: currentSort,
-                      onChanged: (value) {
-                        if (value != null) {
-                          onSortChanged(value);
-                          Navigator.pop(context);
-                        }
-                      },
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                      ),
+                  RadioGroup<T>(
+                    groupValue: currentSort,
+                    onChanged: (value) {
+                      if (value != null) {
+                        onSortChanged(value);
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Column(
+                      children: sortOptions
+                          .map(
+                            (option) => RadioListTile<T>(
+                              title: Text(sortLabelBuilder(option)),
+                              value: option,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   const Divider(),
                   _buildSectionHeader(context, 'Order'),
-                  RadioListTile<bool>(
-                    title: const Text('Ascending'),
-                    value: true,
+                  RadioGroup<bool>(
                     groupValue: isAscending,
                     onChanged: (value) {
                       if (value != null) {
@@ -89,19 +93,24 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                         Navigator.pop(context);
                       }
                     },
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  ),
-                  RadioListTile<bool>(
-                    title: const Text('Descending'),
-                    value: false,
-                    groupValue: isAscending,
-                    onChanged: (value) {
-                      if (value != null) {
-                        onAscendingChanged(value);
-                        Navigator.pop(context);
-                      }
-                    },
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        RadioListTile<bool>(
+                          title: const Text('Ascending'),
+                          value: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                          ),
+                        ),
+                        RadioListTile<bool>(
+                          title: const Text('Descending'),
+                          value: false,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const Divider(),
                   _buildSectionHeader(context, 'Filter'),

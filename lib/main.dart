@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/services/notification_service.dart';
-import 'core/services/background_sync_service.dart';
 import 'core/services/logger_service.dart';
 import 'presentation/providers/app_providers.dart';
 
@@ -13,15 +12,12 @@ void main() async {
   final container = ProviderContainer();
 
   try {
-    // Initialize notification service
     await container.read(notificationServiceProvider).init();
-
-    // Initialize background sync service
-    await container.read(backgroundSyncServiceProvider).init();
+    logger.info('Notification service initialized');
   } catch (e, stackTrace) {
     logger.error('CRITICAL: Failed to initialize services', e, stackTrace);
     container.read(initializationErrorProvider.notifier).state =
-        'Failed to initialize background services. Some features may not work correctly.';
+        'Failed to initialize notification services. Some features may not work correctly.';
   }
 
   runApp(

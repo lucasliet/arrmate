@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 import '../../domain/models/settings/notification_settings.dart';
-import '../../core/services/background_sync_service.dart';
+import '../../core/services/ntfy_service.dart';
 import '../../core/services/logger_service.dart';
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
@@ -73,6 +73,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final viewModeName = prefs.getString(viewModeKey);
     final notificationsJson = prefs.getString(_notificationsKey);
 
+    final notifications = _parseNotificationSettings(notificationsJson);
+
     state = state.copyWith(
       colorScheme: colorSchemeName != null
           ? AppColorScheme.values.firstWhere(
@@ -92,13 +94,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
               orElse: () => ViewMode.grid,
             )
           : ViewMode.grid,
-      notifications: _parseNotificationSettings(notificationsJson),
+      notifications: notifications,
     );
 
-    if (state.notifications.enabled) {
-      ref
-          .read(backgroundSyncServiceProvider)
-          .registerTask(state.notifications.pollingIntervalMinutes);
+    if (notifications.enabled && notifications.ntfyTopic != null) {
+      logger.info('Connecting to ntfy on startup');
+      ref.read(ntfyServiceProvider).connect(notifications.ntfyTopic!);
     }
   }
 
@@ -139,11 +140,23 @@ class SettingsNotifier extends Notifier<SettingsState> {
       jsonEncode(notifications.toJson()),
     );
 
-    final syncService = ref.read(backgroundSyncServiceProvider);
-    if (notifications.enabled) {
-      await syncService.registerTask(notifications.pollingIntervalMinutes);
+    final ntfyService = ref.read(ntfyServiceProvider);
+
+    if (notifications.enabled && notifications.ntfyTopic != null) {
+      logger.info('Enabling ntfy notifications');
+      await ntfyService.connect(notifications.ntfyTopic!);
     } else {
-      await syncService.cancelAll();
+      logger.info('Disabling ntfy notifications');
+      await ntfyService.disconnect();
     }
+  }
+
+  Future<void> generateNtfyTopic() async {
+    final topic = NtfyService.generateTopic();
+    final updated = state.notifications.copyWith(
+      ntfyTopic: topic,
+      enabled: true,
+    );
+    await updateNotifications(updated);
   }
 }

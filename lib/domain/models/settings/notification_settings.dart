@@ -2,76 +2,80 @@ import 'package:equatable/equatable.dart';
 
 class NotificationSettings extends Equatable {
   final bool enabled;
+  final String? ntfyTopic;
   final bool notifyOnGrab;
   final bool notifyOnImport;
   final bool notifyOnDownloadFailed;
-  final int pollingIntervalMinutes;
-  final Map<String, int> lastNotifiedIdByInstance;
+  final bool notifyOnHealthIssue;
+
+  static const String ntfyServer = 'ntfy.sh';
 
   const NotificationSettings({
     this.enabled = false,
+    this.ntfyTopic,
     this.notifyOnGrab = true,
     this.notifyOnImport = true,
     this.notifyOnDownloadFailed = true,
-    this.pollingIntervalMinutes = 15,
-    this.lastNotifiedIdByInstance = const {},
+    this.notifyOnHealthIssue = false,
   });
+
+  String? get ntfyTopicUrl =>
+      ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic' : null;
+
+  String? get ntfyWebSocketUrl =>
+      ntfyTopic != null ? 'wss://$ntfyServer/$ntfyTopic/ws' : null;
+
+  String? get ntfyJsonStreamUrl =>
+      ntfyTopic != null ? 'https://$ntfyServer/$ntfyTopic/json' : null;
 
   NotificationSettings copyWith({
     bool? enabled,
+    String? ntfyTopic,
     bool? notifyOnGrab,
     bool? notifyOnImport,
     bool? notifyOnDownloadFailed,
-    int? pollingIntervalMinutes,
-    Map<String, int>? lastNotifiedIdByInstance,
+    bool? notifyOnHealthIssue,
   }) {
     return NotificationSettings(
       enabled: enabled ?? this.enabled,
+      ntfyTopic: ntfyTopic ?? this.ntfyTopic,
       notifyOnGrab: notifyOnGrab ?? this.notifyOnGrab,
       notifyOnImport: notifyOnImport ?? this.notifyOnImport,
       notifyOnDownloadFailed:
           notifyOnDownloadFailed ?? this.notifyOnDownloadFailed,
-      pollingIntervalMinutes:
-          pollingIntervalMinutes ?? this.pollingIntervalMinutes,
-      lastNotifiedIdByInstance: lastNotifiedIdByInstance != null
-          ? Map<String, int>.from(lastNotifiedIdByInstance)
-          : Map<String, int>.from(this.lastNotifiedIdByInstance),
+      notifyOnHealthIssue: notifyOnHealthIssue ?? this.notifyOnHealthIssue,
     );
   }
 
   factory NotificationSettings.fromJson(Map<String, dynamic> json) {
     return NotificationSettings(
       enabled: json['enabled'] as bool? ?? false,
+      ntfyTopic: json['ntfyTopic'] as String?,
       notifyOnGrab: json['notifyOnGrab'] as bool? ?? true,
       notifyOnImport: json['notifyOnImport'] as bool? ?? true,
       notifyOnDownloadFailed: json['notifyOnDownloadFailed'] as bool? ?? true,
-      pollingIntervalMinutes: json['pollingIntervalMinutes'] as int? ?? 15,
-      lastNotifiedIdByInstance:
-          (json['lastNotifiedIdByInstance'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, v as int),
-          ) ??
-          const {},
+      notifyOnHealthIssue: json['notifyOnHealthIssue'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'enabled': enabled,
+      'ntfyTopic': ntfyTopic,
       'notifyOnGrab': notifyOnGrab,
       'notifyOnImport': notifyOnImport,
       'notifyOnDownloadFailed': notifyOnDownloadFailed,
-      'pollingIntervalMinutes': pollingIntervalMinutes,
-      'lastNotifiedIdByInstance': lastNotifiedIdByInstance,
+      'notifyOnHealthIssue': notifyOnHealthIssue,
     };
   }
 
   @override
   List<Object?> get props => [
     enabled,
+    ntfyTopic,
     notifyOnGrab,
     notifyOnImport,
     notifyOnDownloadFailed,
-    pollingIntervalMinutes,
-    lastNotifiedIdByInstance,
+    notifyOnHealthIssue,
   ];
 }
