@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ntfluttery/ntfluttery.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/notification/ntfy_message.dart';
@@ -18,8 +18,8 @@ final ntfyServiceProvider = Provider<NtfyService>((ref) {
 
 class NtfyService {
   final NotificationService _notificationService;
-
-  NtflutteryService? _client;
+  final Dio _dio = Dio();
+  CancelToken? _cancelToken;
   StreamSubscription<dynamic>? _subscription;
 
   bool _isConnected = false;
@@ -42,45 +42,52 @@ class NtfyService {
 
     logger.info('[NtfyService] Connecting to topic: $topic');
     _currentTopic = topic;
+    _cancelToken = CancelToken();
 
     try {
-      _client = NtflutteryService();
-
+      // No poll param, relying on SSE
       final url = 'https://${NotificationSettings.ntfyServer}/$topic/json';
       logger.debug('[NtfyService] Stream URL: $url');
-      logger.debug(
-        '[NtfyService] Requesting connection (awaiting response)...',
+      logger.debug('[NtfyService] Requesting connection...');
+
+      final response = await _dio.get<ResponseBody>(
+        url,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {'Accept': 'application/x-ndjson'},
+        ),
+        cancelToken: _cancelToken,
       );
 
-      final result = await _client!.get(url);
       logger.debug('[NtfyService] Connection established, stream ready');
 
-      _subscription = result.$1.listen(
-        onMessage,
-        onError: _onError,
-        onDone: _onDone,
-      );
+      _subscription = response.data!.stream
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(onMessage, onError: _onError, onDone: _onDone);
 
       _isConnected = true;
       logger.info('[NtfyService] Connected successfully to topic: $topic');
     } catch (e, stackTrace) {
-      logger.error('[NtfyService] Failed to connect', e, stackTrace);
-      _isConnected = false;
-      rethrow;
+      if (e is DioException && CancelToken.isCancel(e)) {
+        logger.debug('[NtfyService] Connection cancelled');
+      } else {
+        logger.error('[NtfyService] Failed to connect', e, stackTrace);
+        _isConnected = false;
+        _scheduleReconnect();
+        rethrow;
+      }
     }
   }
 
   @visibleForTesting
   void onMessage(dynamic event) {
     try {
-      logger.debug('[NtfyService] Received event: $event');
-
       Map<String, dynamic>? json;
-
-      if (event is (Map<String, dynamic>?, dynamic)) {
-        json = event.$1;
-      } else if (event is String) {
-        json = jsonDecode(event) as Map<String, dynamic>;
+      if (event is String) {
+        if (event.trim().isEmpty) return;
+        json = jsonDecode(event);
       } else if (event is Map<String, dynamic>) {
         json = event;
       }
@@ -90,15 +97,13 @@ class NtfyService {
         return;
       }
 
+      logger.debug('[NtfyService] Received event JSON: $json');
+
       final message = NtfyMessage.tryParse(json);
       if (message == null) {
         logger.warning('[NtfyService] Invalid message format: $json');
         return;
       }
-
-      logger.debug(
-        '[NtfyService] Parsed message: event=${message.event}, title=${message.title}',
-      );
 
       if (message.isMessage) {
         logger.info(
@@ -129,6 +134,8 @@ class NtfyService {
   }
 
   void _onError(Object error, [StackTrace? stackTrace]) {
+    if (error is DioException && CancelToken.isCancel(error)) return;
+
     logger.error('[NtfyService] Stream error', error, stackTrace);
     _isConnected = false;
     _scheduleReconnect();
@@ -147,12 +154,16 @@ class NtfyService {
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () async {
+      // Verify if we still want to reconnect (topic not null)
       if (_currentTopic != null && !_isConnected) {
         logger.info('[NtfyService] Attempting reconnection...');
         try {
-          await connect(_currentTopic!);
-        } catch (e, stackTrace) {
-          logger.error('[NtfyService] Reconnection failed', e, stackTrace);
+          // Check _currentTopic again inside try just to be safe async
+          if (_currentTopic != null) {
+            await connect(_currentTopic!);
+          }
+        } catch (e) {
+          // Error already logged in connect
         }
       }
     });
@@ -163,9 +174,12 @@ class NtfyService {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
 
+    _cancelToken?.cancel();
+    _cancelToken = null;
+
     await _subscription?.cancel();
     _subscription = null;
-    _client = null;
+
     _isConnected = false;
     _currentTopic = null;
 
@@ -182,16 +196,12 @@ class NtfyService {
   Future<void> testConnection(String topic) async {
     logger.info('[NtfyService] Testing connection to topic: $topic');
     try {
-      final client = NtflutteryService();
       final url =
-          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=0';
-      await client
-          .get(url)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () =>
-                throw TimeoutException('Connection test timed out'),
-          );
+          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1';
+      await _dio.get(
+        url,
+        options: Options(receiveTimeout: const Duration(seconds: 10)),
+      );
       logger.info('[NtfyService] Connection test successful');
     } catch (e, stackTrace) {
       logger.error('[NtfyService] Connection test failed', e, stackTrace);
