@@ -78,11 +78,11 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         },
         child: CustomScrollView(
           slivers: [
-            SliverAppBar.medium(
-              pinned: _isSearching,
-              floating: _isSearching,
-              title: _isSearching
-                  ? TextField(
+            _isSearching
+                ? SliverAppBar(
+                    pinned: true,
+                    floating: true,
+                    title: TextField(
                       controller: _searchController,
                       autofocus: true,
                       decoration: const InputDecoration(
@@ -91,48 +91,53 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                       ),
                       onChanged: (value) =>
                           ref.read(seriesSearchProvider.notifier).update(value),
-                    )
-                  : const Text('Series'),
-              actions: [
-                if (_isSearching)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                      });
-                      ref.read(seriesSearchProvider.notifier).update('');
-                    },
-                  )
-                else ...[
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () => setState(() => _isSearching = true),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.sort),
-                    onPressed: () => _showSortSheet(context, ref),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      settings.viewMode == ViewMode.grid
-                          ? Icons.view_list
-                          : Icons.grid_view,
                     ),
-                    tooltip: settings.viewMode == ViewMode.grid
-                        ? 'Switch to List'
-                        : 'Switch to Grid',
-                    onPressed: () {
-                      final newMode = settings.viewMode == ViewMode.grid
-                          ? ViewMode.list
-                          : ViewMode.grid;
-                      ref.read(settingsProvider.notifier).setViewMode(newMode);
-                    },
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _isSearching = false;
+                            _searchController.clear();
+                          });
+                          ref.read(seriesSearchProvider.notifier).update('');
+                        },
+                      ),
+                    ],
+                  )
+                : SliverAppBar.medium(
+                    pinned: false,
+                    floating: false,
+                    title: const Text('Series'),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: () => setState(() => _isSearching = true),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.sort),
+                        onPressed: () => _showSortSheet(context, ref),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          settings.viewMode == ViewMode.grid
+                              ? Icons.view_list
+                              : Icons.grid_view,
+                        ),
+                        tooltip: settings.viewMode == ViewMode.grid
+                            ? 'Switch to List'
+                            : 'Switch to Grid',
+                        onPressed: () {
+                          final newMode = settings.viewMode == ViewMode.grid
+                              ? ViewMode.list
+                              : ViewMode.grid;
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setViewMode(newMode);
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ],
-            ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: seriesAsync.when(
