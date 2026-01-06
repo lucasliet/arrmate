@@ -46,8 +46,7 @@ class NtfyService {
     try {
       _client = NtflutteryService();
 
-      final url =
-          'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1';
+      final url = 'https://${NotificationSettings.ntfyServer}/$topic/json';
       logger.debug('[NtfyService] Stream URL: $url');
 
       final result = await _client!.get(url);
