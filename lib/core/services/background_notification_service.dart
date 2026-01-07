@@ -80,13 +80,14 @@ class BackgroundNotificationService {
   }
 
   /// Updates the shared last poll timestamp.
+  ///
   /// Call this from NtfyService when SSE receives a message.
-  static Future<void> updateLastPollTimestamp() async {
+  /// Pass the message [timestamp] to ensure we don't re-fetch the same message.
+  /// If not provided, defaults to current time.
+  static Future<void> updateLastPollTimestamp([int? timestamp]) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(
-      lastPollTimestampKey,
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    );
+    final ts = timestamp ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+    await prefs.setInt(lastPollTimestampKey, ts);
   }
 
   /// Fetches any missed notifications since the last poll/SSE message.

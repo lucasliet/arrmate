@@ -213,6 +213,20 @@ To ensure project stability, every code change or addition MUST be followed by:
 | Launch app       | `mcp_dart-mcp-server_launch_app`           | `flutter run`     |
 | Hot reload       | `mcp_dart-mcp-server_hot_reload`           | manual restart    |
 
+### MCP Parameter Format
+
+Most MCP tools require a `roots` parameter with **file URI format**:
+
+```json
+{
+  "roots": [{ "root": "file:///Users/lucas/Projetos/Pessoal/arrmate" }]
+}
+```
+
+> [!TIP]
+> Always use `file://` prefix followed by the absolute path. Never use plain
+> paths like `/Users/...` directly.
+
 > [!CAUTION]
 > Only fall back to direct CLI commands if the MCP server is unavailable or
 > explicitly returns an error indicating a tool limitation.

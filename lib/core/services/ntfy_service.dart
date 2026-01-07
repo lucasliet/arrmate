@@ -133,7 +133,7 @@ class NtfyService extends ChangeNotifier {
           payload: message.click,
         );
         // Update shared timestamp so background polling doesn't re-fetch this
-        BackgroundNotificationService.updateLastPollTimestamp();
+        BackgroundNotificationService.updateLastPollTimestamp(message.time);
       } else if (message.isOpen) {
         logger.debug('[NtfyService] Connection opened');
       } else if (message.isKeepalive) {
