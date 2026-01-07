@@ -45,6 +45,7 @@ class NotificationResource {
   final bool onEpisodeFileDelete;
   final bool onManualInteractionRequired;
   final bool includeHealthWarnings;
+  final bool onHealthRestored;
 
   /// Preservation of fields not explicitly mapped in this model.
   final Map<String, dynamic> extra;
@@ -69,6 +70,7 @@ class NotificationResource {
     this.onEpisodeFileDelete = false,
     this.onManualInteractionRequired = false,
     this.includeHealthWarnings = false,
+    this.onHealthRestored = false,
     this.extra = const {},
   });
 
@@ -96,6 +98,7 @@ class NotificationResource {
       'onEpisodeFileDelete',
       'onManualInteractionRequired',
       'includeHealthWarnings',
+      'onHealthRestored',
     };
     final extra = Map<String, dynamic>.from(json)
       ..removeWhere((key, value) => knownKeys.contains(key));
@@ -127,6 +130,7 @@ class NotificationResource {
       onManualInteractionRequired:
           json['onManualInteractionRequired'] as bool? ?? false,
       includeHealthWarnings: json['includeHealthWarnings'] as bool? ?? false,
+      onHealthRestored: json['onHealthRestored'] as bool? ?? false,
       extra: extra,
     );
   }
@@ -154,6 +158,7 @@ class NotificationResource {
       'onEpisodeFileDelete': onEpisodeFileDelete,
       'onManualInteractionRequired': onManualInteractionRequired,
       'includeHealthWarnings': includeHealthWarnings,
+      'onHealthRestored': onHealthRestored,
     };
   }
 
@@ -178,6 +183,7 @@ class NotificationResource {
     bool? onEpisodeFileDelete,
     bool? onManualInteractionRequired,
     bool? includeHealthWarnings,
+    bool? onHealthRestored,
     Map<String, dynamic>? extra,
   }) {
     return NotificationResource(
@@ -202,6 +208,7 @@ class NotificationResource {
           onManualInteractionRequired ?? this.onManualInteractionRequired,
       includeHealthWarnings:
           includeHealthWarnings ?? this.includeHealthWarnings,
+      onHealthRestored: onHealthRestored ?? this.onHealthRestored,
       extra: extra ?? this.extra,
     );
   }

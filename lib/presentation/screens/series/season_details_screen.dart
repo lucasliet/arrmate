@@ -6,6 +6,7 @@ import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
 import 'package:arrmate/presentation/screens/series/widgets/episode_details_sheet.dart';
+import 'package:arrmate/presentation/providers/data_providers.dart';
 
 /// Screens that lists episodes for a specific season of a series.
 class SeasonDetailsScreen extends ConsumerWidget {
@@ -60,14 +61,14 @@ class SeasonDetailsScreen extends ConsumerWidget {
   }
 }
 
-class _EpisodeTile extends StatelessWidget {
+class _EpisodeTile extends ConsumerWidget {
   final Series series;
   final Episode episode;
 
   const _EpisodeTile({required this.series, required this.episode});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasFile = episode.hasFile;
     final monitored = episode.monitored;
     final aired = episode.isAired;
@@ -96,10 +97,11 @@ class _EpisodeTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /* 
-           // Example: Manual/Auto Search buttons 
-           IconButton(icon: Icon(Icons.search), onPressed: () {}), 
-           */
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Automatic Search',
+            onPressed: () => _handleAutomaticSearch(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.travel_explore),
             tooltip: 'Interactive Search',
@@ -126,5 +128,46 @@ class _EpisodeTile extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleAutomaticSearch(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No Sonarr instance configured')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Searching for ${episode.episodeLabel}...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      await repository.searchEpisode(episode.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Search started for ${episode.episodeLabel}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to search: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

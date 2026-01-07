@@ -129,6 +129,18 @@ class SonarrApi {
     );
   }
 
+  /// Commands Sonarr to search for a specific episode.
+  Future<void> episodeSearch(int episodeId) async {
+    await _client.post(
+      '/command',
+      data: {
+        'name': 'EpisodeSearch',
+        'episodeIds': [episodeId],
+      },
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
+    );
+  }
+
   /// Retrieves episodes for a specific series.
   Future<List<Episode>> getEpisodes(int seriesId) async {
     final response = await _client.get(

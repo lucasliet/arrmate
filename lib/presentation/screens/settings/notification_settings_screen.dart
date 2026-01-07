@@ -15,240 +15,248 @@ import '../../providers/settings_provider.dart';
 /// Users can generate a unique topic, toggle specific notification triggers
 /// (Grab, Import, etc.), and auto-configure their Radarr/Sonarr instances
 /// to send webhooks to this device.
-class NotificationSettingsScreen extends ConsumerWidget {
+///
+/// Settings are saved locally on each toggle, but remote *arr instances are
+/// only updated when the user leaves the screen, reducing network calls.
+class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
+}
+
+class _NotificationSettingsScreenState
+    extends ConsumerState<NotificationSettingsScreen> {
+  bool _hasChanges = false;
+
+  Future<bool> _onWillPop() async {
+    if (_hasChanges) {
+      final currentSettings = ref.read(settingsProvider).notifications;
+      if (currentSettings.enabled && mounted) {
+        _handleAutoConfigure(silent: true, settings: currentSettings);
+      }
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final notifications = settings.notifications;
     final ntfyService = ref.watch(ntfyServiceProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
-      body: ListView(
-        children: [
-          if (notifications.ntfyTopic == null) ...[
-            ListTile(
-              leading: const Icon(Icons.notifications_none),
-              title: const Text('Setup Push Notifications'),
-              subtitle: const Text('Tap to generate your unique topic'),
-              trailing: const Icon(Icons.add_circle_outline),
-              onTap: () =>
-                  ref.read(settingsProvider.notifier).generateNtfyTopic(),
-            ),
-          ] else ...[
-            SwitchListTile(
-              title: const Text('Enable Notifications'),
-              subtitle: Text(
-                ntfyService.isConnected
-                    ? 'Connected to ntfy.sh'
-                    : 'Disconnected',
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          _onWillPop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Notifications')),
+        body: ListView(
+          children: [
+            if (notifications.ntfyTopic == null) ...[
+              ListTile(
+                leading: const Icon(Icons.notifications_none),
+                title: const Text('Setup Push Notifications'),
+                subtitle: const Text('Tap to generate your unique topic'),
+                trailing: const Icon(Icons.add_circle_outline),
+                onTap: () =>
+                    ref.read(settingsProvider.notifier).generateNtfyTopic(),
               ),
-              secondary: Icon(
-                ntfyService.isConnected ? Icons.cloud_done : Icons.cloud_off,
-                color: ntfyService.isConnected ? Colors.green : Colors.grey,
-              ),
-              value: notifications.enabled,
-              onChanged: (value) async {
-                final updated = notifications.copyWith(enabled: value);
-                await ref
-                    .read(settingsProvider.notifier)
-                    .updateNotifications(updated);
-
-                if (value && context.mounted) {
-                  _handleAutoConfigure(
-                    context,
-                    ref,
-                    silent: true,
-                    settings: updated,
-                  );
-                }
-              },
-            ),
-            ListTile(
-              title: const Text('Your Topic'),
-              subtitle: Text(notifications.ntfyTopic!),
-              trailing: IconButton(
-                icon: const Icon(Icons.copy),
-                tooltip: 'Copy topic',
-                onPressed: () {
-                  Clipboard.setData(
-                    ClipboardData(text: notifications.ntfyTopic!),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Topic copied to clipboard')),
-                  );
-                },
-              ),
-            ),
-            _buildSetupInstructions(context, notifications, ref),
-            if (notifications.enabled) ...[
-              const Divider(),
-              _buildSectionHeader(context, 'Downloads'),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Notify on Grab',
-                'When a release is sent to download client',
-                notifications.notifyOnGrab,
-                (v) => notifications.copyWith(notifyOnGrab: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Notify on Import',
-                'When a file is successfully imported',
-                notifications.notifyOnImport,
-                (v) => notifications.copyWith(notifyOnImport: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Notify on Failure',
-                'When a download fails to import',
-                notifications.notifyOnDownloadFailed,
-                (v) => notifications.copyWith(notifyOnDownloadFailed: v),
-              ),
-
-              const Divider(),
-              _buildSectionHeader(context, 'Media Updates'),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Movie/Series Added',
-                'When a movie or series is added',
-                notifications.notifyOnMediaAdded,
-                (v) => notifications.copyWith(notifyOnMediaAdded: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Movie/Series Deleted',
-                'When a movie or series is deleted',
-                notifications.notifyOnMediaDeleted,
-                (v) => notifications.copyWith(notifyOnMediaDeleted: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'File Deleted',
-                'When a media file is deleted',
-                notifications.notifyOnFileDelete,
-                (v) => notifications.copyWith(notifyOnFileDelete: v),
-              ),
-
-              const Divider(),
-              _buildSectionHeader(context, 'System'),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Application Update',
-                'When Arrmate is updated',
-                notifications.notifyOnUpgrade,
-                (v) => notifications.copyWith(notifyOnUpgrade: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Manual Interaction',
-                'When manual intervention is required',
-                notifications.notifyOnManualRequired,
-                (v) => notifications.copyWith(notifyOnManualRequired: v),
-              ),
-              _buildNotificationToggle(
-                context,
-                ref,
-                notifications,
-                'Health Issues',
-                'When system health issues are detected',
-                notifications.notifyOnHealthIssue,
-                (v) => notifications.copyWith(notifyOnHealthIssue: v),
-              ),
-              if (notifications.notifyOnHealthIssue) ...[
-                _buildNotificationToggle(
-                  context,
-                  ref,
-                  notifications,
-                  'Include Warnings',
-                  'Also notify on health warnings',
-                  notifications.includeHealthWarnings,
-                  (v) => notifications.copyWith(includeHealthWarnings: v),
-                  indent: true,
-                ),
-                _buildNotificationToggle(
-                  context,
-                  ref,
-                  notifications,
-                  'Health Restored',
-                  'When a health issue is resolved',
-                  notifications.notifyOnHealthRestored,
-                  (v) => notifications.copyWith(notifyOnHealthRestored: v),
-                  indent: true,
-                ),
-              ],
-
-              const Divider(),
+            ] else ...[
               SwitchListTile(
-                title: const Text('Battery Saver Mode'),
-                subtitle: const Text(
-                  'Disable background polling. Notifications only when app is open.',
+                title: const Text('Enable Notifications'),
+                subtitle: Text(
+                  ntfyService.isConnected
+                      ? 'Connected to ntfy.sh'
+                      : 'Disconnected',
                 ),
-                secondary: const Icon(Icons.battery_saver),
-                value: notifications.batterySaverMode,
-                onChanged: (value) {
-                  final updated = notifications.copyWith(
-                    batterySaverMode: value,
-                  );
-                  ref
+                secondary: Icon(
+                  ntfyService.isConnected ? Icons.cloud_done : Icons.cloud_off,
+                  color: ntfyService.isConnected ? Colors.green : Colors.grey,
+                ),
+                value: notifications.enabled,
+                onChanged: (value) async {
+                  final updated = notifications.copyWith(enabled: value);
+                  await ref
                       .read(settingsProvider.notifier)
                       .updateNotifications(updated);
+                  setState(() => _hasChanges = true);
+
+                  if (value && mounted) {
+                    _handleAutoConfigure(silent: true, settings: updated);
+                  }
                 },
               ),
-              if (!notifications.batterySaverMode)
-                ListTile(
-                  leading: const Icon(Icons.timer),
-                  title: const Text('Polling Interval'),
-                  subtitle: const Text('How often to check for notifications'),
-                  trailing: DropdownButton<int>(
-                    value: notifications.pollingIntervalMinutes,
-                    underline: const SizedBox.shrink(),
-                    items: NotificationSettings.pollingIntervalOptions
-                        .map(
-                          (interval) => DropdownMenuItem(
-                            value: interval,
-                            child: Text('$interval min'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        final updated = notifications.copyWith(
-                          pollingIntervalMinutes: value,
-                        );
-                        ref
-                            .read(settingsProvider.notifier)
-                            .updateNotifications(updated);
-                      }
-                    },
-                  ),
+              ListTile(
+                title: const Text('Your Topic'),
+                subtitle: Text(notifications.ntfyTopic!),
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Copy topic',
+                  onPressed: () {
+                    Clipboard.setData(
+                      ClipboardData(text: notifications.ntfyTopic!),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Topic copied to clipboard'),
+                      ),
+                    );
+                  },
                 ),
+              ),
+              _buildSetupInstructions(notifications),
+              if (notifications.enabled) ...[
+                const Divider(),
+                _buildSectionHeader('Downloads'),
+                _buildNotificationToggle(
+                  notifications,
+                  'Notify on Grab',
+                  'When a release is sent to download client',
+                  notifications.notifyOnGrab,
+                  (v) => notifications.copyWith(notifyOnGrab: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'Notify on Import',
+                  'When a file is successfully imported',
+                  notifications.notifyOnImport,
+                  (v) => notifications.copyWith(notifyOnImport: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'Notify on Failure',
+                  'When a download fails to import',
+                  notifications.notifyOnDownloadFailed,
+                  (v) => notifications.copyWith(notifyOnDownloadFailed: v),
+                ),
+
+                const Divider(),
+                _buildSectionHeader('Media Updates'),
+                _buildNotificationToggle(
+                  notifications,
+                  'Movie/Series Added',
+                  'When a movie or series is added',
+                  notifications.notifyOnMediaAdded,
+                  (v) => notifications.copyWith(notifyOnMediaAdded: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'Movie/Series Deleted',
+                  'When a movie or series is deleted',
+                  notifications.notifyOnMediaDeleted,
+                  (v) => notifications.copyWith(notifyOnMediaDeleted: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'File Deleted',
+                  'When a media file is deleted',
+                  notifications.notifyOnFileDelete,
+                  (v) => notifications.copyWith(notifyOnFileDelete: v),
+                ),
+
+                const Divider(),
+                _buildSectionHeader('System'),
+                _buildNotificationToggle(
+                  notifications,
+                  '*arr Instance Update',
+                  'When Radarr/Sonarr server is updated',
+                  notifications.notifyOnUpgrade,
+                  (v) => notifications.copyWith(notifyOnUpgrade: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'Manual Interaction',
+                  'When manual intervention is required',
+                  notifications.notifyOnManualRequired,
+                  (v) => notifications.copyWith(notifyOnManualRequired: v),
+                ),
+                _buildNotificationToggle(
+                  notifications,
+                  'Health Issues',
+                  'When system health issues are detected',
+                  notifications.notifyOnHealthIssue,
+                  (v) => notifications.copyWith(notifyOnHealthIssue: v),
+                ),
+                if (notifications.notifyOnHealthIssue) ...[
+                  _buildNotificationToggle(
+                    notifications,
+                    'Include Warnings',
+                    'Also notify on health warnings',
+                    notifications.includeHealthWarnings,
+                    (v) => notifications.copyWith(includeHealthWarnings: v),
+                    indent: true,
+                  ),
+                  _buildNotificationToggle(
+                    notifications,
+                    'Health Restored',
+                    'When a health issue is resolved',
+                    notifications.notifyOnHealthRestored,
+                    (v) => notifications.copyWith(notifyOnHealthRestored: v),
+                    indent: true,
+                  ),
+                ],
+
+                const Divider(),
+                SwitchListTile(
+                  title: const Text('Battery Saver Mode'),
+                  subtitle: const Text(
+                    'Disable background polling. Notifications only when app is open.',
+                  ),
+                  secondary: const Icon(Icons.battery_saver),
+                  value: notifications.batterySaverMode,
+                  onChanged: (value) {
+                    final updated = notifications.copyWith(
+                      batterySaverMode: value,
+                    );
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateNotifications(updated);
+                  },
+                ),
+                if (!notifications.batterySaverMode)
+                  ListTile(
+                    leading: const Icon(Icons.timer),
+                    title: const Text('Polling Interval'),
+                    subtitle: const Text(
+                      'How often to check for notifications',
+                    ),
+                    trailing: DropdownButton<int>(
+                      value: notifications.pollingIntervalMinutes,
+                      underline: const SizedBox.shrink(),
+                      items: NotificationSettings.pollingIntervalOptions
+                          .map(
+                            (interval) => DropdownMenuItem(
+                              value: interval,
+                              child: Text('$interval min'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          final updated = notifications.copyWith(
+                            pollingIntervalMinutes: value,
+                          );
+                          ref
+                              .read(settingsProvider.notifier)
+                              .updateNotifications(updated);
+                        }
+                      },
+                    ),
+                  ),
+              ],
             ],
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
@@ -263,8 +271,6 @@ class NotificationSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildNotificationToggle(
-    BuildContext context,
-    WidgetRef ref,
     NotificationSettings currentSettings,
     String title,
     String subtitle,
@@ -285,19 +291,13 @@ class NotificationSettingsScreen extends ConsumerWidget {
           await ref
               .read(settingsProvider.notifier)
               .updateNotifications(updated);
-          if (context.mounted) {
-            _handleAutoConfigure(context, ref, silent: true, settings: updated);
-          }
+          setState(() => _hasChanges = true);
         }
       },
     );
   }
 
-  Widget _buildSetupInstructions(
-    BuildContext context,
-    NotificationSettings settings,
-    WidgetRef ref,
-  ) {
+  Widget _buildSetupInstructions(NotificationSettings settings) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -324,7 +324,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               child: FilledButton.icon(
                 icon: const Icon(Icons.auto_fix_high),
                 label: const Text('Auto-configure *arr instances'),
-                onPressed: () => _handleAutoConfigure(context, ref),
+                onPressed: () => _handleAutoConfigure(),
               ),
             ),
             const SizedBox(height: 16),
@@ -378,9 +378,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
   /// Displays a loading dialog (unless [silent] is true) and iterates through
   /// all instances, calling [RemoteNotificationService.configureInstance] for each.
   /// Result summaries are shown in a dialog or SnackBar.
-  Future<void> _handleAutoConfigure(
-    BuildContext context,
-    WidgetRef ref, {
+  Future<void> _handleAutoConfigure({
     bool silent = false,
     NotificationSettings? settings,
   }) async {
@@ -432,12 +430,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
       );
       results.add(NotificationSetupResult.failure('Unexpected error: $e'));
     } finally {
-      if (!silent && context.mounted) {
+      if (!silent && mounted) {
         Navigator.of(context, rootNavigator: true).pop();
       }
     }
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (!silent) {
       showDialog(

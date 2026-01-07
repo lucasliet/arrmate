@@ -27,6 +27,9 @@ abstract class SeriesRepository {
   /// Triggers an automatic search for a specific series.
   Future<void> searchSeries(int seriesId);
 
+  /// Triggers an automatic search for a specific episode.
+  Future<void> searchEpisode(int episodeId);
+
   /// Retrieves episodes for a specific [seriesId].
   Future<List<Episode>> getEpisodes(int seriesId);
 

@@ -170,4 +170,28 @@ void main() {
       verify(() => mockApi.manualImport(files)).called(1);
     });
   });
+
+  group('SeriesRepositoryImpl - Search', () {
+    test('searchSeries deve chamar API com seriesId', () async {
+      // Given
+      when(() => mockApi.seriesSearch(any())).thenAnswer((_) async {});
+
+      // When
+      await repository.searchSeries(42);
+
+      // Then
+      verify(() => mockApi.seriesSearch(42)).called(1);
+    });
+
+    test('searchEpisode deve chamar API com episodeId', () async {
+      // Given
+      when(() => mockApi.episodeSearch(any())).thenAnswer((_) async {});
+
+      // When
+      await repository.searchEpisode(123);
+
+      // Then
+      verify(() => mockApi.episodeSearch(123)).called(1);
+    });
+  });
 }
