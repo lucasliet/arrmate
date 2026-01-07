@@ -13,6 +13,7 @@ import '../screens/settings/logs_screen.dart';
 import '../screens/settings/health_screen.dart';
 import '../screens/settings/quality_profiles_screen.dart';
 import '../screens/settings/notification_settings_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../widgets/app_shell.dart';
 
 /// Global key for the root navigator.
@@ -30,6 +31,11 @@ void initializeRouter(String initialLocation) {
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     routes: [
+      // Notifications screen - outside shell for full-screen experience
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => AppShell(child: child),
