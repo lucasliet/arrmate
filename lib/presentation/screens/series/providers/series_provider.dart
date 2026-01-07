@@ -134,6 +134,7 @@ class SeriesController {
       deleteFiles: deleteFiles,
       addExclusion: addExclusion,
     );
+    ref.invalidate(seriesProvider);
   }
 
   Future<void> refresh() async {

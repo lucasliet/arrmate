@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'movies_provider.dart';
 
 /// Provider for fetching the details of a specific movie using its ID.
 final movieDetailsProvider = FutureProvider.autoDispose.family<Movie, int>((
@@ -47,6 +48,7 @@ class MovieController {
       deleteFiles: deleteFiles,
       addExclusion: addExclusion,
     );
+    ref.invalidate(moviesProvider);
   }
 
   Future<void> updateMovie(Movie movie, {bool moveFiles = false}) async {
