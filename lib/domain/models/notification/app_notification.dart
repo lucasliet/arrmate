@@ -98,10 +98,20 @@ class AppNotification extends Equatable {
 
   /// Creates an [AppNotification] from a JSON map.
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    // Safely parse metadata
+    Map<String, dynamic>? metadata;
+    final rawMetadata = json['metadata'];
+    if (rawMetadata is Map<String, dynamic>) {
+      metadata = rawMetadata;
+    } else if (rawMetadata is Map) {
+      // Handle Map<dynamic, dynamic> from JSON decode
+      metadata = Map<String, dynamic>.from(rawMetadata);
+    }
+
     return AppNotification(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      message: json['message'] as String,
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      message: json['message'] as String? ?? '',
       type: NotificationType.values.firstWhere(
         (e) => e.name == json['type'],
         orElse: () => NotificationType.info,
@@ -110,9 +120,11 @@ class AppNotification extends Equatable {
         (e) => e.name == json['priority'],
         orElse: () => NotificationPriority.medium,
       ),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int),
+      timestamp: json['timestamp'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int)
+          : DateTime.now(),
       isRead: json['isRead'] as bool? ?? false,
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      metadata: metadata,
     );
   }
 

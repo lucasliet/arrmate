@@ -28,9 +28,11 @@ class InAppNotificationService {
   final List<AppNotification> _notifications = [];
 
   /// Returns all notifications, sorted by timestamp (newest first).
-  List<AppNotification> get notifications => List.unmodifiable(
-        _notifications..sort((a, b) => b.timestamp.compareTo(a.timestamp)),
-      );
+  List<AppNotification> get notifications {
+    final sorted = List<AppNotification>.from(_notifications)
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return List.unmodifiable(sorted);
+  }
 
   /// Returns the count of unread notifications.
   int get unreadCount => _notifications.where((n) => !n.isRead).length;

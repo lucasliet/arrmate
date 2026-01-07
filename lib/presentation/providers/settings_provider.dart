@@ -148,13 +148,22 @@ class SettingsNotifier extends Notifier<SettingsState> {
     );
 
     if (notifications.enabled && notifications.ntfyTopic != null) {
-      logger.info('[SettingsNotifier] Connecting to ntfy on startup');
-      final ntfyService = ref.read(ntfyServiceProvider);
-      await ntfyService.connect(notifications.ntfyTopic!);
+      try {
+        logger.info('[SettingsNotifier] Connecting to ntfy on startup');
+        final ntfyService = ref.read(ntfyServiceProvider);
+        await ntfyService.connect(notifications.ntfyTopic!);
 
-      // Fetch any missed notifications when app opens
-      logger.info('[SettingsNotifier] Fetching missed notifications');
-      await ntfyService.fetchMissedNotifications(notifications.ntfyTopic!);
+        // Fetch any missed notifications when app opens
+        logger.info('[SettingsNotifier] Fetching missed notifications');
+        await ntfyService.fetchMissedNotifications(notifications.ntfyTopic!);
+      } catch (e, stack) {
+        logger.error(
+          '[SettingsNotifier] Failed to connect to ntfy on startup',
+          e,
+          stack,
+        );
+        // Continue without notifications - don't leave app in inconsistent state
+      }
     }
   }
 

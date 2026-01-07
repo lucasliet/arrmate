@@ -16,7 +16,6 @@ class NotificationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifications = ref.watch(notificationsProvider);
     final unreadCount = ref.watch(unreadNotificationCountProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,13 +45,13 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: notifications.isEmpty
-          ? _buildEmptyState(theme)
+          ? _buildEmptyState()
           : _buildNotificationsList(context, ref, notifications),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return EmptyState(
+  Widget _buildEmptyState() {
+    return const EmptyState(
       icon: Icons.notifications_off_outlined,
       title: 'No notifications',
       subtitle:
@@ -86,16 +85,9 @@ class NotificationsScreen extends ConsumerWidget {
                 .read(notificationActionsProvider.notifier)
                 .dismiss(notification.id);
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Notification dismissed'),
-                duration: const Duration(seconds: 2),
-                action: SnackBarAction(
-                  label: 'Undo',
-                  onPressed: () {
-                    // Re-add the notification would require storing it
-                    // For simplicity, we don't implement undo
-                  },
-                ),
+              const SnackBar(
+                content: Text('Notification dismissed'),
+                duration: Duration(seconds: 2),
               ),
             );
           },
