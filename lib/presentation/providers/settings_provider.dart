@@ -7,9 +7,9 @@ import '../router/app_router.dart';
 import '../../domain/models/settings/notification_settings.dart';
 import '../../domain/models/movie/movie_sort.dart';
 import '../../domain/models/series/series_sort.dart';
-import '../../core/services/background_notification_service.dart';
 import '../../core/services/ntfy_service.dart';
 import '../../core/services/logger_service.dart';
+import 'notifications_provider.dart';
 
 /// Provider for managing application settings (theme, layout, notifications).
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
@@ -148,20 +148,21 @@ class SettingsNotifier extends Notifier<SettingsState> {
     );
 
     if (notifications.enabled && notifications.ntfyTopic != null) {
-      logger.info('[SettingsNotifier] Connecting to ntfy on startup');
-      ref.read(ntfyServiceProvider).connect(notifications.ntfyTopic!);
+      try {
+        logger.info('[SettingsNotifier] Connecting to ntfy on startup');
+        final ntfyService = ref.read(ntfyServiceProvider);
+        await ntfyService.connect(notifications.ntfyTopic!);
 
-      // Always fetch missed notifications when app opens
-      BackgroundNotificationService.fetchMissedNotifications(
-        notifications.ntfyTopic!,
-      );
-
-      if (!notifications.batterySaverMode) {
-        logger.info('[SettingsNotifier] Starting background polling');
-        BackgroundNotificationService.startPolling(
-          notifications.ntfyTopic!,
-          intervalMinutes: notifications.pollingIntervalMinutes,
+        // Fetch any missed notifications when app opens
+        logger.info('[SettingsNotifier] Fetching missed notifications');
+        await ntfyService.fetchMissedNotifications(notifications.ntfyTopic!);
+      } catch (e, stack) {
+        logger.error(
+          '[SettingsNotifier] Failed to connect to ntfy on startup',
+          e,
+          stack,
         );
+        // Continue without notifications - don't leave app in inconsistent state
       }
     }
   }
@@ -245,7 +246,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setString(_seriesSortKey, jsonEncode(sort.toJson()));
   }
 
-  /// Updates notification settings and manages the ntfy connection and background polling.
+  /// Updates notification settings and manages the ntfy connection.
+  ///
+  /// With in-app notifications, there's no background polling.
+  /// Notifications are received via SSE when the app is open.
   Future<void> updateNotifications(NotificationSettings notifications) async {
     state = state.copyWith(notifications: notifications);
     final prefs = await SharedPreferences.getInstance();
@@ -259,23 +263,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     if (notifications.enabled && notifications.ntfyTopic != null) {
       logger.info('[SettingsNotifier] Enabling ntfy notifications');
       await ntfyService.connect(notifications.ntfyTopic!);
-
-      if (notifications.batterySaverMode) {
-        logger.info(
-          '[SettingsNotifier] Battery saver mode: stopping background polling',
-        );
-        await BackgroundNotificationService.stopPolling();
-      } else {
-        logger.info('[SettingsNotifier] Starting background polling');
-        await BackgroundNotificationService.startPolling(
-          notifications.ntfyTopic!,
-          intervalMinutes: notifications.pollingIntervalMinutes,
-        );
-      }
     } else {
       logger.info('[SettingsNotifier] Disabling ntfy notifications');
       await ntfyService.disconnect();
-      await BackgroundNotificationService.stopPolling();
     }
   }
 

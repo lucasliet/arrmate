@@ -4,18 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/logger_service.dart';
-import '../../../core/services/ntfy_service.dart';
 import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 
-/// A screen that allows users to configure push notifications via ntfy.sh.
+/// A screen that allows users to configure in-app notifications via ntfy.sh.
 ///
 /// Users can generate a unique topic, toggle specific notification triggers
 /// (Grab, Import, etc.), and auto-configure their Radarr/Sonarr instances
 /// to send webhooks to this device.
 ///
+/// Notifications are displayed in-app only (no system push notifications).
 /// Settings are saved locally on each toggle, but remote *arr instances are
 /// only updated when the user leaves the screen, reducing network calls.
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -54,13 +55,15 @@ class _NotificationSettingsScreenState
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Notifications')),
+        appBar: AppBar(title: const Text('Notification Settings')),
         body: ListView(
           children: [
+            // Info card about in-app notifications
+            _buildInfoCard(context),
             if (notifications.ntfyTopic == null) ...[
               ListTile(
                 leading: const Icon(Icons.notifications_none),
-                title: const Text('Setup Push Notifications'),
+                title: const Text('Setup Notifications'),
                 subtitle: const Text('Tap to generate your unique topic'),
                 trailing: const Icon(Icons.add_circle_outline),
                 onTap: () =>
@@ -200,56 +203,46 @@ class _NotificationSettingsScreenState
                     indent: true,
                   ),
                 ],
-
-                const Divider(),
-                SwitchListTile(
-                  title: const Text('Battery Saver Mode'),
-                  subtitle: const Text(
-                    'Disable background polling. Notifications only when app is open.',
-                  ),
-                  secondary: const Icon(Icons.battery_saver),
-                  value: notifications.batterySaverMode,
-                  onChanged: (value) {
-                    final updated = notifications.copyWith(
-                      batterySaverMode: value,
-                    );
-                    ref
-                        .read(settingsProvider.notifier)
-                        .updateNotifications(updated);
-                  },
-                ),
-                if (!notifications.batterySaverMode)
-                  ListTile(
-                    leading: const Icon(Icons.timer),
-                    title: const Text('Polling Interval'),
-                    subtitle: const Text(
-                      'How often to check for notifications',
-                    ),
-                    trailing: DropdownButton<int>(
-                      value: notifications.pollingIntervalMinutes,
-                      underline: const SizedBox.shrink(),
-                      items: NotificationSettings.pollingIntervalOptions
-                          .map(
-                            (interval) => DropdownMenuItem(
-                              value: interval,
-                              child: Text('$interval min'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          final updated = notifications.copyWith(
-                            pollingIntervalMinutes: value,
-                          );
-                          ref
-                              .read(settingsProvider.notifier)
-                              .updateNotifications(updated);
-                        }
-                      },
-                    ),
-                  ),
               ],
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.all(16),
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'In-App Notifications',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Notifications are received in real-time while the app is open. '
+                    'When you close the app, new notifications will be fetched the next time you open it.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

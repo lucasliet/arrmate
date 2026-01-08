@@ -3,23 +3,25 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/notification/app_notification.dart';
 import '../../domain/models/notification/ntfy_message.dart';
 import '../../domain/models/settings/notification_settings.dart';
-import 'background_notification_service.dart';
+import 'in_app_notification_service.dart';
 import 'logger_service.dart';
-import 'notification_service.dart';
 
-final ntfyServiceProvider = ChangeNotifierProvider<NtfyService>((ref) {
-  final notificationService = ref.read(notificationServiceProvider);
-  return NtfyService(notificationService);
-});
+/// Callback type for when a new notification is received.
+typedef OnNotificationReceived = void Function(AppNotification notification);
 
 /// Service for connecting to an ntfy server to receive real-time notifications via SSE (Server-Sent Events).
+///
+/// This service connects to ntfy.sh and streams notifications in real-time
+/// while the app is in the foreground. It also provides polling functionality
+/// to fetch missed notifications when the app opens.
 class NtfyService extends ChangeNotifier {
-  final NotificationService _notificationService;
+  final InAppNotificationService _notificationService;
   final Dio _dio;
   CancelToken? _cancelToken;
   StreamSubscription<dynamic>? _subscription;
@@ -34,7 +36,8 @@ class NtfyService extends ChangeNotifier {
   /// The topic currently subscribed to.
   String? get currentTopic => _currentTopic;
 
-  int _notificationIdCounter = 0;
+  /// Optional callback invoked when a new notification is received.
+  OnNotificationReceived? onNotificationReceived;
 
   NtfyService(this._notificationService, {Dio? dio}) : _dio = dio ?? Dio();
 
@@ -99,7 +102,7 @@ class NtfyService extends ChangeNotifier {
 
   /// Handles incoming messages from the SSE stream.
   @visibleForTesting
-  void onMessage(dynamic event) {
+  void onMessage(dynamic event) async {
     try {
       Map<String, dynamic>? json;
       if (event is String) {
@@ -124,16 +127,18 @@ class NtfyService extends ChangeNotifier {
 
       if (message.isMessage) {
         logger.info(
-          '[NtfyService] Showing notification: ${message.title ?? "Arrmate"}',
+          '[NtfyService] Adding in-app notification: ${message.title ?? "Arrmate"}',
         );
-        _notificationService.showNotification(
-          id: _nextNotificationId(),
-          title: message.title ?? 'Arrmate',
-          body: message.message ?? '',
-          payload: message.click,
+        final notification = await _notificationService.addFromNtfyMessage(
+          message,
         );
-        // Update shared timestamp so background polling doesn't re-fetch this
-        BackgroundNotificationService.updateLastPollTimestamp(message.time);
+
+        // Update shared timestamp so polling doesn't re-fetch this
+        await InAppNotificationService.updateLastPollTimestamp(message.time);
+
+        // Notify listeners
+        onNotificationReceived?.call(notification);
+        notifyListeners();
       } else if (message.isOpen) {
         logger.debug('[NtfyService] Connection opened');
       } else if (message.isKeepalive) {
@@ -142,14 +147,6 @@ class NtfyService extends ChangeNotifier {
     } catch (e, stackTrace) {
       logger.error('[NtfyService] Error processing message', e, stackTrace);
     }
-  }
-
-  int _nextNotificationId() {
-    _notificationIdCounter++;
-    if (_notificationIdCounter > 0x7FFFFFFF) {
-      _notificationIdCounter = 0;
-    }
-    return _notificationIdCounter;
   }
 
   void _onError(Object error, [StackTrace? stackTrace]) {
@@ -204,6 +201,58 @@ class NtfyService extends ChangeNotifier {
     _currentTopic = null;
 
     logger.debug('[NtfyService] Disconnected');
+  }
+
+  /// Fetches any missed notifications since the last poll/SSE message.
+  ///
+  /// Call this when the app opens to catch up on notifications
+  /// that arrived while the app was closed.
+  Future<void> fetchMissedNotifications(String topic) async {
+    logger.info(
+      '[NtfyService] Fetching missed notifications for topic: $topic',
+    );
+
+    try {
+      final lastPoll = await InAppNotificationService.getLastPollTimestamp();
+      final url = Uri.parse(
+        'https://${NotificationSettings.ntfyServer}/$topic/json?poll=1&since=$lastPoll',
+      );
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final lines = const LineSplitter().convert(response.body);
+        int addedCount = 0;
+
+        for (final line in lines) {
+          if (line.trim().isEmpty) continue;
+
+          try {
+            final json = jsonDecode(line) as Map<String, dynamic>;
+            final message = NtfyMessage.tryParse(json);
+
+            if (message != null && message.isMessage) {
+              final notification = await _notificationService
+                  .addFromNtfyMessage(message);
+              onNotificationReceived?.call(notification);
+              addedCount++;
+            }
+          } catch (_) {
+            continue;
+          }
+        }
+
+        await InAppNotificationService.updateLastPollTimestamp();
+        logger.info('[NtfyService] Added $addedCount missed notifications');
+        notifyListeners();
+      }
+    } catch (e, stackTrace) {
+      logger.error(
+        '[NtfyService] Failed to fetch missed notifications',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   /// Generates a random topic ID for new setups.

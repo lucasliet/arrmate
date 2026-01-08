@@ -5,10 +5,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/instances_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/notification_icon_button.dart';
 
 /// Main settings screen for configuring instances, appearance, notifications, and about info.
 class SettingsScreen extends ConsumerWidget {
@@ -17,7 +19,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        actions: const [NotificationIconButton()],
+      ),
       body: ListView(
         children: [
           _buildInstancesSection(context, ref),
@@ -271,12 +276,30 @@ class SettingsScreen extends ConsumerWidget {
                 ? Theme.of(context).colorScheme.primary
                 : null,
           ),
-          title: const Text('Push Notifications'),
+          title: const Text('Notification Settings'),
           subtitle: Text(
-            notifications.enabled ? 'Enabled · ntfy.sh' : 'Setup notifications',
+            notifications.enabled
+                ? 'Enabled · ntfy.sh integration'
+                : 'Setup notifications',
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/notifications'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.inbox),
+          title: const Text('Notification Center'),
+          subtitle: Consumer(
+            builder: (context, ref, _) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return Text(
+                unreadCount > 0
+                    ? '$unreadCount unread notification${unreadCount > 1 ? 's' : ''}'
+                    : 'View all notifications',
+              );
+            },
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/notifications'),
         ),
       ],
     );
