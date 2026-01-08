@@ -131,23 +131,12 @@ void main() {
         await notificationService.addNotification(notification1);
         await notificationService.addNotification(notification2);
 
-        // Need to create new container to refresh provider
-        final newContainer = ProviderContainer();
-        await newContainer.read(inAppNotificationServiceProvider).init();
-        await newContainer
-            .read(inAppNotificationServiceProvider)
-            .addNotification(notification1);
-        await newContainer
-            .read(inAppNotificationServiceProvider)
-            .addNotification(notification2);
-
-        final notifications = newContainer.read(notificationsProvider);
+        // Force provider refresh to re-read from service
+        final notifications = container.refresh(notificationsProvider);
 
         expect(notifications.length, 2);
         expect(notifications[0].id, '2'); // Sorted newest first
         expect(notifications[1].id, '1');
-
-        newContainer.dispose();
       });
 
       test('should return notifications sorted by timestamp', () async {
@@ -177,21 +166,10 @@ void main() {
         await notificationService.addNotification(old);
         await notificationService.addNotification(newest);
 
-        final newContainer = ProviderContainer();
-        await newContainer.read(inAppNotificationServiceProvider).init();
-        await newContainer
-            .read(inAppNotificationServiceProvider)
-            .addNotification(old);
-        await newContainer
-            .read(inAppNotificationServiceProvider)
-            .addNotification(newest);
-
-        final notifications = newContainer.read(notificationsProvider);
+        final notifications = container.refresh(notificationsProvider);
 
         expect(notifications.first.id, 'newest');
         expect(notifications.last.id, 'old');
-
-        newContainer.dispose();
       });
     });
 
