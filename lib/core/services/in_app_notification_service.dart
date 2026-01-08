@@ -156,7 +156,8 @@ class InAppNotificationService {
     if (tags.contains('x') || tags.contains('warning')) {
       return NotificationType.error;
     }
-    if (tags.contains('white_check_mark') || tags.contains('heavy_check_mark')) {
+    if (tags.contains('white_check_mark') ||
+        tags.contains('heavy_check_mark')) {
       return NotificationType.imported;
     }
     if (tags.contains('arrow_down') || tags.contains('inbox_tray')) {

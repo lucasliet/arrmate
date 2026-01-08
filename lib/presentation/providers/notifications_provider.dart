@@ -5,28 +5,29 @@ import '../../core/services/ntfy_service.dart';
 import '../../domain/models/notification/app_notification.dart';
 
 /// Provider for the [InAppNotificationService] singleton.
-final inAppNotificationServiceProvider = Provider<InAppNotificationService>(
-  (ref) {
-    return InAppNotificationService();
-  },
-);
+final inAppNotificationServiceProvider = Provider<InAppNotificationService>((
+  ref,
+) {
+  return InAppNotificationService();
+});
 
 /// Provider for the [NtfyService].
 ///
 /// This service handles SSE connections to ntfy.sh and polling for
 /// missed notifications.
-final ntfyServiceProvider = ChangeNotifierProvider<NtfyService>((ref) {
-  final notificationService = ref.read(inAppNotificationServiceProvider);
-  final ntfyService = NtfyService(notificationService);
+final ChangeNotifierProvider<NtfyService> ntfyServiceProvider =
+    ChangeNotifierProvider<NtfyService>((ref) {
+      final notificationService = ref.read(inAppNotificationServiceProvider);
+      final ntfyService = NtfyService(notificationService);
 
-  // Set up callback to trigger notification state updates
-  ntfyService.onNotificationReceived = (_) {
-    ref.invalidate(notificationsProvider);
-    ref.invalidate(unreadNotificationCountProvider);
-  };
+      // Set up callback to trigger notification state updates
+      ntfyService.onNotificationReceived = (_) {
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(unreadNotificationCountProvider);
+      };
 
-  return ntfyService;
-});
+      return ntfyService;
+    });
 
 /// Provider for the list of all notifications.
 ///
@@ -52,8 +53,8 @@ final unreadNotificationCountProvider = Provider<int>((ref) {
 /// dismiss them, or clear all notifications.
 final notificationActionsProvider =
     NotifierProvider<NotificationActionsNotifier, void>(() {
-  return NotificationActionsNotifier();
-});
+      return NotificationActionsNotifier();
+    });
 
 /// Notifier for notification actions.
 class NotificationActionsNotifier extends Notifier<void> {

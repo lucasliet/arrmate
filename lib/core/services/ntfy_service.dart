@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
@@ -130,8 +129,9 @@ class NtfyService extends ChangeNotifier {
         logger.info(
           '[NtfyService] Adding in-app notification: ${message.title ?? "Arrmate"}',
         );
-        final notification =
-            await _notificationService.addFromNtfyMessage(message);
+        final notification = await _notificationService.addFromNtfyMessage(
+          message,
+        );
 
         // Update shared timestamp so polling doesn't re-fetch this
         await InAppNotificationService.updateLastPollTimestamp(message.time);
@@ -208,7 +208,9 @@ class NtfyService extends ChangeNotifier {
   /// Call this when the app opens to catch up on notifications
   /// that arrived while the app was closed.
   Future<void> fetchMissedNotifications(String topic) async {
-    logger.info('[NtfyService] Fetching missed notifications for topic: $topic');
+    logger.info(
+      '[NtfyService] Fetching missed notifications for topic: $topic',
+    );
 
     try {
       final lastPoll = await InAppNotificationService.getLastPollTimestamp();
@@ -230,8 +232,8 @@ class NtfyService extends ChangeNotifier {
             final message = NtfyMessage.tryParse(json);
 
             if (message != null && message.isMessage) {
-              final notification =
-                  await _notificationService.addFromNtfyMessage(message);
+              final notification = await _notificationService
+                  .addFromNtfyMessage(message);
               onNotificationReceived?.call(notification);
               addedCount++;
             }
@@ -241,9 +243,7 @@ class NtfyService extends ChangeNotifier {
         }
 
         await InAppNotificationService.updateLastPollTimestamp();
-        logger.info(
-          '[NtfyService] Added $addedCount missed notifications',
-        );
+        logger.info('[NtfyService] Added $addedCount missed notifications');
         notifyListeners();
       }
     } catch (e, stackTrace) {

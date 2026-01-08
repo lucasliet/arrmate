@@ -27,7 +27,9 @@ class NotificationsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.done_all),
                 tooltip: 'Mark all as read',
                 onPressed: () {
-                  ref.read(notificationActionsProvider.notifier).markAllAsRead();
+                  ref
+                      .read(notificationActionsProvider.notifier)
+                      .markAllAsRead();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('All notifications marked as read'),

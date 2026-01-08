@@ -220,10 +220,7 @@ class _NotificationSettingsScreenState
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.info_outline, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

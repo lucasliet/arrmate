@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/core/services/ntfy_service.dart';
 import 'package:arrmate/core/services/in_app_notification_service.dart';
 import 'package:arrmate/domain/models/notification/app_notification.dart';
+import 'package:arrmate/domain/models/notification/ntfy_message.dart';
 
 class MockInAppNotificationService extends Mock
     implements InAppNotificationService {}
@@ -55,6 +56,16 @@ void main() {
           type: NotificationType.info,
           priority: NotificationPriority.medium,
           timestamp: DateTime.now(),
+        ),
+      );
+
+      // Register fallback for NtfyMessage
+      registerFallbackValue(
+        const NtfyMessage(
+          id: 'fallback',
+          time: 0,
+          event: 'message',
+          topic: 'test',
         ),
       );
     });
@@ -187,15 +198,18 @@ void main() {
 
     group('onMessage', () {
       test('should add notification for message events', () async {
-        when(() => mockNotificationService.addFromNtfyMessage(any()))
-            .thenAnswer((_) async => AppNotification(
-                  id: 'test123',
-                  title: 'Movie Downloaded',
-                  message: 'Inception has been downloaded',
-                  type: NotificationType.download,
-                  priority: NotificationPriority.medium,
-                  timestamp: DateTime.now(),
-                ));
+        when(
+          () => mockNotificationService.addFromNtfyMessage(any()),
+        ).thenAnswer(
+          (_) async => AppNotification(
+            id: 'test123',
+            title: 'Movie Downloaded',
+            message: 'Inception has been downloaded',
+            type: NotificationType.download,
+            priority: NotificationPriority.medium,
+            timestamp: DateTime.now(),
+          ),
+        );
 
         final messageJson = {
           'id': 'test123',
@@ -212,20 +226,24 @@ void main() {
         // Wait for async processing
         await Future.delayed(Duration.zero);
 
-        verify(() => mockNotificationService.addFromNtfyMessage(any()))
-            .called(1);
+        verify(
+          () => mockNotificationService.addFromNtfyMessage(any()),
+        ).called(1);
       });
 
       test('should handle string JSON input', () async {
-        when(() => mockNotificationService.addFromNtfyMessage(any()))
-            .thenAnswer((_) async => AppNotification(
-                  id: 'str123',
-                  title: 'Test',
-                  message: 'Test msg',
-                  type: NotificationType.info,
-                  priority: NotificationPriority.medium,
-                  timestamp: DateTime.now(),
-                ));
+        when(
+          () => mockNotificationService.addFromNtfyMessage(any()),
+        ).thenAnswer(
+          (_) async => AppNotification(
+            id: 'str123',
+            title: 'Test',
+            message: 'Test msg',
+            type: NotificationType.info,
+            priority: NotificationPriority.medium,
+            timestamp: DateTime.now(),
+          ),
+        );
 
         const jsonString =
             '{"id":"str123","time":1704067200,"event":"message","topic":"test","title":"Test","message":"Test msg"}';
@@ -235,8 +253,9 @@ void main() {
         // Wait for async processing
         await Future.delayed(Duration.zero);
 
-        verify(() => mockNotificationService.addFromNtfyMessage(any()))
-            .called(1);
+        verify(
+          () => mockNotificationService.addFromNtfyMessage(any()),
+        ).called(1);
       });
 
       test('should ignore non-message events', () async {
