@@ -12,20 +12,8 @@ pluginManagement {
 
     repositories {
         google()
-        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
+        mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-    repositories {
-        google()
-        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
-        maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
-        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
-        maven { url = uri("https://jitpack.io") }
     }
 }
 

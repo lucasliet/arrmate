@@ -136,11 +136,6 @@ jobs:
       #     track: internal
       #     status: draft
 
-      - name: Setup Gradle Init Script
-        run: |
-          mkdir -p ~/.gradle
-          cp android/init.gradle ~/.gradle/init.gradle
-
       - name: Build APKs
         run: >
           flutter build apk --release --split-per-abi
