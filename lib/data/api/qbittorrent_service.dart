@@ -217,6 +217,11 @@ class QBittorrentService {
     }
   }
 
+  /// Pauses the specified torrents.
+  ///
+  /// [hashes] List of torrent hashes to pause.
+  /// Throws if the API request fails.
+  /// Returns a Future that completes when the action is acknowledged by the server.
   Future<void> pauseTorrents(List<String> hashes) async {
     await _request(
       '/api/v2/torrents/pause',
@@ -226,6 +231,11 @@ class QBittorrentService {
     );
   }
 
+  /// Resumes the specified torrents.
+  ///
+  /// [hashes] List of torrent hashes to resume.
+  /// Throws if the API request fails.
+  /// Returns a Future that completes when the action is acknowledged by the server.
   Future<void> resumeTorrents(List<String> hashes) async {
     await _request(
       '/api/v2/torrents/resume',
@@ -235,6 +245,12 @@ class QBittorrentService {
     );
   }
 
+  /// Deletes the specified torrents.
+  ///
+  /// [hashes] List of torrent hashes to delete.
+  /// [deleteFiles] If true, also deletes the downloaded files on disk.
+  /// Throws if the API request fails.
+  /// Returns a Future that completes when the action is acknowledged by the server.
   Future<void> deleteTorrents(
     List<String> hashes, {
     bool deleteFiles = false,
@@ -247,6 +263,11 @@ class QBittorrentService {
     );
   }
 
+  /// Rechecks the specified torrents.
+  ///
+  /// [hashes] List of torrent hashes to recheck.
+  /// Throws if the API request fails.
+  /// Returns a Future that completes when the action is acknowledged by the server.
   Future<void> recheckTorrents(List<String> hashes) async {
     await _request(
       '/api/v2/torrents/recheck',

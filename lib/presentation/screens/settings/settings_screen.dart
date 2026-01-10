@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../domain/models/models.dart';
+
 import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -67,9 +69,9 @@ class SettingsScreen extends ConsumerWidget {
 
           return ListTile(
             leading: Icon(
-              instance.type.name == 'radarr'
+              instance.type == InstanceType.radarr
                   ? Icons.movie
-                  : (instance.type.name == 'sonarr'
+                  : (instance.type == InstanceType.sonarr
                         ? Icons.tv
                         : Icons.download),
               color: Theme.of(context).colorScheme.primary,

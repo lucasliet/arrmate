@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
+import '../../../core/services/logger_service.dart';
 import '../../../data/api/api.dart'; // Add this import
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
@@ -155,7 +156,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           .read(instancesProvider.notifier)
           .validateAndCacheInstanceData(instance, ref);
     } catch (e) {
-      debugPrint('Failed to validate and cache instance data: $e');
+      logger.warning(
+        '[InstanceEditScreen] Failed to validate and cache instance data',
+        e,
+      );
     }
 
     if (mounted) {

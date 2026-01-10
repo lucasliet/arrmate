@@ -14,7 +14,7 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getSystemStatus(),
       InstanceType.sonarr => SonarrApi(instance).getSystemStatus(),
-      InstanceType.qbittorrent => throw UnimplementedError(),
+      InstanceType.qbittorrent => _getQBittorrentDefaultStatus(instance),
     };
   }
 
@@ -26,7 +26,26 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getTags(),
       InstanceType.sonarr => SonarrApi(instance).getTags(),
-      InstanceType.qbittorrent => throw UnimplementedError(),
+      InstanceType.qbittorrent => _getQBittorrentDefaultTags(instance),
     };
+  }
+
+  Future<InstanceStatus> _getQBittorrentDefaultStatus(Instance instance) async {
+    logger.warning(
+      '[InstanceRepository] getSystemStatus not implemented for qBittorrent',
+    );
+    return InstanceStatus(
+      appName: 'qBittorrent',
+      instanceName: instance.label,
+      version: 'Unknown',
+      authentication: 'Basic', // Assuming basic auth structure
+    );
+  }
+
+  Future<List<Tag>> _getQBittorrentDefaultTags(Instance instance) async {
+    logger.warning(
+      '[InstanceRepository] getTags not implemented for qBittorrent',
+    );
+    return [];
   }
 }

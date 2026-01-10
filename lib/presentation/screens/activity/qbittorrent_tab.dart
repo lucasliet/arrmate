@@ -35,7 +35,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     );
   }
 
-  void _showTorrentDetails(BuildContext context, torrent) {
+  void _showTorrentDetails(BuildContext context, Torrent torrent) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
