@@ -75,6 +75,7 @@ jobs:
           " > review.md
 
       - name: Minimize previous review comments
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
