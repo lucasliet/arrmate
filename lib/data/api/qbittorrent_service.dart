@@ -176,11 +176,20 @@ class QBittorrentService {
   /// Gets the list of torrents.
   ///
   /// [filter] can be 'all', 'downloading', 'seeding', 'completed', 'paused', 'active', 'inactive', 'resumed', 'stalled', 'stalled_uploading', 'stalled_downloading', 'errored'.
-  Future<List<Torrent>> getTorrents({String filter = 'all'}) async {
+  /// [sort] defaults to 'priority' to match qBittorrent's default queue order.
+  Future<List<Torrent>> getTorrents({
+    String filter = 'all',
+    String sort = 'priority',
+    bool reverse = true,
+  }) async {
     try {
       final response = await _request<List>(
         '/api/v2/torrents/info',
-        queryParameters: {'filter': filter},
+        queryParameters: {
+          'filter': filter,
+          'sort': sort,
+          'reverse': reverse.toString(),
+        },
       );
 
       if (response.statusCode == 200 && response.data != null) {

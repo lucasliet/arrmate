@@ -21,6 +21,7 @@ class Torrent extends Equatable {
   final int uploaded;
   final int amountLeft;
   final int addedOn;
+  final int priority;
 
   const Torrent({
     required this.hash,
@@ -42,6 +43,7 @@ class Torrent extends Equatable {
     required this.uploaded,
     required this.amountLeft,
     required this.addedOn,
+    required this.priority,
   });
 
   factory Torrent.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class Torrent extends Equatable {
       uploaded: json['uploaded'] as int? ?? 0,
       amountLeft: json['amount_left'] as int? ?? 0,
       addedOn: json['added_on'] as int? ?? 0,
+      priority: json['priority'] as int? ?? 0,
     );
   }
 
@@ -97,5 +100,6 @@ class Torrent extends Equatable {
     uploaded,
     amountLeft,
     addedOn,
+    priority,
   ];
 }
