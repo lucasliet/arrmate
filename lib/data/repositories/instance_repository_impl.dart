@@ -31,6 +31,9 @@ class InstanceRepositoryImpl implements InstanceRepository {
   }
 
   Future<InstanceStatus> _getQBittorrentDefaultStatus(Instance instance) async {
+    // Design decision: Return default values instead of throwing UnimplementedError
+    // to prevent UI crashes and allow the user to see the instance in the list
+    // even if advanced status features are not yet supported.
     logger.warning(
       '[InstanceRepository] getSystemStatus not implemented for qBittorrent',
     );
@@ -43,6 +46,8 @@ class InstanceRepositoryImpl implements InstanceRepository {
   }
 
   Future<List<Tag>> _getQBittorrentDefaultTags(Instance instance) async {
+    // Design decision: Return empty list instead of throwing UnimplementedError
+    // to allow the UI to function without tag support for qBittorrent.
     logger.warning(
       '[InstanceRepository] getTags not implemented for qBittorrent',
     );

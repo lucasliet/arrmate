@@ -36,6 +36,7 @@ dependencies:
   timeago: ^3.7.0
   http: ^1.6.0
   file_picker: ^10.3.8
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as p;
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 
@@ -11,6 +12,7 @@ class QBittorrentService {
 
   // Cookie for session management. Not persisted in MVP.
   String? _sessionCookie;
+  bool _isReauthenticating = false;
 
   QBittorrentService(this.instance)
     : _dio = Dio(
@@ -112,38 +114,60 @@ class QBittorrentService {
 
       // Re-authenticate on 403 (Session expired)
       if (response.statusCode == 403) {
-        logger.warning(
-          '[QBittorrentService] Session expired, re-authenticating...',
-        );
-        _sessionCookie = null;
-        await authenticate();
+        if (_isReauthenticating) {
+          logger.warning(
+            '[QBittorrentService] 403 loop detected, aborting re-auth.',
+          );
+          // Abort if already trying to re-authenticate to prevent recursion loops
+          return response; // Or throw custom error
+        }
 
-        // Update cookie in options
-        options.headers?['Cookie'] = _sessionCookie;
-        return await _dio.request<T>(
-          path,
-          data: data,
-          queryParameters: queryParameters,
-          options: options,
-        );
+        _isReauthenticating = true;
+        try {
+          logger.warning(
+            '[QBittorrentService] Session expired, re-authenticating...',
+          );
+          _sessionCookie = null;
+          await authenticate();
+
+          // Update cookie in options
+          options.headers?['Cookie'] = _sessionCookie;
+          return await _dio.request<T>(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+          );
+        } finally {
+          _isReauthenticating = false;
+        }
       }
 
       return response;
     } catch (e) {
       // If error is 403, try re-auth once
       if (e is DioException && e.response?.statusCode == 403) {
-        logger.warning(
-          '[QBittorrentService] Session expired (DioError), re-authenticating...',
-        );
-        _sessionCookie = null;
-        await authenticate();
-        options.headers?['Cookie'] = _sessionCookie;
-        return await _dio.request<T>(
-          path,
-          data: data,
-          queryParameters: queryParameters,
-          options: options,
-        );
+        if (_isReauthenticating) {
+          rethrow;
+        }
+
+        _isReauthenticating = true;
+        try {
+          logger.warning(
+            '[QBittorrentService] Session expired (DioError), re-authenticating...',
+          );
+          _sessionCookie = null;
+          await authenticate();
+          options.headers?['Cookie'] = _sessionCookie;
+          return await _dio.request<T>(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+          );
+        } finally {
+          _isReauthenticating = false;
+        }
       }
       rethrow;
     }
@@ -203,7 +227,7 @@ class QBittorrentService {
       final formData = FormData.fromMap({
         'torrent_files': await MultipartFile.fromFile(
           request.torrentFilePath!,
-          filename: request.torrentFilePath!.split('/').last,
+          filename: p.basename(request.torrentFilePath!),
         ),
         ...formMap,
       });

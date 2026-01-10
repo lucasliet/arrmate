@@ -149,7 +149,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               error: (error, stack) => Center(
                 child: ErrorDisplay(
                   message: 'Failed to load torrents',
-                  onRetry: () => ref.refresh(qbittorrentTorrentsProvider),
+                  onRetry: () =>
+                      ref.read(qbittorrentTorrentsProvider.notifier).refresh(),
                 ),
               ),
               loading: () => const Center(
