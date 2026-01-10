@@ -3,17 +3,19 @@ import 'package:arrmate/domain/models/models.dart';
 
 void main() {
   group('InstanceType', () {
-    test('Deve ter exatamente dois tipos de instância', () {
+    test('Deve ter exatamente três tipos de instância', () {
       // Given / When / Then
-      expect(InstanceType.values.length, 2);
+      expect(InstanceType.values.length, 3);
       expect(InstanceType.values, contains(InstanceType.radarr));
       expect(InstanceType.values, contains(InstanceType.sonarr));
+      expect(InstanceType.values, contains(InstanceType.qbittorrent));
     });
 
     test('Cada tipo deve ter label correto', () {
       // Given / When / Then
       expect(InstanceType.radarr.label, 'Radarr');
       expect(InstanceType.sonarr.label, 'Sonarr');
+      expect(InstanceType.qbittorrent.label, 'qBittorrent');
     });
 
     test('Radarr e Sonarr devem ser tipos distintos', () {

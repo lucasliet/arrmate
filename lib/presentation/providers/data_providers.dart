@@ -19,6 +19,13 @@ final sonarrApiProvider = Provider<SonarrApi?>((ref) {
   return SonarrApi(instance);
 });
 
+/// Provider for the [QBittorrentService] of the currently selected qBittorrent instance.
+final qbittorrentServiceProvider = Provider<QBittorrentService?>((ref) {
+  final instance = ref.watch(currentQBittorrentInstanceProvider);
+  if (instance == null) return null;
+  return QBittorrentService(instance);
+});
+
 /// Provider for the [MovieRepository], utilizing the active [RadarrApi].
 final movieRepositoryProvider = Provider<MovieRepository?>((ref) {
   final api = ref.watch(radarrApiProvider);

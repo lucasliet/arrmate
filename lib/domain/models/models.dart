@@ -13,3 +13,4 @@ export 'series/series_sort.dart';
 export 'queue/queue.dart';
 export 'queue/importable_file.dart';
 export 'shared/notification_resource.dart';
+export 'qbittorrent/qbittorrent_models.dart';

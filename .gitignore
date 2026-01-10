@@ -120,3 +120,4 @@ app.*.symbols
 
 .agent
 rudarr
+.kluster

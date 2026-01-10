@@ -33,6 +33,15 @@ final currentSonarrInstanceProvider = Provider<Instance?>((ref) {
       .firstOrNull;
 });
 
+/// Provider that returns the currently active qBittorrent instance.
+final currentQBittorrentInstanceProvider = Provider<Instance?>((ref) {
+  final state = ref.watch(instancesProvider);
+  return state.instances
+      .where((i) => i.type == InstanceType.qbittorrent)
+      .cast<Instance?>()
+      .firstOrNull;
+});
+
 /// State for the [InstancesNotifier].
 class InstancesState {
   final List<Instance> instances;
