@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
 
 import '../../providers/instances_provider.dart';
@@ -61,7 +62,7 @@ class SettingsScreen extends ConsumerWidget {
           const _PasteMessage(message: 'No instances configured'),
         ...instancesState.instances.map((instance) {
           final versionInfo = instance.version != null
-              ? ' · v${instance.version}'
+              ? ' · ${formatInstanceVersion(instance.version)}'
               : '';
           final tagsInfo = instance.tags.isNotEmpty
               ? ' · ${instance.tags.length} tags'

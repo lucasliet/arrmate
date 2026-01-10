@@ -3,14 +3,22 @@
 Arrmate is a comprehensive companion app designed to work seamlessly with Radarr
 and Sonarr, offering a streamlined and user-friendly experience for managing
 your media library. With Arrmate, you can easily browse, search, and manage your
-movies and series, all in one convenient place. The app is built using Flutter
-and utilizes the Riverpod state management library to ensure a smooth and
-efficient user experience.
+movies and series, all in one convenient place. You can also monitor your
+downloads with the integrated qBittorrent support. The app is built using
+Flutter and utilizes the Riverpod state management library to ensure a smooth
+and efficient user experience.
+
+## 📦 Installation
+
+To get started with Arrmate, follow these steps: Download the latest release
+from the [releases page](https://github.com/lucasliet/arrmate/releases).
 
 ## 🚀 Features
 
 - **Library Management**: Browse, search, filter, and manage your movie and
   series libraries with a native mobile experience.
+- **Download Client Integration**: Full qBittorrent support to view, pause,
+  resume, and delete downloads, plus add new torrents via URL or file.
 - **Interactive Release Search**: Find and download specific torrents or NZBs
   directly from the app.
 - **Activity & Queue Monitoring**: Track active downloads and historical events
@@ -54,17 +62,12 @@ efficient user experience.
 - **Package Info Plus & OTA Update**: Powering the automated in-app update
   system.
 
-## 📦 Installation
-
-To get started with Arrmate, follow these steps: Download the latest release
-from the [releases page](https://github.com/lucasliet/arrmate/releases).
-
 ## 💻 Usage
 
 To use Arrmate, follow these steps:
 
-1. **Configure Connections**: Enter your Radarr and Sonarr API keys and server
-   URLs in the settings to sync your media library.
+1. **Configure Connections**: Enter your Radarr, Sonarr and qBittorrent API keys
+   and server URLs in the settings to sync your media library.
 2. **Explore Media**: Browse through your movies and series with posters,
    metadata, and status indicators.
 3. **Search & Filter**: Use the search functionality to find specific titles or

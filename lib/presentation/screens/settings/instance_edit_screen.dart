@@ -266,7 +266,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       ? 'Username:Password'
                       : 'API Key',
                   hintText: _type == InstanceType.qbittorrent
-                      ? 'admin:adminadmin'
+                      ? 'user:password'
                       : null,
                   border: const OutlineInputBorder(),
                   helperText: _type == InstanceType.qbittorrent

@@ -52,14 +52,18 @@ void main() {
       });
 
       testWidgets('should display notification message', (tester) async {
-        final notification = createTestNotification(message: 'This is a test message');
+        final notification = createTestNotification(
+          message: 'This is a test message',
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         expect(find.text('This is a test message'), findsOneWidget);
       });
 
-      testWidgets('should display NEW badge for unread notifications', (tester) async {
+      testWidgets('should display NEW badge for unread notifications', (
+        tester,
+      ) async {
         final notification = createTestNotification(isRead: false);
 
         await tester.pumpWidget(buildWidget(notification: notification));
@@ -67,7 +71,9 @@ void main() {
         expect(find.text('NEW'), findsOneWidget);
       });
 
-      testWidgets('should not display NEW badge for read notifications', (tester) async {
+      testWidgets('should not display NEW badge for read notifications', (
+        tester,
+      ) async {
         final notification = createTestNotification(isRead: true);
 
         await tester.pumpWidget(buildWidget(notification: notification));
@@ -86,28 +92,36 @@ void main() {
 
       testWidgets('should truncate long titles with ellipsis', (tester) async {
         final notification = createTestNotification(
-          title: 'This is a very long title that should be truncated with ellipsis',
+          title:
+              'This is a very long title that should be truncated with ellipsis',
         );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         final titleText = tester.widget<Text>(
-          find.text('This is a very long title that should be truncated with ellipsis'),
+          find.text(
+            'This is a very long title that should be truncated with ellipsis',
+          ),
         );
 
         expect(titleText.maxLines, 1);
         expect(titleText.overflow, TextOverflow.ellipsis);
       });
 
-      testWidgets('should truncate long messages with ellipsis', (tester) async {
+      testWidgets('should truncate long messages with ellipsis', (
+        tester,
+      ) async {
         final notification = createTestNotification(
-          message: 'This is a very long message that should be truncated with ellipsis after two lines',
+          message:
+              'This is a very long message that should be truncated with ellipsis after two lines',
         );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         final messageText = tester.widget<Text>(
-          find.text('This is a very long message that should be truncated with ellipsis after two lines'),
+          find.text(
+            'This is a very long message that should be truncated with ellipsis after two lines',
+          ),
         );
 
         expect(messageText.maxLines, 2);
@@ -116,7 +130,9 @@ void main() {
     });
 
     group('styling', () {
-      testWidgets('should use bold font for unread notification title', (tester) async {
+      testWidgets('should use bold font for unread notification title', (
+        tester,
+      ) async {
         final notification = createTestNotification(isRead: false);
 
         await tester.pumpWidget(buildWidget(notification: notification));
@@ -127,7 +143,9 @@ void main() {
         expect(titleText.style?.fontWeight, FontWeight.bold);
       });
 
-      testWidgets('should use normal font weight for read notification title', (tester) async {
+      testWidgets('should use normal font weight for read notification title', (
+        tester,
+      ) async {
         final notification = createTestNotification(isRead: true);
 
         await tester.pumpWidget(buildWidget(notification: notification));
@@ -138,7 +156,9 @@ void main() {
         expect(titleText.style?.fontWeight, FontWeight.w500);
       });
 
-      testWidgets('should use different background for unread notifications', (tester) async {
+      testWidgets('should use different background for unread notifications', (
+        tester,
+      ) async {
         final notification = createTestNotification(isRead: false);
 
         await tester.pumpWidget(buildWidget(notification: notification));
@@ -149,8 +169,12 @@ void main() {
     });
 
     group('icons', () {
-      testWidgets('should display download icon for download type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.download);
+      testWidgets('should display download icon for download type', (
+        tester,
+      ) async {
+        final notification = createTestNotification(
+          type: NotificationType.download,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
@@ -158,31 +182,45 @@ void main() {
       });
 
       testWidgets('should display error icon for error type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.error);
+        final notification = createTestNotification(
+          type: NotificationType.error,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
       });
 
-      testWidgets('should display check icon for imported type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.imported);
+      testWidgets('should display check icon for imported type', (
+        tester,
+      ) async {
+        final notification = createTestNotification(
+          type: NotificationType.imported,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
       });
 
-      testWidgets('should display system update icon for upgrade type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.upgrade);
+      testWidgets('should display system update icon for upgrade type', (
+        tester,
+      ) async {
+        final notification = createTestNotification(
+          type: NotificationType.upgrade,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         expect(find.byIcon(Icons.system_update_rounded), findsOneWidget);
       });
 
-      testWidgets('should display warning icon for warning type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.warning);
+      testWidgets('should display warning icon for warning type', (
+        tester,
+      ) async {
+        final notification = createTestNotification(
+          type: NotificationType.warning,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
@@ -190,7 +228,9 @@ void main() {
       });
 
       testWidgets('should display info icon for info type', (tester) async {
-        final notification = createTestNotification(type: NotificationType.info);
+        final notification = createTestNotification(
+          type: NotificationType.info,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
@@ -203,10 +243,9 @@ void main() {
         bool tapped = false;
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onTap: () => tapped = true,
-        ));
+        await tester.pumpWidget(
+          buildWidget(notification: notification, onTap: () => tapped = true),
+        );
 
         await tester.tap(find.byType(InkWell));
         await tester.pump();
@@ -217,10 +256,9 @@ void main() {
       testWidgets('should not crash when onTap is null', (tester) async {
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onTap: null,
-        ));
+        await tester.pumpWidget(
+          buildWidget(notification: notification, onTap: null),
+        );
 
         await tester.tap(find.byType(InkWell));
         await tester.pump();
@@ -232,10 +270,12 @@ void main() {
         bool dismissed = false;
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onDismiss: () => dismissed = true,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            notification: notification,
+            onDismiss: () => dismissed = true,
+          ),
+        );
 
         await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
         await tester.pumpAndSettle();
@@ -247,10 +287,12 @@ void main() {
         bool dismissed = false;
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onDismiss: () => dismissed = true,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            notification: notification,
+            onDismiss: () => dismissed = true,
+          ),
+        );
 
         await tester.drag(find.byType(Dismissible), const Offset(500, 0));
         await tester.pumpAndSettle();
@@ -258,14 +300,18 @@ void main() {
         expect(dismissed, true);
       });
 
-      testWidgets('should not call onDismiss when swiped vertically', (tester) async {
+      testWidgets('should not call onDismiss when swiped vertically', (
+        tester,
+      ) async {
         bool dismissed = false;
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onDismiss: () => dismissed = true,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            notification: notification,
+            onDismiss: () => dismissed = true,
+          ),
+        );
 
         await tester.drag(find.byType(Dismissible), const Offset(0, -500));
         await tester.pumpAndSettle();
@@ -276,10 +322,9 @@ void main() {
       testWidgets('should not crash when onDismiss is null', (tester) async {
         final notification = createTestNotification();
 
-        await tester.pumpWidget(buildWidget(
-          notification: notification,
-          onDismiss: null,
-        ));
+        await tester.pumpWidget(
+          buildWidget(notification: notification, onDismiss: null),
+        );
 
         await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
         await tester.pumpAndSettle();
@@ -302,7 +347,9 @@ void main() {
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
-        final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
         expect(dismissible.direction, DismissDirection.horizontal);
       });
 
@@ -311,7 +358,9 @@ void main() {
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
-        final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
         expect(dismissible.key, const Key('unique-key-123'));
       });
 
@@ -343,19 +392,23 @@ void main() {
         await tester.pumpWidget(buildWidget(notification: notification));
 
         final card = tester.widget<Card>(find.byType(Card));
-        expect(card.margin, const EdgeInsets.symmetric(horizontal: 16, vertical: 4));
+        expect(
+          card.margin,
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        );
       });
 
       testWidgets('should have icon on the left', (tester) async {
-        final notification = createTestNotification(type: NotificationType.download);
+        final notification = createTestNotification(
+          type: NotificationType.download,
+        );
 
         await tester.pumpWidget(buildWidget(notification: notification));
 
         final row = tester.widget<Row>(
-          find.descendant(
-            of: find.byType(Padding),
-            matching: find.byType(Row),
-          ).first,
+          find
+              .descendant(of: find.byType(Padding), matching: find.byType(Row))
+              .first,
         );
 
         expect(row.crossAxisAlignment, CrossAxisAlignment.start);

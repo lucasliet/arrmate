@@ -3,8 +3,8 @@
 ## Project Context & Business Goals
 
 **Arrmate** is a mobile companion application designed for users of self-hosted
-media servers, specifically **Radarr** (for movies) and **Sonarr** (for TV
-series).
+media servers, specifically **Radarr** (for movies), **Sonarr** (for TV series)
+and **qBittorrent** (for downloads).
 
 - **Objective**: Provide a seamless, efficient, and beautiful mobile interface
   for managing media libraries remotely.
@@ -15,6 +15,12 @@ series).
   - **Activity Monitoring**: Check download queues and history status.
   - **Multi-Instance**: Support for managing multiple server instances within
     the same app.
+  - **Download Client**: Native qBittorrent integration:
+    - **Live Status**: Real-time progress, speed, ETA, and seeds/peers.
+    - **Control**: Pause, resume, delete (with optional file deletion), and
+      recheck.
+    - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
+    - **Filters**: View by status (Downloading, Seeding, Paused, Error).
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including

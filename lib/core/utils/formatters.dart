@@ -84,3 +84,16 @@ String formatListWithSeparator(List<String> items, {String separator = ' · '}) 
 String formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
+
+/// Formats an instance version string.
+///
+/// Returns "{version}" if [version] starts with 'v'.
+/// Otherwise, returns "v{version}".
+/// Returns empty string if [version] is null or empty.
+String formatInstanceVersion(String? version) {
+  if (version == null || version.trim().isEmpty) return '';
+  if (version.startsWith('v')) {
+    return version;
+  }
+  return 'v$version';
+}

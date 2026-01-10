@@ -18,7 +18,10 @@ void main() {
     test('should have all expected priority levels', () {
       expect(NotificationPriority.values.length, 3);
       expect(NotificationPriority.values, contains(NotificationPriority.low));
-      expect(NotificationPriority.values, contains(NotificationPriority.medium));
+      expect(
+        NotificationPriority.values,
+        contains(NotificationPriority.medium),
+      );
       expect(NotificationPriority.values, contains(NotificationPriority.high));
     });
   });
@@ -179,16 +182,16 @@ void main() {
         expect(notification.message, 'JSON Message');
         expect(notification.type, NotificationType.download);
         expect(notification.priority, NotificationPriority.high);
-        expect(notification.timestamp, DateTime.fromMillisecondsSinceEpoch(1705315800000));
+        expect(
+          notification.timestamp,
+          DateTime.fromMillisecondsSinceEpoch(1705315800000),
+        );
         expect(notification.isRead, true);
         expect(notification.metadata, {'key': 'value'});
       });
 
       test('should handle missing optional fields with defaults', () {
-        final json = {
-          'type': 'info',
-          'priority': 'medium',
-        };
+        final json = {'type': 'info', 'priority': 'medium'};
 
         final notification = AppNotification.fromJson(json);
 
@@ -274,8 +277,18 @@ void main() {
         final notification = AppNotification.fromJson(json);
         final after = DateTime.now();
 
-        expect(notification.timestamp.isAfter(before.subtract(const Duration(seconds: 1))), true);
-        expect(notification.timestamp.isBefore(after.add(const Duration(seconds: 1))), true);
+        expect(
+          notification.timestamp.isAfter(
+            before.subtract(const Duration(seconds: 1)),
+          ),
+          true,
+        );
+        expect(
+          notification.timestamp.isBefore(
+            after.add(const Duration(seconds: 1)),
+          ),
+          true,
+        );
       });
     });
 
@@ -338,8 +351,10 @@ void main() {
         expect(deserialized.message, original.message);
         expect(deserialized.type, original.type);
         expect(deserialized.priority, original.priority);
-        expect(deserialized.timestamp.millisecondsSinceEpoch, 
-               original.timestamp.millisecondsSinceEpoch);
+        expect(
+          deserialized.timestamp.millisecondsSinceEpoch,
+          original.timestamp.millisecondsSinceEpoch,
+        );
         expect(deserialized.isRead, original.isRead);
         expect(deserialized.metadata, original.metadata);
       });
@@ -347,32 +362,44 @@ void main() {
 
     group('iconName', () {
       test('should return correct icon for download type', () {
-        final notification = createTestNotification(type: NotificationType.download);
+        final notification = createTestNotification(
+          type: NotificationType.download,
+        );
         expect(notification.iconName, 'download');
       });
 
       test('should return correct icon for error type', () {
-        final notification = createTestNotification(type: NotificationType.error);
+        final notification = createTestNotification(
+          type: NotificationType.error,
+        );
         expect(notification.iconName, 'error');
       });
 
       test('should return correct icon for imported type', () {
-        final notification = createTestNotification(type: NotificationType.imported);
+        final notification = createTestNotification(
+          type: NotificationType.imported,
+        );
         expect(notification.iconName, 'check_circle');
       });
 
       test('should return correct icon for upgrade type', () {
-        final notification = createTestNotification(type: NotificationType.upgrade);
+        final notification = createTestNotification(
+          type: NotificationType.upgrade,
+        );
         expect(notification.iconName, 'system_update');
       });
 
       test('should return correct icon for warning type', () {
-        final notification = createTestNotification(type: NotificationType.warning);
+        final notification = createTestNotification(
+          type: NotificationType.warning,
+        );
         expect(notification.iconName, 'warning');
       });
 
       test('should return correct icon for info type', () {
-        final notification = createTestNotification(type: NotificationType.info);
+        final notification = createTestNotification(
+          type: NotificationType.info,
+        );
         expect(notification.iconName, 'info');
       });
     });
@@ -400,8 +427,12 @@ void main() {
       });
 
       test('should not be equal for different types', () {
-        final notification1 = createTestNotification(type: NotificationType.info);
-        final notification2 = createTestNotification(type: NotificationType.error);
+        final notification1 = createTestNotification(
+          type: NotificationType.info,
+        );
+        final notification2 = createTestNotification(
+          type: NotificationType.error,
+        );
 
         expect(notification1, isNot(equals(notification2)));
       });
@@ -414,8 +445,12 @@ void main() {
       });
 
       test('should not be equal for different metadata', () {
-        final notification1 = createTestNotification(metadata: {'key': 'value1'});
-        final notification2 = createTestNotification(metadata: {'key': 'value2'});
+        final notification1 = createTestNotification(
+          metadata: {'key': 'value1'},
+        );
+        final notification2 = createTestNotification(
+          metadata: {'key': 'value2'},
+        );
 
         expect(notification1, isNot(equals(notification2)));
       });
