@@ -1,0 +1,112 @@
+name: Copilot Code Review (CLI)
+
+env:
+  AI_MODEL: claude-sonnet-4.5
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  copilot-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Run Copilot Code Review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          copilot --model $AI_MODEL -p "
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            IMPORTANT - Before reviewing, check the PR comments thread for previous code reviews.
+
+            If previous reviews exist:
+            1. DO NOT repeat suggestions that were already made
+            2. Check if previous suggestions were addressed in subsequent commits
+            3. For each previously suggested item:
+               - If FIXED: briefly acknowledge it was resolved (✅)
+               - If NOT FIXED: remind about the pending suggestion
+               - If PARTIALLY FIXED: note what still needs attention
+            4. focus your review only in the commits added since the last review, not the full PR
+
+            For NEW changes (commits after the last review), provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Do not nitpick, focus your review in major issues that cannot be merged.
+            address your suggestions to the class and line you are referring to.
+
+            Structure your review as:
+            ## Previous Suggestions Status (if applicable, if not, just ignore section, don't write anything)
+            [Status of each previous suggestion]
+
+            ## New Findings (if that is the first review, don't add this title)
+            [New issues found in recent commits]
+
+            ## Veredict [commit-hash]
+            [Your final verdict, and if you approve the PR or not]
+
+            Use the repository's AGENTS.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+
+            answer the review in brazilian portuguese.
+
+            start your review output with ---review--- don't translate this tag
+          " > review.md
+
+      - name: Minimize previous review comments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("## 🤖 Copilot Code Review"))) | .node_id')
+          
+          echo "$COMMENTS" | while read NODE_ID; do
+            echo "Minimizando comentário: $NODE_ID"
+            gh api graphql -f query='
+              mutation {
+                minimizeComment(input: {subjectId: "'$NODE_ID'", classifier: OUTDATED}) {
+                  minimizedComment {
+                    isMinimized
+                  }
+                }
+              }
+            '
+          done
+
+      - name: Post review as PR comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -s review.md ]; then
+            {
+              echo "## 🤖 Copilot Code Review"
+              awk '/---review---/{found=1; next} found' review.md
+              echo ""
+              echo "---"
+              echo "*Automated review powered by GitHub Copilot*"
+            } > comment.md
+
+            gh pr comment ${{ github.event.pull_request.number }} --body-file comment.md
+          else
+            echo "Copilot review output file is empty; skipping comment."
+          fi
