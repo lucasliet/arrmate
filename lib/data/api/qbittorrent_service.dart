@@ -27,13 +27,13 @@ class QBittorrentService {
   /// Uses Basic Auth parameters from [Instance.apiKey] (format: username:password).
   /// Stores the returned SID cookie for subsequent requests.
   Future<void> authenticate() async {
-    final credentials = instance.apiKey.split(':');
-    if (credentials.length != 2) {
+    final separatorIndex = instance.apiKey.indexOf(':');
+    if (separatorIndex == -1) {
       throw Exception('Invalid credentials format. Expected username:password');
     }
 
-    final username = credentials[0];
-    final password = credentials[1];
+    final username = instance.apiKey.substring(0, separatorIndex);
+    final password = instance.apiKey.substring(separatorIndex + 1);
 
     logger.debug('[QBittorrentService] Authenticating as $username...');
 

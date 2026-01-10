@@ -98,10 +98,15 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         // Let's try to get torrents (empty list is fine) just to verify auth working
         final torrents = await testService.getTorrents();
 
+        final separatorIndex = tempInstance.apiKey.indexOf(':');
+        final username = separatorIndex != -1
+            ? tempInstance.apiKey.substring(0, separatorIndex)
+            : 'User';
+
         setState(() {
           _testSuccess = true;
           _testMessage =
-              'Connection successful!\nAuthenticated as ${tempInstance.apiKey.split(':').first}\nTorrents: ${torrents.length}';
+              'Connection successful!\nAuthenticated as $username\nTorrents: ${torrents.length}';
         });
       } else {
         final instanceRepo = ref.read(instanceRepositoryProvider);
