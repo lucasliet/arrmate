@@ -1,3 +1,4 @@
+/// Represents the status of a torrent in qBittorrent.
 enum TorrentStatus {
   downloading,
   uploading,
@@ -14,6 +15,10 @@ enum TorrentStatus {
   error,
   unknown;
 
+  /// Parses a string state from the API into a [TorrentStatus].
+  ///
+  /// @param state The state string from qBittorrent API.
+  /// @return The corresponding [TorrentStatus], or [unknown] if not recognized.
   static TorrentStatus parse(String state) {
     switch (state.toLowerCase()) {
       case 'downloading':
@@ -49,6 +54,7 @@ enum TorrentStatus {
     }
   }
 
+  /// Returns a human-readable label for the status.
   String get label {
     switch (this) {
       case TorrentStatus.downloading:
@@ -80,15 +86,18 @@ enum TorrentStatus {
     }
   }
 
+  /// Returns true if the torrent is currently active (downloading, seeding, or checking).
   bool get isActive =>
       this == TorrentStatus.downloading ||
       this == TorrentStatus.uploading ||
       this == TorrentStatus.checkingDL ||
       this == TorrentStatus.checkingUP;
 
+  /// Returns true if the torrent is paused.
   bool get isPaused =>
       this == TorrentStatus.pausedDL || this == TorrentStatus.pausedUP;
 
+  /// Returns true if the torrent has encountered an error or is missing files.
   bool get hasError =>
       this == TorrentStatus.error || this == TorrentStatus.missingFiles;
 }

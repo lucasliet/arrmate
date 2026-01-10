@@ -93,6 +93,7 @@ class QBittorrentService {
     String path, {
     String method = 'GET',
     dynamic data,
+    Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
     await _ensureAuthenticated();
@@ -105,6 +106,7 @@ class QBittorrentService {
       final response = await _dio.request<T>(
         path,
         data: data,
+        queryParameters: queryParameters,
         options: options,
       );
 
@@ -118,7 +120,12 @@ class QBittorrentService {
 
         // Update cookie in options
         options.headers?['Cookie'] = _sessionCookie;
-        return await _dio.request<T>(path, data: data, options: options);
+        return await _dio.request<T>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        );
       }
 
       return response;
@@ -131,7 +138,12 @@ class QBittorrentService {
         _sessionCookie = null;
         await authenticate();
         options.headers?['Cookie'] = _sessionCookie;
-        return await _dio.request<T>(path, data: data, options: options);
+        return await _dio.request<T>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        );
       }
       rethrow;
     }
@@ -144,7 +156,7 @@ class QBittorrentService {
     try {
       final response = await _request<List>(
         '/api/v2/torrents/info',
-        data: {'filter': filter},
+        queryParameters: {'filter': filter},
       );
 
       if (response.statusCode == 200 && response.data != null) {
