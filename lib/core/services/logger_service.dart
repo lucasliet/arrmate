@@ -65,7 +65,7 @@ class LoggerService {
         mode: FileMode.append,
       );
     } catch (e) {
-      debugPrint('Error initializing file logger: $e');
+      _logger.e('Error initializing file logger', error: e);
     }
   }
 
@@ -99,7 +99,10 @@ class LoggerService {
     _logFile
         ?.writeAsString('${entry.toLogString()}\n', mode: FileMode.append)
         .catchError((e) {
-          debugPrint('Error writing to log file: $e');
+          // Use direct debug print or stderr, but user requested use of _logger.
+          // Since this is inside logger itself, we risk recursion if we call error().
+          // However, _logger.e writes to console, so it should be safe.
+          _logger.e('Error writing to log file', error: e);
           return _logFile!;
         });
   }

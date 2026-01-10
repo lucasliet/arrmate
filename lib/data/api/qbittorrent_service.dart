@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import '../../core/services/logger_service.dart';
@@ -12,7 +13,7 @@ class QBittorrentService {
 
   // Cookie for session management. Not persisted in MVP.
   String? _sessionCookie;
-  bool _isReauthenticating = false;
+  Completer<void>? _reauthCompleter;
 
   QBittorrentService(this.instance)
     : _dio = Dio(
@@ -29,6 +30,12 @@ class QBittorrentService {
   /// Uses Basic Auth parameters from [Instance.apiKey] (format: username:password).
   /// Stores the returned SID cookie for subsequent requests.
   Future<void> authenticate() async {
+    // If a re-auth is already in progress via the completer triggered by a 403,
+    // wait for it instead of starting a new one, unless we are the ones who started it.
+    // However, for explicit calls to authenticate(), we usually want to force it.
+    // For safety, let's just proceed with the logic but careful with the completer.
+    // The completer is mainly for _request to coordinate retries.
+
     final separatorIndex = instance.apiKey.indexOf(':');
     if (separatorIndex == -1) {
       throw Exception('Invalid credentials format. Expected username:password');
@@ -86,7 +93,12 @@ class QBittorrentService {
   /// Ensures user is authenticated before making a request.
   Future<void> _ensureAuthenticated() async {
     if (_sessionCookie == null) {
-      await authenticate();
+      // If re-auth is in progress, wait for it
+      if (_reauthCompleter != null && !_reauthCompleter!.isCompleted) {
+        await _reauthCompleter!.future;
+      } else {
+        await authenticate();
+      }
     }
   }
 
@@ -101,7 +113,9 @@ class QBittorrentService {
     await _ensureAuthenticated();
 
     options ??= Options();
-    options.headers = {...(options.headers ?? {}), 'Cookie': _sessionCookie};
+    if (_sessionCookie != null) {
+      options.headers = {...(options.headers ?? {}), 'Cookie': _sessionCookie};
+    }
     options.method = method;
 
     try {
@@ -114,59 +128,94 @@ class QBittorrentService {
 
       // Re-authenticate on 403 (Session expired)
       if (response.statusCode == 403) {
-        if (_isReauthenticating) {
-          logger.warning(
-            '[QBittorrentService] 403 loop detected, aborting re-auth.',
+        // Check if re-auth is already happening
+        if (_reauthCompleter != null) {
+          logger.debug(
+            '[QBittorrentService] 403 encountered, waiting for existing re-auth...',
           );
-          // Abort if already trying to re-authenticate to prevent recursion loops
-          return response; // Or throw custom error
+          await _reauthCompleter!.future;
+          // Retry with new cookie
+          if (_sessionCookie != null) {
+            options.headers?['Cookie'] = _sessionCookie;
+          }
+          return await _dio.request<T>(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+          );
         }
 
-        _isReauthenticating = true;
+        _reauthCompleter = Completer();
         try {
           logger.warning(
             '[QBittorrentService] Session expired, re-authenticating...',
           );
           _sessionCookie = null;
           await authenticate();
+          _reauthCompleter!.complete();
 
-          // Update cookie in options
-          options.headers?['Cookie'] = _sessionCookie;
+          // Retry
+          if (_sessionCookie != null) {
+            options.headers?['Cookie'] = _sessionCookie;
+          }
           return await _dio.request<T>(
             path,
             data: data,
             queryParameters: queryParameters,
             options: options,
           );
+        } catch (e) {
+          _reauthCompleter!.completeError(e);
+          rethrow;
         } finally {
-          _isReauthenticating = false;
+          _reauthCompleter = null;
         }
       }
 
       return response;
     } catch (e) {
-      // If error is 403, try re-auth once
+      // If error is 403 from DioException, logic is similar
       if (e is DioException && e.response?.statusCode == 403) {
-        if (_isReauthenticating) {
-          rethrow;
-        }
-
-        _isReauthenticating = true;
-        try {
-          logger.warning(
-            '[QBittorrentService] Session expired (DioError), re-authenticating...',
+        if (_reauthCompleter != null) {
+          logger.debug(
+            '[QBittorrentService] 403 (exception), waiting for existing re-auth...',
           );
-          _sessionCookie = null;
-          await authenticate();
-          options.headers?['Cookie'] = _sessionCookie;
+          await _reauthCompleter!.future;
+          if (_sessionCookie != null) {
+            options.headers?['Cookie'] = _sessionCookie;
+          }
           return await _dio.request<T>(
             path,
             data: data,
             queryParameters: queryParameters,
             options: options,
           );
+        }
+
+        _reauthCompleter = Completer();
+        try {
+          logger.warning(
+            '[QBittorrentService] Session expired (DioException), re-authenticating...',
+          );
+          _sessionCookie = null;
+          await authenticate();
+          _reauthCompleter!.complete();
+
+          if (_sessionCookie != null) {
+            options.headers?['Cookie'] = _sessionCookie;
+          }
+          return await _dio.request<T>(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+          );
+        } catch (authError) {
+          _reauthCompleter!.completeError(authError);
+          rethrow;
         } finally {
-          _isReauthenticating = false;
+          _reauthCompleter = null;
         }
       }
       rethrow;
