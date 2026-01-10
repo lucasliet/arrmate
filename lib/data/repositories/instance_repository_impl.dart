@@ -14,6 +14,7 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getSystemStatus(),
       InstanceType.sonarr => SonarrApi(instance).getSystemStatus(),
+      InstanceType.qbittorrent => throw UnimplementedError(),
     };
   }
 
@@ -25,6 +26,7 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getTags(),
       InstanceType.sonarr => SonarrApi(instance).getTags(),
+      InstanceType.qbittorrent => throw UnimplementedError(),
     };
   }
 }

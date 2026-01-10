@@ -7,7 +7,8 @@ import '../shared/root_folder.dart';
 /// Defines the type of Arrmate instance.
 enum InstanceType {
   radarr('Radarr'),
-  sonarr('Sonarr');
+  sonarr('Sonarr'),
+  qbittorrent('qBittorrent');
 
   final String label;
   const InstanceType(this.label);

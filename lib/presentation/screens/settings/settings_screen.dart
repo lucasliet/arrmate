@@ -67,7 +67,11 @@ class SettingsScreen extends ConsumerWidget {
 
           return ListTile(
             leading: Icon(
-              instance.type.name == 'radarr' ? Icons.movie : Icons.tv,
+              instance.type.name == 'radarr'
+                  ? Icons.movie
+                  : (instance.type.name == 'sonarr'
+                        ? Icons.tv
+                        : Icons.download),
               color: Theme.of(context).colorScheme.primary,
             ),
             title: Text(instance.label),

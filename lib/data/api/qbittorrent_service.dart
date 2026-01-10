@@ -1,0 +1,261 @@
+import 'package:dio/dio.dart';
+import '../../core/services/logger_service.dart';
+import '../../domain/models/models.dart';
+
+/// Service for interacting with qBittorrent API v2.
+///
+/// Handles authentication (cookie-based), torrent management, and adding torrents.
+class QBittorrentService {
+  final Instance instance;
+  final Dio _dio;
+
+  // Cookie for session management. Not persisted in MVP.
+  String? _sessionCookie;
+
+  QBittorrentService(this.instance)
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: instance.url,
+          connectTimeout: instance.timeout(InstanceTimeout.normal),
+          receiveTimeout: instance.timeout(InstanceTimeout.normal),
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+  /// Authenticates with the qBittorrent API.
+  ///
+  /// Uses Basic Auth parameters from [Instance.apiKey] (format: username:password).
+  /// Stores the returned SID cookie for subsequent requests.
+  Future<void> authenticate() async {
+    final credentials = instance.apiKey.split(':');
+    if (credentials.length != 2) {
+      throw Exception('Invalid credentials format. Expected username:password');
+    }
+
+    final username = credentials[0];
+    final password = credentials[1];
+
+    logger.debug('[QBittorrentService] Authenticating as $username...');
+
+    try {
+      final response = await _dio.post(
+        '/api/v2/auth/login',
+        data: FormData.fromMap({'username': username, 'password': password}),
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (status) => true,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Extract SID cookie
+        final cookies = response.headers['set-cookie'];
+        if (cookies != null && cookies.isNotEmpty) {
+          final sidCookie = cookies.firstWhere(
+            (c) => c.startsWith('SID='),
+            orElse: () => '',
+          );
+          if (sidCookie.isNotEmpty) {
+            _sessionCookie = sidCookie.split(';')[0];
+            logger.debug('[QBittorrentService] Authentication successful');
+            return;
+          }
+        }
+        // Even if no cookie returned, 200 "Ok." might mean already auth or no auth needed
+        if (response.data.toString().contains('Ok.')) {
+          logger.debug('[QBittorrentService] Auth Ok (No cookie returned)');
+          return;
+        }
+      }
+
+      if (response.statusCode == 403) {
+        throw Exception('Invalid credentials (403)');
+      }
+
+      throw Exception(
+        'Authentication failed: ${response.statusCode} - ${response.data}',
+      );
+    } catch (e) {
+      logger.error('[QBittorrentService] Auth error', e);
+      rethrow;
+    }
+  }
+
+  /// Ensures user is authenticated before making a request.
+  Future<void> _ensureAuthenticated() async {
+    if (_sessionCookie == null) {
+      await authenticate();
+    }
+  }
+
+  /// Helper to make authenticated requests with auto-retry on 401/403.
+  Future<Response<T>> _request<T>(
+    String path, {
+    String method = 'GET',
+    dynamic data,
+    Options? options,
+  }) async {
+    await _ensureAuthenticated();
+
+    options ??= Options();
+    options.headers = {...(options.headers ?? {}), 'Cookie': _sessionCookie};
+    options.method = method;
+
+    try {
+      final response = await _dio.request<T>(
+        path,
+        data: data,
+        options: options,
+      );
+
+      // Re-authenticate on 403 (Session expired)
+      if (response.statusCode == 403) {
+        logger.warning(
+          '[QBittorrentService] Session expired, re-authenticating...',
+        );
+        _sessionCookie = null;
+        await authenticate();
+
+        // Update cookie in options
+        options.headers?['Cookie'] = _sessionCookie;
+        return await _dio.request<T>(path, data: data, options: options);
+      }
+
+      return response;
+    } catch (e) {
+      // If error is 403, try re-auth once
+      if (e is DioException && e.response?.statusCode == 403) {
+        logger.warning(
+          '[QBittorrentService] Session expired (DioError), re-authenticating...',
+        );
+        _sessionCookie = null;
+        await authenticate();
+        options.headers?['Cookie'] = _sessionCookie;
+        return await _dio.request<T>(path, data: data, options: options);
+      }
+      rethrow;
+    }
+  }
+
+  /// Gets the list of torrents.
+  ///
+  /// [filter] can be 'all', 'downloading', 'seeding', 'completed', 'paused', 'active', 'inactive', 'resumed', 'stalled', 'stalled_uploading', 'stalled_downloading', 'errored'.
+  Future<List<Torrent>> getTorrents({String filter = 'all'}) async {
+    try {
+      final response = await _request<List>(
+        '/api/v2/torrents/info',
+        data: {'filter': filter},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data!
+            .map((json) => Torrent.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get torrents', e);
+      rethrow;
+    }
+  }
+
+  /// Adds torrents via URLs (Magnet or HTTP).
+  Future<void> addTorrentUrl(AddTorrentRequest request) async {
+    if (request.urls == null) {
+      throw Exception('URLs are required for addTorrentUrl');
+    }
+
+    try {
+      final formData = FormData.fromMap(request.toFormFields());
+
+      await _request('/api/v2/torrents/add', method: 'POST', data: formData);
+
+      logger.info('[QBittorrentService] Added torrent via URL');
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to add torrent (URL)', e);
+      rethrow;
+    }
+  }
+
+  /// Adds torrent via .torrent file.
+  Future<void> addTorrentFile(AddTorrentRequest request) async {
+    if (request.torrentFilePath == null) {
+      throw Exception('File path is required for addTorrentFile');
+    }
+
+    try {
+      final formMap = request.toFormFields();
+
+      // qBittorrent expects 'torrent_files' (API v2) or 'torrents' depending on version,
+      // but 'torrent_files' is widely standard for multipart.
+      final formData = FormData.fromMap({
+        'torrent_files': await MultipartFile.fromFile(
+          request.torrentFilePath!,
+          filename: request.torrentFilePath!.split('/').last,
+        ),
+        ...formMap,
+      });
+
+      await _request('/api/v2/torrents/add', method: 'POST', data: formData);
+
+      logger.info('[QBittorrentService] Added torrent via File');
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to add torrent (File)', e);
+      rethrow;
+    }
+  }
+
+  Future<void> pauseTorrents(List<String> hashes) async {
+    await _request(
+      '/api/v2/torrents/pause',
+      method: 'POST',
+      data: {'hashes': hashes.join('|')},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
+
+  Future<void> resumeTorrents(List<String> hashes) async {
+    await _request(
+      '/api/v2/torrents/resume',
+      method: 'POST',
+      data: {'hashes': hashes.join('|')},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
+
+  Future<void> deleteTorrents(
+    List<String> hashes, {
+    bool deleteFiles = false,
+  }) async {
+    await _request(
+      '/api/v2/torrents/delete',
+      method: 'POST',
+      data: {'hashes': hashes.join('|'), 'deleteFiles': deleteFiles.toString()},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
+
+  Future<void> recheckTorrents(List<String> hashes) async {
+    await _request(
+      '/api/v2/torrents/recheck',
+      method: 'POST',
+      data: {'hashes': hashes.join('|')},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
+
+  /// Tests connection and returns app version info.
+  Future<Map<String, dynamic>> testConnection() async {
+    await authenticate();
+
+    // Get version
+    final versionResp = await _request<String>('/api/v2/app/version');
+    final apiVersionResp = await _request<String>('/api/v2/app/webapiVersion');
+
+    return {
+      'version': versionResp.data,
+      'apiVersion': apiVersionResp.data,
+      'status': 'Connected',
+    };
+  }
+}

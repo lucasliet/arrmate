@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/common_widgets.dart';
+import '../../providers/instances_provider.dart'; // Add
 import 'providers/activity_provider.dart';
 import 'providers/history_provider.dart';
+import 'providers/qbittorrent_provider.dart'; // Add
 import 'widgets/queue_list_item.dart';
 import 'history_screen.dart';
+import 'qbittorrent_tab.dart'; // Add
 
 /// Main screen showing current download queue and history.
 class ActivityScreen extends ConsumerWidget {
@@ -13,15 +16,19 @@ class ActivityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final qbittorrentInstance = ref.watch(currentQBittorrentInstanceProvider);
+    final hasQBittorrent = qbittorrentInstance != null;
+
     return DefaultTabController(
-      length: 2,
+      length: hasQBittorrent ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Activity'),
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Queue'),
-              Tab(text: 'History'),
+              const Tab(text: 'Queue'),
+              const Tab(text: 'History'),
+              if (hasQBittorrent) const Tab(text: 'Torrents'),
             ],
           ),
           actions: [
@@ -30,11 +37,20 @@ class ActivityScreen extends ConsumerWidget {
               onPressed: () {
                 ref.invalidate(queueProvider);
                 ref.invalidate(activityHistoryProvider);
+                if (hasQBittorrent) {
+                  ref.invalidate(qbittorrentTorrentsProvider);
+                }
               },
             ),
           ],
         ),
-        body: TabBarView(children: [_QueueTab(), const HistoryScreen()]),
+        body: TabBarView(
+          children: [
+            _QueueTab(),
+            const HistoryScreen(),
+            if (hasQBittorrent) const QBittorrentTab(),
+          ],
+        ),
       ),
     );
   }

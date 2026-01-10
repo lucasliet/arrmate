@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
+import '../../../data/api/api.dart'; // Add this import
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/data_providers.dart';
@@ -82,21 +83,42 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     );
 
     try {
-      final instanceRepo = ref.read(instanceRepositoryProvider);
+      if (_type == InstanceType.qbittorrent) {
+        // We need to create a temporary service/instance for testing
+        // But for now, let's just use the repo if possible (but repo throws Unimplemented)
+        // OR we can't easily test without a dedicated service instance.
+        // Actually, the qbittorrentServiceProvider depends on currentQBittorrentInstanceProvider.
+        // We might need to manually create the service here or update repo to handle test.
 
-      final results = await Future.wait([
-        instanceRepo.getSystemStatus(tempInstance),
-        instanceRepo.getTags(tempInstance),
-      ]);
+        // Let's use the QBittorrentService directly with the temp instance
+        final testService = QBittorrentService(tempInstance);
+        await testService.authenticate();
+        // If auth works, we are good? Or fetch torrents as test?
+        // Let's try to get torrents (empty list is fine) just to verify auth working
+        final torrents = await testService.getTorrents();
 
-      final status = results[0] as InstanceStatus;
-      final tags = results[1] as List<Tag>;
+        setState(() {
+          _testSuccess = true;
+          _testMessage =
+              'Connection successful!\nAuthenticated as ${tempInstance.apiKey.split(':').first}\nTorrents: ${torrents.length}';
+        });
+      } else {
+        final instanceRepo = ref.read(instanceRepositoryProvider);
 
-      setState(() {
-        _testSuccess = true;
-        _testMessage =
-            'Connection successful!\nVersion: ${status.version}\nInstance: ${status.instanceName}\nTags: ${tags.length} available';
-      });
+        final results = await Future.wait([
+          instanceRepo.getSystemStatus(tempInstance),
+          instanceRepo.getTags(tempInstance),
+        ]);
+
+        final status = results[0] as InstanceStatus;
+        final tags = results[1] as List<Tag>;
+
+        setState(() {
+          _testSuccess = true;
+          _testMessage =
+              'Connection successful!\nVersion: ${status.version}\nInstance: ${status.instanceName}\nTags: ${tags.length} available';
+        });
+      }
     } catch (e) {
       setState(() {
         _testSuccess = false;
@@ -182,6 +204,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     label: Text('Sonarr'),
                     icon: Icon(Icons.tv),
                   ),
+                  ButtonSegment(
+                    value: InstanceType.qbittorrent,
+                    label: Text('qBittorrent'),
+                    icon: Icon(Icons.download),
+                  ),
                 ],
                 selected: {_type},
                 onSelectionChanged: (Set<InstanceType> newSelection) {
@@ -225,9 +252,17 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
               TextFormField(
                 controller: _apiKeyController,
-                decoration: const InputDecoration(
-                  labelText: 'API Key',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: _type == InstanceType.qbittorrent
+                      ? 'Username:Password'
+                      : 'API Key',
+                  hintText: _type == InstanceType.qbittorrent
+                      ? 'admin:adminadmin'
+                      : null,
+                  border: const OutlineInputBorder(),
+                  helperText: _type == InstanceType.qbittorrent
+                      ? 'Format: username:password'
+                      : null,
                 ),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Required' : null,
