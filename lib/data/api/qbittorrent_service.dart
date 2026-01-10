@@ -315,4 +315,18 @@ class QBittorrentService {
       'status': 'Connected',
     };
   }
+
+  /// Gets the system status including version information.
+  Future<InstanceStatus> getSystemStatus() async {
+    await _ensureAuthenticated();
+
+    final versionResp = await _request<String>('/api/v2/app/version');
+
+    return InstanceStatus(
+      appName: 'qBittorrent',
+      instanceName: instance.label,
+      version: versionResp.data ?? 'Unknown',
+      authentication: 'Basic',
+    );
+  }
 }

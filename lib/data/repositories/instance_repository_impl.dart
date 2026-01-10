@@ -1,6 +1,7 @@
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/instance_repository.dart';
+import '../api/qbittorrent_service.dart';
 import '../api/radarr_api.dart';
 import '../api/sonarr_api.dart';
 
@@ -14,7 +15,9 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getSystemStatus(),
       InstanceType.sonarr => SonarrApi(instance).getSystemStatus(),
-      InstanceType.qbittorrent => _getQBittorrentDefaultStatus(instance),
+      InstanceType.qbittorrent => QBittorrentService(
+        instance,
+      ).getSystemStatus(),
     };
   }
 
@@ -28,21 +31,6 @@ class InstanceRepositoryImpl implements InstanceRepository {
       InstanceType.sonarr => SonarrApi(instance).getTags(),
       InstanceType.qbittorrent => _getQBittorrentDefaultTags(instance),
     };
-  }
-
-  Future<InstanceStatus> _getQBittorrentDefaultStatus(Instance instance) async {
-    // Design decision: Return default values instead of throwing UnimplementedError
-    // to prevent UI crashes and allow the user to see the instance in the list
-    // even if advanced status features are not yet supported.
-    logger.warning(
-      '[InstanceRepository] getSystemStatus not implemented for qBittorrent',
-    );
-    return InstanceStatus(
-      appName: 'qBittorrent',
-      instanceName: instance.label,
-      version: 'Unknown',
-      authentication: 'Basic', // Assuming basic auth structure
-    );
   }
 
   Future<List<Tag>> _getQBittorrentDefaultTags(Instance instance) async {

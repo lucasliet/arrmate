@@ -167,7 +167,15 @@ class TorrentListItem extends StatelessWidget {
         icon = Icons.hourglass_empty;
         color = context.colorScheme.secondary;
         break;
-      default:
+      case TorrentStatus.stalledDL:
+        icon = Icons.downloading;
+        color = Colors.grey;
+        break;
+      case TorrentStatus.stalledUP:
+        icon = Icons.upload;
+        color = Colors.grey;
+        break;
+      case TorrentStatus.unknown:
         icon = Icons.question_mark;
         color = context.colorScheme.outline;
     }
