@@ -4,6 +4,8 @@ import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../providers/qbittorrent_provider.dart';
+import '../qbittorrent/change_location_sheet.dart';
+import '../qbittorrent/torrent_files_sheet.dart';
 
 class TorrentDetailsSheet extends ConsumerWidget {
   final Torrent torrent;
@@ -257,6 +259,42 @@ class TorrentDetailsSheet extends ConsumerWidget {
                             },
                             icon: const Icon(Icons.sync),
                             label: const Text('Recheck'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) =>
+                                    TorrentFilesSheet(torrent: torrent),
+                              );
+                            },
+                            icon: const Icon(Icons.folder_open),
+                            label: const Text('Files'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) =>
+                                    ChangeLocationSheet(torrent: torrent),
+                              );
+                            },
+                            icon: const Icon(Icons.drive_file_move_outline),
+                            label: const Text('Move'),
                           ),
                         ),
                       ],

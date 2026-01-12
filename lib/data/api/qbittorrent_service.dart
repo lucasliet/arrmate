@@ -374,6 +374,81 @@ class QBittorrentService {
     };
   }
 
+  /// Gets the list of files for a specific torrent.
+  Future<List<TorrentFile>> getTorrentFiles(String hash) async {
+    try {
+      final response = await _request<List>(
+        '/api/v2/torrents/files',
+        queryParameters: {'hash': hash},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // The API returns a list of files without explicit indices, so we use the list index.
+        return response.data!.asMap().entries.map((entry) {
+          return TorrentFile.fromJson(
+            entry.value as Map<String, dynamic>,
+            entry.key,
+          );
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get torrent files', e);
+      rethrow;
+    }
+  }
+
+  /// Sets the priority of files within a torrent.
+  ///
+  /// [hash] The torrent hash.
+  /// [fileIndices] List of file indices to update.
+  /// [priority] The new priority value (e.g., 0 for skip, 1 for normal, 6 for high).
+  Future<void> setFilePriority(
+    String hash,
+    List<int> fileIndices,
+    int priority,
+  ) async {
+    try {
+      if (fileIndices.isEmpty) return;
+
+      await _request(
+        '/api/v2/torrents/filePrio',
+        method: 'POST',
+        data: {
+          'hash': hash,
+          'id': fileIndices.join('|'),
+          'priority': priority.toString(),
+        },
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to set file priority', e);
+      rethrow;
+    }
+  }
+
+  /// Sets the download location for torrents.
+  ///
+  /// [hashes] List of torrent hashes.
+  /// [location] The new absolute path.
+  Future<void> setTorrentLocation(List<String> hashes, String location) async {
+    if (location.trim().isEmpty) {
+      throw Exception('Location path cannot be empty');
+    }
+
+    try {
+      await _request(
+        '/api/v2/torrents/setLocation',
+        method: 'POST',
+        data: {'hashes': hashes.join('|'), 'location': location},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to set torrent location', e);
+      rethrow;
+    }
+  }
+
   /// Gets the system status including version information.
   Future<InstanceStatus> getSystemStatus() async {
     await _ensureAuthenticated();
