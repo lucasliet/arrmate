@@ -48,6 +48,7 @@ jobs:
             TASK: Generate meaningful release notes for this version based on the changes above.
             
             GUIDELINES:
+            - Focus on meaningful changes for final user experience, so ignore technical details like refactor and tests made, etc.
             - Answer everything in brazilian portuguese
             - Start with the title '# ${{ github.repository }} ${{ github.ref_name }}'
             - Write a brief, engaging summary paragraph explaining what this release achieves.
