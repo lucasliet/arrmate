@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
 import '../providers/qbittorrent_provider.dart';
+import 'category_autocomplete_field.dart';
+import 'tags_autocomplete_field.dart';
 
 class AddTorrentSheet extends ConsumerStatefulWidget {
   const AddTorrentSheet({super.key});
@@ -17,18 +19,17 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
   final _urlsController = TextEditingController();
   final _savePathController = TextEditingController();
   final _categoryController = TextEditingController();
-  final _tagsController = TextEditingController();
 
   bool _startPaused = false;
   String? _selectedFilePath;
   bool _isSubmitting = false;
+  List<String> _selectedTags = [];
 
   @override
   void dispose() {
     _urlsController.dispose();
     _savePathController.dispose();
     _categoryController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
@@ -75,8 +76,8 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
         category: _categoryController.text.trim().isNotEmpty
             ? _categoryController.text.trim()
             : null,
-        tags: _tagsController.text.trim().isNotEmpty
-            ? _tagsController.text.trim()
+        tags: _selectedTags.isNotEmpty
+            ? _selectedTags.join(',')
             : null,
         paused: _startPaused,
       );
@@ -210,24 +211,26 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                       ),
                       const SizedBox(height: 12),
 
-                      TextFormField(
+                      CategoryAutocompleteField(
                         controller: _categoryController,
-                        decoration: const InputDecoration(
-                          labelText: 'Category (Optional)',
-                          prefixIcon: Icon(Icons.category),
-                          border: OutlineInputBorder(),
-                        ),
+                        onFetchCategories: () async {
+                          final notifier =
+                              ref.read(qbittorrentTorrentsProvider.notifier);
+                          return await notifier.fetchCategories();
+                        },
                       ),
                       const SizedBox(height: 12),
 
-                      TextFormField(
-                        controller: _tagsController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tags (Optional)',
-                          hintText: 'Comma separated',
-                          prefixIcon: Icon(Icons.label),
-                          border: OutlineInputBorder(),
-                        ),
+                      TagsAutocompleteField(
+                        selectedTags: _selectedTags,
+                        onTagsChanged: (tags) {
+                          setState(() => _selectedTags = tags);
+                        },
+                        onFetchTags: () async {
+                          final notifier =
+                              ref.read(qbittorrentTorrentsProvider.notifier);
+                          return await notifier.fetchTags();
+                        },
                       ),
                       const SizedBox(height: 12),
 

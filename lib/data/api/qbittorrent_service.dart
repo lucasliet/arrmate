@@ -462,4 +462,44 @@ class QBittorrentService {
       authentication: 'Basic',
     );
   }
+
+  /// Gets the list of categories.
+  ///
+  /// Returns a list of category names available in qBittorrent.
+  Future<List<String>> getCategories() async {
+    try {
+      final response = await _request<Map<String, dynamic>>(
+        '/api/v2/torrents/categories',
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // API returns a map where keys are category names
+        return response.data!.keys.toList();
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get categories', e);
+      rethrow;
+    }
+  }
+
+  /// Gets the list of tags.
+  ///
+  /// Returns a list of tag names available in qBittorrent.
+  Future<List<String>> getTags() async {
+    try {
+      final response = await _request<List>(
+        '/api/v2/torrents/tags',
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // API returns a list of tag names
+        return response.data!.map((tag) => tag.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get tags', e);
+      rethrow;
+    }
+  }
 }

@@ -161,4 +161,26 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     await service.addTorrentFile(request);
     ref.invalidateSelf();
   }
+
+  Future<List<String>> fetchCategories() async {
+    final service = ref.read(qbittorrentServiceProvider);
+    if (service == null) return [];
+    try {
+      return await service.getCategories();
+    } catch (e) {
+      logger.error('[QBittorrentNotifier] Failed to fetch categories', e);
+      return [];
+    }
+  }
+
+  Future<List<String>> fetchTags() async {
+    final service = ref.read(qbittorrentServiceProvider);
+    if (service == null) return [];
+    try {
+      return await service.getTags();
+    } catch (e) {
+      logger.error('[QBittorrentNotifier] Failed to fetch tags', e);
+      return [];
+    }
+  }
 }

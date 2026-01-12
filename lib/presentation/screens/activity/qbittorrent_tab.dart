@@ -30,7 +30,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => const AddTorrentSheet(),
     );
   }
