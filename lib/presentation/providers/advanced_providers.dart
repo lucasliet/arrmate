@@ -54,32 +54,63 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
 }
 
 /// Provider for fetching system health checks from all active instances.
-final healthProvider = FutureProvider<List<HealthCheck>>((ref) async {
-  final movieRepo = ref.watch(movieRepositoryProvider);
-  final seriesRepo = ref.watch(seriesRepositoryProvider);
+final healthProvider = AsyncNotifierProvider<HealthNotifier, List<HealthCheck>>(
+  () {
+    return HealthNotifier();
+  },
+);
 
-  List<HealthCheck> allChecks = [];
-
-  if (movieRepo != null) {
-    try {
-      final checks = await movieRepo.getHealth();
-      allChecks.addAll(checks);
-    } catch (e, stack) {
-      logger.error('health: movies fetch failed', e, stack);
-    }
+class HealthNotifier extends AsyncNotifier<List<HealthCheck>> {
+  @override
+  Future<List<HealthCheck>> build() async {
+    return _fetchHealth();
   }
 
-  if (seriesRepo != null) {
-    try {
-      final checks = await seriesRepo.getHealth();
-      allChecks.addAll(checks);
-    } catch (e, stack) {
-      logger.error('health: series fetch failed', e, stack);
+  Future<List<HealthCheck>> _fetchHealth() async {
+    final movieRepo = ref.watch(movieRepositoryProvider);
+    final seriesRepo = ref.watch(seriesRepositoryProvider);
+
+    List<HealthCheck> allChecks = [];
+
+    if (movieRepo != null) {
+      try {
+        final checks = await movieRepo.getHealth();
+        allChecks.addAll(checks);
+      } catch (e, stack) {
+        logger.error('health: movies fetch failed', e, stack);
+      }
     }
+
+    if (seriesRepo != null) {
+      try {
+        final checks = await seriesRepo.getHealth();
+        allChecks.addAll(checks);
+      } catch (e, stack) {
+        logger.error('health: series fetch failed', e, stack);
+      }
+    }
+
+    return allChecks;
   }
 
-  return allChecks;
-});
+  Future<void> runHealthChecks() async {
+    final movieRepo = ref.read(movieRepositoryProvider);
+    final seriesRepo = ref.read(seriesRepositoryProvider);
+
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final futures = <Future<void>>[];
+      if (movieRepo != null) futures.add(movieRepo.healthCheck());
+      if (seriesRepo != null) futures.add(seriesRepo.healthCheck());
+
+      await Future.wait(futures);
+      // Wait a bit for the server to process the command
+      await Future.delayed(const Duration(seconds: 2));
+      return _fetchHealth();
+    });
+  }
+}
 
 /// Provider for fetching Radarr quality profiles.
 final movieQualityProfilesProvider = FutureProvider<List<QualityProfile>>((

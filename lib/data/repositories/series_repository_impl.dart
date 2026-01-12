@@ -167,4 +167,10 @@ class SeriesRepositoryImpl implements SeriesRepository {
     logger.info('[SeriesRepository] Refreshing series: $seriesId');
     return _api.refreshSeries(seriesId);
   }
+
+  @override
+  Future<void> healthCheck() async {
+    logger.info('[SeriesRepository] Triggering health check');
+    return _api.healthCheck();
+  }
 }

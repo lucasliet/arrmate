@@ -88,4 +88,7 @@ abstract class MovieRepository {
 
   /// Refreshes movie metadata and scans for new files.
   Future<void> refreshMovie(int movieId);
+
+  /// Triggers a system health check.
+  Future<void> healthCheck();
 }

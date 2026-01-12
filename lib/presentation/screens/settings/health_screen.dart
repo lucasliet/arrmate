@@ -11,7 +11,17 @@ class HealthScreen extends ConsumerWidget {
     final healthAsync = ref.watch(healthProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('System Health')),
+      appBar: AppBar(
+        title: const Text('System Health'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.read(healthProvider.notifier).runHealthChecks();
+            },
+          ),
+        ],
+      ),
       body: healthAsync.when(
         data: (checks) {
           if (checks.isEmpty) {

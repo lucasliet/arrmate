@@ -97,4 +97,7 @@ abstract class SeriesRepository {
 
   /// Refreshes series metadata and scans for new files.
   Future<void> refreshSeries(int seriesId);
+
+  /// Triggers a system health check.
+  Future<void> healthCheck();
 }

@@ -359,4 +359,9 @@ class RadarrApi {
   Future<void> refreshMovie(int movieId) async {
     await sendCommand('RefreshMovie', params: {'movieId': movieId});
   }
+
+  /// Commands Radarr to run a system health check.
+  Future<void> healthCheck() async {
+    await sendCommand('HealthCheck');
+  }
 }

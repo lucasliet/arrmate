@@ -149,4 +149,10 @@ class MovieRepositoryImpl implements MovieRepository {
     logger.info('[MovieRepository] Refreshing movie: $movieId');
     return _api.refreshMovie(movieId);
   }
+
+  @override
+  Future<void> healthCheck() async {
+    logger.info('[MovieRepository] Triggering health check');
+    return _api.healthCheck();
+  }
 }

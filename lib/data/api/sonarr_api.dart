@@ -400,4 +400,9 @@ class SonarrApi {
   Future<void> refreshSeries(int seriesId) async {
     await sendCommand('RefreshSeries', params: {'seriesId': seriesId});
   }
+
+  /// Commands Sonarr to run a system health check.
+  Future<void> healthCheck() async {
+    await sendCommand('HealthCheck');
+  }
 }
