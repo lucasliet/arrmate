@@ -42,6 +42,46 @@ class TorrentListItem extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            if (torrent.hasCategory) ...[
+                              Text(
+                                torrent.category!,
+                                style: context.textTheme.labelMedium?.copyWith(
+                                  color: context.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                child: Text(
+                                  '·',
+                                  style: context.textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: context
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                              ),
+                            ],
+                            Icon(
+                              Icons.people_outline,
+                              size: 14,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${torrent.totalPeers} peers',
+                              style: context.textTheme.labelMedium?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [

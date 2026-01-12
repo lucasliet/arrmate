@@ -79,6 +79,10 @@ class Torrent extends Equatable {
 
   Duration? get estimatedTime => eta > 0 ? Duration(seconds: eta) : null;
 
+  bool get hasCategory => category != null && category!.isNotEmpty;
+
+  int get totalPeers => numSeeds + numLeechs;
+
   @override
   List<Object?> get props => [
     hash,

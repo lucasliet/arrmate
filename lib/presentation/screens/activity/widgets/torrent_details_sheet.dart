@@ -174,7 +174,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                             ),
                             _buildStatItem(
                               context,
-                              'Peers',
+                              'Leechers',
                               '${torrent.numLeechs} connected',
                               width: width,
                             ),
