@@ -477,8 +477,8 @@ class QBittorrentService {
         return response.data!.keys.toList();
       }
       return [];
-    } catch (e) {
-      logger.error('[QBittorrentService] Failed to get categories', e);
+    } catch (e, stackTrace) {
+      logger.error('[QBittorrentService] Failed to get categories', e, stackTrace);
       rethrow;
     }
   }
@@ -497,8 +497,8 @@ class QBittorrentService {
         return response.data!.map((tag) => tag.toString()).toList();
       }
       return [];
-    } catch (e) {
-      logger.error('[QBittorrentService] Failed to get tags', e);
+    } catch (e, stackTrace) {
+      logger.error('[QBittorrentService] Failed to get tags', e, stackTrace);
       rethrow;
     }
   }

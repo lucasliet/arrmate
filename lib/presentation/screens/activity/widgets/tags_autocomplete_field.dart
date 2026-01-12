@@ -70,6 +70,13 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
           _fetchFailed = true;
           _isLoading = false;
         });
+        // Show visual feedback to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not load tags. Using free text mode.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     }
   }
@@ -209,7 +216,7 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
               return Align(
                 alignment: Alignment.topLeft,
                 child: Material(
-                  elevation: 4.0,
+                  elevation: 0,
                   borderRadius: BorderRadius.circular(8.0),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(

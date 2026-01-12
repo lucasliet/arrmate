@@ -65,6 +65,13 @@ class _CategoryAutocompleteFieldState extends State<CategoryAutocompleteField> {
           _fetchFailed = true;
           _isLoading = false;
         });
+        // Show visual feedback to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not load categories. Using free text mode.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     }
   }
@@ -142,7 +149,7 @@ class _CategoryAutocompleteFieldState extends State<CategoryAutocompleteField> {
         return Align(
           alignment: Alignment.topLeft,
           child: Material(
-            elevation: 4.0,
+            elevation: 0,
             borderRadius: BorderRadius.circular(8.0),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
