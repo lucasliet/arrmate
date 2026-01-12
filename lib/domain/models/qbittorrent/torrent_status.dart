@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Represents the status of a torrent in qBittorrent.
 enum TorrentStatus {
   downloading,
@@ -100,4 +102,32 @@ enum TorrentStatus {
   /// Returns true if the torrent has encountered an error or is missing files.
   bool get hasError =>
       this == TorrentStatus.error || this == TorrentStatus.missingFiles;
+
+  /// Returns the color associated with this status.
+  Color get color {
+    switch (this) {
+      case TorrentStatus.downloading:
+        return const Color(0xFF4CAF50); // Green
+      case TorrentStatus.uploading:
+        return const Color(0xFF42A5F5); // Blue
+      case TorrentStatus.queuedDL:
+      case TorrentStatus.queuedUP:
+      case TorrentStatus.checkingDL:
+      case TorrentStatus.checkingUP:
+      case TorrentStatus.checkingResumeData:
+        return const Color(0xFFFBC02D); // Amber
+      case TorrentStatus.stalledDL:
+        return const Color(0xFFFB8C00); // Orange
+      case TorrentStatus.stalledUP:
+        return const Color(0xFFBA68C8); // Light Purple
+      case TorrentStatus.pausedDL:
+      case TorrentStatus.pausedUP:
+        return const Color(0xFF9E9E9E); // Grey
+      case TorrentStatus.error:
+      case TorrentStatus.missingFiles:
+        return const Color(0xFFE53935); // Red
+      case TorrentStatus.unknown:
+        return const Color(0xFF616161); // Dark Grey
+    }
+  }
 }
