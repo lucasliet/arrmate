@@ -168,7 +168,6 @@ class TorrentFileItem extends ConsumerWidget {
       case FilePriority.doNotDownload:
         return Colors.grey;
       case FilePriority.normal:
-      default:
         return isDark ? Colors.white70 : Colors.black54;
     }
   }

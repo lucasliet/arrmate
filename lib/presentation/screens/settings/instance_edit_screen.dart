@@ -23,6 +23,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   late TextEditingController _nameController;
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
+  late TextEditingController _usernameController;
+  late TextEditingController _passwordController;
   InstanceType _type = InstanceType.radarr;
   bool _slowMode = false;
   bool _isTesting = false;
@@ -36,6 +38,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _nameController = TextEditingController();
     _urlController = TextEditingController();
     _apiKeyController = TextEditingController();
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
 
     // Load existing if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,6 +51,17 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           _nameController.text = existing.label;
           _urlController.text = existing.url;
           _apiKeyController.text = existing.apiKey;
+
+          if (existing.type == InstanceType.qbittorrent) {
+            final parts = existing.apiKey.split(':');
+            if (parts.length >= 2) {
+              _usernameController.text = parts[0];
+              _passwordController.text = parts.sublist(1).join(':');
+            } else {
+              _usernameController.text = existing.apiKey;
+            }
+          }
+
           setState(() {
             _type = existing.type;
             _slowMode = existing.mode == InstanceMode.slow;
@@ -62,6 +77,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _nameController.dispose();
     _urlController.dispose();
     _apiKeyController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -77,7 +94,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final tempInstance = Instance(
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
-      apiKey: _apiKeyController.text.trim(),
+      apiKey: _type == InstanceType.qbittorrent
+          ? '${_usernameController.text.trim()}:${_passwordController.text.trim()}'
+          : _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
       headers: _headers,
@@ -144,7 +163,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       id: widget.instanceId,
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
-      apiKey: _apiKeyController.text.trim(),
+      apiKey: _type == InstanceType.qbittorrent
+          ? '${_usernameController.text.trim()}:${_passwordController.text.trim()}'
+          : _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
       headers: _headers,
@@ -259,23 +280,37 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _apiKeyController,
-                decoration: InputDecoration(
-                  labelText: _type == InstanceType.qbittorrent
-                      ? 'Username:Password'
-                      : 'API Key',
-                  hintText: _type == InstanceType.qbittorrent
-                      ? 'user:password'
-                      : null,
-                  border: const OutlineInputBorder(),
-                  helperText: _type == InstanceType.qbittorrent
-                      ? 'Format: username:password'
-                      : null,
+              if (_type == InstanceType.qbittorrent) ...[
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Required' : null,
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Required' : null,
-              ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
+                  obscureText: true,
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Required' : null,
+                ),
+              ] else
+                TextFormField(
+                  controller: _apiKeyController,
+                  decoration: const InputDecoration(
+                    labelText: 'API Key',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Required' : null,
+                ),
               const SizedBox(height: 16),
 
               ExpansionTile(
