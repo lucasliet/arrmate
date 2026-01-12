@@ -17,7 +17,7 @@ class CalendarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMovie = event.isMovie;
-    final color = isMovie ? Colors.blue : Colors.purple;
+    final color = event.type.getColor(context);
 
     return Card(
       elevation: 0,
@@ -49,7 +49,7 @@ class CalendarItem extends StatelessWidget {
                       errorWidget: (context, url, error) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
                         child: Icon(
-                          isMovie ? Icons.movie_outlined : Icons.tv_outlined,
+                          event.type.icon,
                           color: theme.colorScheme.outline,
                         ),
                       ),
@@ -57,7 +57,7 @@ class CalendarItem extends StatelessWidget {
                   : Container(
                       color: theme.colorScheme.surfaceContainerHighest,
                       child: Icon(
-                        isMovie ? Icons.movie_outlined : Icons.tv_outlined,
+                        event.type.icon,
                         color: theme.colorScheme.outline,
                       ),
                     ),
@@ -89,6 +89,32 @@ class CalendarItem extends StatelessWidget {
                           style: theme.textTheme.labelMedium,
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(event.type.icon, size: 12, color: color),
+                          const SizedBox(width: 4),
+                          Text(
+                            event.type.label,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
