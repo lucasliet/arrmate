@@ -351,4 +351,12 @@ class RadarrApi {
     );
     return NotificationResource.fromJson(response as Map<String, dynamic>);
   }
+
+  Future<void> rescanMovie(int movieId) async {
+    await sendCommand('RescanMovie', params: {'movieId': movieId});
+  }
+
+  Future<void> refreshMovie(int movieId) async {
+    await sendCommand('RefreshMovie', params: {'movieId': movieId});
+  }
 }

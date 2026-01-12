@@ -137,4 +137,16 @@ class MovieRepositoryImpl implements MovieRepository {
   @override
   Future<void> manualImport(List<ImportableFile> files) =>
       _api.manualImport(files);
+
+  @override
+  Future<void> rescanMovie(int movieId) async {
+    logger.info('[MovieRepository] Rescanning movie: $movieId');
+    return _api.rescanMovie(movieId);
+  }
+
+  @override
+  Future<void> refreshMovie(int movieId) async {
+    logger.info('[MovieRepository] Refreshing movie: $movieId');
+    return _api.refreshMovie(movieId);
+  }
 }

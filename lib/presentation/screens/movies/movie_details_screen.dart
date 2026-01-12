@@ -80,7 +80,21 @@ class MovieDetailsScreen extends ConsumerWidget {
                   )
                 else
                   Container(color: theme.colorScheme.surfaceContainerHighest),
-                // Gradient overlay
+                // Top Vignette for AppBar icons
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.7),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.3],
+                    ),
+                  ),
+                ),
+                // Bottom Gradient overlay
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -99,6 +113,69 @@ class MovieDetailsScreen extends ConsumerWidget {
             ),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.manage_search),
+              tooltip: 'Refresh & Scan',
+              onPressed: () async {
+                try {
+                  await ref.read(movieControllerProvider(movieId)).rescan();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Refresh & Scan triggered')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.travel_explore),
+              tooltip: 'Automatic Search',
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(movieControllerProvider(movieId))
+                      .automaticSearch();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Search started')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.troubleshoot),
+              tooltip: 'Interactive Search',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => ReleasesSheet(
+                    id: movie.id,
+                    isMovie: true,
+                    title: movie.title,
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: Icon(
                 movie.monitored ? Icons.bookmark : Icons.bookmark_border,
@@ -128,46 +205,6 @@ class MovieDetailsScreen extends ConsumerWidget {
                     );
                   }
                 }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: 'Automatic Search',
-              onPressed: () async {
-                try {
-                  await ref
-                      .read(movieControllerProvider(movieId))
-                      .automaticSearch();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Search started')),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: theme.colorScheme.error,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.travel_explore),
-              tooltip: 'Interactive Search',
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => ReleasesSheet(
-                    id: movie.id,
-                    isMovie: true,
-                    title: movie.title,
-                  ),
-                );
               },
             ),
             IconButton(

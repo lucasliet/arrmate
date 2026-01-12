@@ -155,4 +155,16 @@ class SeriesRepositoryImpl implements SeriesRepository {
   @override
   Future<void> manualImport(List<ImportableFile> files) =>
       _api.manualImport(files);
+
+  @override
+  Future<void> rescanSeries(int seriesId) async {
+    logger.info('[SeriesRepository] Rescanning series: $seriesId');
+    return _api.rescanSeries(seriesId);
+  }
+
+  @override
+  Future<void> refreshSeries(int seriesId) async {
+    logger.info('[SeriesRepository] Refreshing series: $seriesId');
+    return _api.refreshSeries(seriesId);
+  }
 }

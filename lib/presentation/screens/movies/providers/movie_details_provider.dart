@@ -67,6 +67,14 @@ class MovieController {
     if (repository == null) return;
     await repository.searchMovies([movieId]);
   }
+
+  Future<void> rescan() async {
+    final repository = ref.read(movieRepositoryProvider);
+    if (repository == null) return;
+    // Trigger update first, then scan
+    await repository.refreshMovie(movieId);
+    await repository.rescanMovie(movieId);
+  }
 }
 
 /// Provider for accessing the MovieController.

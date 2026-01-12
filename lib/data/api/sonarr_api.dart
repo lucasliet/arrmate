@@ -379,4 +379,25 @@ class SonarrApi {
     );
     return NotificationResource.fromJson(response as Map<String, dynamic>);
   }
+
+  Future<dynamic> sendCommand(
+    String name, {
+    Map<String, dynamic>? params,
+  }) async {
+    final body = {'name': name, ...?params};
+    final response = await _client.post(
+      '/command',
+      data: body,
+      customTimeout: instance.timeout(InstanceTimeout.slow),
+    );
+    return response;
+  }
+
+  Future<void> rescanSeries(int seriesId) async {
+    await sendCommand('RescanSeries', params: {'seriesId': seriesId});
+  }
+
+  Future<void> refreshSeries(int seriesId) async {
+    await sendCommand('RefreshSeries', params: {'seriesId': seriesId});
+  }
 }

@@ -82,4 +82,10 @@ abstract class MovieRepository {
 
   /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files);
+
+  /// Rescans the movie folder and updates the library.
+  Future<void> rescanMovie(int movieId);
+
+  /// Refreshes movie metadata and scans for new files.
+  Future<void> refreshMovie(int movieId);
 }

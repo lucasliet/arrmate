@@ -147,6 +147,14 @@ class SeriesController {
     await repository.searchSeries(seriesId);
   }
 
+  Future<void> rescan() async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    // Trigger update first, then scan
+    await repository.refreshSeries(seriesId);
+    await repository.rescanSeries(seriesId);
+  }
+
   /// Toggles the monitoring status for a specific season of the series.
   ///
   /// This updates the season's `monitored` field and pushes the entire series

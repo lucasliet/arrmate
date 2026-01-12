@@ -91,4 +91,10 @@ abstract class SeriesRepository {
 
   /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files);
+
+  /// Rescans the series folder and updates the library.
+  Future<void> rescanSeries(int seriesId);
+
+  /// Refreshes series metadata and scans for new files.
+  Future<void> refreshSeries(int seriesId);
 }
