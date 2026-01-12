@@ -13,6 +13,9 @@ class TorrentFile extends Equatable {
   /// The size of the file in bytes.
   final int size;
 
+  /// Returns the file name (basename) derived from the full path [name].
+  String get fileName => name.split(RegExp(r'[/\\]')).last;
+
   /// The download progress of the file (0.0 to 1.0).
   final double progress;
 

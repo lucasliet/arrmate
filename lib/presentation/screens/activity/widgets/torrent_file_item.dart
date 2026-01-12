@@ -59,7 +59,7 @@ class TorrentFileItem extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    file.name,
+                    file.fileName,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                       decoration: isDownloading
