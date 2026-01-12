@@ -124,7 +124,7 @@ class TorrentListItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${formatPercentage(torrent.progress)} done',
+                    '${formatPercentage(torrent.progress * 100)} done',
                     style: context.textTheme.bodySmall?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),

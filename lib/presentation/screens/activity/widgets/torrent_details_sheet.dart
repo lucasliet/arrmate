@@ -105,7 +105,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${formatPercentage(torrent.progress)} completed',
+                          '${formatPercentage(torrent.progress * 100)} completed',
                           style: context.textTheme.bodyMedium,
                         ),
                         Text(

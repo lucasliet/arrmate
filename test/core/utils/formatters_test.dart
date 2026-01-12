@@ -30,4 +30,17 @@ void main() {
       expect(formatInstanceVersion(' '), '');
     });
   });
+
+  group('formatPercentage', () {
+    test('should format integer double values without decimals', () {
+      expect(formatPercentage(50.0), '50%');
+      expect(formatPercentage(0.0), '0%');
+      expect(formatPercentage(100.0), '100%');
+    });
+
+    test('should round decimal values', () {
+      expect(formatPercentage(50.5), '51%');
+      expect(formatPercentage(50.4), '50%');
+    });
+  });
 }
