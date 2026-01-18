@@ -478,11 +478,7 @@ class QBittorrentService {
       }
       return [];
     } catch (e, stackTrace) {
-      logger.error(
-        '[QBittorrentService] Failed to get categories',
-        e,
-        stackTrace,
-      );
+      logger.error('[QBittorrentService] Failed to get categories', e, stackTrace);
       rethrow;
     }
   }
@@ -492,7 +488,9 @@ class QBittorrentService {
   /// Returns a list of tag names available in qBittorrent.
   Future<List<String>> getTags() async {
     try {
-      final response = await _request<List>('/api/v2/torrents/tags');
+      final response = await _request<List>(
+        '/api/v2/torrents/tags',
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         // API returns a list of tag names

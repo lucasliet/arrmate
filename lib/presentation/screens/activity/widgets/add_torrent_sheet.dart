@@ -76,7 +76,9 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
         category: _categoryController.text.trim().isNotEmpty
             ? _categoryController.text.trim()
             : null,
-        tags: _selectedTags.isNotEmpty ? _selectedTags.join(',') : null,
+        tags: _selectedTags.isNotEmpty
+            ? _selectedTags.join(',')
+            : null,
         paused: _startPaused,
       );
 
@@ -212,9 +214,8 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                       CategoryAutocompleteField(
                         controller: _categoryController,
                         onFetchCategories: () async {
-                          final notifier = ref.read(
-                            qbittorrentTorrentsProvider.notifier,
-                          );
+                          final notifier =
+                              ref.read(qbittorrentTorrentsProvider.notifier);
                           return await notifier.fetchCategories();
                         },
                       ),
@@ -226,9 +227,8 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                           setState(() => _selectedTags = tags);
                         },
                         onFetchTags: () async {
-                          final notifier = ref.read(
-                            qbittorrentTorrentsProvider.notifier,
-                          );
+                          final notifier =
+                              ref.read(qbittorrentTorrentsProvider.notifier);
                           return await notifier.fetchTags();
                         },
                       ),

@@ -143,75 +143,69 @@ void main() {
   });
 
   group('CalendarNotifier', () {
-    test(
-      'should generate multiple events for movie with multiple dates',
-      () async {
-        final now = DateTime.now();
-        final inCinemas = now.add(const Duration(days: 1));
-        final digitalRelease = now.add(const Duration(days: 20));
-        final physicalRelease = now.add(const Duration(days: 40));
+    test('should generate multiple events for movie with multiple dates',
+        () async {
+      final now = DateTime.now();
+      final inCinemas = now.add(const Duration(days: 1));
+      final digitalRelease = now.add(const Duration(days: 20));
+      final physicalRelease = now.add(const Duration(days: 40));
 
-        final movie = Movie(
-          tmdbId: 1,
-          title: 'Test Movie',
-          sortTitle: 'test movie',
-          runtime: 120,
-          year: 2023,
-          monitored: true,
-          hasFile: false,
-          isAvailable: true,
-          minimumAvailability: MovieStatus.released,
-          status: MovieStatus.released,
-          added: now,
-          qualityProfileId: 1,
-          images: [],
-          inCinemas: inCinemas,
-          digitalRelease: digitalRelease,
-          physicalRelease: physicalRelease,
-        );
+      final movie = Movie(
+        tmdbId: 1,
+        title: 'Test Movie',
+        sortTitle: 'test movie',
+        runtime: 120,
+        year: 2023,
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+        minimumAvailability: MovieStatus.released,
+        status: MovieStatus.released,
+        added: now,
+        qualityProfileId: 1,
+        images: [],
+        inCinemas: inCinemas,
+        digitalRelease: digitalRelease,
+        physicalRelease: physicalRelease,
+      );
 
-        final container = ProviderContainer(
-          overrides: [
-            movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-            seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          movieRepositoryProvider.overrideWithValue(mockMovieRepository),
+          seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        when(
-          () => mockMovieRepository.getCalendar(
+      when(() => mockMovieRepository.getCalendar(
             start: any(named: 'start'),
             end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => [movie]);
+          )).thenAnswer((_) async => [movie]);
 
-        when(
-          () => mockSeriesRepository.getCalendar(
+      when(() => mockSeriesRepository.getCalendar(
             start: any(named: 'start'),
             end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => []);
+          )).thenAnswer((_) async => []);
 
-        await container.read(calendarProvider.future);
+      await container.read(calendarProvider.future);
 
-        final events = container.read(calendarProvider).value!;
+      final events = container.read(calendarProvider).value!;
 
-        // Should generate 3 events: cinema, digital, physical
-        expect(events.length, 3);
-        expect(
-          events.where((e) => e.type == CalendarEventType.cinema).length,
-          1,
-        );
-        expect(
-          events.where((e) => e.type == CalendarEventType.digital).length,
-          1,
-        );
-        expect(
-          events.where((e) => e.type == CalendarEventType.physical).length,
-          1,
-        );
-      },
-    );
+      // Should generate 3 events: cinema, digital, physical
+      expect(events.length, 3);
+      expect(
+        events.where((e) => e.type == CalendarEventType.cinema).length,
+        1,
+      );
+      expect(
+        events.where((e) => e.type == CalendarEventType.digital).length,
+        1,
+      );
+      expect(
+        events.where((e) => e.type == CalendarEventType.physical).length,
+        1,
+      );
+    });
 
     test('should generate single event for movie with only one date', () async {
       final now = DateTime.now();
@@ -242,19 +236,15 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      when(
-        () => mockMovieRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => [movie]);
+      when(() => mockMovieRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => [movie]);
 
-      when(
-        () => mockSeriesRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => []);
+      when(() => mockSeriesRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => []);
 
       await container.read(calendarProvider.future);
 
@@ -265,59 +255,53 @@ void main() {
       expect(events.first.type, CalendarEventType.cinema);
     });
 
-    test(
-      'should use fallback digital event for movie without specific dates',
-      () async {
-        final now = DateTime.now();
+    test('should use fallback digital event for movie without specific dates',
+        () async {
+      final now = DateTime.now();
 
-        final movie = Movie(
-          tmdbId: 1,
-          title: 'Test Movie',
-          sortTitle: 'test movie',
-          runtime: 120,
-          year: 2023,
-          monitored: true,
-          hasFile: false,
-          isAvailable: true,
-          minimumAvailability: MovieStatus.released,
-          status: MovieStatus.released,
-          added: now,
-          qualityProfileId: 1,
-          images: [],
-        );
+      final movie = Movie(
+        tmdbId: 1,
+        title: 'Test Movie',
+        sortTitle: 'test movie',
+        runtime: 120,
+        year: 2023,
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+        minimumAvailability: MovieStatus.released,
+        status: MovieStatus.released,
+        added: now,
+        qualityProfileId: 1,
+        images: [],
+      );
 
-        final container = ProviderContainer(
-          overrides: [
-            movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-            seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          movieRepositoryProvider.overrideWithValue(mockMovieRepository),
+          seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        when(
-          () => mockMovieRepository.getCalendar(
+      when(() => mockMovieRepository.getCalendar(
             start: any(named: 'start'),
             end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => [movie]);
+          )).thenAnswer((_) async => [movie]);
 
-        when(
-          () => mockSeriesRepository.getCalendar(
+      when(() => mockSeriesRepository.getCalendar(
             start: any(named: 'start'),
             end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => []);
+          )).thenAnswer((_) async => []);
 
-        await container.read(calendarProvider.future);
+      await container.read(calendarProvider.future);
 
-        final events = container.read(calendarProvider).value!;
+      final events = container.read(calendarProvider).value!;
 
-        // Should generate 1 event: digital fallback using 'added' date
-        expect(events.length, 1);
-        expect(events.first.type, CalendarEventType.digital);
-        expect(events.first.releaseDate, movie.added);
-      },
-    );
+      // Should generate 1 event: digital fallback using 'added' date
+      expect(events.length, 1);
+      expect(events.first.type, CalendarEventType.digital);
+      expect(events.first.releaseDate, movie.added);
+    });
 
     test('should sort events by date and then by type priority', () async {
       final now = DateTime.now();
@@ -365,19 +349,15 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      when(
-        () => mockMovieRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => [movie1, movie2]);
+      when(() => mockMovieRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => [movie1, movie2]);
 
-      when(
-        () => mockSeriesRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => []);
+      when(() => mockSeriesRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => []);
 
       await container.read(calendarProvider.future);
 
@@ -430,19 +410,15 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      when(
-        () => mockMovieRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => []);
+      when(() => mockMovieRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => []);
 
-      when(
-        () => mockSeriesRepository.getCalendar(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-        ),
-      ).thenAnswer((_) async => [episode]);
+      when(() => mockSeriesRepository.getCalendar(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => [episode]);
 
       await container.read(calendarProvider.future);
 

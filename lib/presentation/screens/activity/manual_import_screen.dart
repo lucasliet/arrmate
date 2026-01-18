@@ -5,12 +5,15 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/extensions/context_extensions.dart';
 import '../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
-import 'providers/manual_import_controller.dart';
-import 'widgets/import_mapping_modal.dart';
+import 'providers/manual_import_provider.dart';
 import 'widgets/importable_file_item.dart';
 
+/// A modal sheet for manually importing files from a download.
 class ManualImportScreen extends ConsumerStatefulWidget {
+  /// The ID of the download to import files from.
   final String downloadId;
+
+  /// The title of the import operation/download.
   final String title;
 
   const ManualImportScreen({
@@ -29,9 +32,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controllerState = ref.watch(
-      manualImportControllerNotifierProvider(widget.downloadId),
-    );
+    final filesState = ref.watch(manualImportFilesProvider(widget.downloadId));
     final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
@@ -43,7 +44,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
         return Column(
           children: [
             AppBar(
-              title: const Text('Manual Import'),
+              title: Text('Manual Import'),
               automaticallyImplyLeading: false,
               actions: [
                 if (_selectedFileIds.isNotEmpty)
@@ -65,9 +66,9 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: controllerState.when(
-                data: (state) {
-                  if (state.files.isEmpty) {
+              child: filesState.when(
+                data: (files) {
+                  if (files.isEmpty) {
                     return EmptyState(
                       icon: Icons.file_download_off_outlined,
                       title: 'No Importable Files',
@@ -80,9 +81,9 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                     controller: scrollController,
                     padding: const EdgeInsets.all(paddingMd),
                     children: [
-                      _buildHeader(theme, state.files),
+                      _buildHeader(theme, files),
                       const SizedBox(height: paddingMd),
-                      ...state.files.map(
+                      ...files.map(
                         (file) => ImportableFileItem(
                           file: file,
                           isSelected: _selectedFileIds.contains(file.id),
@@ -95,7 +96,6 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                               }
                             });
                           },
-                          onEdit: () => _openMappingModal(file),
                         ),
                       ),
                     ],
@@ -106,9 +106,8 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                 ),
                 error: (error, stack) => ErrorDisplay(
                   message: 'Failed to load importable files',
-                  onRetry: () => ref.invalidate(
-                    manualImportControllerNotifierProvider(widget.downloadId),
-                  ),
+                  onRetry: () =>
+                      ref.refresh(manualImportFilesProvider(widget.downloadId)),
                 ),
               ),
             ),
@@ -121,7 +120,6 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
   Widget _buildHeader(ThemeData theme, List<ImportableFile> files) {
     final validFiles = files.where((f) => !f.hasRejections).length;
     final rejectedFiles = files.where((f) => f.hasRejections).length;
-    final mappedFiles = files.where((f) => f.series != null).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,28 +131,27 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
           ),
         ),
         const SizedBox(height: paddingSm),
-        Wrap(
-          spacing: 12,
-          runSpacing: 4,
+        Row(
           children: [
-            if (validFiles > 0)
-              _buildStatBadge(
-                Icons.check_circle_outline,
+            if (validFiles > 0) ...[
+              Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
                 '$validFiles valid',
-                Colors.green,
+                style: theme.textTheme.bodySmall?.copyWith(color: Colors.green),
               ),
-            if (rejectedFiles > 0)
-              _buildStatBadge(
-                Icons.warning_amber_rounded,
+            ],
+            if (validFiles > 0 && rejectedFiles > 0) const Text(' • '),
+            if (rejectedFiles > 0) ...[
+              Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
+              const SizedBox(width: 4),
+              Text(
                 '$rejectedFiles with issues',
-                Colors.orange,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orange,
+                ),
               ),
-            if (mappedFiles > 0)
-              _buildStatBadge(
-                Icons.link,
-                '$mappedFiles mapped',
-                theme.colorScheme.primary,
-              ),
+            ],
           ],
         ),
         if (_selectedFileIds.isNotEmpty) ...[
@@ -171,98 +168,33 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
     );
   }
 
-  Widget _buildStatBadge(IconData icon, String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: color)),
-      ],
-    );
-  }
-
-  void _openMappingModal(ImportableFile file) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => ImportMappingModal(
-        file: file,
-        onApply: (updatedFile) {
-          ref
-              .read(
-                manualImportControllerNotifierProvider(
-                  widget.downloadId,
-                ).notifier,
-              )
-              .updateFile(file.id, updatedFile);
-        },
-        onApplyToSimilar: () {
-          ref
-              .read(
-                manualImportControllerNotifierProvider(
-                  widget.downloadId,
-                ).notifier,
-              )
-              .applyMappingToSimilar(file.id);
-        },
-      ),
-    );
-  }
-
   Future<void> _handleImport() async {
-    final controller = ref.read(
-      manualImportControllerNotifierProvider(widget.downloadId).notifier,
-    );
-
-    final warnings = controller.validateBeforeImport(_selectedFileIds.toList());
-    if (warnings.isNotEmpty) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Import Warnings'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('The following issues were found:'),
-              const SizedBox(height: 8),
-              ...warnings.map(
-                (w) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $w', style: const TextStyle(fontSize: 12)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('Continue anyway?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Import Anyway'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed != true) return;
-    }
-
     try {
+      final filesState = await ref.read(
+        manualImportFilesProvider(widget.downloadId).future,
+      );
+      final selectedFiles = filesState
+          .where((f) => _selectedFileIds.contains(f.id))
+          .toList();
+
+      if (selectedFiles.isEmpty) {
+        if (mounted) {
+          context.showErrorSnackBar('No files selected');
+        }
+        return;
+      }
+
       setState(() => _isImporting = true);
 
-      await controller.commitImport(_selectedFileIds.toList());
+      final controller = ref.read(
+        manualImportControllerProvider(widget.downloadId),
+      );
+      await controller.importFiles(selectedFiles);
 
       if (mounted) {
         Navigator.pop(context);
         context.showSnackBar(
-          '${_selectedFileIds.length} file(s) imported successfully',
+          '${selectedFiles.length} file(s) imported successfully',
         );
       }
     } catch (e) {

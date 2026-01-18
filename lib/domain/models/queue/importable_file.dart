@@ -95,38 +95,6 @@ class ImportableFile extends Equatable {
     };
   }
 
-  ImportableFile copyWith({
-    int? id,
-    String? name,
-    String? path,
-    String? relativePath,
-    int? size,
-    MediaQuality? quality,
-    List<MediaLanguage>? languages,
-    String? releaseGroup,
-    String? downloadId,
-    List<ImportableFileRejection>? rejections,
-    Movie? movie,
-    Series? series,
-    List<Episode>? episodes,
-  }) {
-    return ImportableFile(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      path: path ?? this.path,
-      relativePath: relativePath ?? this.relativePath,
-      size: size ?? this.size,
-      quality: quality ?? this.quality,
-      languages: languages ?? this.languages,
-      releaseGroup: releaseGroup ?? this.releaseGroup,
-      downloadId: downloadId ?? this.downloadId,
-      rejections: rejections ?? this.rejections,
-      movie: movie ?? this.movie,
-      series: series ?? this.series,
-      episodes: episodes ?? this.episodes,
-    );
-  }
-
   @override
   List<Object?> get props => [
     id,

@@ -90,23 +90,22 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
   }
 
   void _removeTag(String tag) {
-    widget.onTagsChanged(widget.selectedTags.where((t) => t != tag).toList());
+    widget.onTagsChanged(
+      widget.selectedTags.where((t) => t != tag).toList(),
+    );
   }
 
   void _handleSubmit(String value) {
     // Handle comma-separated input
-    final tags = value
-        .split(',')
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty);
+    final tags = value.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
     final newTags = <String>[...widget.selectedTags];
-
+    
     for (final tag in tags) {
       if (!newTags.contains(tag)) {
         newTags.add(tag);
       }
     }
-
+    
     if (newTags.length != widget.selectedTags.length) {
       widget.onTagsChanged(newTags);
       _textController.clear();
@@ -164,94 +163,90 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
             textEditingController: _textController,
             optionsBuilder: (TextEditingValue textEditingValue) {
               if (textEditingValue.text.isEmpty || _availableTags.isEmpty) {
-                return _availableTags.where(
-                  (tag) => !widget.selectedTags.contains(tag),
-                );
+                return _availableTags
+                    .where((tag) => !widget.selectedTags.contains(tag));
               }
-              return _availableTags.where(
-                (tag) =>
-                    !widget.selectedTags.contains(tag) &&
-                    tag.toLowerCase().contains(
-                      textEditingValue.text.toLowerCase(),
-                    ),
-              );
+              return _availableTags
+                  .where(
+                    (tag) =>
+                        !widget.selectedTags.contains(tag) &&
+                        tag
+                            .toLowerCase()
+                            .contains(textEditingValue.text.toLowerCase()),
+                  );
             },
             onSelected: (String selection) {
               _addTag(selection);
             },
-            fieldViewBuilder:
-                (
-                  BuildContext context,
-                  TextEditingController textEditingController,
-                  FocusNode focusNode,
-                  VoidCallback onFieldSubmitted,
-                ) {
-                  return TextFormField(
-                    controller: textEditingController,
-                    focusNode: focusNode,
-                    decoration: InputDecoration(
-                      labelText: 'Tags (Optional)',
-                      hintText: 'Type to search or add custom tags',
-                      prefixIcon: _isLoading
-                          ? const Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          : const Icon(Icons.label),
-                      border: const OutlineInputBorder(),
-                    ),
-                    onFieldSubmitted: (value) {
-                      _handleSubmit(value);
-                      onFieldSubmitted();
-                    },
-                  );
+            fieldViewBuilder: (
+              BuildContext context,
+              TextEditingController textEditingController,
+              FocusNode focusNode,
+              VoidCallback onFieldSubmitted,
+            ) {
+              return TextFormField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: 'Tags (Optional)',
+                  hintText: 'Type to search or add custom tags',
+                  prefixIcon: _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : const Icon(Icons.label),
+                  border: const OutlineInputBorder(),
+                ),
+                onFieldSubmitted: (value) {
+                  _handleSubmit(value);
+                  onFieldSubmitted();
                 },
-            optionsViewBuilder:
-                (
-                  BuildContext context,
-                  AutocompleteOnSelected<String> onSelected,
-                  Iterable<String> options,
-                ) {
-                  return Align(
-                    alignment: Alignment.topLeft,
-                    child: Material(
-                      elevation: 0,
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxHeight: 200,
-                          maxWidth: 300,
-                        ),
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: options.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final String option = options.elementAt(index);
-                            return InkWell(
-                              onTap: () {
-                                onSelected(option);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                  vertical: 12.0,
-                                ),
-                                child: Text(option),
-                              ),
-                            );
+              );
+            },
+            optionsViewBuilder: (
+              BuildContext context,
+              AutocompleteOnSelected<String> onSelected,
+              Iterable<String> options,
+            ) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 200,
+                      maxWidth: 300,
+                    ),
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final String option = options.elementAt(index);
+                        return InkWell(
+                          onTap: () {
+                            onSelected(option);
                           },
-                        ),
-                      ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
+                            ),
+                            child: Text(option),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                ),
+              );
+            },
           ),
       ],
     );
