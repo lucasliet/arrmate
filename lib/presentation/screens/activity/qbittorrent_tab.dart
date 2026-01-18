@@ -110,19 +110,28 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                   );
                 }
 
-                final filteredTorrents = torrents.where((t) {
-                  if (_selectedFilter == 'all') return true;
-                  if (_selectedFilter == 'downloading') {
-                    return t.status.isActive && !t.status.isPaused;
-                  }
-                  if (_selectedFilter == 'seeding') {
-                    return t.status == TorrentStatus.uploading ||
-                        t.status == TorrentStatus.stalledUP;
-                  }
-                  if (_selectedFilter == 'paused') return t.status.isPaused;
-                  if (_selectedFilter == 'error') return t.status.hasError;
-                  return true;
-                }).toList();
+                final filteredTorrents =
+                    torrents.where((t) {
+                      if (_selectedFilter == 'all') return true;
+                      if (_selectedFilter == 'downloading') {
+                        return t.status.isActive && !t.status.isPaused;
+                      }
+                      if (_selectedFilter == 'seeding') {
+                        return t.status == TorrentStatus.uploading ||
+                            t.status == TorrentStatus.stalledUP;
+                      }
+                      if (_selectedFilter == 'paused') return t.status.isPaused;
+                      if (_selectedFilter == 'error') return t.status.hasError;
+                      return true;
+                    }).toList()..sort((a, b) {
+                      final aIsActive = a.status.isActive && !a.status.isPaused;
+                      final bIsActive = b.status.isActive && !b.status.isPaused;
+                      if (aIsActive && !bIsActive) return -1;
+                      if (!aIsActive && bIsActive) return 1;
+                      return a.name.toLowerCase().compareTo(
+                        b.name.toLowerCase(),
+                      );
+                    });
 
                 if (filteredTorrents.isEmpty) {
                   return const Center(
