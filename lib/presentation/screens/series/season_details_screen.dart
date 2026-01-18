@@ -98,12 +98,12 @@ class _EpisodeTile extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.travel_explore),
             tooltip: 'Automatic Search',
             onPressed: () => _handleAutomaticSearch(context, ref),
           ),
           IconButton(
-            icon: const Icon(Icons.travel_explore),
+            icon: const Icon(Icons.troubleshoot),
             tooltip: 'Interactive Search',
             onPressed: () {
               showModalBottomSheet(
