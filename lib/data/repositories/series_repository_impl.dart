@@ -153,6 +153,10 @@ class SeriesRepositoryImpl implements SeriesRepository {
       _api.getImportableFiles(downloadId);
 
   @override
+  Future<List<ImportableFile>> getImportableFilesByFolder(String folderPath) =>
+      _api.getImportableFilesByFolder(folderPath);
+
+  @override
   Future<void> manualImport(List<ImportableFile> files) =>
       _api.manualImport(files);
 

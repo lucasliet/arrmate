@@ -89,6 +89,9 @@ abstract class SeriesRepository {
   /// Retrieves files available for manual import.
   Future<List<ImportableFile>> getImportableFiles(String downloadId);
 
+  /// Retrieves files available for manual import from a folder path.
+  Future<List<ImportableFile>> getImportableFilesByFolder(String folderPath);
+
   /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files);
 

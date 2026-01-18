@@ -315,6 +315,19 @@ class SonarrApi {
         .toList();
   }
 
+  /// Retrieves files available for manual import from a folder path.
+  Future<List<ImportableFile>> getImportableFilesByFolder(
+    String folderPath,
+  ) async {
+    final response = await _client.get(
+      '/manualimport',
+      queryParameters: {'folder': folderPath, 'filterExistingFiles': false},
+    );
+    return (response as List)
+        .map((e) => ImportableFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Manually imports the selected [files].
   Future<void> manualImport(List<ImportableFile> files) async {
     await _client.post(

@@ -6,6 +6,7 @@ import '../../../../domain/models/models.dart';
 import '../providers/qbittorrent_provider.dart';
 import '../qbittorrent/change_location_sheet.dart';
 import '../qbittorrent/torrent_files_sheet.dart';
+import 'torrent_import_target_sheet.dart';
 
 class TorrentDetailsSheet extends ConsumerWidget {
   final Torrent torrent;
@@ -300,6 +301,18 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    if (torrent.isComplete)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => _showImportTargetSheet(context),
+                            icon: const Icon(Icons.download_done),
+                            label: const Text('Import to Media Library'),
+                          ),
+                        ),
+                      ),
                     SizedBox(
                       width: double.infinity,
                       child: TextButton.icon(
@@ -318,6 +331,15 @@ class TorrentDetailsSheet extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showImportTargetSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TorrentImportTargetSheet(torrent: torrent),
     );
   }
 
