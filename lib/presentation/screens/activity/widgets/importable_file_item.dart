@@ -4,27 +4,24 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 
-/// A selectable list item for manual import files, showing file details and quality.
 class ImportableFileItem extends StatelessWidget {
-  /// The file to display.
   final ImportableFile file;
-
-  /// Whether this file is currently selected for import.
   final bool isSelected;
-
-  /// Callback when the selection state changes.
   final ValueChanged<bool> onChanged;
+  final VoidCallback? onEdit;
 
   const ImportableFileItem({
     super.key,
     required this.file,
     required this.isSelected,
     required this.onChanged,
+    this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasMapping = file.series != null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -61,6 +58,10 @@ class ImportableFileItem extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (hasMapping) ...[
+                      const SizedBox(height: 8),
+                      _buildMappingBadge(theme),
+                    ],
                     if (file.hasRejections) ...[
                       const SizedBox(height: 8),
                       Wrap(
@@ -74,9 +75,57 @@ class ImportableFileItem extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onEdit != null) ...[
+                const SizedBox(width: paddingSm),
+                IconButton(
+                  icon: Icon(
+                    hasMapping ? Icons.edit : Icons.add_link,
+                    color: hasMapping
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  tooltip: hasMapping ? 'Edit mapping' : 'Map to series',
+                  onPressed: onEdit,
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMappingBadge(ThemeData theme) {
+    final seriesTitle = file.series!.title;
+    final episodeCount = file.episodes?.length ?? 0;
+    final episodeInfo = episodeCount > 0
+        ? file.episodes!.map((e) => e.episodeLabel).join(', ')
+        : 'No episodes';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.tv, size: 14, color: theme.colorScheme.onPrimaryContainer),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              '$seriesTitle • $episodeInfo',
+              style: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
