@@ -280,10 +280,9 @@ class QBittorrentService {
     try {
       final formMap = request.toFormFields();
 
-      // qBittorrent expects 'torrent_files' (API v2) or 'torrents' depending on version,
-      // but 'torrent_files' is widely standard for multipart.
+      // qBittorrent expects 'torrents' for file upload in API v2
       final formData = FormData.fromMap({
-        'torrent_files': await MultipartFile.fromFile(
+        'torrents': await MultipartFile.fromFile(
           request.torrentFilePath!,
           filename: p.basename(request.torrentFilePath!),
         ),
