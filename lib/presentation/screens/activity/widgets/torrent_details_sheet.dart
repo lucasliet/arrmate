@@ -345,6 +345,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     bool deleteFiles = false;
+    final outerContext = context;
 
     showDialog(
       context: context,
@@ -374,13 +375,34 @@ class TorrentDetailsSheet extends ConsumerWidget {
                 child: const Text('Cancel'),
               ),
               FilledButton(
-                onPressed: () {
-                  ref.read(qbittorrentTorrentsProvider.notifier).deleteTorrents(
-                    [torrent.hash],
-                    deleteFiles: deleteFiles,
-                  );
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Close sheet
+                onPressed: () async {
+                  final dialogNavigator = Navigator.of(context);
+                  final sheetNavigator = Navigator.of(outerContext);
+
+                  try {
+                    await ref
+                        .read(qbittorrentTorrentsProvider.notifier)
+                        .deleteTorrents([
+                          torrent.hash,
+                        ], deleteFiles: deleteFiles);
+
+                    if (dialogNavigator.canPop()) {
+                      dialogNavigator.pop();
+                    }
+                    if (sheetNavigator.canPop()) {
+                      sheetNavigator.pop();
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to remove torrent: $e'),
+                          backgroundColor: context.colorScheme.error,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: context.colorScheme.error,
