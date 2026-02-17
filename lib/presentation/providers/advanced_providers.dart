@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/models.dart';
+import '../../domain/repositories/repositories.dart';
 import '../../core/services/logger_service.dart';
 import 'data_providers.dart';
 
@@ -63,13 +64,15 @@ final healthProvider = AsyncNotifierProvider<HealthNotifier, List<HealthCheck>>(
 class HealthNotifier extends AsyncNotifier<List<HealthCheck>> {
   @override
   Future<List<HealthCheck>> build() async {
-    return _fetchHealth();
-  }
-
-  Future<List<HealthCheck>> _fetchHealth() async {
     final movieRepo = ref.watch(movieRepositoryProvider);
     final seriesRepo = ref.watch(seriesRepositoryProvider);
+    return _fetchHealth(movieRepo, seriesRepo);
+  }
 
+  Future<List<HealthCheck>> _fetchHealth(
+    MovieRepository? movieRepo,
+    SeriesRepository? seriesRepo,
+  ) async {
     List<HealthCheck> allChecks = [];
 
     if (movieRepo != null) {
@@ -97,18 +100,35 @@ class HealthNotifier extends AsyncNotifier<List<HealthCheck>> {
     final movieRepo = ref.read(movieRepositoryProvider);
     final seriesRepo = ref.read(seriesRepositoryProvider);
 
-    state = const AsyncLoading();
+    state = AsyncLoading<List<HealthCheck>>().copyWithPrevious(state);
 
-    state = await AsyncValue.guard(() async {
-      final futures = <Future<void>>[];
-      if (movieRepo != null) futures.add(movieRepo.healthCheck());
-      if (seriesRepo != null) futures.add(seriesRepo.healthCheck());
+    final futures = <Future<void>>[];
+    if (movieRepo != null) {
+      futures.add(
+        movieRepo.healthCheck().catchError((e, stack) {
+          logger.warning(
+            '[HealthNotifier] healthCheck command failed for movie instance',
+            e,
+            stack,
+          );
+        }),
+      );
+    }
+    if (seriesRepo != null) {
+      futures.add(
+        seriesRepo.healthCheck().catchError((e, stack) {
+          logger.warning(
+            '[HealthNotifier] healthCheck command failed for series instance',
+            e,
+            stack,
+          );
+        }),
+      );
+    }
 
-      await Future.wait(futures);
-      // Wait a bit for the server to process the command
-      await Future.delayed(const Duration(seconds: 2));
-      return _fetchHealth();
-    });
+    await Future.wait(futures);
+    await Future.delayed(const Duration(seconds: 2));
+    state = await AsyncValue.guard(() => _fetchHealth(movieRepo, seriesRepo));
   }
 }
 

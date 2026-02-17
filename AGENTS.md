@@ -21,6 +21,8 @@ and **qBittorrent** (for downloads).
       recheck.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
+    - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
+      media library with file mapping and target selection (Movies/Series).
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including
