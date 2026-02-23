@@ -207,19 +207,15 @@ class MovieDetailsScreen extends ConsumerWidget {
                 }
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => MovieEditScreen(movie: movie),
-                  ),
-                );
-              },
-            ),
             PopupMenuButton<String>(
               onSelected: (value) async {
-                if (value == 'delete') {
+                if (value == 'edit') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => MovieEditScreen(movie: movie),
+                    ),
+                  );
+                } else if (value == 'delete') {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -265,6 +261,16 @@ class MovieDetailsScreen extends ConsumerWidget {
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text('Edit'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(

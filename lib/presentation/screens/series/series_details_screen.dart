@@ -193,21 +193,17 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 }
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SeriesEditScreen(series: series),
-                    fullscreenDialog: true,
-                  ),
-                );
-              },
-            ),
             PopupMenuButton<String>(
               onSelected: (value) async {
-                if (value == 'delete') {
+                if (value == 'edit') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SeriesEditScreen(series: series),
+                      fullscreenDialog: true,
+                    ),
+                  );
+                } else if (value == 'delete') {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -253,6 +249,16 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text('Edit'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
