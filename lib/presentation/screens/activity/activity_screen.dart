@@ -33,7 +33,6 @@ class ActivityScreen extends ConsumerWidget {
             ],
           ),
           actions: [
-            const NotificationIconButton(),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
@@ -44,6 +43,7 @@ class ActivityScreen extends ConsumerWidget {
                 }
               },
             ),
+            const NotificationIconButton(),
           ],
         ),
         body: TabBarView(

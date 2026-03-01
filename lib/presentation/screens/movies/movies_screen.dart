@@ -126,7 +126,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         icon: const Icon(Icons.sort),
                         onPressed: () => _showSortSheet(context, ref),
                       ),
-                      const NotificationIconButton(),
                       IconButton(
                         icon: Icon(
                           settings.viewMode == ViewMode.grid
@@ -145,6 +144,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               .setViewMode(newMode);
                         },
                       ),
+                      const NotificationIconButton(),
                     ],
                   ),
             SliverPadding(
