@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
 import '../../providers/settings_provider.dart';
 import 'series_add_sheet.dart';
@@ -125,6 +126,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         icon: const Icon(Icons.sort),
                         onPressed: () => _showSortSheet(context, ref),
                       ),
+                      const NotificationIconButton(),
                       IconButton(
                         icon: Icon(
                           settings.viewMode == ViewMode.grid

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/common_widgets.dart';
+import '../../widgets/notification_icon_button.dart';
 import '../../providers/instances_provider.dart'; // Add
 import 'providers/activity_provider.dart';
 import 'providers/history_provider.dart';
@@ -32,6 +33,7 @@ class ActivityScreen extends ConsumerWidget {
             ],
           ),
           actions: [
+            const NotificationIconButton(),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
