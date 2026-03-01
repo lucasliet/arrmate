@@ -101,7 +101,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                       ),
                     ),
                     actions: [
-                      const NotificationIconButton(),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () {
