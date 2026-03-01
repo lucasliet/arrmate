@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
 import '../../providers/settings_provider.dart';
 import 'movie_add_sheet.dart';
@@ -143,6 +144,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               .setViewMode(newMode);
                         },
                       ),
+                      const NotificationIconButton(),
                     ],
                   ),
             SliverPadding(

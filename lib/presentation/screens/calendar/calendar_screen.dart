@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../widgets/common_widgets.dart';
+import '../../widgets/notification_icon_button.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_item.dart';
 
@@ -15,7 +16,10 @@ class CalendarScreen extends ConsumerWidget {
     final calendarState = ref.watch(calendarProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar')),
+      appBar: AppBar(
+        title: const Text('Calendar'),
+        actions: const [NotificationIconButton()],
+      ),
       body: calendarState.when(
         data: (events) {
           if (events.isEmpty) {

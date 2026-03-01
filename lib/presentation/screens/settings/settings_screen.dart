@@ -113,6 +113,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.brightness_6),
           title: const Text('Theme Mode'),
           subtitle: Text(settings.appearance.label),
           trailing: const Icon(Icons.chevron_right),
@@ -121,6 +122,7 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.palette_outlined),
           title: const Text('Color Scheme'),
           subtitle: Text(settings.colorScheme.label),
           trailing: Icon(Icons.circle, color: settings.colorScheme.color),
@@ -129,6 +131,7 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.home_outlined),
           title: const Text('Home Tab'),
           subtitle: Text(settings.homeTab.label),
           trailing: const Icon(Icons.chevron_right),
@@ -373,6 +376,7 @@ class SettingsScreen extends ConsumerWidget {
           builder: (context, snapshot) {
             final version = snapshot.data?.version ?? '...';
             return ListTile(
+              leading: const Icon(Icons.info_outline),
               title: const Text('Version'),
               subtitle: Text(version),
               trailing: updateState.status == UpdateStatus.checking
@@ -406,8 +410,10 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.code),
           title: const Text('Source Code'),
           subtitle: const Text('GitHub'),
+          trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () {
             launchUrl(Uri.parse('https://github.com/lucasliet/arrmate'));
           },
