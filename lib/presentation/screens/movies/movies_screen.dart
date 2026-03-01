@@ -101,6 +101,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       ),
                     ),
                     actions: [
+                      const NotificationIconButton(),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () {
