@@ -163,6 +163,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
               },
             ),
             IconButton(
+              key: const Key('seriesMonitorToggle'),
               icon: Icon(
                 series.monitored ? Icons.bookmark : Icons.bookmark_border,
               ),
@@ -347,60 +348,58 @@ class SeriesDetailsScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: series.monitored
-                          ? () async {
-                              try {
-                                await ref
-                                    .read(seriesControllerProvider(seriesId))
-                                    .monitorAllSeasons(series, true);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('All seasons monitored'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: $e'),
-                                      backgroundColor: theme.colorScheme.error,
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          : null,
+                      key: const Key('monitorAllSeasonsBtn'),
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(seriesControllerProvider(seriesId))
+                              .monitorAllSeasons(series, true);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('All seasons monitored'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: theme.colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
                       icon: const Icon(Icons.bookmark, size: 18),
                       label: const Text('All'),
                     ),
                     TextButton.icon(
-                      onPressed: series.monitored
-                          ? () async {
-                              try {
-                                await ref
-                                    .read(seriesControllerProvider(seriesId))
-                                    .monitorAllSeasons(series, false);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('All seasons unmonitored'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: $e'),
-                                      backgroundColor: theme.colorScheme.error,
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          : null,
+                      key: const Key('unmonitorAllSeasonsBtn'),
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(seriesControllerProvider(seriesId))
+                              .monitorAllSeasons(series, false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('All seasons unmonitored'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: theme.colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
                       icon: const Icon(Icons.bookmark_border, size: 18),
                       label: const Text('None'),
                     ),
@@ -541,47 +540,41 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 IconButton(
+                  key: Key('seasonBookmark_${season.seasonNumber}'),
                   icon: Icon(
                     season.monitored ? Icons.bookmark : Icons.bookmark_border,
-                    color: series.monitored
+                    color: season.monitored
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.outline,
                   ),
                   tooltip: season.monitored ? 'Unmonitor' : 'Monitor',
-                  onPressed: series.monitored
-                      ? () async {
-                          try {
-                            await ref
-                                .read(seriesControllerProvider(seriesId))
-                                .toggleSeasonMonitor(
-                                  series,
-                                  season.seasonNumber,
-                                );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    season.monitored
-                                        ? 'Unmonitored'
-                                        : 'Monitored',
-                                  ),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: $e'),
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.error,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      : null,
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(seriesControllerProvider(seriesId))
+                          .toggleSeasonMonitor(series, season.seasonNumber);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              season.monitored ? 'Unmonitored' : 'Monitored',
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
+                        );
+                      }
+                    }
+                  },
                 ),
               ],
             ),

@@ -110,10 +110,18 @@ class SeriesController {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
 
-    final updatedSeries = series.copyWith(monitored: !series.monitored);
+    final willMonitor = !series.monitored;
+    var updatedSeries = series.copyWith(monitored: willMonitor);
+
+    final updatedSeasons = series.seasons.map((season) {
+      return season.copyWith(monitored: willMonitor);
+    }).toList();
+
+    updatedSeries = updatedSeries.copyWith(seasons: updatedSeasons);
 
     await repository.updateSeries(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesProvider);
   }
 
   Future<void> updateSeries(Series series, {bool moveFiles = false}) async {
@@ -157,27 +165,40 @@ class SeriesController {
 
   /// Toggles the monitoring status for a specific season of the series.
   ///
-  /// This updates the season's `monitored` field and pushes the entire series
-  /// to the Sonarr API, following the same pattern as the reference iOS app.
+  /// When monitoring a season on an unmonitored series, the series is
+  /// automatically monitored with only the selected season active.
   Future<void> toggleSeasonMonitor(Series series, int seasonNumber) async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
 
+    final targetSeason = series.seasons.firstWhere(
+      (s) => s.seasonNumber == seasonNumber,
+    );
+    final willMonitor = !targetSeason.monitored;
+
     final updatedSeasons = series.seasons.map((season) {
       if (season.seasonNumber == seasonNumber) {
-        return season.copyWith(monitored: !season.monitored);
+        return season.copyWith(monitored: willMonitor);
       }
       return season;
     }).toList();
 
-    final updatedSeries = series.copyWith(seasons: updatedSeasons);
+    final shouldMonitorSeries = updatedSeasons.any((s) => s.monitored);
+
+    final updatedSeries = series.copyWith(
+      monitored: shouldMonitorSeries,
+      seasons: updatedSeasons,
+    );
+
     await repository.updateSeries(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesProvider);
   }
 
   /// Sets the monitoring status for all seasons of the series.
   ///
-  /// When [monitored] is true, all seasons will be monitored.
+  /// When [monitored] is true, all seasons will be monitored and the
+  /// series itself is auto-monitored if it was not already.
   /// When [monitored] is false, all seasons will be unmonitored.
   Future<void> monitorAllSeasons(Series series, bool monitored) async {
     final repository = ref.read(seriesRepositoryProvider);
@@ -187,9 +208,13 @@ class SeriesController {
       return season.copyWith(monitored: monitored);
     }).toList();
 
-    final updatedSeries = series.copyWith(seasons: updatedSeasons);
+    final updatedSeries = series.copyWith(
+      monitored: series.monitored || monitored,
+      seasons: updatedSeasons,
+    );
     await repository.updateSeries(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesProvider);
   }
 }
 
