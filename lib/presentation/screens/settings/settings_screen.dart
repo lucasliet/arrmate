@@ -331,6 +331,13 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.smart_toy_outlined),
+          title: const Text('Assistant'),
+          subtitle: const Text('Ask how the app works'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/assistant'),
+        ),
+        ListTile(
           leading: const Icon(Icons.library_books_outlined),
           title: const Text('Logs'),
           subtitle: const Text('System event logs'),
