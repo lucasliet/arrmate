@@ -1,0 +1,17 @@
+{
+  "documents": [
+    {
+      "id": "knowledge",
+      "title": "Arrmate knowledge base",
+      "path": "assets/assistant/knowledge.md",
+      "tags": [
+        "overview",
+        "navigation",
+        "settings",
+        "instances",
+        "notifications",
+        "troubleshooting"
+      ]
+    }
+  ]
+}

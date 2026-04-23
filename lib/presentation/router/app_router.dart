@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../screens/assistant/assistant_screen.dart';
 import '../screens/movies/movies_screen.dart';
 import '../screens/movies/movie_details_screen.dart';
 import '../screens/series/series_screen.dart';
@@ -16,22 +17,16 @@ import '../screens/settings/notification_settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../widgets/app_shell.dart';
 
-/// Global key for the root navigator.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Late-initialized router, configured with the user's home tab preference.
 late final GoRouter appRouter;
 
-/// Initializes the app router with the given [initialLocation].
-///
-/// This must be called once before using [appRouter].
 void initializeRouter(String initialLocation) {
   appRouter = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     routes: [
-      // Notifications screen - outside shell for full-screen experience
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
@@ -86,6 +81,10 @@ void initializeRouter(String initialLocation) {
                 const NoTransitionPage(child: SettingsScreen()),
             routes: [
               GoRoute(
+                path: 'assistant',
+                builder: (context, state) => const AssistantScreen(),
+              ),
+              GoRoute(
                 path: 'instance/:id',
                 builder: (context, state) {
                   final id = state.pathParameters['id'];
@@ -118,7 +117,6 @@ void initializeRouter(String initialLocation) {
   );
 }
 
-/// Enum representing the bottom navigation tabs.
 enum AppTab {
   movies('/movies', 'Movies', Icons.movie_outlined, Icons.movie),
   series('/series', 'Series', Icons.tv_outlined, Icons.tv),
@@ -131,21 +129,13 @@ enum AppTab {
   activity('/activity', 'Activity', Icons.download_outlined, Icons.download),
   settings('/settings', 'Settings', Icons.settings_outlined, Icons.settings);
 
-  /// The path for the tab's route.
   final String path;
-
-  /// The label to display in the navigation bar.
   final String label;
-
-  /// The icon to display when not selected.
   final IconData icon;
-
-  /// The icon to display when selected.
   final IconData selectedIcon;
 
   const AppTab(this.path, this.label, this.icon, this.selectedIcon);
 
-  /// Derives the [AppTab] from the current path.
   static AppTab fromPath(String path) {
     return AppTab.values.firstWhere(
       (tab) => path.startsWith(tab.path),
