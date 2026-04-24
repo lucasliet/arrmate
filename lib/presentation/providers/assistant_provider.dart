@@ -164,7 +164,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
 
       if (selectedModel != null) {
-        await _chatService.loadModel(selectedModel.path);
+        await _selectModel(selectedModel);
       }
 
       state = state.copyWith(
@@ -371,8 +371,14 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
   Future<void> _selectModel(AssistantInstalledModel model) async {
     try {
-      final knowledgeBase = await _knowledgeService.loadFullKnowledgeBase();
-      await _chatService.loadModel(model.path, knowledgeBase: knowledgeBase);
+      final toolCalling = AssistantModelService.supportsToolCalling(model.id);
+      if (toolCalling) {
+        _chatService.setKnowledgeService(_knowledgeService);
+        await _chatService.loadModel(model.path, enableToolCalling: true);
+      } else {
+        final knowledgeBase = await _knowledgeService.loadFullKnowledgeBase();
+        await _chatService.loadModel(model.path, knowledgeBase: knowledgeBase);
+      }
       await _modelService.setSelectedModelId(model.id);
       state = state.copyWith(
         selectedModelId: model.id,

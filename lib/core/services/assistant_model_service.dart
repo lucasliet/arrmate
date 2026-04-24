@@ -72,6 +72,11 @@ class AssistantInstalledModel {
 
 /// Manages the LiteRT-LM model catalog and local model storage.
 class AssistantModelService {
+  /// Returns whether a given model id supports agentic tool-calling.
+  static bool supportsToolCalling(String modelId) {
+    return modelId.startsWith('gemma4_');
+  }
+
   /// Creates a new model service instance.
   AssistantModelService({Dio? dio})
     : _dio =
