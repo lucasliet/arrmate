@@ -142,6 +142,16 @@ All logging must be meaningful, useful, and secure. We use `LoggerService`
 - **Conventions**: Test files should end with `_test.dart`.
 - **Running**: Use `flutter test` to execute the suite.
 
+## Versioning & Release Guidelines
+
+- **Versioning**: Follow Semantic Versioning (MAJOR.MINOR.PATCH).
+  - Check the latest tag with `git tag --sort=-v:refname | head -5` before creating a new one.
+  - **PATCH** (`v1.16.3` → `v1.16.4`): Bug fixes, internal refactors, non-breaking changes.
+  - **MINOR** (`v1.16.3` → `v1.17.0`): New features, backwards compatible.
+  - **MAJOR** (`v1.16.3` → `v2.0.0`): Breaking changes.
+- **Tags**: Always create annotated tags (`git tag -a vX.Y.Z -m "message"`).
+- **Force Push**: When the user requests a force push, do NOT pull first — force push directly to overwrite the remote.
+
 ## Commit & Pull Request Guidelines
 
 - **Commits**: Use Conventional Commits format (e.g., `feat: add movie details`,
