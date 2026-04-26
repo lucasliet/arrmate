@@ -17,8 +17,12 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 
 - **Library Management**: Browse, search, filter, and manage your movie and
   series libraries with a native mobile experience.
+- **Media Management**: Delete movies and series from your library, and remove
+  individual media files with confirmation dialogs.
 - **Download Client Integration**: Full qBittorrent support to view, pause,
   resume, and delete downloads, plus add new torrents via URL or file.
+- **Torrent Import**: Import completed torrent files directly to your
+  Radarr/Sonarr media library with file mapping and target selection.
 - **Interactive Release Search**: Find and download specific torrents or NZBs
   directly from the app.
 - **Activity & Queue Monitoring**: Track active downloads and historical events
@@ -41,6 +45,8 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
   quality profiles.
+- **AI Assistant**: On-device AI assistant powered by local LLMs (Gemma, Qwen)
+  for help with app features, troubleshooting, and navigation guidance.
 - **Auto-Updater**: Support for automatic and manual in-app updates via GitHub
   Releases.
 
@@ -59,6 +65,8 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   and system events.
 - **Go Router**: Utilizes a declarative routing system for smooth navigation
   between features.
+- **MediaPipe LLM Inference**: Powers the on-device AI assistant with local
+  model execution.
 - **Package Info Plus & OTA Update**: Powering the automated in-app update
   system.
 
