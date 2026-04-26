@@ -7,55 +7,37 @@ import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
 import 'logger_service.dart';
 
-const _searchKnowledgeTool = LiteLmTool(
-  name: 'search_knowledge',
-  description:
-      'Search Arrmate documentation for features, settings, and usage. '
-      'Call this whenever you need app-specific information to answer a question.',
+const _loadSkillTool = LiteLmTool(
+  name: 'load_skill',
+  description: 'Loads a skill by name. Returns the skill instructions.',
   parameters: {
     'type': 'object',
     'properties': {
-      'query': {
+      'skill_name': {
         'type': 'string',
-        'description': 'Search query about Arrmate features or usage',
+        'description': 'The name of the skill to load.',
       },
     },
-    'required': ['query'],
+    'required': ['skill_name'],
   },
 );
 
-/// Handles a LiteRT-LM engine and active conversation.
 class AssistantChatService {
   LiteLmEngine? _engine;
   LiteLmConversation? _conversation;
   String? _loadedModelPath;
-
-  bool _toolCallingEnabled = false;
   AssistantKnowledgeService? _knowledgeService;
 
-  /// Injects the knowledge service used for tool-calling lookups.
   void setKnowledgeService(AssistantKnowledgeService service) {
     _knowledgeService = service;
   }
 
-  /// Loads a model and prepares a new conversation.
-  ///
-  /// When [enableToolCalling] is true, the model receives a compact system
-  /// prompt without the full knowledge base and gets the `search_knowledge`
-  /// tool registered for agentic retrieval. Otherwise the full knowledge base
-  /// is injected into the system instruction (legacy path).
-  Future<void> loadModel(
-    String modelPath, {
-    String? knowledgeBase,
-    bool enableToolCalling = false,
-  }) async {
+  Future<void> loadModel(String modelPath) async {
     if (_loadedModelPath == modelPath && _engine != null) {
       return;
     }
 
     await dispose();
-
-    _toolCallingEnabled = enableToolCalling;
 
     logger.info('[AssistantChatService] Loading model from: $modelPath');
     final supportDirectory = await getApplicationSupportDirectory();
@@ -75,15 +57,13 @@ class AssistantChatService {
       rethrow;
     }
 
-    final systemPrompt = enableToolCalling
-        ? _buildToolCallingSystemPrompt()
-        : _buildSystemPrompt(knowledgeBase);
+    final systemPrompt = _buildSystemPrompt();
 
     try {
       _conversation = await _engine!.createConversation(
         LiteLmConversationConfig(
           systemInstruction: systemPrompt,
-          tools: enableToolCalling ? [_searchKnowledgeTool] : null,
+          tools: [_loadSkillTool],
           automaticToolCalling: false,
           samplerConfig: const LiteLmSamplerConfig(
             temperature: 0.4,
@@ -106,7 +86,6 @@ class AssistantChatService {
     logger.info('[AssistantChatService] Model loaded: $modelPath');
   }
 
-  /// Sends a message to the current conversation.
   Future<String> sendMessage(String message) async {
     final conversation = _conversation;
     if (conversation == null) {
@@ -118,9 +97,7 @@ class AssistantChatService {
     );
 
     try {
-      final rawReply = _toolCallingEnabled
-          ? await _sendWithToolLoop(conversation, message)
-          : await conversation.sendMessage(message);
+      final rawReply = await _sendWithToolLoop(conversation, message);
 
       final filtered = filterAssistantResponse(rawReply.text);
       logger.info(
@@ -133,14 +110,12 @@ class AssistantChatService {
     }
   }
 
-  /// Releases the active conversation and engine.
   Future<void> dispose() async {
     final conversation = _conversation;
     final engine = _engine;
     _conversation = null;
     _engine = null;
     _loadedModelPath = null;
-    _toolCallingEnabled = false;
 
     if (conversation != null) {
       await conversation.dispose();
@@ -175,7 +150,7 @@ class AssistantChatService {
   }
 
   Future<String> _executeToolCall(LiteLmToolCall call) async {
-    if (call.name != 'search_knowledge') {
+    if (call.name != 'load_skill') {
       return 'Unknown tool: ${call.name}';
     }
 
@@ -184,50 +159,34 @@ class AssistantChatService {
       return 'Knowledge service not available.';
     }
 
-    final query = call.arguments['query'] as String? ?? '';
-    if (query.isEmpty) {
-      return 'Empty query.';
+    final skillName = call.arguments['skill_name'] as String? ?? '';
+    if (skillName.isEmpty) {
+      return 'Empty skill name.';
     }
 
-    logger.info('[AssistantChatService] Searching knowledge: $query');
+    logger.info('[AssistantChatService] Loading skill: $skillName');
 
-    final context = await knowledgeService.buildContext(query);
-    if (context == 'No relevant documentation was found.') {
-      return context;
-    }
-
-    return context;
+    return knowledgeService.loadSkill(skillName);
   }
 
-  String _buildSystemPrompt(String? knowledgeBase) {
-    final buffer = StringBuffer(
-      'You are the Arrmate assistant. Answer in Portuguese. '
-      'You must ONLY answer questions about the Arrmate app. '
-      'Use only the supplied app documentation and known app behavior. '
-      'If the information is not in the documentation or the question is unrelated to Arrmate, '
-      'you must explicitly state that you did not find the information. '
-      'Do not invent unsupported features. Be concise and practical.',
-    );
-
-    if (knowledgeBase != null && knowledgeBase.isNotEmpty) {
-      buffer
-        ..writeln()
-        ..writeln()
-        ..writeln('--- APP DOCUMENTATION ---')
-        ..writeln(knowledgeBase)
-        ..writeln('--- END OF DOCUMENTATION ---');
+  String _buildSystemPrompt() {
+    final knowledgeService = _knowledgeService;
+    if (knowledgeService == null) {
+      return 'Você é o assistente do Arrmate. Responda em Português.';
     }
 
-    return buffer.toString();
-  }
+    final skillDescriptions = knowledgeService.getSkillDescriptions();
 
-  String _buildToolCallingSystemPrompt() {
     return 'Você é o assistente do Arrmate. Responda em Português.\n'
-        'Você DEVE responder APENAS perguntas sobre o aplicativo Arrmate.\n'
-        'Sempre que o usuário fizer uma pergunta sobre o app (recursos, uso, configurações, etc), '
-        'você DEVE utilizar a ferramenta search_knowledge para buscar o contexto atualizado na documentação ANTES de responder.\n'
-        'Não confie em seu conhecimento prévio. Não invente recursos não suportados. Seja conciso e prático.\n'
-        'Se a informação não for encontrada pela ferramenta ou a pergunta for irrelevante ao Arrmate, '
+        'Para CADA pergunta do usuário, você DEVE seguir estes passos em ordem:\n'
+        '1. Encontrar a skill mais relevante na lista abaixo.\n'
+        '2. Usar a ferramenta load_skill para carregar as instruções da skill.\n'
+        '3. Seguir as instruções da skill para responder.\n\n'
+        'Skills disponíveis:\n'
+        '$skillDescriptions\n\n'
+        'Responda APENAS com base na documentação carregada. '
+        'Não invente recursos. Seja conciso e prático.\n'
+        'Se a informação não for encontrada ou a pergunta for irrelevante ao Arrmate, '
         'diga explicitamente que não encontrou a informação.';
   }
 }

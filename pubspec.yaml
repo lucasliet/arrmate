@@ -56,6 +56,7 @@ flutter:
   assets:
     - assets/images/
     - assets/assistant/
+    - assets/assistant/skills/
 
 flutter_launcher_icons:
   android: "ic_launcher"

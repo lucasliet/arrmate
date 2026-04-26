@@ -1,147 +1,127 @@
 import 'package:flutter/services.dart';
 
-/// Represents one section from the live knowledge base.
-class AssistantKnowledgeSection {
-  /// Creates a knowledge section.
-  const AssistantKnowledgeSection({required this.title, required this.content});
+class AssistantSkill {
+  const AssistantSkill({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.assetPath,
+  });
 
-  /// Section title.
+  final String id;
   final String title;
-
-  /// Section body.
-  final String content;
+  final String description;
+  final String assetPath;
 }
 
-/// Loads and ranks the Arrmate live documentation used by the assistant.
 class AssistantKnowledgeService {
-  /// Returns the full knowledge base markdown content.
-  Future<String> loadFullKnowledgeBase() async {
-    return rootBundle.loadString('assets/assistant/knowledge.md');
+  static const _skills = [
+    AssistantSkill(
+      id: 'overview',
+      title: 'Visão Geral',
+      description: 'Sobre o Arrmate, navegação principal (5 abas), aba inicial',
+      assetPath: 'assets/assistant/skills/overview.md',
+    ),
+    AssistantSkill(
+      id: 'instances',
+      title: 'Instâncias',
+      description:
+          'Adicionar/editar/remover instância Radarr/Sonarr/qBittorrent, API key, test connection, slow mode, multi-instância',
+      assetPath: 'assets/assistant/skills/instances.md',
+    ),
+    AssistantSkill(
+      id: 'movies',
+      title: 'Filmes',
+      description:
+          'Adicionar/detalhes/editar/deletar filme, deletar arquivo, buscar release',
+      assetPath: 'assets/assistant/skills/movies.md',
+    ),
+    AssistantSkill(
+      id: 'series',
+      title: 'Séries',
+      description:
+          'Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo',
+      assetPath: 'assets/assistant/skills/series.md',
+    ),
+    AssistantSkill(
+      id: 'library',
+      title: 'Biblioteca',
+      description:
+          'Filtrar/ordenar filmes e séries, alternar grade/lista, busca local',
+      assetPath: 'assets/assistant/skills/library.md',
+    ),
+    AssistantSkill(
+      id: 'calendar',
+      title: 'Calendário',
+      description: 'Calendário de próximos lançamentos e episódios',
+      assetPath: 'assets/assistant/skills/calendar.md',
+    ),
+    AssistantSkill(
+      id: 'activity',
+      title: 'Atividade',
+      description: 'Fila de downloads (queue), import manual, histórico',
+      assetPath: 'assets/assistant/skills/activity.md',
+    ),
+    AssistantSkill(
+      id: 'qbittorrent',
+      title: 'qBittorrent',
+      description:
+          'Listar/pausar/retomar torrents, adicionar torrent, import torrent, filtros',
+      assetPath: 'assets/assistant/skills/qbittorrent.md',
+    ),
+    AssistantSkill(
+      id: 'notifications',
+      title: 'Notificações',
+      description:
+          'Configurar ntfy.sh, tópico, auto-configurar webhooks, tipos de evento, central, battery saver',
+      assetPath: 'assets/assistant/skills/notifications.md',
+    ),
+    AssistantSkill(
+      id: 'appearance',
+      title: 'Aparência',
+      description: 'Tema claro/escuro/automático, cor de destaque',
+      assetPath: 'assets/assistant/skills/appearance.md',
+    ),
+    AssistantSkill(
+      id: 'system',
+      title: 'Sistema',
+      description: 'Logs, health, perfis de qualidade, sobre o app',
+      assetPath: 'assets/assistant/skills/system.md',
+    ),
+    AssistantSkill(
+      id: 'assistant',
+      title: 'Assistant',
+      description: 'Sobre o assistente, modelos disponíveis, como funciona',
+      assetPath: 'assets/assistant/skills/assistant.md',
+    ),
+    AssistantSkill(
+      id: 'troubleshooting',
+      title: 'Solução de Problemas',
+      description:
+          'Erros de conexão, autenticação, notificações, app desatualizado, modelo não carrega',
+      assetPath: 'assets/assistant/skills/troubleshooting.md',
+    ),
+    AssistantSkill(
+      id: 'support',
+      title: 'Suporte',
+      description: 'Funcionalidades suportadas/não suportadas, diretrizes',
+      assetPath: 'assets/assistant/skills/support.md',
+    ),
+  ];
+
+  List<AssistantSkill> get skills => _skills;
+
+  String getSkillDescriptions() {
+    return _skills.map((s) => '- ${s.id}: ${s.description}').join('\n');
   }
 
-  /// Loads the markdown knowledge base and splits it into sections.
-  Future<List<AssistantKnowledgeSection>> loadSections() async {
-    final markdown = await rootBundle.loadString(
-      'assets/assistant/knowledge.md',
-    );
-    return _parseSections(markdown);
-  }
-
-  /// Returns the best matching sections for the provided query.
-  Future<List<AssistantKnowledgeSection>> findRelevantSections(
-    String query, {
-    int limit = 3,
-  }) async {
-    final sections = await loadSections();
-    final tokens = _tokens(query);
-
-    final scored = sections.map((section) {
-      final score = _score(section, tokens);
-      return (section: section, score: score);
-    }).toList();
-
-    scored.sort((a, b) => b.score.compareTo(a.score));
-
-    return scored
-        .where((item) => item.score > 0)
-        .take(limit)
-        .map((item) => item.section)
-        .toList();
-  }
-
-  /// Formats the selected sections into a compact context block.
-  Future<String> buildContext(String query) async {
-    final sections = await findRelevantSections(query);
-    if (sections.isEmpty) {
-      return 'No relevant documentation was found.';
+  Future<String> loadSkill(String name) async {
+    final skill = _skills.where((s) => s.id == name.trim()).firstOrNull;
+    if (skill == null) {
+      return 'Skill not found.';
     }
 
-    final buffer = StringBuffer();
-    for (final section in sections) {
-      buffer
-        ..writeln('## ${section.title}')
-        ..writeln(section.content.trim())
-        ..writeln();
-    }
-    return buffer.toString().trim();
-  }
-
-  List<AssistantKnowledgeSection> _parseSections(String markdown) {
-    final lines = markdown.split('\n');
-    final sections = <AssistantKnowledgeSection>[];
-    String? currentTitle;
-    final currentContent = StringBuffer();
-
-    void flush() {
-      if (currentTitle == null) {
-        return;
-      }
-      sections.add(
-        AssistantKnowledgeSection(
-          title: currentTitle!,
-          content: currentContent.toString().trim(),
-        ),
-      );
-      currentContent.clear();
-    }
-
-    for (final line in lines) {
-      if (line.startsWith('## ')) {
-        flush();
-        currentTitle = line.substring(3).trim();
-        continue;
-      }
-
-      if (currentTitle != null) {
-        currentContent.writeln(line);
-      }
-    }
-
-    flush();
-    return sections;
-  }
-
-  int _score(AssistantKnowledgeSection section, List<String> tokens) {
-    final title = section.title.toLowerCase();
-    final body = section.content.toLowerCase();
-    var score = 0;
-
-    for (final token in tokens) {
-      if (token.isEmpty) {
-        continue;
-      }
-
-      final titleMatches = _countOccurrences(title, token);
-      final bodyMatches = _countOccurrences(body, token);
-      score += titleMatches * 4;
-      score += bodyMatches * 2;
-    }
-
-    return score;
-  }
-
-  int _countOccurrences(String text, String token) {
-    var count = 0;
-    var start = 0;
-
-    while (true) {
-      final index = text.indexOf(token, start);
-      if (index == -1) {
-        break;
-      }
-      count += 1;
-      start = index + token.length;
-    }
-
-    return count;
-  }
-
-  List<String> _tokens(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9áàâãéêíóôõúç ]+'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((token) => token.isNotEmpty)
-        .toList();
+    final content = await rootBundle.loadString(skill.assetPath);
+    return content.trim();
   }
 }

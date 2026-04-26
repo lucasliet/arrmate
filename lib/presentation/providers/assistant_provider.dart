@@ -372,13 +372,14 @@ class AssistantNotifier extends Notifier<AssistantState> {
   Future<void> _selectModel(AssistantInstalledModel model) async {
     try {
       final toolCalling = AssistantModelService.supportsToolCalling(model.id);
-      if (toolCalling) {
-        _chatService.setKnowledgeService(_knowledgeService);
-        await _chatService.loadModel(model.path, enableToolCalling: true);
-      } else {
-        final knowledgeBase = await _knowledgeService.loadFullKnowledgeBase();
-        await _chatService.loadModel(model.path, knowledgeBase: knowledgeBase);
+      if (!toolCalling) {
+        state = state.copyWith(
+          error: 'This model does not support tool-calling. Use a Gemma model.',
+        );
+        return;
       }
+      _chatService.setKnowledgeService(_knowledgeService);
+      await _chatService.loadModel(model.path);
       await _modelService.setSelectedModelId(model.id);
       state = state.copyWith(
         selectedModelId: model.id,

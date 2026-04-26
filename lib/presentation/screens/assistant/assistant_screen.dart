@@ -391,18 +391,16 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               ),
               title: Text(m.label),
               subtitle: Text(_formatModelSize(m.sizeBytes)),
-              trailing: isSelected
-                  ? null
-                  : IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: theme.colorScheme.error,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _confirmDelete(context, notifier, m);
-                      },
-                    ),
+              trailing: IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: theme.colorScheme.error,
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _confirmDelete(context, notifier, m);
+                },
+              ),
               onTap: isSelected
                   ? null
                   : () {

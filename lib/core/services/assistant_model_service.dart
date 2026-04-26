@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,15 +97,6 @@ class AssistantModelService {
   /// Curated local-first catalog of open `.litertlm` models.
   static const List<AssistantModelCatalogEntry> catalog = [
     AssistantModelCatalogEntry(
-      id: 'qwen3_0_6b',
-      title: 'Qwen 3 0.6B',
-      description: 'Small, fast general-purpose chat model.',
-      repository: 'litert-community/Qwen3-0.6B',
-      fileName: 'Qwen3-0.6B.litertlm',
-      downloadUrl:
-          'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm?download=true',
-    ),
-    AssistantModelCatalogEntry(
       id: 'gemma4_e2b',
       title: 'Gemma 4 E2B',
       description: 'Balanced quality and size for mobile devices.',
@@ -145,11 +135,6 @@ class AssistantModelService {
   /// Returns the curated catalog.
   Future<List<AssistantModelCatalogEntry>> loadCatalog() async {
     return catalog;
-  }
-
-  /// Loads the catalog cache from assets if needed.
-  Future<String> loadKnowledgeBase() async {
-    return rootBundle.loadString('assets/assistant/knowledge.md');
   }
 
   /// Returns the directory where assistant models are stored.
