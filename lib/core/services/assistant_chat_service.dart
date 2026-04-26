@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_litert_lm/flutter_litert_lm.dart';
 import 'package:path_provider/path_provider.dart';
@@ -203,7 +202,10 @@ class AssistantChatService {
   String _buildSystemPrompt(String? knowledgeBase) {
     final buffer = StringBuffer(
       'You are the Arrmate assistant. Answer in Portuguese. '
+      'You must ONLY answer questions about the Arrmate app. '
       'Use only the supplied app documentation and known app behavior. '
+      'If the information is not in the documentation or the question is unrelated to Arrmate, '
+      'you must explicitly state that you did not find the information. '
       'Do not invent unsupported features. Be concise and practical.',
     );
 
@@ -220,11 +222,12 @@ class AssistantChatService {
   }
 
   String _buildToolCallingSystemPrompt() {
-    return 'You are the Arrmate assistant. Answer in Portuguese. '
-        'Use the search_knowledge tool to look up app documentation before '
-        'answering user questions. Do not invent unsupported features. '
-        'Be concise and practical. '
-        'Always call search_knowledge at least once before replying, '
-        'unless the question is a generic greeting or small talk.';
+    return 'Você é o assistente do Arrmate. Responda em Português.\n'
+        'Você DEVE responder APENAS perguntas sobre o aplicativo Arrmate.\n'
+        'Sempre que o usuário fizer uma pergunta sobre o app (recursos, uso, configurações, etc), '
+        'você DEVE utilizar a ferramenta search_knowledge para buscar o contexto atualizado na documentação ANTES de responder.\n'
+        'Não confie em seu conhecimento prévio. Não invente recursos não suportados. Seja conciso e prático.\n'
+        'Se a informação não for encontrada pela ferramenta ou a pergunta for irrelevante ao Arrmate, '
+        'diga explicitamente que não encontrou a informação.';
   }
 }
