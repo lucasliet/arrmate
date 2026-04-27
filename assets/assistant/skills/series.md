@@ -48,7 +48,13 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 **AppBar (topo expansível):**
 - **Fanart** (imagem de fundo grande) que encolhe conforme scroll.
 - **Ícone de voltar** (seta) no canto superior esquerdo.
-- **Menu de ações** (três pontos ⋮) no canto superior direito.
+- **4 ícones de ação** no canto superior direito (da esquerda para direita):
+  1. **Refresh & Scan** (ícone `manage_search`) — tooltip "Refresh & Scan" — dispara rescan de arquivos no Sonarr.
+  2. **Automatic Search** (ícone `travel_explore`) — tooltip "Automatic Search" — dispara busca automática de releases.
+  3. **Monitor Toggle** (ícone `bookmark` preenchido / `bookmark_border`) — tooltip "Monitor" ou "Unmonitor" — alterna monitoramento da série.
+  4. **Menu** (ícone ⋮ PopupMenuButton) — opções:
+     - **"Edit"** → abre SeriesEditScreen.
+     - **"Delete"** → abre diálogo de confirmação com botões "Cancel" e "Delete" (vermelho).
 - Título da série fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
@@ -73,16 +79,16 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - Links externos (IMDb, TVDb, TheMovieDb).
 
 **2. Seasons:**
+- **Botões no topo** (texto pequeno, não FAB):
+  - **"All"**: monitora todas as temporadas de uma vez.
+  - **"None"**: remove monitoramento de todas as temporadas de uma vez.
 - Lista de **todas as temporadas** em cards/tiles:
   - Cada temporada mostra:
     - **Número** (ex: "Season 1", "Season 2").
     - **Contagem de episódios** (ex: "10 episodes").
-    - **Progress/status visual** (barra ou ícone mostrando quantos episódios estão baixados).
-    - **Toggle de monitoramento** (ao lado) — ON/OFF para monitorar/desmonitorar aquela temporada.
-  - **Ações em massa no topo:**
-    - **Monitor All** (botão): marca todas as temporadas como monitoradas.
-    - **Unmonitor All** (botão): desativa monitoramento de todas.
-  - Toque em uma temporada para abrir lista de **episódios individuais** (ver seção abaixo).
+    - **Indicador circular de progresso** mostrando quantos episódios estão baixados vs. total.
+    - **Botão de ícone** (bookmark) ao lado — toque para monitorar/desmonitorar aquela temporada individualmente.
+  - Toque em uma temporada para **abrir a tela completa SeasonDetailsScreen** (tela cheia com seta de voltar para retornar aos detalhes da série).
 
 **3. Files & Metadata:**
 - Semelhante a Filmes: lista de arquivos baixados com codec, resolução, tamanho, áudio.
@@ -94,13 +100,16 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - Timestamp relativo para cada evento.
 - Tipos coloridos (Grabbed, Imported, Failed, Deleted).
 
-**Botões de ação (AppBar ou inline):**
-- **Edit** (ícone de lápis ou menu): abre tela de edição.
-- **Search Now** (ícone de refresh ou "Search"): dispara busca automática.
-- **Delete** (menu ⋮ → Delete, em vermelho): remove a série da biblioteca.
+**Botões de ação (AppBar — 4 ícones no canto superior direito):**
+1. **Refresh & Scan** (ícone `manage_search`): dispara rescan de arquivos no Sonarr.
+2. **Automatic Search** (ícone `travel_explore`): dispara busca automática de releases no Sonarr.
+3. **Monitor Toggle** (ícone `bookmark`/`bookmark_border`): alterna monitoramento da série (ON ↔ OFF).
+4. **Menu ⋮** (PopupMenuButton):
+   - **"Edit"**: abre SeriesEditScreen.
+   - **"Delete"**: remove a série da biblioteca (diálogo de confirmação).
 
 **Observações:**
-- Tocar em uma temporada abre a lista de episódios daquela temporada.
+- Tocar em uma temporada abre a tela **SeasonDetailsScreen** (tela cheia) com a lista de episódios. Use a seta de voltar para retornar aos detalhes da série.
 - Você pode monitorar/desmonitorar temporadas individuais sem deletá-las.
 
 ## Episódios e temporadas — monitorar e buscar release
@@ -111,7 +120,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 1. Abrir detalhes da série (tocando na série na lista).
 2. Scroll para a seção **"Seasons"**.
 3. Tocar em uma temporada (ex: "Season 1").
-4. Um **sheet (SeasonDetailsSheet)** abre exibindo lista de episódios:
+4. A tela **SeasonDetailsScreen** abre em tela cheia exibindo lista de episódios (use a seta de voltar para retornar aos detalhes da série):
 
 **Cada episódio exibe:**
    - **Número do episódio** (ex: "S01E01", "S01E02").

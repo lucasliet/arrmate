@@ -47,7 +47,14 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 **AppBar (topo expansível):**
 - **Fanart** (imagem de fundo grande) que encolhe conforme você scroll para baixo.
 - **Ícone de voltar** (seta) no canto superior esquerdo.
-- **Menu de ações** (três pontos ⋮) no canto superior direito.
+- **5 ícones de ação** no canto superior direito (da esquerda para direita):
+  1. **Refresh & Scan** (ícone `manage_search`) — tooltip "Refresh & Scan" — dispara rescan do arquivo no Radarr.
+  2. **Automatic Search** (ícone `travel_explore`) — tooltip "Automatic Search" — dispara busca automática de releases.
+  3. **Interactive Search** (ícone `troubleshoot`) — tooltip "Interactive Search" — abre sheet de releases disponíveis para seleção manual.
+  4. **Monitor Toggle** (ícone `bookmark` preenchido / `bookmark_border`) — tooltip "Monitor" ou "Unmonitor" — alterna monitoramento do filme.
+  5. **Menu** (ícone ⋮ PopupMenuButton) — opções:
+     - **"Edit"** → abre MovieEditScreen.
+     - **"Delete"** → abre diálogo de confirmação com título "Delete Movie?", checkbox "Delete files from disk" (opcional), botões "Cancel" e "Delete" (vermelho).
 - Título do filme fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
@@ -89,11 +96,14 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 - Cada evento mostra timestamp relativo (ex: "2 hours ago").
 - Toque em um evento para ver detalhes completos.
 
-**Botões de ação (AppBar ou inline):**
-- **Edit** (ícone de lápis ou menu): abre tela de edição.
-- **Search/Grab** (ícone de busca ou "Manual Search"): abre sheet com releases disponíveis.
-- **Refresh & Scan** (ícone de refresh ou "Search Now"): dispara busca automática no Radarr.
-- **Delete** (menu ⋮ → Delete, em vermelho): remove o filme da biblioteca.
+**Botões de ação (AppBar — 5 ícones no canto superior direito):**
+1. **Refresh & Scan** (ícone `manage_search`): dispara rescan do arquivo no Radarr.
+2. **Automatic Search** (ícone `travel_explore`): dispara busca automática de releases no Radarr.
+3. **Interactive Search** (ícone `troubleshoot`): abre sheet de releases disponíveis para seleção manual (grab).
+4. **Monitor Toggle** (ícone `bookmark`/`bookmark_border`): alterna monitoramento do filme (ON ↔ OFF).
+5. **Menu ⋮** (PopupMenuButton):
+   - **"Edit"**: abre MovieEditScreen para editar qualidade, pasta, monitoramento, etc.
+   - **"Delete"**: abre diálogo "Delete Movie?" com checkbox "Delete files from disk" (opcional), botões "Cancel" e "Delete" (vermelho).
 
 **Observações:**
 - A seção Files mostra todos os arquivos associados; é possível deletar arquivos individuais sem deletar o filme.
@@ -143,14 +153,15 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 3. Selecionar **"Delete"** (texto em vermelho para indicar ação destrutiva).
 4. Um **diálogo de confirmação** aparece:
    - Título: "Delete Movie?"
-   - Mensagem: "Are you sure you want to delete this movie?"
+   - **Checkbox** "Delete files from disk" (opcional) — se marcado, também remove os arquivos físicos do servidor.
    - Botões: "Cancel" e "Delete" (em vermelho).
-5. Tocar **"Delete"** para confirmar.
-6. Snackbar confirma "Movie deleted successfully" e a tela volta à lista de filmes.
+5. Marcar ou deixar desmarcado o checkbox conforme desejado.
+6. Tocar **"Delete"** para confirmar.
+7. Snackbar confirma "Movie deleted successfully" e a tela volta à lista de filmes.
 
 **Observações:**
 - O filme é removido do Radarr imediatamente.
-- Os arquivos em disco (pasta do servidor) **podem ou não ser removidos** dependendo da configuração do Radarr (opção "Delete files" no Radarr).
+- Os arquivos em disco são removidos **somente se** o checkbox "Delete files from disk" estiver marcado.
 - Esta ação é destrutiva e não pode ser desfeita via app (você pode re-adicionar o filme manualmente).
 
 ## Deletar arquivo de mídia de um filme — remover arquivo individual

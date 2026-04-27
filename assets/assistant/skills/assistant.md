@@ -12,56 +12,47 @@ description: Modelos disponíveis, download, import, switch, delete, how it work
 O **Assistant** é uma funcionalidade de IA que roda **inteiramente no dispositivo** (on-device) para responder dúvidas sobre o Arrmate. Ele não requer internet e usa um sistema de **tool-calling** para consultar a documentação relevante antes de responder.
 
 **Tela de Assistant:**
-- **Seção "Available Models":**
-  - Lista de **dois modelos** disponíveis no catálogo:
-    - **Gemma 4 E2B** (recomendado):
-      - Tamanho: ~2.1 GB.
-      - Qualidade: balanceada.
-      - Velocidade: mais rápido.
-      - RAM necessária: ~4 GB.
-      - Status: ✓ melhor para maioria dos dispositivos.
-    - **Gemma 4 E4B**:
-      - Tamanho: ~4.2 GB.
-      - Qualidade: maior precisão nas respostas.
-      - Velocidade: mais lento.
-      - RAM necessária: ~6+ GB.
-      - Status: para dispositivos high-end.
-  - Ambos modelos suportam **tool-calling** (busca inteligente na documentação).
 
-- **Seção "Downloaded Models" / "Active Model":**
-  - Mostra qual modelo está **atualmente instalado e ativo**.
-  - Ícone: ✓ check verde ao lado do modelo ativo.
-  - Exemplo: "✓ Gemma 4 E2B (Active)".
+- **Model Selector (ListTile único no topo):**
+  - **Ícone:** `smart_toy` (se há modelo carregado) ou `smart_toy_outlined` (nenhum modelo selecionado).
+  - **Título:** nome do modelo ativo (ex: "Gemma 4 E2B") ou "No model selected".
+  - **Subtítulo:** tamanho do modelo em bytes formatado (ex: "2.1 GB") ou "Import or download a model to start".
+  - **Menu ⋮ (PopupMenuButton)** ao lado direito, com as opções:
+    - **Download** (ícone `download`) — abre sheet do catálogo de modelos disponíveis.
+    - **Import** (ícone `upload_file`) — abre file picker para selecionar arquivo `.gguf` do dispositivo.
+    - **Switch** (ícone `swap_horiz`) — aparece **apenas se há modelos instalados**; abre sheet de seleção de modelo ativo.
 
 **Ações disponíveis:**
 
 1. **Download um modelo novo:**
-   - Tocar no botão **"Download"** ao lado do modelo no catálogo.
-   - Dialog com progresso de download aparece (barra linear + percentual).
-   - Após 100%, modelo fica disponível em "Downloaded Models".
+   - Tocar no **ícone ⋮** do model selector → tocar **"Download"**.
+   - Um sheet abre exibindo o **catálogo de modelos** disponíveis:
+     - Cada modelo mostra nome e descrição.
+     - Se já instalado: badge **"Installed"** + ícone `check_circle`.
+   - Tocar no modelo desejado para iniciar o download.
+   - Progresso aparece no model selector enquanto baixa.
    - Pode levar **2-10 minutos** dependendo da conexão e tamanho.
 
 2. **Switch (trocar) entre modelos instalados:**
-   - Se você tem **múltiplos modelos baixados**, tocar **"Switch"** ou diretamente no modelo não-ativo.
-   - Dialog com seleção aparece:
-     - Lista de modelos instalados.
-     - Radio button ao lado de cada.
-     - Ícone de **lixeira** 🗑️ ao lado de cada modelo para deletar.
+   - Tocar no **ícone ⋮** do model selector → tocar **"Switch"** (opção visível apenas se há modelos instalados).
+   - Um sheet abre com lista dos modelos instalados:
+     - **Radio button** (marcado/desmarcado) ao lado de cada modelo.
+     - Nome e tamanho do modelo.
+     - **Botão de lixeira** (vermelho) ao lado de cada modelo para deletar.
    - Tocar no radio button do modelo desejado.
    - Mudança é **instantânea** (modelo ativo muda).
 
 3. **Delete (remover) um modelo instalado:**
-   - Tocar **"Switch"** (mesmo se apenas um modelo está instalado).
-   - No dialog de seleção, tocar **ícone de lixeira** 🗑️ ao lado do modelo.
-   - Dialog de confirmação: "Delete [Model Name]? This will free up disk space."
+   - Tocar no **ícone ⋮** do model selector → tocar **"Switch"**.
+   - No sheet de seleção, tocar o **ícone de lixeira** (vermelho) ao lado do modelo.
+   - Dialog de confirmação aparece.
    - Tocar **"Delete"** para confirmar ou **"Cancel"** para cancelar.
    - Após confirmar, modelo é removido (libera espaço em disco).
 
 4. **Import modelo de arquivo:**
-   - Se você tem arquivo `.litertlm` ou formato compatível do seu computador:
-   - Tocar **"Import"** (botão adicional, se disponível).
-   - File picker abre; selecione arquivo `.litertlm`.
-   - Modelo é importado e fica disponível em "Downloaded Models".
+   - Tocar no **ícone ⋮** do model selector → tocar **"Import"**.
+   - File picker abre; selecione um arquivo no formato **`.gguf`**.
+   - Modelo é importado e fica disponível para seleção.
 
 **Observações:**
 - Ambos os modelos usam **tool-calling**: antes de responder, o modelo busca automaticamente as skills (seções da documentação) relevantes à sua pergunta.

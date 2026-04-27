@@ -42,21 +42,23 @@ A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou
      - Campos de texto; password tem visibility toggle.
 
 3. **Botão "Test Connection":**
-   - Tocar para validar URL, API key/credenciais e conectividade.
+   - Tocar para validar URL, API key/credenciais e conectividade (validação opcional).
    - Mostra spinner enquanto testa.
    - **Sucesso (verde):** "✓ Connection successful" + versão (ex: "Radarr v4.1.0") + metadados (ex: "15 tags").
    - **Falha (vermelho):** mensagem de erro (ex: "Connection refused", "Invalid API key", "Timeout").
 
-4. **Botão "Save":**
-   - Tocar para salvar instância.
-   - Ativa apenas após teste bem-sucedido (desativado até aí).
+4. **Botão "Save Instance":**
+   - Sempre habilitado — não requer teste de conexão bem-sucedido para salvar.
+   - Tocar para salvar instância imediatamente.
    - Retorna para tela "Instances" com nova instância na lista.
 
-5. **Seção "Advanced Options" (expansível):**
+5. **Seção "Advanced Settings" (ExpansionTile expansível):**
+   - Título: "Advanced Settings", subtítulo: "Custom Headers & Authentication".
    - Collapse/expand com chevron.
    - Contém toggles/campos adicionais:
      - **Slow Mode** (toggle): para servidores lentos/remotos.
-     - **Custom Headers** (campo expansível): para reverse proxies com autenticação extra.
+     - **Botão "Add Header"**: abre diálogo com campos **Name** e **Value** para adicionar um cabeçalho HTTP customizado.
+     - **Botão "Add Basic Auth"**: abre diálogo com campos **Username** e **Password**; codifica automaticamente em Base64 e adiciona como cabeçalho `Authorization` (Basic Auth).
 
 **Observações:**
 - Todos os campos são salvos **localmente** no dispositivo.
@@ -118,16 +120,15 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
      - Versão (ex: "Radarr v4.1.0").
      - Contagem de tags/perfis (ex: "15 tags").
      - Nome da instância (ex: "My Instance").
-   - Botão **"Save"** agora ativa (muda de cinza para azul).
 
 4. **Resultado com falha (vermelho):**
    - Ícone de erro ✗ ou ⚠️.
    - Mensagem descritiva (ex: "Connection refused", "Invalid API key", "Request timeout").
-   - Botão **"Save"** permanece desativado.
    - Dica: Verifique URL, credenciais, conectividade de rede, firewall.
+   - O botão **"Save Instance"** continua habilitado — você pode salvar mesmo após falha no teste.
 
 **Observações:**
-- **Sempre teste antes de salvar** para evitar configuração inválida.
+- O teste de conexão é **opcional** mas recomendado para evitar configuração inválida.
 - Se o teste falha:
   - ✓ URL está correto (protocolo + IP/hostname + porta)?
   - ✓ Serviço Radarr/Sonarr/qBittorrent está rodando?
@@ -155,7 +156,7 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
 **Passo a passo para remover:**
 
 1. **Tocar na instância** na lista de Instances.
-2. **Tocar ícone de lixeira** 🗑️ (canto superior direito da tela de edição).
+2. **Tocar ícone de lixeira** 🗑️ na **AppBar** (canto superior direito da tela de edição).
 3. **Dialog de confirmação** aparece:
    - Texto: "Delete instance [Name]? All cached data will be removed."
    - Botões: "Cancel" | "Delete".
@@ -171,7 +172,7 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
 
 ## Modo lento (slow mode) e cabeçalhos HTTP customizados
 
-**Onde fica:** Tela de adicionar/editar instância → seção "Advanced Options" (expansível no final do formulário).
+**Onde fica:** Tela de adicionar/editar instância → seção **"Advanced Settings"** (ExpansionTile expansível no final do formulário, subtítulo "Custom Headers & Authentication").
 
 **Slow Mode (toggle):**
 - Label: "Slow Mode" ou "Enable Slow Mode".
@@ -186,22 +187,23 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
   - Reduz risco de erro "Request timeout".
 - **Desvantagem:** se realmente falhar, leva mais tempo para exibir erro.
 
-**Custom Headers (seção expansível):**
+**Custom Headers & Authentication:**
 - Permite adicionar cabeçalhos HTTP customizados para requisições.
 - **Quando usar:**
   - Reverse proxy com autenticação extra (ex: autenticação de header).
   - API Gateway com custom headers necessários.
   - Proxy requer User-Agent customizado, Authorization adicional, etc.
-- **Interface:**
-  - Botão "+ Add Header" ou similar.
-  - Cada header: campo de "Name" + campo de "Value".
-  - Exemplo:
-    - Name: `X-Custom-Auth`, Value: `my-token-123`.
-    - Name: `X-Real-IP`, Value: `192.168.1.100`.
-  - Cada header pode ter ícone de lixeira para remover.
+- **Botão "Add Header":**
+  - Abre diálogo com campos **Name** e **Value**.
+  - Cada header adicionado aparece na lista com ícone de lixeira para remover.
+  - Exemplo: Name: `X-Custom-Auth`, Value: `my-token-123`.
+- **Botão "Add Basic Auth":**
+  - Abre diálogo com campos **Username** e **Password**.
+  - O app codifica automaticamente `Username:Password` em Base64 e adiciona como cabeçalho `Authorization: Basic <base64>`.
+  - Útil para reverse proxies que exigem autenticação HTTP Basic.
 - **Observações:**
   - Não adicione headers desnecessários; pode quebrar requisições.
-  - Valores sensíveis (tokens) são armazenados **localmente no device** (não sincronizados).
+  - Valores sensíveis (tokens, senhas) são armazenados **localmente no device** (não sincronizados).
 
 ## Suporte a múltiplas instâncias simultâneas — agregação de dados
 

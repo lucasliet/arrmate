@@ -11,24 +11,34 @@ description: Logs, health, perfis de qualidade, sobre o app
 
 A tela de Logs tem **duas abas** (TabBar no topo):
 
+**AppBar da tela de Logs:**
+- **Dropdown de filtro por nível** (na AppBar): opções All, Info, Warn, Error, Debug — selecione para filtrar instantaneamente.
+- **Ícone "Clear All"** (visível apenas na aba "App Logs"): limpa todos os logs do app (com confirmação de diálogo).
+- **Ícone "Copy All"**: copia todos os logs visíveis para o clipboard (útil para compartilhar com suporte).
+
 **Aba "ARR LOGS":**
 - Exibe logs remotos dos **servidores Radarr/Sonarr** conectados.
 - Cada entrada mostra:
   - **Timestamp** (data/hora exata).
   - **Nível/Severity** (INFO, WARN, ERROR, DEBUG).
   - **Mensagem** do log.
-- **Filtro por nível** (chips no topo):
-  - All, Info, Warn, Error, Debug.
-  - Toque para filtrar instantaneamente.
-- **Botão "Copy all"**: copia todos os logs visíveis para clipboard (útil para compartilhar com suporte).
 - **Auto-load/Paginação**: conforme você scroll para baixo, mais logs carregam automaticamente.
 - **Pull-to-refresh**: recarrega logs do servidor em tempo real.
 
 **Aba "APP LOGS":**
 - Exibe logs **internos do próprio Arrmate**.
-- Mesmo formato e filtros que Arr Logs.
+- Mesmo formato que Arr Logs.
 - Mostra requisições API, erros internos, eventos de ciclo de vida, etc.
-- **Botão "Clear"**: limpa todos os logs do app (com confirmação de diálogo).
+
+**Detalhes de um log (ao tocar em uma entrada):**
+- Abre como **DraggableScrollableSheet** (altura de 0.6 a 0.9).
+- Seções exibidas:
+  - **Time** — data/hora completa.
+  - **Level** — nível de severidade.
+  - **Logger** — componente que gerou o log.
+  - **Message** — mensagem completa em caixa de código.
+  - **Exception/Error** — caixa vermelha com stack trace (se presente).
+- Cada seção é **copiável** individualmente.
 
 **Observações:**
 - Logs são **úteis para diagnóstico** de problemas de conexão, API, importação, etc.

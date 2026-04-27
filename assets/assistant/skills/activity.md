@@ -34,8 +34,8 @@ A aba Queue mostra itens **atualmente sendo baixados** no Radarr/Sonarr:
   - Se requer manual import: seção "Manual Import Required" com botão para iniciar importação.
   - **Opções de remoção:**
     - Toggle: "Remove from Download Client" (padrão ON).
-    - Toggle: "Add to Blocklist" (desabilita se "Search for Replacement" está ON).
-    - Toggle: "Search for Replacement" (busca automaticamente novo release).
+    - Toggle: "Add to Blocklist" — automaticamente **desabilitado** quando "Search for Replacement" está ON (os dois são mutuamente exclusivos: não é possível bloquear e buscar substituto ao mesmo tempo).
+    - Toggle: "Search for Replacement" — quando ativado, desabilita "Add to Blocklist" automaticamente.
     - Botão vermelho: "Remove from Queue".
   - **Informações adicionais:** protocolo (NZB/Torrent), cliente de download, caminho de saída.
 
@@ -91,10 +91,12 @@ O histórico mostra **eventos passados em ordem cronológica reversa** (mais rec
 **Estrutura visual:**
 - **Cada evento (card):**
   - **Badge colorido** (ícone + label) indicando tipo:
-    - 🟡 Amarelo "GRABBED" — release foi capturada e enviada ao cliente.
+    - 🔵 Azul "GRABBED" — release capturada e enviada ao cliente.
     - 🟢 Verde "IMPORTED" — arquivo importado com sucesso.
     - 🔴 Vermelho "FAILED" — falha no download ou import.
-    - ⚫ Cinza "DELETED" — item deletado.
+    - 🟠 Laranja "DELETED" — item ou arquivo deletado.
+    - 🟣 Roxo "RENAMED" — arquivo renomeado.
+    - ⚫ Cinza "IGNORED" — item ignorado.
   - **Título/Nome** do filme ou série.
   - **Nome da release** (ex: "Movie.Title.2023.1080p.WEB-DL-GROUP").
   - **Timestamp relativo** (ex: "2 hours ago", "Yesterday").
