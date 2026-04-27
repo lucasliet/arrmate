@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/widgets/update_dialog.dart';
@@ -24,7 +25,9 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(updateProvider.notifier).checkForUpdate();
+      if (!kDebugMode) {
+        ref.read(updateProvider.notifier).checkForUpdate();
+      }
 
       // Check for initialization errors
       final initError = ref.read(initializationErrorProvider);
@@ -68,6 +71,10 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
           builder: (context, ref, child) {
             // Listen for update availability inside the MaterialApp context
             ref.listen(updateProvider, (previous, next) {
+              if (kDebugMode) {
+                return;
+              }
+
               if (next.status == UpdateStatus.available &&
                   previous?.status != UpdateStatus.available) {
                 final navContext = rootNavigatorKey.currentContext;

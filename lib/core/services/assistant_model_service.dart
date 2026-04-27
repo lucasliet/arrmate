@@ -73,7 +73,34 @@ class AssistantInstalledModel {
 class AssistantModelService {
   /// Returns whether a given model id supports agentic tool-calling.
   static bool supportsToolCalling(String modelId) {
-    return modelId.startsWith('gemma4_');
+    final normalized = modelId.trim().toLowerCase();
+    return normalized.startsWith('gemma4_') ||
+        normalized.startsWith('gemma-4') ||
+        normalized.startsWith('gemma_4');
+  }
+
+  /// Returns whether an installed model supports agentic tool-calling.
+  bool supportsToolCallingForInstalledModel(AssistantInstalledModel model) {
+    final normalizedPath = path
+        .normalize(model.path)
+        .replaceAll('\\', '/')
+        .toLowerCase();
+    final normalizedLabel = model.label.toLowerCase();
+
+    for (final entry in catalog) {
+      if (!supportsToolCalling(entry.id)) {
+        continue;
+      }
+
+      final entryId = entry.id.toLowerCase();
+      final entryFileName = entry.fileName.toLowerCase();
+      if (normalizedPath.contains('/$entryId/') ||
+          normalizedPath.endsWith('/$entryFileName')) {
+        return true;
+      }
+    }
+
+    return normalizedLabel.contains('gemma');
   }
 
   /// Creates a new model service instance.

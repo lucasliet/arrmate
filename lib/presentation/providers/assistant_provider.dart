@@ -158,24 +158,36 @@ class AssistantNotifier extends Notifier<AssistantState> {
     try {
       final catalog = await _modelService.loadCatalog();
       final installedModels = await _modelService.listInstalledModels();
-      final selectedModelId = await _modelService.getSelectedModelId();
+      final persistedSelectedModelId = await _modelService.getSelectedModelId();
       final selectedModel = installedModels.firstWhereOrNull(
-        (model) => model.id == selectedModelId,
+        (model) => model.id == persistedSelectedModelId,
       );
 
+      var didLoadSelectedModel = false;
+
+      if (selectedModel == null && persistedSelectedModelId != null) {
+        await _modelService.setSelectedModelId(null);
+      }
+
       if (selectedModel != null) {
-        await _selectModel(selectedModel);
+        didLoadSelectedModel = await _selectModel(selectedModel);
+        if (!didLoadSelectedModel) {
+          await _modelService.setSelectedModelId(null);
+        }
       }
 
       state = state.copyWith(
         catalog: catalog,
         installedModels: installedModels,
-        selectedModelId: selectedModel?.id ?? selectedModelId,
-        selectedModelPath: selectedModel?.path,
+        selectedModelId: didLoadSelectedModel ? selectedModel!.id : null,
+        selectedModelPath: didLoadSelectedModel ? selectedModel!.path : null,
+        clearSelectedModelId: !didLoadSelectedModel,
+        clearSelectedModelPath: !didLoadSelectedModel,
         isLoading: false,
-        clearError: true,
+        clearError: selectedModel == null || didLoadSelectedModel,
       );
-    } catch (e) {
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to initialize assistant', e, st);
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to initialize assistant resources.',
@@ -202,7 +214,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
         selectedModelPath: selectedModel?.path,
         isLoading: false,
       );
-    } catch (e) {
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to refresh models', e, st);
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to refresh installed models.',
@@ -230,7 +243,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
         installedModels: installedModels,
         isImporting: false,
       );
-    } catch (e) {
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to import model', e, st);
       state = state.copyWith(
         isImporting: false,
         error: 'Failed to import model.',
@@ -266,8 +280,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
         isDownloading: false,
         downloadProgress: 100,
       );
-    } catch (e) {
-      logger.error('[AssistantNotifier] Download failed', e);
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Download failed', e, st);
       state = state.copyWith(
         isDownloading: false,
         downloadProgress: 0,
@@ -332,7 +346,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
         messages: [...state.messages, assistantMessage],
         isGenerating: false,
       );
-    } catch (e) {
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to generate response', e, st);
       state = state.copyWith(
         isGenerating: false,
         error: 'Failed to generate a response.',
@@ -364,19 +379,22 @@ class AssistantNotifier extends Notifier<AssistantState> {
         clearSelectedModelPath: wasSelected,
         clearError: true,
       );
-    } catch (e) {
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to delete model', e, st);
       state = state.copyWith(error: 'Failed to delete model.');
     }
   }
 
-  Future<void> _selectModel(AssistantInstalledModel model) async {
+  Future<bool> _selectModel(AssistantInstalledModel model) async {
     try {
-      final toolCalling = AssistantModelService.supportsToolCalling(model.id);
+      final toolCalling = _modelService.supportsToolCallingForInstalledModel(
+        model,
+      );
       if (!toolCalling) {
         state = state.copyWith(
           error: 'This model does not support tool-calling. Use a Gemma model.',
         );
-        return;
+        return false;
       }
       _chatService.setKnowledgeService(_knowledgeService);
       await _chatService.loadModel(model.path);
@@ -386,8 +404,11 @@ class AssistantNotifier extends Notifier<AssistantState> {
         selectedModelPath: model.path,
         clearError: true,
       );
-    } catch (e) {
+      return true;
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to select model', e, st);
       state = state.copyWith(error: 'Failed to load the selected model.');
+      return false;
     }
   }
 }

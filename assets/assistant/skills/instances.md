@@ -1,88 +1,229 @@
 ---
 name: instances
-description: Adicionar/editar/remover instância Radarr/Sonarr/qBittorrent, API key, test connection, slow mode, multi-instância
+description: Adicionar/editar/remover instância Radarr/Sonarr/qBittorrent, API key, test connection, slow mode, custom headers, multi-instância
 ---
 
 # Instâncias
 
-## Adicionar instância Radarr Sonarr ou qBittorrent
+## Adicionar instância — Radarr Sonarr ou qBittorrent
 
-**Onde fica:** Configurações → seção "Instances" → "Add Instance".
+**Onde fica:** Configurações (quinta aba da barra inferior) → seção "Instances" → "Add Instance".
 
-**Passo a passo:**
-1. Abrir a aba Configurações na barra inferior.
-2. Na seção "Instances", tocar em "Add Instance" (último item da lista).
-3. No seletor segmentado no topo, escolher o tipo: Radarr, Sonarr ou qBittorrent.
-4. Preencher "Name" com um rótulo livre (ex: "Servidor Casa", "VPS").
-5. Preencher "URL" completo, incluindo http(s):// e porta (ex: `http://192.168.1.10:7878`).
-6. Para Radarr/Sonarr: colar a "API Key" em "API Key".
-7. Para qBittorrent: preencher "Username" e "Password" da WebUI.
-8. Tocar "Test Connection" para validar. Se OK, aparece versão e contagem de tags em verde.
-9. Tocar "Save" para salvar.
+A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou qBittorrent.
 
-**Observações:** Os metadados da instância (perfis de qualidade, root folders, tags) são cacheados localmente. Múltiplas instâncias do mesmo tipo são suportadas simultaneamente.
+**Estrutura da tela:**
+
+1. **Seletor Segmentado no topo (tabs):**
+   - **Radarr** (ícone 🎬): para servidor de filmes.
+   - **Sonarr** (ícone 📺): para servidor de séries.
+   - **qBittorrent** (ícone ⬇️): para cliente de downloads.
+   - Toque para alternar tipo.
+
+2. **Formulário de configuração:**
+   - **Name** (obrigatório):
+     - Label: "Instance Name".
+     - Exemplo: "Casa", "VPS Remoto", "NAS Sala".
+     - Campo de texto livre; qualquer nome descritivo.
+   
+   - **URL** (obrigatório):
+     - Label: "URL".
+     - Exemplo: `http://192.168.1.10:7878` (Radarr), `http://192.168.1.10:8989` (Sonarr), `http://192.168.1.10:8080` (qBittorrent).
+     - **Importante:** incluir protocolo (http/https) e porta.
+     - Campo de texto; suporta IPv4, IPv6, hostname ou domain.
+   
+   - **API Key** (Radarr/Sonarr apenas):
+     - Label: "API Key".
+     - Colar chave gerada no servidor (Settings → General → API Key no Radarr/Sonarr web).
+     - Campo de texto; pode usar botão de "visibility toggle" (olho) para ver/ocultar.
+   
+   - **Username & Password** (qBittorrent apenas):
+     - Label: "Username" e "Password".
+     - Credenciais da WebUI do qBittorrent.
+     - Campos de texto; password tem visibility toggle.
+
+3. **Botão "Test Connection":**
+   - Tocar para validar URL, API key/credenciais e conectividade.
+   - Mostra spinner enquanto testa.
+   - **Sucesso (verde):** "✓ Connection successful" + versão (ex: "Radarr v4.1.0") + metadados (ex: "15 tags").
+   - **Falha (vermelho):** mensagem de erro (ex: "Connection refused", "Invalid API key", "Timeout").
+
+4. **Botão "Save":**
+   - Tocar para salvar instância.
+   - Ativa apenas após teste bem-sucedido (desativado até aí).
+   - Retorna para tela "Instances" com nova instância na lista.
+
+5. **Seção "Advanced Options" (expansível):**
+   - Collapse/expand com chevron.
+   - Contém toggles/campos adicionais:
+     - **Slow Mode** (toggle): para servidores lentos/remotos.
+     - **Custom Headers** (campo expansível): para reverse proxies com autenticação extra.
+
+**Observações:**
+- Todos os campos são salvos **localmente** no dispositivo.
+- Metadados da instância (perfis, pastas, tags) são **cacheados** na primeira conexão.
+- Você pode ter **múltiplas instâncias** de cada tipo simultaneamente.
 
 ## Onde encontrar a API key do Radarr ou Sonarr
 
-A API Key é gerada pelo próprio servidor Radarr ou Sonarr.
+A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Sonarr.
 
-**Como obter:**
-1. Abrir a interface web do Radarr ou Sonarr no navegador.
-2. Ir em Settings → General.
-3. Copiar o valor do campo "API Key".
+**Passo a passo para obter:**
 
-Depois colar essa chave no campo "API Key" ao adicionar a instância no Arrmate.
+1. **Abrir interface web** do Radarr ou Sonarr no navegador:
+   - Radarr: `http://[seu-ip]:7878`
+   - Sonarr: `http://[seu-ip]:8989`
+   - Se não souber a porta, verifique em Settings do servidor.
+
+2. **Navegar para Settings:**
+   - Canto superior direito → ícone de engrenagem ⚙️ → "Settings".
+
+3. **Abrir seção "General":**
+   - Menu esquerdo → "General" (pode estar sob "General" ou "System").
+
+4. **Localizar campo "API Key":**
+   - Campo com rótulo "API Key" ou "API key".
+   - Exibe string aleatória (ex: `a1b2c3d4e5f6g7h8i9j0`).
+
+5. **Copiar a chave:**
+   - Clique no campo ou ícone de cópia.
+   - Snackbar confirma "Copied to clipboard".
+
+6. **Colar no Arrmate:**
+   - No app, ao adicionar instância Radarr/Sonarr, cole no campo "API Key".
+
+**Observações:**
+- Cada servidor Radarr/Sonarr tem sua própria chave.
+- A chave é **sensível** — não compartilhe publicamente.
+- Se suspeitar que foi exposta, regenere em Settings do servidor.
 
 ## Testar conexão e validar instância
 
 **Onde fica:** Tela de adicionar/editar instância → botão "Test Connection".
 
 **Passo a passo:**
-1. Preencher URL e credenciais da instância.
-2. Tocar "Test Connection".
-3. Aguardar o indicador de loading.
-4. Se sucesso: aparece "Connection successful!" com versão, nome e contagem de tags.
-5. Se falha: aparece mensagem de erro em vermelho com o motivo.
 
-**Observações:** Sempre teste antes de salvar. Se falhar, verifique URL, porta, API key e conectividade de rede.
+1. **Preencher campos obrigatórios:**
+   - Name: qualquer rótulo.
+   - URL: endereço completo (http://... + porta).
+   - API Key (Radarr/Sonarr) ou Username+Password (qBittorrent).
+
+2. **Tocar "Test Connection":**
+   - Botão mostra spinner/loading.
+   - Teste leva **2-10 segundos** dependendo de latência.
+
+3. **Resultado bem-sucedido (verde):**
+   - Ícone de check ✓.
+   - Texto: "Connection successful!".
+   - Metadados exibidos:
+     - Versão (ex: "Radarr v4.1.0").
+     - Contagem de tags/perfis (ex: "15 tags").
+     - Nome da instância (ex: "My Instance").
+   - Botão **"Save"** agora ativa (muda de cinza para azul).
+
+4. **Resultado com falha (vermelho):**
+   - Ícone de erro ✗ ou ⚠️.
+   - Mensagem descritiva (ex: "Connection refused", "Invalid API key", "Request timeout").
+   - Botão **"Save"** permanece desativado.
+   - Dica: Verifique URL, credenciais, conectividade de rede, firewall.
+
+**Observações:**
+- **Sempre teste antes de salvar** para evitar configuração inválida.
+- Se o teste falha:
+  - ✓ URL está correto (protocolo + IP/hostname + porta)?
+  - ✓ Serviço Radarr/Sonarr/qBittorrent está rodando?
+  - ✓ Firewall permite acesso à porta?
+  - ✓ Se remoto (VPN/internet): conexão está ativa?
+  - ✓ API key está correta (Radarr/Sonarr)?
 
 ## Editar ou remover instância existente
 
-**Onde fica:** Configurações → seção "Instances" → tocar na instância.
+**Onde fica:** Configurações → seção "Instances" → lista de instâncias.
 
 **Passo a passo para editar:**
-1. Abrir Configurações → seção "Instances".
-2. Tocar na instância desejada na lista.
-3. Alterar os campos necessários (URL, API key, nome, etc).
-4. Tocar "Test Connection" para validar.
-5. Tocar "Save".
+
+1. **Abrir Configurações** (quinta aba).
+2. **Localizar seção "Instances"** (topo ou meio da tela).
+3. **Tocar na instância** que deseja editar.
+   - Abre tela de edição (mesmo formulário que "Add Instance").
+4. **Alterar campos desejados:**
+   - Name, URL, API Key/credenciais, etc.
+5. **Tocar "Test Connection"** para validar mudanças.
+   - Deve mostrar "Connection successful" em verde.
+6. **Tocar "Save"** para aplicar.
+   - Retorna para lista de instâncias.
 
 **Passo a passo para remover:**
-1. Tocar na instância na lista.
-2. Tocar no ícone de lixeira no canto superior direito.
-3. Confirmar a exclusão no diálogo.
 
-**Observações:** Remover uma instância limpa todo o cache local associado (filmes, séries, perfis, etc).
+1. **Tocar na instância** na lista de Instances.
+2. **Tocar ícone de lixeira** 🗑️ (canto superior direito da tela de edição).
+3. **Dialog de confirmação** aparece:
+   - Texto: "Delete instance [Name]? All cached data will be removed."
+   - Botões: "Cancel" | "Delete".
+4. **Tocar "Delete"** para confirmar.
+   - Instância é removida.
+   - Cache associado (filmes, séries, perfis) é apagado.
+   - Retorna para lista de instâncias.
+
+**Observações:**
+- Editar instância **não apaga** filme/série dados; apenas atualiza credenciais.
+- Remover instância **apaga** todo cache local associado (recarrega na próxima vez que conectar).
+- Se você remover e re-adicionar a mesma instância, dados serão re-sincronizados.
 
 ## Modo lento (slow mode) e cabeçalhos HTTP customizados
 
-**Onde fica:** Tela de adicionar/editar instância → seção "Advanced Options".
+**Onde fica:** Tela de adicionar/editar instância → seção "Advanced Options" (expansível no final do formulário).
 
-**Slow Mode:**
-- Toggle "Slow Mode" no formulário da instância.
-- Quando ativado, o timeout de requisições sobe de 30s para 90s.
-- Recomendado para servidores remotos, via VPN, ou com hardware limitado.
+**Slow Mode (toggle):**
+- Label: "Slow Mode" ou "Enable Slow Mode".
+- **Padrão:** OFF.
+- **Quando ativar:**
+  - Servidor remoto via internet (não LAN).
+  - Conexão por VPN ou móvel (4G/5G com latência alta).
+  - Hardware limitado (Raspberry Pi, NAS antigo).
+  - Você observa timeouts frequentes nas requisições.
+- **Efeito:** timeout sobe de **30 segundos para 90 segundos**.
+  - Permite que requisições lentas completem sem abortar.
+  - Reduz risco de erro "Request timeout".
+- **Desvantagem:** se realmente falhar, leva mais tempo para exibir erro.
 
-**Custom Headers:**
-- Seção expansível "Custom Headers" no formulário da instância.
-- Permite adicionar cabeçalhos HTTP customizados (nome:valor).
-- Útil para reverse proxies com autenticação extra ou headers específicos.
+**Custom Headers (seção expansível):**
+- Permite adicionar cabeçalhos HTTP customizados para requisições.
+- **Quando usar:**
+  - Reverse proxy com autenticação extra (ex: autenticação de header).
+  - API Gateway com custom headers necessários.
+  - Proxy requer User-Agent customizado, Authorization adicional, etc.
+- **Interface:**
+  - Botão "+ Add Header" ou similar.
+  - Cada header: campo de "Name" + campo de "Value".
+  - Exemplo:
+    - Name: `X-Custom-Auth`, Value: `my-token-123`.
+    - Name: `X-Real-IP`, Value: `192.168.1.100`.
+  - Cada header pode ter ícone de lixeira para remover.
+- **Observações:**
+  - Não adicione headers desnecessários; pode quebrar requisições.
+  - Valores sensíveis (tokens) são armazenados **localmente no device** (não sincronizados).
 
-## Suporte a múltiplas instâncias simultâneas
+## Suporte a múltiplas instâncias simultâneas — agregação de dados
 
-O Arrmate suporta várias instâncias do mesmo tipo ao mesmo tempo.
+O **Arrmate suporta múltiplas instâncias** de **cada tipo** simultaneamente.
 
-- É possível ter múltiplos Radarr, múltiplos Sonarr e múltiplos qBittorrent configurados.
-- Cada instância é independente: nome, URL, credenciais e configurações próprias.
-- Filmes e séries de todas as instâncias Radarr/Sonarr aparecem agregados nas respectivas abas.
-- As instâncias são listadas na seção "Instances" em Configurações com ícone do tipo (filme, TV, download).
+**Exemplos de configurações possíveis:**
+- 2 x Radarr + 1 x Sonarr + 1 x qBittorrent.
+- 3 x Radarr (casa, VPS, NAS) + 2 x Sonarr.
+- 1 x Radarr + 1 x Sonarr + 2 x qBittorrent (um para privado, outro para público).
+
+**Como os dados são agregados:**
+
+| Elemento | Comportamento |
+|---|---|
+| **Abas Movies/Series** | Filmes/séries de **todas as instâncias Radarr/Sonarr** aparecem na mesma aba (agregados). Você pode filtrar por instância se desejar. |
+| **Abas Activity/qBittorrent** | Queue, history e torrents de **todas as instâncias** aparecem agregados. Ícone de instância identifica origem. |
+| **Notificações** | Notificações de todas as instâncias chegam no mesmo tópico ntfy. Badge mostra qual instância enviou. |
+| **Perfis de qualidade** | Listados separados por instância (ex: "Radarr (Casa)" vs "Radarr (VPS)"). |
+| **Settings/Instances** | Lista completa de todas as instâncias com tipo/nome/status. |
+
+**Observações:**
+- Cada instância é **independente**: nome, URL, credenciais, metadados próprios.
+- Dados de uma instância **não afetam** outra (deletar filme em uma não afeta a outra).
+- **Preferência padrão:** primeira instância Radarr/Sonarr é usada ao adicionar novo filme/série, mas você pode mudar.
+- **Ícones visuais:** cada instância tem ícone colorido na lista para fácil identificação.

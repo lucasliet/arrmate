@@ -128,29 +128,58 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   : 'Import or download a model to start',
               style: theme.textTheme.bodySmall,
             ),
-          ),
-          Wrap(
-            spacing: 8,
-            children: [
-              ElevatedButton.icon(
-                onPressed: state.isDownloading
-                    ? null
-                    : () => _showCatalog(context, notifier, state),
-                icon: const Icon(Icons.download, size: 18),
-                label: const Text('Download'),
-              ),
-              OutlinedButton.icon(
-                onPressed: state.isImporting ? null : notifier.importModel,
-                icon: const Icon(Icons.upload_file, size: 18),
-                label: const Text('Import'),
-              ),
-              if (state.installedModels.isNotEmpty)
-                OutlinedButton.icon(
-                  onPressed: () => _showInstalled(context, notifier, state),
-                  icon: const Icon(Icons.swap_horiz, size: 18),
-                  label: const Text('Switch'),
-                ),
-            ],
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'download') {
+                  _showCatalog(context, notifier, state);
+                } else if (value == 'import') {
+                  notifier.importModel();
+                } else if (value == 'switch') {
+                  _showInstalled(context, notifier, state);
+                }
+              },
+              itemBuilder: (context) {
+                final items = [
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download),
+                        SizedBox(width: 12),
+                        Text('Download'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'import',
+                    child: Row(
+                      children: [
+                        Icon(Icons.upload_file),
+                        SizedBox(width: 12),
+                        Text('Import'),
+                      ],
+                    ),
+                  ),
+                ];
+
+                if (state.installedModels.isNotEmpty) {
+                  items.add(
+                    const PopupMenuItem(
+                      value: 'switch',
+                      child: Row(
+                        children: [
+                          Icon(Icons.swap_horiz),
+                          SizedBox(width: 12),
+                          Text('Switch'),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return items;
+              },
+            ),
           ),
         ],
       ),
@@ -316,7 +345,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           const Divider(height: 1),
           ...state.catalog.map((m) {
             final isInstalled = state.installedModels.any(
-              (installed) => installed.id == m.id,
+              (installed) => installed.source == m.id,
             );
 
             return ListTile(

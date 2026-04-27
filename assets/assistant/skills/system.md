@@ -9,67 +9,118 @@ description: Logs, health, perfis de qualidade, sobre o app
 
 **Onde fica:** Configurações → seção "System Management" → "Logs".
 
-A tela de Logs tem duas abas:
+A tela de Logs tem **duas abas** (TabBar no topo):
 
-**Arr Logs:**
-- Logs do sistema dos servidores Radarr/Sonarr conectados.
-- Cada entrada: timestamp, nível (INFO, WARN, ERROR, DEBUG), mensagem.
-- Filtro por nível: All, Info, Warn, Error, Debug.
-- Botão "Copy all" para copiar logs visíveis para clipboard.
-- Auto-carrega mais conforme scroll.
+**Aba "ARR LOGS":**
+- Exibe logs remotos dos **servidores Radarr/Sonarr** conectados.
+- Cada entrada mostra:
+  - **Timestamp** (data/hora exata).
+  - **Nível/Severity** (INFO, WARN, ERROR, DEBUG).
+  - **Mensagem** do log.
+- **Filtro por nível** (chips no topo):
+  - All, Info, Warn, Error, Debug.
+  - Toque para filtrar instantaneamente.
+- **Botão "Copy all"**: copia todos os logs visíveis para clipboard (útil para compartilhar com suporte).
+- **Auto-load/Paginação**: conforme você scroll para baixo, mais logs carregam automaticamente.
+- **Pull-to-refresh**: recarrega logs do servidor em tempo real.
 
-**App Logs:**
-- Logs internos do próprio Arrmate.
+**Aba "APP LOGS":**
+- Exibe logs **internos do próprio Arrmate**.
 - Mesmo formato e filtros que Arr Logs.
-- Botão "Clear" no topo para limpar logs (com confirmação).
+- Mostra requisições API, erros internos, eventos de ciclo de vida, etc.
+- **Botão "Clear"**: limpa todos os logs do app (com confirmação de diálogo).
 
-**Observações:** Os logs são úteis para diagnóstico de problemas. App logs mostram requisições API, erros internos e eventos do ciclo de vida.
+**Observações:**
+- Logs são **úteis para diagnóstico** de problemas de conexão, API, importação, etc.
+- APP logs revelam erros internos e comportamento do app.
+- ARR logs revelam comportamento do Radarr/Sonarr remoto.
 
 ## Saúde (health) — checagens e avisos do sistema
 
 **Onde fica:** Configurações → seção "System Management" → "Health".
 
-**Funcionalidades:**
-- Exibe resultados das checagens de saúde dos servidores Radarr/Sonarr.
-- Ícone de refresh no topo para executar checagens manualmente.
-- Barra de progresso linear enquanto checa.
+A tela de Health exibe **resultados de health checks** dos servidores Radarr/Sonarr:
 
 **Sem problemas:**
-- Ícone de check verde grande.
-- "No issues found".
+- **Grande ícone de check verde** (✓) no centro.
+- Mensagem: "No issues found".
 
 **Com problemas:**
-- Lista de avisos/erros com:
-  - Ícone (X vermelho para erros, ! laranja para warnings).
-  - Fonte (qual instância).
-  - Mensagem descritiva do problema.
-  - Link para wiki (abre no navegador).
+- **Lista de problemas/avisos:**
+  - Cada item exibe:
+    - **Ícone de severidade:**
+      - 🔴 X vermelho = erro (grave).
+      - 🟠 ! laranja = aviso (não crítico).
+    - **Fonte** (qual instância detectou o problema).
+    - **Mensagem descritiva** do problema (ex: "Disk space low", "Download client unreachable").
+    - **Link wiki** (quando disponível): toque para abrir no navegador com mais informações.
 
-**Observações:** Problemas comuns incluem: espaço em disco baixo, pasta não gravável, download client inacessível, indexers com falha.
+**Ações:**
+- **Ícone de refresh** no topo: toque para executar health checks manualmente.
+- **Barra de progresso linear**: aparece enquanto checando.
+- **Pull-to-refresh**: recarrega health status.
+
+**Problemas comuns:**
+- Espaço em disco baixo na pasta de mídia.
+- Pasta não gravável (permissões).
+- Download client (qBittorrent, etc) inacessível.
+- Indexers falhando.
+- Radarr/Sonarr desatualizado.
+- Falha de DNS ou conectividade.
+
+**Observações:**
+- Health checks rodam automaticamente em background periodicamente.
+- Você pode forçar check manual tocando no refresh.
+- Alertas ajudam a identificar problemas antes que afetem downloads.
 
 ## Perfis de qualidade disponíveis nas instâncias
 
 **Onde fica:** Configurações → seção "System Management" → "Quality Profiles".
 
-**Funcionalidades:**
-- Lista todos os perfis de qualidade das instâncias conectadas.
-- Duas seções: Radarr Profiles e Sonarr Profiles.
-- Cada perfil mostra: ícone, nome do perfil e ID.
+A tela de Quality Profiles lista **todos os perfis de qualidade** configurados nas instâncias:
 
-**Estado vazio:** "No profiles found or instance not connected".
+**Estrutura:**
+- **Duas seções separadas:**
+  - **Radarr Profiles** (para instâncias Radarr).
+  - **Sonarr Profiles** (para instâncias Sonarr).
+- Cada perfil mostra:
+  - **Ícone** (opcional, indicando tipo).
+  - **Nome do perfil** (ex: "1080p", "4K", "Any").
+  - **ID** do perfil (número identificador).
 
-**Observações:** Estes perfis são usados ao adicionar ou editar filmes e séries. São obtidos via cache das instâncias configuradas.
+**Estado vazio:**
+- Se nenhuma instância conectada ou nenhum perfil encontrado:
+  - Mensagem: "No profiles found or instance not connected".
+
+**Observações:**
+- Perfis são usados quando você **adiciona ou edita** filmes e séries.
+- São **obtidos do cache local** do app (sincronizados quando você conecta à instância).
+- Refletem a configuração do Radarr/Sonarr remoto.
+- Útil para referência rápida de quais qualidades estão disponíveis.
 
 ## Sobre o app — versão atualizações e código-fonte
 
 **Onde fica:** Configurações → seção "About".
 
-**Informações exibidas:**
-- Versão atual do app.
-- Status de atualização (check verde se atualizado, ícone de update se há nova versão).
-- Tocar para verificar atualizações manualmente.
-- Link "Source Code" para o repositório GitHub.
+A seção About exibe **informações sobre o Arrmate**:
 
-**Atualizações:**
-- O app verifica automaticamente por novas versões via GitHub Releases.
-- Quando disponível, é possível baixar e instalar a atualização diretamente pelo app (OTA).
+**Informações exibidas:**
+- **Versão atual** (ex: "v1.16.3").
+- **Status de atualização:**
+  - 🟢 Check verde: app está atualizado.
+  - 📥 Ícone de download: nova versão disponível.
+  - ⏳ Spinner: verificando atualizações.
+- **Tocar na versão**: verifica manualmente se há atualizações (mostra spinner).
+  - Se atualizado: snackbar "App is up to date".
+  - Se nova versão: opção para baixar e instalar (OTA).
+- **Link "Source Code"** (com ícone de GitHub):
+  - Toque para abrir repositório GitHub no navegador (`https://github.com/lucasliet/arrmate`).
+
+**Atualizações automáticas:**
+- O app **verifica periodicamente** (a cada inicialização) por novas versões via GitHub Releases.
+- Quando disponível, você pode **baixar e instalar diretamente** do app (OTA = Over-The-Air).
+- Não requer ir à Play Store ou website.
+
+**Observações:**
+- Verificar atualizações manualmente útil se você suspeitar que há nova versão.
+- App é open-source; você pode contribuir ou reportar issues no GitHub.
