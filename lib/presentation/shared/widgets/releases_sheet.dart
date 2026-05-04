@@ -310,7 +310,7 @@ class _ReleaseTile extends StatelessWidget {
         enabled: !isRejected,
         trailing: IconButton(
           icon: const Icon(Icons.download),
-          onPressed: isRejected ? null : onTap,
+          onPressed: onTap,
         ),
       ),
     );
