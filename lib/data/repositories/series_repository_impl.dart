@@ -149,6 +149,36 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<void> deleteSeriesFile(int fileId) => _api.deleteSeriesFile(fileId);
 
   @override
+  Future<int> deleteSeriesFiles(int seriesId, {int? seasonNumber}) async {
+    final Set<int> fileIds;
+    if (seasonNumber == null) {
+      final files = await _api.getSeriesFiles(seriesId);
+      fileIds = files.map((f) => f.id).toSet();
+    } else {
+      final episodes = await _api.getEpisodes(seriesId);
+      fileIds = episodes
+          .where(
+            (e) =>
+                e.seasonNumber == seasonNumber &&
+                e.hasFile &&
+                e.episodeFileId != null &&
+                e.episodeFileId! > 0,
+          )
+          .map((e) => e.episodeFileId!)
+          .toSet();
+    }
+
+    logger.info(
+      '[SeriesRepository] Deleting ${fileIds.length} file(s) for series $seriesId${seasonNumber != null ? ' season $seasonNumber' : ''}',
+    );
+
+    for (final id in fileIds) {
+      await _api.deleteSeriesFile(id);
+    }
+    return fileIds.length;
+  }
+
+  @override
   Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
       _api.getImportableFiles(downloadId);
 

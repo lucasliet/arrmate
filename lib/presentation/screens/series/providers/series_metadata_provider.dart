@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'season_episodes_provider.dart';
+import 'series_provider.dart';
 
 /// Provider for fetching media files for a specific series.
 final seriesFilesProvider = FutureProvider.autoDispose
@@ -52,6 +54,26 @@ class SeriesMetadataController {
 
     await repository.deleteSeriesFile(fileId);
     ref.invalidate(seriesFilesProvider(seriesId));
+  }
+
+  /// Deletes every file of the series; when [seasonNumber] is provided, only
+  /// that season's files are removed. The series stays in Sonarr.
+  Future<int> deleteAllFiles({int? seasonNumber}) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
+
+    final count = await repository.deleteSeriesFiles(
+      seriesId,
+      seasonNumber: seasonNumber,
+    );
+    ref.invalidate(seriesFilesProvider(seriesId));
+    ref.invalidate(seriesDetailsProvider(seriesId));
+    if (seasonNumber != null) {
+      ref.invalidate(seasonEpisodesProvider(seriesId, seasonNumber));
+    }
+    return count;
   }
 
   void refreshFiles() {

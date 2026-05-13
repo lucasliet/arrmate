@@ -86,6 +86,15 @@ abstract class SeriesRepository {
   /// Deletes an episode file.
   Future<void> deleteSeriesFile(int fileId);
 
+  /// Deletes every episode file belonging to [seriesId].
+  ///
+  /// When [seasonNumber] is provided, only files of that season are removed;
+  /// otherwise all files of the series are removed. The series itself stays
+  /// in Sonarr.
+  ///
+  /// Returns the number of files that were deleted.
+  Future<int> deleteSeriesFiles(int seriesId, {int? seasonNumber});
+
   /// Retrieves files available for manual import.
   Future<List<ImportableFile>> getImportableFiles(String downloadId);
 

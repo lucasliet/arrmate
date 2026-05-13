@@ -8,6 +8,7 @@ import '../../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
+import 'providers/series_metadata_provider.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
 
@@ -205,48 +206,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
                     ),
                   );
                 } else if (value == 'delete') {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Series'),
-                      content: const Text(
-                        'Are you sure you want to delete this series?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true) {
-                    try {
-                      await ref
-                          .read(seriesControllerProvider(seriesId))
-                          .deleteSeries();
-                      if (context.mounted) {
-                        context.pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Series deleted')),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to delete: $e'),
-                            backgroundColor: theme.colorScheme.error,
-                          ),
-                        );
-                      }
-                    }
-                  }
+                  await _handleDeleteSeries(context, ref, series);
+                } else if (value == 'deleteFiles') {
+                  await _handleDeleteSeriesFiles(context, ref, series);
                 }
               },
               itemBuilder: (context) => [
@@ -257,6 +219,16 @@ class SeriesDetailsScreen extends ConsumerWidget {
                       Icon(Icons.edit),
                       SizedBox(width: 8),
                       Text('Edit'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'deleteFiles',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_sweep),
+                      SizedBox(width: 8),
+                      Text('Delete files'),
                     ],
                   ),
                 ),
@@ -590,6 +562,143 @@ class SeriesDetailsScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleDeleteSeries(
+    BuildContext context,
+    WidgetRef ref,
+    Series series,
+  ) async {
+    bool deleteFiles = false;
+    final theme = Theme.of(context);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Delete Series'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Are you sure you want to delete "${series.title}"?'),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  key: const Key('deleteSeriesAlsoDeleteFiles'),
+                  title: const Text('Also delete files from disk'),
+                  contentPadding: EdgeInsets.zero,
+                  value: deleteFiles,
+                  onChanged: (val) =>
+                      setState(() => deleteFiles = val ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ref
+          .read(seriesControllerProvider(seriesId))
+          .deleteSeries(deleteFiles: deleteFiles);
+      if (context.mounted) {
+        context.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              deleteFiles ? 'Series and files deleted' : 'Series deleted',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteSeriesFiles(
+    BuildContext context,
+    WidgetRef ref,
+    Series series,
+  ) async {
+    final theme = Theme.of(context);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete files'),
+        content: Text(
+          'Delete all files for "${series.title}"? '
+          'This removes every episode file from disk; the series stays in Sonarr.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final count = await ref
+          .read(seriesMetadataControllerProvider(seriesId))
+          .deleteAllFiles();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count == 0
+                  ? 'No files to delete'
+                  : 'Deleted $count file${count == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete files: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 

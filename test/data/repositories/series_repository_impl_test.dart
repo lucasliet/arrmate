@@ -137,6 +137,112 @@ void main() {
       // Then
       verify(() => mockApi.deleteSeriesFile(50)).called(1);
     });
+
+    test(
+      'deleteSeriesFiles sem seasonNumber deve excluir todos os arquivos da série',
+      () async {
+        // Given
+        final files = [
+          MediaFile(id: 10, size: 1, dateAdded: DateTime(2024)),
+          MediaFile(id: 20, size: 1, dateAdded: DateTime(2024)),
+          MediaFile(id: 30, size: 1, dateAdded: DateTime(2024)),
+        ];
+        when(
+          () => mockApi.getSeriesFiles(any()),
+        ).thenAnswer((_) async => files);
+        when(() => mockApi.deleteSeriesFile(any())).thenAnswer((_) async {});
+
+        // When
+        final count = await repository.deleteSeriesFiles(7);
+
+        // Then
+        expect(count, 3);
+        verify(() => mockApi.getSeriesFiles(7)).called(1);
+        verifyNever(() => mockApi.getEpisodes(any()));
+        verify(() => mockApi.deleteSeriesFile(10)).called(1);
+        verify(() => mockApi.deleteSeriesFile(20)).called(1);
+        verify(() => mockApi.deleteSeriesFile(30)).called(1);
+      },
+    );
+
+    test(
+      'deleteSeriesFiles com seasonNumber filtra por temporada, hasFile e deduplica fileIds',
+      () async {
+        // Given
+        final episodes = [
+          // Season 1 — match (fileId 100)
+          const Episode(
+            id: 1,
+            seriesId: 7,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            hasFile: true,
+            episodeFileId: 100,
+          ),
+          // Season 1 — match, shares fileId 100 with above (multi-episode file)
+          const Episode(
+            id: 2,
+            seriesId: 7,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            hasFile: true,
+            episodeFileId: 100,
+          ),
+          // Season 1 — match (fileId 101)
+          const Episode(
+            id: 3,
+            seriesId: 7,
+            seasonNumber: 1,
+            episodeNumber: 3,
+            hasFile: true,
+            episodeFileId: 101,
+          ),
+          // Season 1 — no file
+          const Episode(
+            id: 4,
+            seriesId: 7,
+            seasonNumber: 1,
+            episodeNumber: 4,
+            hasFile: false,
+            episodeFileId: null,
+          ),
+          // Season 1 — hasFile but invalid id
+          const Episode(
+            id: 5,
+            seriesId: 7,
+            seasonNumber: 1,
+            episodeNumber: 5,
+            hasFile: true,
+            episodeFileId: 0,
+          ),
+          // Season 2 — must not be touched
+          const Episode(
+            id: 6,
+            seriesId: 7,
+            seasonNumber: 2,
+            episodeNumber: 1,
+            hasFile: true,
+            episodeFileId: 200,
+          ),
+        ];
+        when(
+          () => mockApi.getEpisodes(any()),
+        ).thenAnswer((_) async => episodes);
+        when(() => mockApi.deleteSeriesFile(any())).thenAnswer((_) async {});
+
+        // When
+        final count = await repository.deleteSeriesFiles(7, seasonNumber: 1);
+
+        // Then
+        expect(count, 2);
+        verify(() => mockApi.getEpisodes(7)).called(1);
+        verifyNever(() => mockApi.getSeriesFiles(any()));
+        verify(() => mockApi.deleteSeriesFile(100)).called(1);
+        verify(() => mockApi.deleteSeriesFile(101)).called(1);
+        verifyNever(() => mockApi.deleteSeriesFile(200));
+        verifyNever(() => mockApi.deleteSeriesFile(0));
+      },
+    );
   });
 
   group('SeriesRepositoryImpl - Manual Import', () {

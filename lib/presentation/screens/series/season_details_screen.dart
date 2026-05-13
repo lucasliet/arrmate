@@ -5,6 +5,7 @@ import '../../../../core/utils/formatters.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
+import 'package:arrmate/presentation/screens/series/providers/series_metadata_provider.dart';
 import 'package:arrmate/presentation/screens/series/widgets/episode_details_sheet.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 
@@ -32,9 +33,24 @@ class SeasonDetailsScreen extends ConsumerWidget {
       seasonEpisodesProvider(series.id, season.seasonNumber),
     );
 
+    final hasAnyFile = episodesAsync.maybeWhen(
+      data: (episodes) => episodes.any((e) => e.hasFile),
+      orElse: () => false,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text('${series.title} - Season ${season.seasonNumber}'),
+        actions: [
+          IconButton(
+            key: const Key('deleteSeasonFilesBtn'),
+            icon: const Icon(Icons.delete_sweep),
+            tooltip: 'Delete season files',
+            onPressed: hasAnyFile
+                ? () => _handleDeleteFiles(context, ref)
+                : null,
+          ),
+        ],
       ),
       body: episodesAsync.when(
         data: (episodes) {
@@ -58,6 +74,62 @@ class SeasonDetailsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleDeleteFiles(BuildContext context, WidgetRef ref) async {
+    final theme = Theme.of(context);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete season files'),
+        content: Text(
+          'Delete all files for "${series.title} - Season ${season.seasonNumber}"? '
+          'This removes every episode file in this season from disk.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final count = await ref
+          .read(seriesMetadataControllerProvider(series.id))
+          .deleteAllFiles(seasonNumber: season.seasonNumber);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count == 0
+                  ? 'No files to delete'
+                  : 'Deleted $count file${count == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete files: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 
