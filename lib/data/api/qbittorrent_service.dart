@@ -6,13 +6,19 @@ import '../../domain/models/models.dart';
 
 /// Service for interacting with qBittorrent API v2.
 ///
-/// Handles authentication (cookie-based), torrent management, and adding torrents.
+/// Supports two authentication modes:
+/// - Cookie-based: [Instance.apiKey] in `username:password` format.
+/// - API Key (≥v5.2.0): [Instance.apiKey] as a Bearer token (no colon).
 class QBittorrentService {
   final Instance instance;
   final Dio _dio;
 
-  // Cookie for session management. Not persisted in MVP.
+  /// Cookie for session management. Not persisted in MVP.
   String? _sessionCookie;
+
+  /// Whether authentication uses API key (Bearer token) instead of cookies.
+  bool _isApiKey = false;
+
   Completer<void>? _reauthCompleter;
 
   QBittorrentService(this.instance)
@@ -27,20 +33,21 @@ class QBittorrentService {
 
   /// Authenticates with the qBittorrent API.
   ///
-  /// Uses Basic Auth parameters from [Instance.apiKey] (format: username:password).
-  /// Stores the returned SID cookie for subsequent requests.
+  /// When [Instance.apiKey] contains no colon, it is treated as a Bearer API
+  /// key (qBittorrent ≥v5.2.0) and no login request is made — the key is
+  /// injected via the `Authorization` header on every request.
+  ///
+  /// When [Instance.apiKey] is in `username:password` format, performs a
+  /// form-based login and stores the returned SID cookie.
   Future<void> authenticate() async {
-    // If a re-auth is already in progress via the completer triggered by a 403,
-    // wait for it instead of starting a new one, unless we are the ones who started it.
-    // However, for explicit calls to authenticate(), we usually want to force it.
-    // For safety, let's just proceed with the logic but careful with the completer.
-    // The completer is mainly for _request to coordinate retries.
+    if (!instance.apiKey.contains(':')) {
+      _isApiKey = true;
+      logger.debug('[QBittorrentService] Using API key authentication');
+      return;
+    }
+    _isApiKey = false;
 
     final separatorIndex = instance.apiKey.indexOf(':');
-    if (separatorIndex == -1) {
-      throw Exception('Invalid credentials format. Expected username:password');
-    }
-
     final username = instance.apiKey.substring(0, separatorIndex);
     final password = instance.apiKey.substring(separatorIndex + 1);
 
@@ -56,12 +63,11 @@ class QBittorrentService {
         ),
       );
 
-      if (response.statusCode == 200) {
-        // Extract SID cookie
+      if (response.statusCode == 200 || response.statusCode == 204) {
         final cookies = response.headers['set-cookie'];
         if (cookies != null && cookies.isNotEmpty) {
           final sidCookie = cookies.firstWhere(
-            (c) => c.startsWith('SID='),
+            (c) => c.startsWith('SID=') || c.startsWith('QBT_SID'),
             orElse: () => '',
           );
           if (sidCookie.isNotEmpty) {
@@ -70,8 +76,8 @@ class QBittorrentService {
             return;
           }
         }
-        // Even if no cookie returned, 200 "Ok." might mean already auth or no auth needed
-        if (response.data.toString().contains('Ok.')) {
+        if (response.statusCode == 204 ||
+            response.data.toString().contains('Ok.')) {
           logger.debug('[QBittorrentService] Auth Ok (No cookie returned)');
           return;
         }
@@ -90,10 +96,13 @@ class QBittorrentService {
     }
   }
 
-  /// Ensures user is authenticated before making a request.
+  /// Ensures the client is ready to make authenticated requests.
+  ///
+  /// API key mode is stateless — no cookie is needed, so this is a no-op once
+  /// [_isApiKey] is set. Cookie mode acquires a session if none is held.
   Future<void> _ensureAuthenticated() async {
+    if (_isApiKey) return;
     if (_sessionCookie == null) {
-      // If re-auth is in progress, wait for it
       if (_reauthCompleter != null && !_reauthCompleter!.isCompleted) {
         await _reauthCompleter!.future;
       } else {
@@ -113,7 +122,12 @@ class QBittorrentService {
     await _ensureAuthenticated();
 
     options ??= Options();
-    if (_sessionCookie != null) {
+    if (_isApiKey) {
+      options.headers = {
+        ...(options.headers ?? {}),
+        'Authorization': 'Bearer ${instance.apiKey}',
+      };
+    } else if (_sessionCookie != null) {
       options.headers = {...(options.headers ?? {}), 'Cookie': _sessionCookie};
     }
     options.method = method;
