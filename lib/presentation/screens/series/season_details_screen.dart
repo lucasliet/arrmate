@@ -105,10 +105,21 @@ class SeasonDetailsScreen extends ConsumerWidget {
 
     if (confirm != true) return;
 
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
     try {
       final count = await ref
           .read(seriesMetadataControllerProvider(series.id))
           .deleteAllFiles(seasonNumber: season.seasonNumber);
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -121,6 +132,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
         );
       }
     } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

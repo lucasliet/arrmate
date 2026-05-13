@@ -222,9 +222,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'deleteFiles',
-                  child: Row(
+                  enabled: series.episodeFileCount > 0,
+                  child: const Row(
                     children: [
                       Icon(Icons.delete_sweep),
                       SizedBox(width: 8),
@@ -674,10 +675,21 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
     if (confirm != true) return;
 
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
     try {
       final count = await ref
           .read(seriesMetadataControllerProvider(seriesId))
           .deleteAllFiles();
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -690,6 +702,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
         );
       }
     } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
