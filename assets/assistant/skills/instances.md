@@ -31,15 +31,13 @@ A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou
      - **Importante:** incluir protocolo (http/https) e porta.
      - Campo de texto; suporta IPv4, IPv6, hostname ou domain.
    
-   - **API Key** (Radarr/Sonarr apenas):
+   - **API Key**:
      - Label: "API Key".
-     - Colar chave gerada no servidor (Settings → General → API Key no Radarr/Sonarr web).
+     - **Radarr/Sonarr (obrigatório):** colar chave gerada no servidor (Settings → General → API Key no Radarr/Sonarr web).
+     - **qBittorrent (opcional, v5.2.0+):** colar o Bearer token gerado em **qBittorrent WebUI → Tools → Options → Web UI → API Key**.
+       - Se você usa **qBittorrent < v5.2.0** ou prefere autenticar com usuário/senha, deixe este campo **vazio** e use **Advanced Settings → "Add Basic Auth"** para informar as credenciais (veja seção própria abaixo).
+       - O formulário aceita o campo vazio **apenas** se houver um header `Authorization` configurado nos Advanced Settings; caso contrário, exibe erro: "Provide an API key or add Basic Auth below".
      - Campo de texto; pode usar botão de "visibility toggle" (olho) para ver/ocultar.
-   
-   - **Username & Password** (qBittorrent apenas):
-     - Label: "Username" e "Password".
-     - Credenciais da WebUI do qBittorrent.
-     - Campos de texto; password tem visibility toggle.
 
 3. **Botão "Test Connection":**
    - Tocar para validar URL, API key/credenciais e conectividade (validação opcional).
@@ -107,7 +105,8 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
 1. **Preencher campos obrigatórios:**
    - Name: qualquer rótulo.
    - URL: endereço completo (http://... + porta).
-   - API Key (Radarr/Sonarr) ou Username+Password (qBittorrent).
+   - **Radarr/Sonarr:** API Key obrigatória.
+   - **qBittorrent:** API Key (v5.2.0+) **ou** Basic Auth configurado em Advanced Settings — pelo menos um dos dois.
 
 2. **Tocar "Test Connection":**
    - Botão mostra spinner/loading.
@@ -200,7 +199,9 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
 - **Botão "Add Basic Auth":**
   - Abre diálogo com campos **Username** e **Password**.
   - O app codifica automaticamente `Username:Password` em Base64 e adiciona como cabeçalho `Authorization: Basic <base64>`.
-  - Útil para reverse proxies que exigem autenticação HTTP Basic.
+  - **Casos de uso:**
+    - Reverse proxies que exigem autenticação HTTP Basic na frente do Radarr/Sonarr/qBittorrent.
+    - **qBittorrent sem API Key** (versões anteriores à v5.2.0 ou quando o usuário prefere user/password): deixe o campo "API Key" vazio no topo do formulário e configure as credenciais aqui.
 - **Observações:**
   - Não adicione headers desnecessários; pode quebrar requisições.
   - Valores sensíveis (tokens, senhas) são armazenados **localmente no device** (não sincronizados).

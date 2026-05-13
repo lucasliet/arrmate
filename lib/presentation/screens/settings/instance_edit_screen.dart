@@ -8,7 +8,7 @@ import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/data_providers.dart';
 
-/// Screen for creating, editing, and deleting Radarr/Sonarr instances.
+/// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent instances.
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
 
@@ -23,8 +23,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   late TextEditingController _nameController;
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
-  late TextEditingController _usernameController;
-  late TextEditingController _passwordController;
   InstanceType _type = InstanceType.radarr;
   bool _slowMode = false;
   bool _isTesting = false;
@@ -38,8 +36,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _nameController = TextEditingController();
     _urlController = TextEditingController();
     _apiKeyController = TextEditingController();
-    _usernameController = TextEditingController();
-    _passwordController = TextEditingController();
 
     // Load existing if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,16 +47,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           _nameController.text = existing.label;
           _urlController.text = existing.url;
           _apiKeyController.text = existing.apiKey;
-
-          if (existing.type == InstanceType.qbittorrent) {
-            final parts = existing.apiKey.split(':');
-            if (parts.length >= 2) {
-              _usernameController.text = parts[0];
-              _passwordController.text = parts.sublist(1).join(':');
-            } else {
-              _usernameController.text = existing.apiKey;
-            }
-          }
 
           setState(() {
             _type = existing.type;
@@ -77,8 +63,6 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _nameController.dispose();
     _urlController.dispose();
     _apiKeyController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -94,9 +78,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final tempInstance = Instance(
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
-      apiKey: _type == InstanceType.qbittorrent
-          ? '${_usernameController.text.trim()}:${_passwordController.text.trim()}'
-          : _apiKeyController.text.trim(),
+      apiKey: _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
       headers: _headers,
@@ -104,28 +86,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
     try {
       if (_type == InstanceType.qbittorrent) {
-        // We need to create a temporary service/instance for testing
-        // But for now, let's just use the repo if possible (but repo throws Unimplemented)
-        // OR we can't easily test without a dedicated service instance.
-        // Actually, the qbittorrentServiceProvider depends on currentQBittorrentInstanceProvider.
-        // We might need to manually create the service here or update repo to handle test.
-
-        // Let's use the QBittorrentService directly with the temp instance
         final testService = QBittorrentService(tempInstance);
         await testService.authenticate();
-        // If auth works, we are good? Or fetch torrents as test?
-        // Let's try to get torrents (empty list is fine) just to verify auth working
         final torrents = await testService.getTorrents();
 
-        final separatorIndex = tempInstance.apiKey.indexOf(':');
-        final username = separatorIndex != -1
-            ? tempInstance.apiKey.substring(0, separatorIndex)
-            : 'User';
+        final authLabel = _authModeLabel(tempInstance);
 
         setState(() {
           _testSuccess = true;
           _testMessage =
-              'Connection successful!\nAuthenticated as $username\nTorrents: ${torrents.length}';
+              'Connection successful!\nAuth: $authLabel\nTorrents: ${torrents.length}';
         });
       } else {
         final instanceRepo = ref.read(instanceRepositoryProvider);
@@ -156,6 +126,21 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
+  /// Returns a short human-readable label describing the active qBittorrent
+  /// auth mode, used in the test-connection feedback message.
+  String _authModeLabel(Instance instance) {
+    if (instance.apiKey.isEmpty) return 'Custom Header';
+    if (instance.apiKey.contains(':')) return 'Username & Password';
+    return 'API Key';
+  }
+
+  /// Checks whether the [InstanceHeader] list already carries an
+  /// `Authorization` entry — typically added via "Add Basic Auth" in
+  /// Advanced Settings.
+  bool get _hasAuthorizationHeader => _headers.any(
+    (h) => h.name.toLowerCase() == 'authorization' && h.value.trim().isNotEmpty,
+  );
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -163,9 +148,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       id: widget.instanceId,
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
-      apiKey: _type == InstanceType.qbittorrent
-          ? '${_usernameController.text.trim()}:${_passwordController.text.trim()}'
-          : _apiKeyController.text.trim(),
+      apiKey: _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
       headers: _headers,
@@ -280,37 +263,27 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              if (_type == InstanceType.qbittorrent) ...[
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Required' : null,
+              TextFormField(
+                controller: _apiKeyController,
+                decoration: InputDecoration(
+                  labelText: 'API Key',
+                  border: const OutlineInputBorder(),
+                  helperText: _type == InstanceType.qbittorrent
+                      ? 'Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using '
+                            '"Add Basic Auth" below for older versions.'
+                      : null,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Required' : null,
-                ),
-              ] else
-                TextFormField(
-                  controller: _apiKeyController,
-                  decoration: const InputDecoration(
-                    labelText: 'API Key',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Required' : null,
-                ),
+                validator: (value) {
+                  final isEmpty = value == null || value.isEmpty;
+                  if (_type == InstanceType.qbittorrent) {
+                    if (isEmpty && !_hasAuthorizationHeader) {
+                      return 'Provide an API key or add Basic Auth below';
+                    }
+                    return null;
+                  }
+                  return isEmpty ? 'Required' : null;
+                },
+              ),
               const SizedBox(height: 16),
 
               ExpansionTile(

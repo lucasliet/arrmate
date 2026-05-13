@@ -6,9 +6,12 @@ import '../../domain/models/models.dart';
 
 /// Service for interacting with qBittorrent API v2.
 ///
-/// Supports two authentication modes:
-/// - Cookie-based: [Instance.apiKey] in `username:password` format.
-/// - API Key (≥v5.2.0): [Instance.apiKey] as a Bearer token (no colon).
+/// Supports three authentication modes, resolved from [Instance.apiKey]:
+/// - **Cookie-based**: `username:password` format → form-based login + SID cookie.
+/// - **API Key (≥v5.2.0)**: any non-empty value without `:` → `Authorization: Bearer`.
+/// - **Custom header only**: empty value → relies solely on [Instance.headers]
+///   (e.g. an `Authorization: Basic …` entry added via "Add Basic Auth" in
+///   Advanced Settings) for both reverse proxies and direct WebUI access.
 class QBittorrentService {
   final Instance instance;
   final Dio _dio;
@@ -28,18 +31,24 @@ class QBittorrentService {
           connectTimeout: instance.timeout(InstanceTimeout.normal),
           receiveTimeout: instance.timeout(InstanceTimeout.normal),
           validateStatus: (status) => status != null && status < 500,
+          headers: {for (final h in instance.headers) h.name: h.value},
         ),
       );
 
   /// Authenticates with the qBittorrent API.
   ///
-  /// When [Instance.apiKey] contains no colon, it is treated as a Bearer API
-  /// key (qBittorrent ≥v5.2.0) and no login request is made — the key is
-  /// injected via the `Authorization` header on every request.
-  ///
-  /// When [Instance.apiKey] is in `username:password` format, performs a
-  /// form-based login and stores the returned SID cookie.
+  /// Selection of mode based on [Instance.apiKey]:
+  /// - Empty → no managed auth; requests fall back to [Instance.headers] only.
+  /// - No `:` → Bearer API key (qBittorrent ≥v5.2.0), no login request.
+  /// - `username:password` → form-based login, stores returned SID cookie.
   Future<void> authenticate() async {
+    if (instance.apiKey.isEmpty) {
+      _isApiKey = false;
+      logger.debug(
+        '[QBittorrentService] No apiKey set; relying on custom headers only',
+      );
+      return;
+    }
     if (!instance.apiKey.contains(':')) {
       _isApiKey = true;
       logger.debug('[QBittorrentService] Using API key authentication');
@@ -98,10 +107,11 @@ class QBittorrentService {
 
   /// Ensures the client is ready to make authenticated requests.
   ///
-  /// API key mode is stateless — no cookie is needed, so this is a no-op once
-  /// [_isApiKey] is set. Cookie mode acquires a session if none is held.
+  /// Stateless modes (API key or custom-header-only) require no preparation —
+  /// this is a no-op for them. Cookie mode acquires a session if none is held.
   Future<void> _ensureAuthenticated() async {
     if (_isApiKey) return;
+    if (instance.apiKey.isEmpty) return;
     if (_sessionCookie == null) {
       if (_reauthCompleter != null && !_reauthCompleter!.isCompleted) {
         await _reauthCompleter!.future;
