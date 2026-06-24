@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'movie_details_provider.dart';
 
 /// Provider for fetching the media files associated with a movie.
 final movieFilesProvider = FutureProvider.autoDispose
@@ -52,6 +53,21 @@ class MovieMetadataController {
 
     await repository.deleteMovieFile(fileId);
     ref.invalidate(movieFilesProvider(movieId));
+  }
+
+  /// Deletes every movie file; the movie stays in Radarr.
+  ///
+  /// Returns the number of files that were deleted.
+  Future<int> deleteAllFiles() async {
+    final repository = ref.read(movieRepositoryProvider);
+    if (repository == null) {
+      throw StateError('Movie repository not available');
+    }
+
+    final count = await repository.deleteMovieFiles(movieId);
+    ref.invalidate(movieFilesProvider(movieId));
+    ref.invalidate(movieDetailsProvider(movieId));
+    return count;
   }
 
   void refreshFiles() {

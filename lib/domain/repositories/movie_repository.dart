@@ -77,6 +77,12 @@ abstract class MovieRepository {
   /// Deletes a movie file.
   Future<void> deleteMovieFile(int fileId);
 
+  /// Deletes every movie file belonging to [movieId]. The movie itself stays
+  /// in Radarr.
+  ///
+  /// Returns the number of files that were deleted.
+  Future<int> deleteMovieFiles(int movieId);
+
   /// Retrieves files available for manual import.
   Future<List<ImportableFile>> getImportableFiles(String downloadId);
 

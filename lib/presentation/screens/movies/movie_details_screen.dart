@@ -11,6 +11,7 @@ import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/movie_details_provider.dart';
+import 'providers/movie_metadata_provider.dart';
 import 'widgets/movie_poster.dart';
 import 'widgets/movie_metadata_section.dart';
 import 'movie_edit_screen.dart';
@@ -216,48 +217,9 @@ class MovieDetailsScreen extends ConsumerWidget {
                     ),
                   );
                 } else if (value == 'delete') {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Movie'),
-                      content: const Text(
-                        'Are you sure you want to delete this movie?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true) {
-                    try {
-                      await ref
-                          .read(movieControllerProvider(movieId))
-                          .deleteMovie();
-                      if (context.mounted) {
-                        context.pop(); // Pop details screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Movie deleted')),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to delete: $e'),
-                            backgroundColor: theme.colorScheme.error,
-                          ),
-                        );
-                      }
-                    }
-                  }
+                  await _handleDeleteMovie(context, ref, movie, theme);
+                } else if (value == 'deleteFiles') {
+                  await _handleDeleteMovieFiles(context, ref, movie);
                 }
               },
               itemBuilder: (context) => [
@@ -268,6 +230,17 @@ class MovieDetailsScreen extends ConsumerWidget {
                       Icon(Icons.edit),
                       SizedBox(width: 8),
                       Text('Edit'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'deleteFiles',
+                  enabled: movie.hasFile == true,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.delete_sweep),
+                      SizedBox(width: 8),
+                      Text('Delete files'),
                     ],
                   ),
                 ),
@@ -355,6 +328,155 @@ class MovieDetailsScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _handleDeleteMovie(
+    BuildContext context,
+    WidgetRef ref,
+    Movie movie,
+    ThemeData theme,
+  ) async {
+    bool deleteFiles = false;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Delete Movie'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Are you sure you want to delete "${movie.title}"?'),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  key: const Key('deleteMovieAlsoDeleteFiles'),
+                  title: const Text('Also delete files from disk'),
+                  contentPadding: EdgeInsets.zero,
+                  value: deleteFiles,
+                  onChanged: (val) =>
+                      setState(() => deleteFiles = val ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ref
+          .read(movieControllerProvider(movieId))
+          .deleteMovie(deleteFiles: deleteFiles);
+      if (context.mounted) {
+        context.pop(); // Pop details screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              deleteFiles ? 'Movie and files deleted' : 'Movie deleted',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteMovieFiles(
+    BuildContext context,
+    WidgetRef ref,
+    Movie movie,
+  ) async {
+    final theme = Theme.of(context);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete files'),
+        content: Text(
+          'Delete all files for "${movie.title}"? '
+          'This removes the movie file from disk; the movie stays in Radarr.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final count = await ref
+          .read(movieMetadataControllerProvider(movieId))
+          .deleteAllFiles();
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count == 0
+                  ? 'No files to delete'
+                  : 'Deleted $count file${count == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete files: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatusChip(BuildContext context, Movie movie) {
