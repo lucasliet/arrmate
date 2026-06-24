@@ -1,37 +1,35 @@
-name: Copilot Code Review (CLI)
+name: Claude Code Review
 
 on:
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  copilot-review:
+  claude-review:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
       contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    env:
+      ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+      API_TIMEOUT_MS: "3000000"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
-     
       - name: Minimize previous review comments
         id: check-previous-review
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("## 🤖 Copilot Code Review"))) | .node_id')
+          COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "claude[bot]") | .node_id')
           
           echo "$COMMENTS" | while read NODE_ID; do
             echo "Minimizando comentário: $NODE_ID"
@@ -50,18 +48,19 @@ jobs:
         id: set-model
         run: |
           if [ "${{ steps.check-previous-review.outcome }}" == "success" ]; then
-            echo "AI_MODEL=gpt-4.1" >> $GITHUB_OUTPUT
-            echo "Usando gpt-4.1 (review de acompanhamento)"
+            echo "AI_MODEL=glm-5-turbo" >> $GITHUB_OUTPUT
+            echo "Usando glm-5-turbo (review de acompanhamento)"
           else
-            echo "AI_MODEL=claude-sonnet-4.5" >> $GITHUB_OUTPUT
-            echo "Usando claude-sonnet-4.5 (primeira review ou fallback)"
+            echo "AI_MODEL=glm-5.2" >> $GITHUB_OUTPUT
+            echo "Usando glm-5.2 (primeira review ou fallback)"
           fi
 
-      - name: Run Copilot Code Review
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          copilot --model ${{ steps.set-model.outputs.AI_MODEL }} -p "
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ZAI_API_KEY }}
+          prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
@@ -100,23 +99,8 @@ jobs:
 
             answer the review in brazilian portuguese.
 
-            start your review output with ---review--- don't translate this tag
-          " > review.md
-
-      - name: Post review as PR comment
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ -s review.md ]; then
-            {
-              echo "## 🤖 Copilot Code Review"
-              awk '/---review---/{found=1; next} found' review.md
-              echo ""
-              echo "---"
-              echo "*Automated review powered by GitHub Copilot*"
-            } > comment.md
-
-            gh pr comment ${{ github.event.pull_request.number }} --body-file comment.md
-          else
-            echo "Copilot review output file is empty; skipping comment."
-          fi
+            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+          
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
+          claude_args: '--model ${{ steps.set-model.outputs.AI_MODEL }} --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'

@@ -9,44 +9,49 @@ jobs:
   generate-notes:
     name: Generate Release Notes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     outputs:
       release_notes: ${{ steps.set_output.outputs.release_notes }}
+    env:
+      ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+      API_TIMEOUT_MS: "3000000"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
-
-      - name: Generate Release Notes with Copilot
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          AI_MODEL: gpt-5-mini
+      - name: Get Git Log
+        id: git-log
         run: |
           # Get previous tag or root
           PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then RANGE="HEAD"; else RANGE="$PREV_TAG..HEAD"; fi
-          
+
           # Get Git Log for Context
           GIT_LOG=$(git log $RANGE --pretty=format:"%h - %s (%an)")
-          
-          # Run Copilot
-          copilot --model $AI_MODEL -p "
+          {
+            echo "git_log<<EOF"
+            echo "$GIT_LOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes with Claude
+        id: claude-notes
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ZAI_API_KEY }}
+          prompt: |
             REPO: ${{ github.repository }}
             VERSION: ${{ github.ref_name }}
-            
+
             CHANGES:
-            $GIT_LOG
-            
+            ${{ steps.git-log.outputs.git_log }}
+
             TASK: Generate meaningful release notes for this version based on the changes above.
-            
+
             GUIDELINES:
             - Focus on meaningful changes for final user experience, so ignore technical details like refactor and tests made, etc.
             - Answer everything in brazilian portuguese
@@ -57,21 +62,18 @@ jobs:
             - Be concise but descriptive.
             - Ignore trivial commits (docs, chores) unless significant.
             - DO NOT USE EMOJIS anywhere in the output. Use standard Markdown only.
-            
-            Output ONLY the markdown content using ---review--- marker as start.
-          " > temp_review.md
 
-      - name: Extract Markdown Body
+            Write ONLY the markdown content to a file named RELEASE_BODY.md using your Bash tool with a heredoc (cat > RELEASE_BODY.md << 'EOF'). Do not include any markers or extra commentary.
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          claude_args: '--model glm-4.5-air --allowed-tools "Bash(cat:*),Bash(tee:*),Bash(echo:*),Bash(printf:*)"'
+
+      - name: Fallback to commit message
         run: |
-          if [ -f temp_review.md ]; then
-            awk '/---review---/{found=1; next} found' temp_review.md > RELEASE_BODY.md
-          fi
-          
-          # Fallback: Use last commit message if extraction failed or file missing
+          # Fallback: Use last commit message if generation failed or file missing
           if [ ! -s RELEASE_BODY.md ]; then
             git log -1 --pretty=%B > RELEASE_BODY.md
           fi
-      
+
       - name: Set Output
         id: set_output
         run: |
@@ -87,7 +89,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download Android keystore
         id: android_keystore
@@ -104,7 +106,7 @@ jobs:
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: "21"
@@ -112,7 +114,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.38.5"
+          flutter-version: "3.41.2"
           channel: 'stable'
           cache: 'true'
 
