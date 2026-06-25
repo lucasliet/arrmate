@@ -131,6 +131,21 @@ class MovieRepositoryImpl implements MovieRepository {
   Future<void> deleteMovieFile(int fileId) => _api.deleteMovieFile(fileId);
 
   @override
+  Future<int> deleteMovieFiles(int movieId) async {
+    final files = await _api.getMovieFiles(movieId);
+    final fileIds = files.map((f) => f.id).toSet();
+
+    logger.info(
+      '[MovieRepository] Deleting ${fileIds.length} file(s) for movie $movieId',
+    );
+
+    for (final id in fileIds) {
+      await _api.deleteMovieFile(id);
+    }
+    return fileIds.length;
+  }
+
+  @override
   Future<List<ImportableFile>> getImportableFiles(String downloadId) =>
       _api.getImportableFiles(downloadId);
 

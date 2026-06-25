@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
+import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
@@ -209,6 +210,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   await _handleDeleteSeries(context, ref, series);
                 } else if (value == 'deleteFiles') {
                   await _handleDeleteSeriesFiles(context, ref, series);
+                } else if (value == 'purge') {
+                  await _handlePurgeSeries(context, ref, series);
                 }
               },
               itemBuilder: (context) => [
@@ -240,6 +243,16 @@ class SeriesDetailsScreen extends ConsumerWidget {
                       Icon(Icons.delete, color: Colors.red),
                       SizedBox(width: 8),
                       Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'purge',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Purge', style: TextStyle(color: Colors.red)),
                     ],
                   ),
                 ),
@@ -676,6 +689,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
     if (confirm != true) return;
 
     if (!context.mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -689,28 +704,99 @@ class SeriesDetailsScreen extends ConsumerWidget {
       final count = await ref
           .read(seriesMetadataControllerProvider(seriesId))
           .deleteAllFiles();
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              count == 0
-                  ? 'No files to delete'
-                  : 'Deleted $count file${count == 1 ? '' : 's'}',
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            count == 0
+                ? 'No files to delete'
+                : 'Deleted $count file${count == 1 ? '' : 's'}',
+          ),
+        ),
+      );
+    } catch (e) {
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete files: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  /// Purge removes the series from Sonarr (catalog + files), removes any
+  /// active queue items for all episodes, and deletes the source torrents
+  /// (plus cross-seed duplicates) from qBittorrent with their files.
+  Future<void> _handlePurgeSeries(
+    BuildContext context,
+    WidgetRef ref,
+    Series series,
+  ) async {
+    final theme = Theme.of(context);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Purge series'),
+        content: Text(
+          'This will permanently remove "${series.title}" and all its '
+          'episodes from Sonarr, delete its media files, and delete all '
+          'source torrents (plus cross-seed duplicates) from qBittorrent. '
+          'Frees disk space used by hardlinked data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
             ),
+            child: const Text('Purge'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (!context.mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final result = await ref
+          .read(purgeServiceProvider)
+          .purgeSeries(series.id);
+      navigator.pop();
+      ref.invalidate(seriesProvider);
+      if (context.mounted) {
+        context.pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(result.formatSummary(label: 'Series purged.')),
           ),
         );
       }
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete files: $e'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to purge: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
     }
   }
 }

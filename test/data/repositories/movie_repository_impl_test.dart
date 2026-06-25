@@ -126,6 +126,67 @@ void main() {
       // Then
       verify(() => mockApi.deleteMovieFile(50)).called(1);
     });
+
+    test(
+      'deleteMovieFiles deve buscar arquivos e deletar cada um, retornando a contagem',
+      () async {
+        // Given
+        final files = [
+          MediaFile(id: 10, size: 1000, dateAdded: DateTime(2024, 1, 1)),
+          MediaFile(id: 20, size: 2000, dateAdded: DateTime(2024, 1, 2)),
+          MediaFile(id: 30, size: 3000, dateAdded: DateTime(2024, 1, 3)),
+        ];
+        when(() => mockApi.getMovieFiles(any())).thenAnswer((_) async => files);
+        when(() => mockApi.deleteMovieFile(any())).thenAnswer((_) async {});
+
+        // When
+        final count = await repository.deleteMovieFiles(7);
+
+        // Then
+        expect(count, 3);
+        verify(() => mockApi.getMovieFiles(7)).called(1);
+        verify(() => mockApi.deleteMovieFile(10)).called(1);
+        verify(() => mockApi.deleteMovieFile(20)).called(1);
+        verify(() => mockApi.deleteMovieFile(30)).called(1);
+      },
+    );
+
+    test(
+      'deleteMovieFiles deve deduplicar fileIds repetidos e retornar contagem unica',
+      () async {
+        // Given
+        final files = [
+          MediaFile(id: 10, size: 1000, dateAdded: DateTime(2024, 1, 1)),
+          MediaFile(id: 10, size: 1000, dateAdded: DateTime(2024, 1, 1)),
+          MediaFile(id: 20, size: 2000, dateAdded: DateTime(2024, 1, 2)),
+        ];
+        when(() => mockApi.getMovieFiles(any())).thenAnswer((_) async => files);
+        when(() => mockApi.deleteMovieFile(any())).thenAnswer((_) async {});
+
+        // When
+        final count = await repository.deleteMovieFiles(7);
+
+        // Then
+        expect(count, 2);
+        verify(() => mockApi.getMovieFiles(7)).called(1);
+        verify(() => mockApi.deleteMovieFile(10)).called(1);
+        verify(() => mockApi.deleteMovieFile(20)).called(1);
+      },
+    );
+
+    test('deleteMovieFiles deve retornar 0 quando nao ha arquivos', () async {
+      // Given
+      when(() => mockApi.getMovieFiles(any())).thenAnswer((_) async => []);
+      when(() => mockApi.deleteMovieFile(any())).thenAnswer((_) async {});
+
+      // When
+      final count = await repository.deleteMovieFiles(7);
+
+      // Then
+      expect(count, 0);
+      verify(() => mockApi.getMovieFiles(7)).called(1);
+      verifyNever(() => mockApi.deleteMovieFile(any()));
+    });
   });
 
   group('MovieRepositoryImpl - Manual Import', () {

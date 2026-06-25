@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/purge_service.dart';
 import '../../domain/repositories/repositories.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/api/api.dart';
@@ -43,4 +44,14 @@ final seriesRepositoryProvider = Provider<SeriesRepository?>((ref) {
 /// Provider for the [InstanceRepository], used for testing connections and validating instances.
 final instanceRepositoryProvider = Provider<InstanceRepository>((ref) {
   return InstanceRepositoryImpl();
+});
+
+/// Provider for the [PurgeService]. Reads repositories/services fresh from
+/// their providers at call time so the currently selected instances are used.
+final purgeServiceProvider = Provider<PurgeService>((ref) {
+  return PurgeService(
+    movieRepositoryFactory: () => ref.read(movieRepositoryProvider),
+    seriesRepositoryFactory: () => ref.read(seriesRepositoryProvider),
+    qbittorrentServiceFactory: () => ref.read(qbittorrentServiceProvider),
+  );
 });

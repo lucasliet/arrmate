@@ -95,6 +95,8 @@ class HistoryEvent extends Equatable {
 
   String? get indexer => _getData('indexer');
   String? get downloadClient => _getData('downloadClient');
+  String? get downloadId => _getData('downloadId');
+  String? get torrentName => _getData('torrentName');
   String? get message => _getData('message');
   String? get releaseSource => _getData('releaseSource');
 
