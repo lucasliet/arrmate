@@ -57,17 +57,21 @@ class MovieMetadataController {
 
   /// Deletes every movie file; the movie stays in Radarr.
   ///
-  /// Returns the number of files that were deleted.
+  /// Returns the number of files that were deleted. Providers are invalidated
+  /// in a [finally] block so the UI refreshes even when the repository throws
+  /// after a partial deletion.
   Future<int> deleteAllFiles() async {
     final repository = ref.read(movieRepositoryProvider);
     if (repository == null) {
       throw StateError('Movie repository not available');
     }
 
-    final count = await repository.deleteMovieFiles(movieId);
-    ref.invalidate(movieFilesProvider(movieId));
-    ref.invalidate(movieDetailsProvider(movieId));
-    return count;
+    try {
+      return await repository.deleteMovieFiles(movieId);
+    } finally {
+      ref.invalidate(movieFilesProvider(movieId));
+      ref.invalidate(movieDetailsProvider(movieId));
+    }
   }
 
   void refreshFiles() {

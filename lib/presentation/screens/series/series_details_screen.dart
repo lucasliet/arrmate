@@ -689,6 +689,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
     if (confirm != true) return;
 
     if (!context.mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -702,28 +704,24 @@ class SeriesDetailsScreen extends ConsumerWidget {
       final count = await ref
           .read(seriesMetadataControllerProvider(seriesId))
           .deleteAllFiles();
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              count == 0
-                  ? 'No files to delete'
-                  : 'Deleted $count file${count == 1 ? '' : 's'}',
-            ),
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            count == 0
+                ? 'No files to delete'
+                : 'Deleted $count file${count == 1 ? '' : 's'}',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete files: $e'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete files: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
     }
   }
 
