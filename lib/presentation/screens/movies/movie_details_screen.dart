@@ -543,12 +543,12 @@ class MovieDetailsScreen extends ConsumerWidget {
     try {
       final result = await ref.read(purgeServiceProvider).purgeMovie(movie.id);
       navigator.pop();
+      ref.invalidate(moviesProvider);
       if (context.mounted) {
         context.pop();
         messenger.showSnackBar(
           SnackBar(content: Text(result.formatSummary(label: 'Movie purged.'))),
         );
-        ref.invalidate(moviesProvider);
       }
     } catch (e) {
       navigator.pop();

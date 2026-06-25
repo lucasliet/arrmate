@@ -780,6 +780,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
           .read(purgeServiceProvider)
           .purgeSeries(series.id);
       navigator.pop();
+      ref.invalidate(seriesProvider);
       if (context.mounted) {
         context.pop();
         messenger.showSnackBar(
@@ -787,7 +788,6 @@ class SeriesDetailsScreen extends ConsumerWidget {
             content: Text(result.formatSummary(label: 'Series purged.')),
           ),
         );
-        ref.invalidate(seriesProvider);
       }
     } catch (e) {
       navigator.pop();
