@@ -529,6 +529,8 @@ class MovieDetailsScreen extends ConsumerWidget {
     if (confirm != true) return;
 
     if (!context.mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -540,24 +542,22 @@ class MovieDetailsScreen extends ConsumerWidget {
 
     try {
       final result = await ref.read(purgeServiceProvider).purgeMovie(movie.id);
-      if (context.mounted) Navigator.of(context).pop();
+      navigator.pop();
       if (context.mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(result.formatSummary(label: 'Movie purged.'))),
         );
         ref.invalidate(moviesProvider);
       }
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to purge: $e'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to purge: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
     }
   }
 

@@ -764,6 +764,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
     if (confirm != true) return;
 
     if (!context.mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -777,10 +779,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
       final result = await ref
           .read(purgeServiceProvider)
           .purgeSeries(series.id);
-      if (context.mounted) Navigator.of(context).pop();
+      navigator.pop();
       if (context.mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(result.formatSummary(label: 'Series purged.')),
           ),
@@ -788,15 +790,13 @@ class SeriesDetailsScreen extends ConsumerWidget {
         ref.invalidate(seriesProvider);
       }
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to purge: $e'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to purge: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
     }
   }
 }
