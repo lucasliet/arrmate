@@ -21,53 +21,59 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
 
-      - name: Generate Release Notes with Copilot
+      - name: Generate Release Notes with Claude
         continue-on-error: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          AI_MODEL: gpt-5-mini
+          # Route Claude Code through the z.ai Anthropic-compatible endpoint.
+          # ANTHROPIC_AUTH_TOKEN is sent as a Bearer token; ANTHROPIC_API_KEY
+          # would be sent as x-api-key, which z.ai rejects with 401.
+          ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
+          AI_MODEL: glm-5.2
         run: |
           # Get previous tag or root
           PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then RANGE="HEAD"; else RANGE="$PREV_TAG..HEAD"; fi
-          
-          # Get Git Log for Context
-          GIT_LOG=$(git log $RANGE --pretty=format:"%h - %s (%an)")
-          
-          # Run Copilot
-          copilot --model $AI_MODEL -p "
-            REPO: ${{ github.repository }}
-            VERSION: ${{ github.ref_name }}
-            
-            CHANGES:
-            $GIT_LOG
-            
-            TASK: Generate meaningful release notes for this version based on the changes above.
-            
-            GUIDELINES:
-            - Focus on meaningful changes for final user experience, so ignore technical details like refactor and tests made, etc.
-            - Answer everything in brazilian portuguese
-            - Start with the title '# ${{ github.repository }} ${{ github.ref_name }}'
-            - Write a brief, engaging summary paragraph explaining what this release achieves.
-            - Group changes into '## Key Features' (if there are any) and '## Bug Fixes' (if there are any).
-            - Use bullet points.
-            - Be concise but descriptive.
-            - Ignore trivial commits (docs, chores) unless significant.
-            - DO NOT USE EMOJIS anywhere in the output. Use standard Markdown only.
-            
-            Output ONLY the markdown content using ---review--- marker as start.
-          " > temp_review.md
 
-      - name: Extract Markdown Body
+          # Build the prompt into a file to avoid shell quoting issues with
+          # special characters in commit messages (quotes, backticks, $).
+          # Quoted heredocs ('EOF') disable shell expansion entirely; the git
+          # log is appended verbatim so its content is never interpreted.
+          cat > prompt.txt <<'EOF'
+          REPO: ${{ github.repository }}
+          VERSION: ${{ github.ref_name }}
+
+          CHANGES:
+          EOF
+          git log "$RANGE" --pretty=format:"%h - %s (%an)" >> prompt.txt
+          cat >> prompt.txt <<'EOF'
+
+          TASK: Generate meaningful release notes for this version based on the changes above.
+
+          GUIDELINES:
+          - Focus on meaningful changes for final user experience, so ignore technical details like refactor and tests made, etc.
+          - Answer everything in brazilian portuguese
+          - Start with the title '# ${{ github.repository }} ${{ github.ref_name }}'
+          - Write a brief, engaging summary paragraph explaining what this release achieves.
+          - Group changes into '## Key Features' (if there are any) and '## Bug Fixes' (if there are any).
+          - Use bullet points.
+          - Be concise but descriptive.
+          - Ignore trivial commits (docs, chores) unless significant.
+          - DO NOT USE EMOJIS anywhere in the output. Use standard Markdown only.
+
+          Output ONLY the markdown content.
+          EOF
+
+          # Feed the prompt via stdin; --output-format text prints only the
+          # final message to stdout, which we redirect to RELEASE_BODY.md.
+          claude -p --model "$AI_MODEL" --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+
+      - name: Fallback on empty output
         run: |
-          if [ -f temp_review.md ]; then
-            awk '/---review---/{found=1; next} found' temp_review.md > RELEASE_BODY.md
-          fi
-          
-          # Fallback: Use last commit message if extraction failed or file missing
+          # Fallback: Use last commit message if generation failed or file missing/empty
           if [ ! -s RELEASE_BODY.md ]; then
             git log -1 --pretty=%B > RELEASE_BODY.md
           fi
