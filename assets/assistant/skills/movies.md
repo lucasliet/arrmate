@@ -1,6 +1,6 @@
 ---
 name: movies
-description: Adicionar/detalhes/editar/deletar filme, deletar arquivo, buscar release
+description: Adicionar/detalhes/editar/deletar filme, deletar arquivo, purge (remover filme + arquivos + torrents no qBittorrent), buscar release
 ---
 
 # Filmes
@@ -54,7 +54,9 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
   4. **Monitor Toggle** (ícone `bookmark` preenchido / `bookmark_border`) — tooltip "Monitor" ou "Unmonitor" — alterna monitoramento do filme.
   5. **Menu** (ícone ⋮ PopupMenuButton) — opções:
      - **"Edit"** → abre MovieEditScreen.
+     - **"Delete files"** (ícone `delete_sweep`) → apaga todos os arquivos do filme em disco, mas mantém o filme cadastrado no Radarr. Fica **desabilitado** (acinzentado) quando o filme não tem nenhum arquivo baixado.
      - **"Delete"** → abre diálogo de confirmação com título "Delete Movie?", checkbox "Delete files from disk" (opcional), botões "Cancel" e "Delete" (vermelho).
+     - **"Purge"** (ícone `delete_forever`, texto vermelho) → remove tudo (catálogo + arquivos + torrents fonte no qBittorrent, incluindo duplicatas cross-seed) para liberar o espaço em disco usado por dados com hardlink. Ver seção "Purge filme — remover tudo (Radarr + qBittorrent)".
 - Título do filme fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
@@ -103,7 +105,9 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 4. **Monitor Toggle** (ícone `bookmark`/`bookmark_border`): alterna monitoramento do filme (ON ↔ OFF).
 5. **Menu ⋮** (PopupMenuButton):
    - **"Edit"**: abre MovieEditScreen para editar qualidade, pasta, monitoramento, etc.
+   - **"Delete files"**: apaga todos os arquivos do filme em disco (filme continua no Radarr). Desabilitado quando não há arquivos.
    - **"Delete"**: abre diálogo "Delete Movie?" com checkbox "Delete files from disk" (opcional), botões "Cancel" e "Delete" (vermelho).
+   - **"Purge"** (vermelho): remove catálogo + arquivos + torrents fonte no qBittorrent (incl. cross-seed). Libera espaço de dados com hardlink.
 
 **Observações:**
 - A seção Files mostra todos os arquivos associados; é possível deletar arquivos individuais sem deletar o filme.
@@ -163,6 +167,43 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 - O filme é removido do Radarr imediatamente.
 - Os arquivos em disco são removidos **somente se** o checkbox "Delete files from disk" estiver marcado.
 - Esta ação é destrutiva e não pode ser desfeita via app (você pode re-adicionar o filme manualmente).
+
+## Purge filme — remover tudo (Radarr + qBittorrent)
+
+**Onde fica:** Tela de detalhes do filme → menu ⋮ (três pontos) → "Purge".
+
+Use o **Purge** quando quiser remover completamente um filme **e** liberar o espaço em disco ocupado pelos torrents fonte no qBittorrent. Diferente de "Delete" (que só remove o filme do Radarr, opcionalmente os arquivos importados), o Purge também deleta os **torrents originais** — inclusive **duplicatas cross-seed** — para que o espaço dos dados em hardlink seja efetivamente reclaimado.
+
+**Passo a passo:**
+1. Abrir detalhes do filme.
+2. Tocar no **menu ⋮** (três pontos) no canto superior direito.
+3. Selecionar **"Purge"** (ícone `delete_forever`, texto vermelho).
+4. Um **diálogo de confirmação** aparece:
+   - Título: `Purge movie`.
+   - Mensagem: `This will permanently remove "[Título do filme]" from Radarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.`
+   - Botões: "Cancel" e "Purge" (botão vermelho).
+5. Tocar **"Purge"** para confirmar.
+6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
+7. Snackbar confirma `Movie purged.` seguido de um resumo multi-linha:
+   - `Queue items: N` — itens removidos da fila do Radarr.
+   - `Media files: N` — arquivos de mídia apagados.
+   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed).
+   - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Radarr é afetado).
+8. Volta automaticamente à lista de filmes (que é recarregada).
+
+**O que o Purge faz, por trás:**
+1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Radarr.
+2. Remove os itens da fila no Radarr (`removeFromClient: true`).
+3. Deleta os arquivos de mídia e o filme do Radarr (`deleteFiles: true`).
+4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** duplicatas cross-seed (mesmo `name` **E** mesmo `savePath`, ambos normalizados maiúsculas/minúsculas).
+5. Deleta esses torrents com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+
+**Observações:**
+- **Irreversível:** o filme sai do Radarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
+- **Sem blocklist:** como o filme é removido do catálogo, ele deixa de ser monitorado e não é re-grabbed automaticamente.
+- **Cross-seed em pasta diferente NÃO é pego:** duplicatas hardlinked em diretórios distintos de cross-seed não são detectadas pela regra de `name` + `savePath`, então seu espaço pode não ser totalmente liberado.
+- **Sem instância do qBittorrent:** o Purge só atua no lado Radarr; um aviso é exibido no snackbar.
+- Se você usa **múltiplas instâncias** de qBittorrent/Radarr/Sonarr, o Purge usa a primeira instância do qBittorrent configurada — pode não ser a correta.
 
 ## Deletar arquivo de mídia de um filme — remover arquivo individual
 

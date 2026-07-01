@@ -1,6 +1,6 @@
 ---
 name: series
-description: Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira
+description: Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira, purge (remover série + arquivos + torrents no qBittorrent)
 ---
 
 # Séries
@@ -56,6 +56,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
      - **"Edit"** → abre SeriesEditScreen.
      - **"Delete files"** (ícone `delete_sweep`) → apaga todos os arquivos da série em disco, mas mantém a série cadastrada no Sonarr. Fica **desabilitado** (acinzentado) quando a série não tem nenhum arquivo baixado.
      - **"Delete"** (texto vermelho) → abre diálogo de confirmação com checkbox **"Also delete files from disk"** (apagar também arquivos do disco) e botões "Cancel" e "Delete" (vermelho).
+     - **"Purge"** (ícone `delete_forever`, texto vermelho) → remove tudo (catálogo + arquivos + torrents fonte no qBittorrent, incluindo duplicatas cross-seed) para liberar o espaço em disco usado por dados com hardlink. Ver seção "Purge série — remover tudo (Sonarr + qBittorrent)".
 - Título da série fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
@@ -109,6 +110,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
    - **"Edit"**: abre SeriesEditScreen.
    - **"Delete files"**: apaga todos os arquivos da série em disco (série continua no Sonarr). Desabilitado quando não há arquivos.
    - **"Delete"**: remove a série da biblioteca (diálogo de confirmação com opção de apagar arquivos do disco).
+   - **"Purge"** (vermelho): remove catálogo + arquivos + torrents fonte no qBittorrent (incl. cross-seed). Libera espaço de dados com hardlink.
 
 **Observações:**
 - Tocar em uma temporada abre a tela **SeasonDetailsScreen** (tela cheia) com a lista de episódios. Use a seta de voltar para retornar aos detalhes da série.
@@ -217,6 +219,43 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - A série é removida do Sonarr imediatamente.
 - Arquivos em disco só são apagados se a checkbox estiver marcada.
 - Não pode ser desfeito via app (re-adicionar manualmente se necessário).
+
+## Purge série — remover tudo (Sonarr + qBittorrent)
+
+**Onde fica:** Tela de detalhes da série → menu ⋮ (três pontos) → "Purge".
+
+Use o **Purge** quando quiser remover completamente uma série **e** liberar o espaço em disco ocupado pelos torrents fonte no qBittorrent. Diferente de "Delete" (que só remove a série do Sonarr, opcionalmente os arquivos importados), o Purge também deleta os **torrents originais** — inclusive **duplicatas cross-seed** — para que o espaço dos dados em hardlink seja efetivamente reclaimado.
+
+**Passo a passo:**
+1. Abrir detalhes da série.
+2. Tocar no **menu ⋮** (três pontos) no canto superior direito.
+3. Selecionar **"Purge"** (ícone `delete_forever`, texto vermelho).
+4. Um **diálogo de confirmação** aparece:
+   - Título: `Purge series`.
+   - Mensagem: `This will permanently remove "[Título da série]" and all its episodes from Sonarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.`
+   - Botões: "Cancel" e "Purge" (botão vermelho).
+5. Tocar **"Purge"** para confirmar.
+6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
+7. Snackbar confirma `Series purged.` seguido de um resumo multi-linha:
+   - `Queue items: N` — itens removidos da fila do Sonarr.
+   - `Media files: N` — arquivos de mídia apagados.
+   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed).
+   - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Sonarr é afetado).
+8. Volta automaticamente à lista de séries (que é recarregada).
+
+**O que o Purge faz, por trás:**
+1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Sonarr.
+2. Remove os itens da fila no Sonarr (`removeFromClient: true`).
+3. Deleta os arquivos de mídia e a série do Sonarr (`deleteFiles: true`).
+4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** duplicatas cross-seed (mesmo `name` **E** mesmo `savePath`, ambos normalizados maiúsculas/minúsculas).
+5. Deleta esses torrents com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+
+**Observações:**
+- **Irreversível:** a série sai do Sonarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
+- **Sem blocklist:** como a série é removida do catálogo, ela deixa de ser monitorada e não é re-grabbed automaticamente.
+- **Cross-seed em pasta diferente NÃO é pego:** duplicatas hardlinked em diretórios distintos de cross-seed não são detectadas pela regra de `name` + `savePath`, então seu espaço pode não ser totalmente liberado.
+- **Sem instância do qBittorrent:** o Purge só atua no lado Sonarr; um aviso é exibido no snackbar.
+- Se você usa **múltiplas instâncias** de qBittorrent/Radarr/Sonarr, o Purge usa a primeira instância do qBittorrent configurada — pode não ser a correta.
 
 ## Deletar todos os arquivos da série — manter série no Sonarr
 

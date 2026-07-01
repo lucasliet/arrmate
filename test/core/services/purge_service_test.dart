@@ -25,10 +25,15 @@ PurgeService _service({
 }
 
 /// Builds a [HistoryEvent] from a minimal JSON map.
+///
+/// [downloadId] is placed at the top level of the JSON to match the shape
+/// returned by the Radarr/Sonarr history API (it is a top-level resource
+/// field, not an entry inside `data`).
 HistoryEvent _historyEvent({
   required String eventType,
   required int movieId,
   int? seriesId,
+  String? downloadId,
   Map<String, dynamic>? data,
 }) {
   final now = DateTime(2024, 1, 1).toIso8601String();
@@ -38,6 +43,7 @@ HistoryEvent _historyEvent({
     'date': now,
     'movieId': movieId,
     if (seriesId != null) 'seriesId': seriesId,
+    if (downloadId != null) 'downloadId': downloadId,
     'quality': {
       'quality': {'id': 1, 'name': 'HD'},
     },
@@ -98,18 +104,18 @@ void main() {
           _historyEvent(
             eventType: 'grabbed',
             movieId: 7,
-            data: {'downloadId': 'HASHAAA111'},
+            downloadId: 'HASHAAA111',
           ),
           _historyEvent(
             eventType: 'downloadFolderImported',
             movieId: 7,
-            data: {'downloadId': 'HASHAAA111'},
+            downloadId: 'HASHAAA111',
           ),
           // Unknown events should be ignored.
           _historyEvent(
             eventType: 'downloadIgnored',
             movieId: 7,
-            data: {'downloadId': 'HASHIGNORED'},
+            downloadId: 'HASHIGNORED',
           ),
         ];
         final queue = QueueItems(
@@ -201,7 +207,7 @@ void main() {
             _historyEvent(
               eventType: 'grabbed',
               movieId: 7,
-              data: {'downloadId': 'SOURCEHASH001'},
+              downloadId: 'SOURCEHASH001',
             ),
           ],
         );
@@ -280,7 +286,7 @@ void main() {
             _historyEvent(
               eventType: 'grabbed',
               movieId: 7,
-              data: {'downloadId': 'HASHAAA111'},
+              downloadId: 'HASHAAA111',
             ),
           ],
         );
@@ -410,25 +416,25 @@ void main() {
             eventType: 'grabbed',
             movieId: 0,
             seriesId: 42,
-            data: {'downloadId': 'EP1HASH0AAA'},
+            downloadId: 'EP1HASH0AAA',
           ),
           _historyEvent(
             eventType: 'seriesFolderImported',
             movieId: 0,
             seriesId: 42,
-            data: {'downloadId': 'EP1HASH0AAA'},
+            downloadId: 'EP1HASH0AAA',
           ),
           _historyEvent(
             eventType: 'grabbed',
             movieId: 0,
             seriesId: 42,
-            data: {'downloadId': 'EP2HASH0BBB'},
+            downloadId: 'EP2HASH0BBB',
           ),
           _historyEvent(
             eventType: 'seriesFolderImported',
             movieId: 0,
             seriesId: 42,
-            data: {'downloadId': 'EP3HASH0CCC'},
+            downloadId: 'EP3HASH0CCC',
           ),
         ],
       );
@@ -516,12 +522,12 @@ void main() {
           _historyEvent(
             eventType: 'grabbed',
             movieId: 7,
-            data: {'downloadId': 'SHAAREDHASH'},
+            downloadId: 'SHAAREDHASH',
           ),
           _historyEvent(
             eventType: 'downloadFolderImported',
             movieId: 7,
-            data: {'downloadId': 'SHAAREDHASH'},
+            downloadId: 'SHAAREDHASH',
           ),
         ],
       );
@@ -672,7 +678,7 @@ void main() {
           _historyEvent(
             eventType: 'grabbed',
             movieId: 7,
-            data: {'downloadId': 'SOURCEHASH001'},
+            downloadId: 'SOURCEHASH001',
           ),
         ],
       );

@@ -58,6 +58,11 @@ class HistoryEvent extends Equatable {
   final List<MediaCustomFormat>? customFormats;
   final int? customFormatScore;
 
+  /// Torrent/download infohash used to track the release in the download
+  /// client. Serialized by Radarr/Sonarr as a **top-level** field of the
+  /// history resource (not inside [data]).
+  final String? downloadId;
+
   final Map<String, String?>? data;
 
   const HistoryEvent({
@@ -73,6 +78,7 @@ class HistoryEvent extends Equatable {
     this.languages,
     this.customFormats,
     this.customFormatScore,
+    this.downloadId,
     this.data,
   });
 
@@ -95,7 +101,6 @@ class HistoryEvent extends Equatable {
 
   String? get indexer => _getData('indexer');
   String? get downloadClient => _getData('downloadClient');
-  String? get downloadId => _getData('downloadId');
   String? get torrentName => _getData('torrentName');
   String? get message => _getData('message');
   String? get releaseSource => _getData('releaseSource');
@@ -141,6 +146,15 @@ class HistoryEvent extends Equatable {
     Map<String, dynamic> json, {
     String? instanceId,
   }) {
+    // Radarr/Sonarr expose `downloadId` (the release infohash) as a top-level
+    // field of the history resource. Older *arr versions stored it inside
+    // `data`; fall back to that so legacy instances keep working.
+    final dataMap = (json['data'] as Map<String, dynamic>?)?.map(
+      (k, v) => MapEntry(k, v?.toString()),
+    );
+    final downloadId =
+        (json['downloadId'] as String?) ?? dataMap?['downloadId'];
+
     return HistoryEvent(
       id: json['id'] as int,
       eventType: HistoryEventType.fromString(json['eventType'] as String?),
@@ -158,9 +172,8 @@ class HistoryEvent extends Equatable {
           ?.map((e) => MediaCustomFormat.fromJson(e as Map<String, dynamic>))
           .toList(),
       customFormatScore: json['customFormatScore'] as int?,
-      data: (json['data'] as Map<String, dynamic>?)?.map(
-        (k, v) => MapEntry(k, v?.toString()),
-      ),
+      downloadId: downloadId,
+      data: dataMap,
     );
   }
 
@@ -178,6 +191,7 @@ class HistoryEvent extends Equatable {
     languages,
     customFormats,
     customFormatScore,
+    downloadId,
     data,
   ];
 }

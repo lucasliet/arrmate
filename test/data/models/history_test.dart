@@ -124,6 +124,55 @@ void main() {
       expect(event.isEpisode, false);
     });
 
+    test(
+      'Extrai downloadId do nivel superior (campo do resource, nao de data)',
+      () {
+        // Given — shape real retornada por Radarr/Sonarr: downloadId top-level.
+        final json = {
+          'id': 1,
+          'eventType': 'grabbed',
+          'date': '2026-01-01T10:00:00Z',
+          'movieId': 1,
+          'downloadId': 'A1B2C3D4E5F6',
+          'quality': {
+            'quality': {'id': 1, 'name': '1080p'},
+            'revision': {'version': 1, 'real': 0},
+          },
+          'data': {'indexer': 'Prowlarr'},
+        };
+
+        // When
+        final event = HistoryEvent.fromJson(json);
+
+        // Then
+        expect(event.downloadId, 'A1B2C3D4E5F6');
+      },
+    );
+
+    test(
+      'Usa downloadId legado dentro de data quando o top-level esta ausente',
+      () {
+        // Given — instâncias antigas do *arr guardavam downloadId em data.
+        final json = {
+          'id': 1,
+          'eventType': 'grabbed',
+          'date': '2026-01-01T10:00:00Z',
+          'movieId': 1,
+          'quality': {
+            'quality': {'id': 1, 'name': '1080p'},
+            'revision': {'version': 1, 'real': 0},
+          },
+          'data': {'downloadId': 'LEGACYHASH00'},
+        };
+
+        // When
+        final event = HistoryEvent.fromJson(json);
+
+        // Then
+        expect(event.downloadId, 'LEGACYHASH00');
+      },
+    );
+
     test('Deserializa evento de episódio corretamente', () {
       // Given
       final json = {
