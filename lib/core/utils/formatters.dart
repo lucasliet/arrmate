@@ -97,3 +97,21 @@ String formatInstanceVersion(String? version) {
   }
   return 'v$version';
 }
+
+/// Formats a duration in seconds into a compact human-readable string.
+///
+/// Examples: 0 -> "0m", 5400 -> "1h 30m", 1_728_000 -> "20d".
+/// Largest unit shown is days; seconds are dropped for readability.
+String formatDurationSeconds(int totalSeconds) {
+  if (totalSeconds <= 0) return '0m';
+  final duration = Duration(seconds: totalSeconds);
+  final days = duration.inDays;
+  final hours = duration.inHours.remainder(24);
+  final minutes = duration.inMinutes.remainder(60);
+
+  final parts = <String>[];
+  if (days > 0) parts.add('${days}d');
+  if (hours > 0) parts.add('${hours}h');
+  if (minutes > 0 && days == 0) parts.add('${minutes}m');
+  return parts.isEmpty ? '0m' : parts.join(' ');
+}

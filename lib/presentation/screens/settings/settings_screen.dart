@@ -34,6 +34,8 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildSystemSection(context),
           const Divider(),
+          _buildPurgeSection(context, ref),
+          const Divider(),
           _buildNotificationsSection(context, ref),
           const Divider(),
           _buildAboutSection(context, ref),
@@ -359,6 +361,106 @@ class SettingsScreen extends ConsumerWidget {
           onTap: () => context.push('/settings/quality-profiles'),
         ),
       ],
+    );
+  }
+
+  Widget _buildPurgeSection(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Purge',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.timer_outlined),
+          title: const Text('Minimum seeding days'),
+          subtitle: Text(
+            'Warn before deleting torrents that seeded for less than '
+            '${settings.minimumSeedingDays} day${settings.minimumSeedingDays == 1 ? '' : 's'}.',
+          ),
+          trailing: Text(
+            '${settings.minimumSeedingDays}d',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          onTap: () => _showMinimumSeedingDaysDialog(
+            context,
+            ref,
+            settings.minimumSeedingDays,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMinimumSeedingDaysDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int current,
+  ) {
+    var value = current;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Minimum seeding days'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$value day${value == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Slider(
+                    min: 1,
+                    max: 60,
+                    divisions: 59,
+                    value: value.toDouble(),
+                    label: '$value',
+                    onChanged: (v) => setState(() => value = v.round()),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Torrents that seeded for less than this are flagged for '
+                    'confirmation before Purge deletes them.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setMinimumSeedingDays(value);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

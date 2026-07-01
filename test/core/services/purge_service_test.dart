@@ -33,6 +33,7 @@ HistoryEvent _historyEvent({
   required String eventType,
   required int movieId,
   int? seriesId,
+  int? episodeId,
   String? downloadId,
   Map<String, dynamic>? data,
 }) {
@@ -43,6 +44,7 @@ HistoryEvent _historyEvent({
     'date': now,
     'movieId': movieId,
     if (seriesId != null) 'seriesId': seriesId,
+    if (episodeId != null) 'episodeId': episodeId,
     if (downloadId != null) 'downloadId': downloadId,
     'quality': {
       'quality': {'id': 1, 'name': 'HD'},
@@ -86,6 +88,8 @@ Torrent _torrent({
   required String hash,
   required String name,
   String savePath = '/downloads',
+  int seedingTime = 0,
+  int completionOn = 0,
 }) {
   return Torrent.fromJson({
     'hash': hash,
@@ -99,6 +103,8 @@ Torrent _torrent({
     'state': 'pausedUP',
     'save_path': savePath,
     'tags': '',
+    'seeding_time': seedingTime,
+    'completion_on': completionOn,
   });
 }
 
@@ -855,6 +861,317 @@ void main() {
         verify(() => movieRepo.deleteMovieFile(1)).called(1);
         verify(() => movieRepo.deleteMovieFile(2)).called(1);
         verify(() => movieRepo.deleteMovieFile(3)).called(1);
+      },
+    );
+
+    test('previewMovie resolves torrents without deleting anything '
+        '(no movie, files, or torrent deletion occurs)', () async {
+      final movieRepo = MockMovieRepository();
+      final qb = MockQBittorrentService();
+
+      when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+        (_) async => [
+          _historyEvent(
+            eventType: 'grabbed',
+            movieId: 7,
+            downloadId: 'HASHAAA111',
+          ),
+        ],
+      );
+      when(
+        () => movieRepo.getQueue(
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          sortKey: any(named: 'sortKey'),
+          sortDirection: any(named: 'sortDirection'),
+        ),
+      ).thenAnswer(
+        (_) async => QueueItems(
+          page: 1,
+          pageSize: 20,
+          sortKey: 'timeleft',
+          sortDirection: 'ascending',
+          totalRecords: 0,
+          records: const [],
+        ),
+      );
+      when(() => qb.getTorrents()).thenAnswer(
+        (_) async => [
+          _torrent(
+            hash: 'HASHAAA111',
+            name: 'release.mkv',
+            seedingTime: 25 * 86400,
+          ),
+        ],
+      );
+      when(
+        () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+      ).thenAnswer((_) async {});
+
+      final preview = await _service(
+        movieRepo: movieRepo,
+        qb: qb,
+      ).previewMovie(7, minimumSeedingSeconds: 20 * 86400);
+
+      expect(preview.qbittorrentSkipped, false);
+      expect(preview.torrentsToDelete.length, 1);
+      expect(preview.belowThreshold, isEmpty);
+
+      verifyNever(() => movieRepo.deleteMovie(any()));
+      verifyNever(() => movieRepo.deleteMovieFile(any()));
+      verifyNever(
+        () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+      );
+    });
+
+    test(
+      'previewMovie flags below-threshold torrents by seeding time',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 7,
+              downloadId: 'YOUNGHASH001',
+            ),
+          ],
+        );
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(
+              hash: 'YOUNGHASH001',
+              name: 'release.mkv',
+              seedingTime: 5 * 86400,
+            ),
+          ],
+        );
+
+        final preview = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).previewMovie(7, minimumSeedingSeconds: 20 * 86400);
+
+        expect(preview.torrentsToDelete.length, 1);
+        expect(preview.belowThreshold.length, 1);
+      },
+    );
+
+    test(
+      'purgeMovies aggregates counts and hash lists across multiple movies',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+
+        when(
+          () => movieRepo.getMovieHistory(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.getMovieFiles(any()),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(hash: 'HASHA', name: 'a.mkv'),
+            _torrent(hash: 'HASHB', name: 'b.mkv'),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovies([1, 2]);
+
+        expect(result.catalogDeleted, 2);
+        expect(result.mediaFilesDeleted, 2);
+      },
+    );
+
+    test(
+      'purgeSeason collects hashes by episodeId and does not delete the series '
+      'catalog',
+      () async {
+        final seriesRepo = MockSeriesRepository();
+        final qb = MockQBittorrentService();
+
+        when(() => seriesRepo.getSeriesHistory(42)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 0,
+              seriesId: 42,
+              downloadId: 'SEASONHASH01',
+              episodeId: 100,
+            ),
+            // Different episode, not in our set → must be ignored.
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 0,
+              seriesId: 42,
+              downloadId: 'OTHERHASH002',
+              episodeId: 999,
+            ),
+          ],
+        );
+        when(
+          () => seriesRepo.deleteSeriesFiles(
+            42,
+            seasonNumber: any(named: 'seasonNumber'),
+          ),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => seriesRepo.deleteSeries(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [_torrent(hash: 'SEASONHASH01', name: 'ep.mkv')],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+
+        final result = await _service(
+          movieRepo: MockMovieRepository(),
+          seriesRepo: seriesRepo,
+          qb: qb,
+        ).purgeSeason(42, 1, [100]);
+
+        expect(result.catalogDeleted, 0);
+        expect(result.mediaFilesDeleted, 5);
+        expect(result.torrentHashesDeleted, ['seasonhash01']);
+        verifyNever(
+          () => seriesRepo.deleteSeries(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'purgeMovieWithAction with keepBelowThreshold skips young torrents but '
+      'still deletes the movie catalog and files',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 7,
+              downloadId: 'YOUNGHASH001',
+            ),
+          ],
+        );
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.getMovieFiles(7),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(
+              hash: 'YOUNGHASH001',
+              name: 'release.mkv',
+              seedingTime: 5 * 86400,
+            ),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+
+        final result = await _service(movieRepo: movieRepo, qb: qb)
+            .purgeMovieWithAction(
+              7,
+              action: SeedingAction.keepBelowThreshold,
+              minimumSeedingSeconds: 20 * 86400,
+            );
+
+        expect(result.catalogDeleted, 1);
+        expect(result.mediaFilesDeleted, 1);
+        expect(result.torrentHashesDeleted, isEmpty);
+        verifyNever(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        );
       },
     );
   });

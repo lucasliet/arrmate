@@ -22,6 +22,8 @@ class Torrent extends Equatable {
   final int amountLeft;
   final int addedOn;
   final int priority;
+  final int seedingTime;
+  final int completionOn;
 
   const Torrent({
     required this.hash,
@@ -44,6 +46,8 @@ class Torrent extends Equatable {
     required this.amountLeft,
     required this.addedOn,
     required this.priority,
+    required this.seedingTime,
+    required this.completionOn,
   });
 
   factory Torrent.fromJson(Map<String, dynamic> json) {
@@ -70,6 +74,8 @@ class Torrent extends Equatable {
       amountLeft: json['amount_left'] as int? ?? 0,
       addedOn: json['added_on'] as int? ?? 0,
       priority: json['priority'] as int? ?? 0,
+      seedingTime: json['seeding_time'] as int? ?? 0,
+      completionOn: json['completion_on'] as int? ?? 0,
     );
   }
 
@@ -82,6 +88,9 @@ class Torrent extends Equatable {
   bool get hasCategory => category != null && category!.isNotEmpty;
 
   int get totalPeers => numSeeds + numLeechs;
+
+  /// Time the torrent has spent in a seeding state.
+  Duration get seedingDuration => Duration(seconds: seedingTime);
 
   @override
   List<Object?> get props => [
@@ -105,5 +114,7 @@ class Torrent extends Equatable {
     amountLeft,
     addedOn,
     priority,
+    seedingTime,
+    completionOn,
   ];
 }

@@ -55,6 +55,10 @@ class SettingsState {
   /// The tab to show when the app starts.
   final AppTab homeTab;
 
+  /// Minimum number of days a torrent must have seeded before Purge deletes it
+  /// without a confirmation prompt. Defaults to 20.
+  final int minimumSeedingDays;
+
   const SettingsState({
     this.colorScheme = AppColorScheme.blue,
     this.appearance = AppAppearance.system,
@@ -63,6 +67,7 @@ class SettingsState {
     this.movieSort = const MovieSort(),
     this.seriesSort = const SeriesSort(),
     this.homeTab = AppTab.movies,
+    this.minimumSeedingDays = 20,
   });
 
   SettingsState copyWith({
@@ -73,6 +78,7 @@ class SettingsState {
     MovieSort? movieSort,
     SeriesSort? seriesSort,
     AppTab? homeTab,
+    int? minimumSeedingDays,
   }) {
     return SettingsState(
       colorScheme: colorScheme ?? this.colorScheme,
@@ -82,6 +88,7 @@ class SettingsState {
       movieSort: movieSort ?? this.movieSort,
       seriesSort: seriesSort ?? this.seriesSort,
       homeTab: homeTab ?? this.homeTab,
+      minimumSeedingDays: minimumSeedingDays ?? this.minimumSeedingDays,
     );
   }
 }
@@ -95,6 +102,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const _homeTabKey = 'home_tab';
   static const _movieSortKey = 'movie_sort';
   static const _seriesSortKey = 'series_sort';
+  static const _minimumSeedingDaysKey = 'minimum_seeding_days';
 
   @override
   SettingsState build() {
@@ -112,6 +120,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final homeTabName = prefs.getString(_homeTabKey);
     final movieSortJson = prefs.getString(_movieSortKey);
     final seriesSortJson = prefs.getString(_seriesSortKey);
+    final minimumSeedingDays = prefs.getInt(_minimumSeedingDaysKey);
 
     final notifications = _parseNotificationSettings(notificationsJson);
     final movieSort = _parseMovieSort(movieSortJson);
@@ -145,6 +154,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
           : AppTab.movies,
       movieSort: movieSort,
       seriesSort: seriesSort,
+      minimumSeedingDays: minimumSeedingDays,
     );
 
     if (notifications.enabled && notifications.ntfyTopic != null) {
@@ -244,6 +254,15 @@ class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(seriesSort: sort);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_seriesSortKey, jsonEncode(sort.toJson()));
+  }
+
+  /// Sets and persists the minimum seeding days threshold used by Purge to
+  /// decide whether to warn before deleting still-seeding torrents.
+  Future<void> setMinimumSeedingDays(int days) async {
+    final clamped = days.clamp(1, 60);
+    state = state.copyWith(minimumSeedingDays: clamped);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_minimumSeedingDaysKey, clamped);
   }
 
   /// Updates notification settings and manages the ntfy connection.

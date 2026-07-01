@@ -41,6 +41,50 @@ typedef DeleteQueueItem =
       bool skipRedownload,
     });
 
+/// User decision when the seeding-time warning dialog is shown.
+enum SeedingAction {
+  /// Abort the whole purge (delete nothing).
+  cancel,
+
+  /// Proceed but keep torrents below the seeding threshold in qBittorrent.
+  keepBelowThreshold,
+
+  /// Delete every resolved torrent regardless of seeding time.
+  deleteAll,
+}
+
+/// Read-only preview of the torrents a purge would delete.
+///
+/// Returned by the `preview*` methods. The catalog and media-file deletions
+/// are NOT part of this preview — only the qBittorrent side. The UI inspects
+/// [belowThreshold] to decide whether to show the [SeedingAction] dialog
+/// before committing.
+class PurgePreview extends Equatable {
+  /// Every torrent (source + cross-seed) that the purge would delete.
+  final List<Torrent> torrentsToDelete;
+
+  /// Subset of [torrentsToDelete] whose seeding time is below the configured
+  /// threshold. Empty when no warning is needed.
+  final List<Torrent> belowThreshold;
+
+  /// `true` when qBittorrent steps were skipped because no instance is
+  /// configured in the app.
+  final bool qbittorrentSkipped;
+
+  const PurgePreview({
+    required this.torrentsToDelete,
+    required this.belowThreshold,
+    required this.qbittorrentSkipped,
+  });
+
+  @override
+  List<Object?> get props => [
+    torrentsToDelete,
+    belowThreshold,
+    qbittorrentSkipped,
+  ];
+}
+
 /// Outcome of a purge operation.
 ///
 /// Purge removes the movie/series from the Radarr/Sonarr catalog, deletes its
@@ -209,6 +253,248 @@ class PurgeService {
     );
   }
 
+  /// Previews the torrents a movie purge would delete, without mutating.
+  ///
+  /// [minimumSeedingSeconds] partitions the resolved torrents into the
+  /// `belowThreshold` list so the UI can decide whether to show the
+  /// [SeedingAction] warning dialog.
+  Future<PurgePreview> previewMovie(
+    int movieId, {
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _movieRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Movie repository not available');
+    }
+    final (hashes, _) = await _collectMovieHashes(repository, movieId);
+    return _buildPreview(hashes, minimumSeedingSeconds);
+  }
+
+  /// Previews the torrents a series purge would delete, without mutating.
+  Future<PurgePreview> previewSeries(
+    int seriesId, {
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _seriesRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
+    final (hashes, _) = await _collectSeriesHashes(repository, seriesId);
+    return _buildPreview(hashes, minimumSeedingSeconds);
+  }
+
+  /// Previews the torrents a season purge would delete, without mutating.
+  Future<PurgePreview> previewSeason(
+    int seriesId,
+    List<int> episodeIds, {
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _seriesRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
+    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
+    return _buildPreview(hashes, minimumSeedingSeconds);
+  }
+
+  /// Purges a season: deletes its episode files and source torrents. The
+  /// series stays in the catalog (`catalogDeleted: 0`).
+  ///
+  /// [episodeIds] restricts hash collection to the given episodes. [action]
+  /// controls whether below-threshold torrents are kept.
+  Future<PurgeResult> purgeSeason(
+    int seriesId,
+    int seasonNumber,
+    List<int> episodeIds, {
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _seriesRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
+
+    logger.info(
+      '[PurgeService] Purging series $seriesId season $seasonNumber '
+      '(${episodeIds.length} episode(s))',
+    );
+
+    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
+
+    final mediaFilesDeleted = await _deleteSeriesFiles(
+      repository,
+      seriesId,
+      seasonNumber: seasonNumber,
+    );
+
+    final resolved = await _resolveTorrents(hashes);
+    final torrentOutcome = await _deleteTorrents(
+      resolved.source,
+      resolved.crossSeed,
+      sourceHashes: hashes,
+      action: action,
+      minimumSeedingSeconds: minimumSeedingSeconds,
+    );
+
+    return PurgeResult(
+      queueItemsRemoved: 0,
+      catalogDeleted: 0,
+      mediaFilesDeleted: mediaFilesDeleted,
+      torrentHashesDeleted: torrentOutcome.torrentHashesDeleted,
+      crossSeedDuplicatesDeleted: torrentOutcome.crossSeedDuplicatesDeleted,
+      qbittorrentSkipped: torrentOutcome.qbittorrentSkipped,
+    );
+  }
+
+  /// Purges multiple movies, aggregating the results into a single
+  /// [PurgeResult].
+  Future<PurgeResult> purgeMovies(List<int> movieIds) async {
+    var queueItemsRemoved = 0;
+    var catalogDeleted = 0;
+    var mediaFilesDeleted = 0;
+    final torrentHashes = <String>{};
+    final crossSeed = <String>{};
+    var qbittorrentSkipped = false;
+
+    for (final id in movieIds) {
+      final result = await purgeMovie(id);
+      queueItemsRemoved += result.queueItemsRemoved;
+      catalogDeleted += result.catalogDeleted;
+      mediaFilesDeleted += result.mediaFilesDeleted;
+      torrentHashes.addAll(result.torrentHashesDeleted);
+      crossSeed.addAll(result.crossSeedDuplicatesDeleted);
+      qbittorrentSkipped = qbittorrentSkipped || result.qbittorrentSkipped;
+    }
+
+    return PurgeResult(
+      queueItemsRemoved: queueItemsRemoved,
+      catalogDeleted: catalogDeleted,
+      mediaFilesDeleted: mediaFilesDeleted,
+      torrentHashesDeleted: torrentHashes.toList(),
+      crossSeedDuplicatesDeleted: crossSeed.toList(),
+      qbittorrentSkipped: qbittorrentSkipped,
+    );
+  }
+
+  /// Purges multiple series, aggregating the results into a single
+  /// [PurgeResult].
+  Future<PurgeResult> purgeSeriesList(List<int> seriesIds) async {
+    var queueItemsRemoved = 0;
+    var catalogDeleted = 0;
+    var mediaFilesDeleted = 0;
+    final torrentHashes = <String>{};
+    final crossSeed = <String>{};
+    var qbittorrentSkipped = false;
+
+    for (final id in seriesIds) {
+      final result = await purgeSeries(id);
+      queueItemsRemoved += result.queueItemsRemoved;
+      catalogDeleted += result.catalogDeleted;
+      mediaFilesDeleted += result.mediaFilesDeleted;
+      torrentHashes.addAll(result.torrentHashesDeleted);
+      crossSeed.addAll(result.crossSeedDuplicatesDeleted);
+      qbittorrentSkipped = qbittorrentSkipped || result.qbittorrentSkipped;
+    }
+
+    return PurgeResult(
+      queueItemsRemoved: queueItemsRemoved,
+      catalogDeleted: catalogDeleted,
+      mediaFilesDeleted: mediaFilesDeleted,
+      torrentHashesDeleted: torrentHashes.toList(),
+      crossSeedDuplicatesDeleted: crossSeed.toList(),
+      qbittorrentSkipped: qbittorrentSkipped,
+    );
+  }
+
+  /// Commits a purge of the resolved torrents for [movieId], honoring the
+  /// seeding-time [action].
+  ///
+  /// Reuses the catalog + media-file deletion from [purgeMovie] but lets the
+  /// caller skip below-threshold torrents. Use after [previewMovie].
+  Future<PurgeResult> purgeMovieWithAction(
+    int movieId, {
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _movieRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Movie repository not available');
+    }
+
+    final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
+    );
+    final mediaFilesDeleted = await _deleteMovieFiles(repository, movieId);
+    await repository.deleteMovie(
+      movieId,
+      deleteFiles: true,
+      addExclusion: false,
+    );
+
+    final resolved = await _resolveTorrents(hashes);
+    final torrentOutcome = await _deleteTorrents(
+      resolved.source,
+      resolved.crossSeed,
+      sourceHashes: hashes,
+      action: action,
+      minimumSeedingSeconds: minimumSeedingSeconds,
+    );
+
+    return PurgeResult(
+      queueItemsRemoved: queueItemsRemoved,
+      catalogDeleted: 1,
+      mediaFilesDeleted: mediaFilesDeleted,
+      torrentHashesDeleted: torrentOutcome.torrentHashesDeleted,
+      crossSeedDuplicatesDeleted: torrentOutcome.crossSeedDuplicatesDeleted,
+      qbittorrentSkipped: torrentOutcome.qbittorrentSkipped,
+    );
+  }
+
+  /// Commits a purge of the resolved torrents for [seriesId], honoring the
+  /// seeding-time [action]. Use after [previewSeries].
+  Future<PurgeResult> purgeSeriesWithAction(
+    int seriesId, {
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final repository = _seriesRepositoryFactory();
+    if (repository == null) {
+      throw StateError('Series repository not available');
+    }
+
+    final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
+    );
+    final mediaFilesDeleted = await _deleteSeriesFiles(repository, seriesId);
+    await repository.deleteSeries(
+      seriesId,
+      deleteFiles: true,
+      addExclusion: false,
+    );
+
+    final resolved = await _resolveTorrents(hashes);
+    final torrentOutcome = await _deleteTorrents(
+      resolved.source,
+      resolved.crossSeed,
+      sourceHashes: hashes,
+      action: action,
+      minimumSeedingSeconds: minimumSeedingSeconds,
+    );
+
+    return PurgeResult(
+      queueItemsRemoved: queueItemsRemoved,
+      catalogDeleted: 1,
+      mediaFilesDeleted: mediaFilesDeleted,
+      torrentHashesDeleted: torrentOutcome.torrentHashesDeleted,
+      crossSeedDuplicatesDeleted: torrentOutcome.crossSeedDuplicatesDeleted,
+      qbittorrentSkipped: torrentOutcome.qbittorrentSkipped,
+    );
+  }
+
   // ---- helpers -----------------------------------------------------------
 
   /// Collects source torrent hashes + queue ids for [movieId].
@@ -270,6 +556,61 @@ class PurgeService {
       '${queueIds.length} queue item(s)',
     );
     return (hashes, queueIds);
+  }
+
+  /// Collects source torrent hashes for a season of [seriesId], restricted to
+  /// the given [episodeIds]. Hashes come only from history (grabbed + imported)
+  /// events whose `episodeId` is in [episodeIds]. Queue items are not removed
+  /// for season purges.
+  Future<Set<String>> _collectSeasonHashes(
+    SeriesRepository repository,
+    int seriesId,
+    List<int> episodeIds,
+  ) async {
+    final episodeSet = episodeIds.toSet();
+    final hashes = <String>{};
+    final history = await repository.getSeriesHistory(seriesId);
+    for (final event in history) {
+      if ((event.eventType == HistoryEventType.grabbed ||
+              event.eventType == HistoryEventType.imported) &&
+          event.episodeId != null &&
+          episodeSet.contains(event.episodeId)) {
+        final id = event.downloadId;
+        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
+      }
+    }
+
+    logger.info(
+      '[PurgeService] Series $seriesId season: ${hashes.length} hash(es) '
+      'from ${episodeIds.length} episode(s)',
+    );
+    return hashes;
+  }
+
+  /// Builds a [PurgePreview] from the resolved [sourceHashes], partitioning
+  /// torrents by the seeding threshold.
+  Future<PurgePreview> _buildPreview(
+    Set<String> sourceHashes,
+    int minimumSeedingSeconds,
+  ) async {
+    final service = _qbittorrentServiceFactory();
+    if (service == null) {
+      return const PurgePreview(
+        torrentsToDelete: [],
+        belowThreshold: [],
+        qbittorrentSkipped: true,
+      );
+    }
+    final resolved = await _resolveTorrents(sourceHashes);
+    final all = [...resolved.source, ...resolved.crossSeed];
+    final below = minimumSeedingSeconds > 0
+        ? all.where((t) => t.seedingTime < minimumSeedingSeconds).toList()
+        : const <Torrent>[];
+    return PurgePreview(
+      torrentsToDelete: all,
+      belowThreshold: below,
+      qbittorrentSkipped: false,
+    );
   }
 
   /// Pages through the activity queue accumulating ids + download hashes for
@@ -363,13 +704,26 @@ class PurgeService {
   /// Deletes the series' episode files one by one and returns how many
   /// actually got deleted.
   ///
-  /// Mirrors [_deleteMovieFiles]: per-file [SeriesRepository.deleteSeriesFile]
-  /// calls, individual failures tolerated, count reflects real deletions.
-  /// [deleteSeries] with `deleteFiles: true` runs afterwards as a safety net.
+  /// When [seasonNumber] is provided, only files of that season are removed;
+  /// otherwise all files of the series are removed. Mirrors [_deleteMovieFiles]
+  /// for the per-file resilience.
   Future<int> _deleteSeriesFiles(
     SeriesRepository repository,
-    int seriesId,
-  ) async {
+    int seriesId, {
+    int? seasonNumber,
+  }) async {
+    if (seasonNumber != null) {
+      try {
+        return await repository.deleteSeriesFiles(
+          seriesId,
+          seasonNumber: seasonNumber,
+        );
+      } catch (e) {
+        logger.warning('[PurgeService] deleteSeriesFiles failed: $e');
+        return 0;
+      }
+    }
+
     final List<MediaFile> files;
     try {
       files = await repository.getSeriesFiles(seriesId);
@@ -390,14 +744,140 @@ class PurgeService {
     return deleted;
   }
 
+  /// Resolves the torrents a purge would delete, without mutating anything.
+  ///
+  /// Returns source torrents (matched by hash) and cross-seed duplicates
+  /// separately so callers can inspect seeding time before committing via
+  /// [_deleteTorrents] and the outcome keeps the source/cross-seed split.
+  Future<({List<Torrent> source, List<Torrent> crossSeed})> _resolveTorrents(
+    Set<String> sourceHashes,
+  ) async {
+    if (sourceHashes.isEmpty) {
+      logger.info('[PurgeService] No source hashes to resolve');
+      return (source: <Torrent>[], crossSeed: <Torrent>[]);
+    }
+
+    final service = _qbittorrentServiceFactory();
+    if (service == null) {
+      logger.info('[PurgeService] qBittorrent not configured; skipping');
+      return (source: <Torrent>[], crossSeed: <Torrent>[]);
+    }
+
+    final torrents = await service.getTorrents();
+    final sourceFoundHashes = <String>{};
+    for (final t in torrents) {
+      if (sourceHashes.contains(t.hash.toLowerCase())) {
+        sourceFoundHashes.add(t.hash.toLowerCase());
+      }
+    }
+
+    final source = <Torrent>[];
+    final sourceNames = <String>{};
+    final sourceSavePaths = <String>{};
+    for (final t in torrents) {
+      if (sourceFoundHashes.contains(t.hash.toLowerCase())) {
+        source.add(t);
+        sourceNames.add(_normalizeName(t.name));
+        sourceSavePaths.add(_normalizePath(t.savePath));
+      }
+    }
+    final crossSeed = <Torrent>[];
+    for (final t in torrents) {
+      final h = t.hash.toLowerCase();
+      if (sourceFoundHashes.contains(h)) continue; // already source
+      if (sourceNames.contains(_normalizeName(t.name)) &&
+          sourceSavePaths.contains(_normalizePath(t.savePath))) {
+        crossSeed.add(t);
+      }
+    }
+
+    logger.info(
+      '[PurgeService] Resolved ${source.length} source + '
+      '${crossSeed.length} cross-seed torrent(s) to delete',
+    );
+    return (source: source, crossSeed: crossSeed);
+  }
+
+  /// Deletes the resolved torrents in qBittorrent, honoring [action].
+  ///
+  /// [sourceHashes] classifies which resolved torrents are source vs cross-seed
+  /// so the outcome keeps the split. When [action] is
+  /// [SeedingAction.keepBelowThreshold], torrents whose seeding time is below
+  /// [minimumSeedingSeconds] are kept in qBittorrent (they keep seeding); only
+  /// the eligible ones are deleted. All deletes use `deleteFiles: true` so
+  /// hardlinked inodes are reclaimed.
+  Future<_TorrentPurgeOutcome> _deleteTorrents(
+    List<Torrent> source,
+    List<Torrent> crossSeed, {
+    required Set<String> sourceHashes,
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+  }) async {
+    final service = _qbittorrentServiceFactory();
+    if (service == null) {
+      return _TorrentPurgeOutcome(
+        torrentHashesDeleted: const [],
+        crossSeedDuplicatesDeleted: const [],
+        qbittorrentSkipped: true,
+      );
+    }
+    if (source.isEmpty && crossSeed.isEmpty) {
+      return _TorrentPurgeOutcome._empty;
+    }
+
+    final sourceDeleted = <String>[];
+    final crossSeedDeleted = <String>[];
+    final hashesToDelete = <String>{};
+
+    bool isBelowThreshold(Torrent t) =>
+        action == SeedingAction.keepBelowThreshold &&
+        t.seedingTime < minimumSeedingSeconds;
+
+    for (final t in source) {
+      if (isBelowThreshold(t)) {
+        logger.info(
+          '[PurgeService] Keeping source torrent ${t.name} '
+          '(seeding ${t.seedingTime}s < ${minimumSeedingSeconds}s)',
+        );
+        continue;
+      }
+      final h = t.hash.toLowerCase();
+      if (hashesToDelete.add(h)) sourceDeleted.add(h);
+    }
+    for (final t in crossSeed) {
+      if (isBelowThreshold(t)) {
+        logger.info(
+          '[PurgeService] Keeping cross-seed torrent ${t.name} '
+          '(seeding ${t.seedingTime}s < ${minimumSeedingSeconds}s)',
+        );
+        continue;
+      }
+      final h = t.hash.toLowerCase();
+      if (hashesToDelete.add(h)) crossSeedDeleted.add(h);
+    }
+
+    if (hashesToDelete.isEmpty) {
+      logger.info('[PurgeService] No torrents to delete after seeding filter');
+      return _TorrentPurgeOutcome._empty;
+    }
+
+    logger.info(
+      '[PurgeService] Deleting ${hashesToDelete.length} torrent(s) with files',
+    );
+
+    await service.deleteTorrents(hashesToDelete.toList(), deleteFiles: true);
+
+    return _TorrentPurgeOutcome(
+      torrentHashesDeleted: sourceDeleted,
+      crossSeedDuplicatesDeleted: crossSeedDeleted,
+      qbittorrentSkipped: false,
+    );
+  }
+
   /// Resolves and deletes torrents in qBittorrent for [sourceHashes].
   ///
-  /// Source torrents are matched by hash. Cross-seed duplicates are matched by
-  /// torrent `name` (case-insensitive) AND `savePath` (normalized) among
-  /// torrents whose hash is NOT in the source set. The `savePath` guard
-  /// prevents deleting an unrelated torrent that happens to share a release
-  /// name with the source. All deletes use `deleteFiles: true` so hardlinked
-  /// inodes are reclaimed.
+  /// Convenience wrapper around [_resolveTorrents] + [_deleteTorrents] for the
+  /// non-interactive purge path (no seeding check).
   Future<_TorrentPurgeOutcome> _purgeTorrents(Set<String> sourceHashes) async {
     final service = _qbittorrentServiceFactory();
     if (service == null) {
@@ -408,53 +888,11 @@ class PurgeService {
         qbittorrentSkipped: true,
       );
     }
-
-    if (sourceHashes.isEmpty) {
-      logger.info('[PurgeService] No source hashes to delete');
-      return _TorrentPurgeOutcome._empty;
-    }
-
-    final torrents = await service.getTorrents();
-    final sourceTorrents = torrents.where(
-      (t) => sourceHashes.contains(t.hash.toLowerCase()),
-    );
-    final sourceNames = <String>{};
-    final sourceSavePaths = <String>{};
-    final sourceFoundHashes = <String>{};
-    for (final t in sourceTorrents) {
-      sourceNames.add(_normalizeName(t.name));
-      sourceSavePaths.add(_normalizePath(t.savePath));
-      sourceFoundHashes.add(t.hash.toLowerCase());
-    }
-
-    final hashesToDelete = <String>{...sourceFoundHashes};
-    final crossSeedHashes = <String>[];
-    for (final t in torrents) {
-      final h = t.hash.toLowerCase();
-      if (sourceFoundHashes.contains(h)) continue; // already source
-      if (sourceNames.contains(_normalizeName(t.name)) &&
-          sourceSavePaths.contains(_normalizePath(t.savePath))) {
-        if (hashesToDelete.add(h)) crossSeedHashes.add(h);
-      }
-    }
-
-    if (hashesToDelete.isEmpty) {
-      logger.info('[PurgeService] No matching torrents in qBittorrent');
-      return _TorrentPurgeOutcome._empty;
-    }
-
-    logger.info(
-      '[PurgeService] Deleting ${hashesToDelete.length} torrent(s) '
-      '(${sourceFoundHashes.length} source + '
-      '${crossSeedHashes.length} cross-seed) with files',
-    );
-
-    await service.deleteTorrents(hashesToDelete.toList(), deleteFiles: true);
-
-    return _TorrentPurgeOutcome(
-      torrentHashesDeleted: sourceFoundHashes.toList(),
-      crossSeedDuplicatesDeleted: crossSeedHashes,
-      qbittorrentSkipped: false,
+    final resolved = await _resolveTorrents(sourceHashes);
+    return _deleteTorrents(
+      resolved.source,
+      resolved.crossSeed,
+      sourceHashes: sourceHashes,
     );
   }
 
