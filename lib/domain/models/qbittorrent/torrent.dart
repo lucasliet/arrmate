@@ -46,8 +46,8 @@ class Torrent extends Equatable {
     required this.amountLeft,
     required this.addedOn,
     required this.priority,
-    required this.seedingTime,
-    required this.completionOn,
+    this.seedingTime = 0,
+    this.completionOn = 0,
   });
 
   factory Torrent.fromJson(Map<String, dynamic> json) {

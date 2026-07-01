@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
+import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_metadata_provider.dart';
 import 'providers/series_provider.dart';
@@ -766,6 +769,32 @@ class SeriesDetailsScreen extends ConsumerWidget {
     if (!context.mounted) return;
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final purgeService = ref.read(purgeServiceProvider);
+    final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
+
+    SeedingAction? action;
+    try {
+      action = await resolveSeedingAction(
+        context: context,
+        minimumSeedingDays: minimumSeedingDays,
+        preview: (seconds) => purgeService.previewSeries(
+          series.id,
+          minimumSeedingSeconds: seconds,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to preview: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (action == null || action == SeedingAction.cancel) return;
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -776,9 +805,11 @@ class SeriesDetailsScreen extends ConsumerWidget {
     );
 
     try {
-      final result = await ref
-          .read(purgeServiceProvider)
-          .purgeSeries(series.id);
+      final result = await purgeService.purgeSeriesWithAction(
+        series.id,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
+      );
       navigator.pop();
       ref.invalidate(seriesProvider);
       if (context.mounted) {
