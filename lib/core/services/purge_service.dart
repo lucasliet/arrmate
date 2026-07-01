@@ -150,10 +150,7 @@ class PurgeService {
       queueIds,
     );
 
-    final mediaFilesDeleted = await _deleteMovieFilesForCount(
-      repository,
-      movieId,
-    );
+    final mediaFilesDeleted = await _deleteMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
       deleteFiles: true,
@@ -190,10 +187,7 @@ class PurgeService {
       queueIds,
     );
 
-    final mediaFilesDeleted = await _deleteSeriesFilesForCount(
-      repository,
-      seriesId,
-    );
+    final mediaFilesDeleted = await _deleteSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
       deleteFiles: true,
@@ -336,28 +330,64 @@ class PurgeService {
   // We call deleteMovieFiles first to obtain a count, then pass
   // deleteFiles:true to deleteMovie so any files missed in the race are still
   // cleaned by Radarr. Radarr tolerates a no-op file deletion.
-  Future<int> _deleteMovieFilesForCount(
-    MovieRepository repository,
-    int movieId,
-  ) async {
+  /// Deletes the movie's media files one by one and returns how many actually
+  /// got deleted.
+  ///
+  /// Each file is deleted via its own [MovieRepository.deleteMovieFile] call;
+  /// a failure on one file is logged and skipped so the remaining files are
+  /// still attempted. The count therefore reflects the real number of files
+  /// removed from disk, not a pre-deletion estimate. [deleteMovie] with
+  /// `deleteFiles: true` runs afterwards as a safety net for anything missed
+  /// here (e.g. files that appeared between the list and the delete).
+  Future<int> _deleteMovieFiles(MovieRepository repository, int movieId) async {
+    final List<MediaFile> files;
     try {
-      return await repository.deleteMovieFiles(movieId);
+      files = await repository.getMovieFiles(movieId);
     } catch (e) {
-      logger.warning('[PurgeService] deleteMovieFiles count failed: $e');
+      logger.warning('[PurgeService] getMovieFiles failed: $e');
       return 0;
     }
+
+    var deleted = 0;
+    for (final file in files) {
+      try {
+        await repository.deleteMovieFile(file.id);
+        deleted++;
+      } catch (e) {
+        logger.warning('[PurgeService] deleteMovieFile ${file.id} failed: $e');
+      }
+    }
+    return deleted;
   }
 
-  Future<int> _deleteSeriesFilesForCount(
+  /// Deletes the series' episode files one by one and returns how many
+  /// actually got deleted.
+  ///
+  /// Mirrors [_deleteMovieFiles]: per-file [SeriesRepository.deleteSeriesFile]
+  /// calls, individual failures tolerated, count reflects real deletions.
+  /// [deleteSeries] with `deleteFiles: true` runs afterwards as a safety net.
+  Future<int> _deleteSeriesFiles(
     SeriesRepository repository,
     int seriesId,
   ) async {
+    final List<MediaFile> files;
     try {
-      return await repository.deleteSeriesFiles(seriesId);
+      files = await repository.getSeriesFiles(seriesId);
     } catch (e) {
-      logger.warning('[PurgeService] deleteSeriesFiles count failed: $e');
+      logger.warning('[PurgeService] getSeriesFiles failed: $e');
       return 0;
     }
+
+    var deleted = 0;
+    for (final file in files) {
+      try {
+        await repository.deleteSeriesFile(file.id);
+        deleted++;
+      } catch (e) {
+        logger.warning('[PurgeService] deleteSeriesFile ${file.id} failed: $e');
+      }
+    }
+    return deleted;
   }
 
   /// Resolves and deletes torrents in qBittorrent for [sourceHashes].

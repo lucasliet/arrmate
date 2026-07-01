@@ -70,6 +70,17 @@ QueueItem _queueItem({
   });
 }
 
+/// Builds a [MediaFile] from a minimal JSON map.
+MediaFile _mediaFile({required int id}) {
+  return MediaFile.fromJson({
+    'id': id,
+    'relativePath': 'Movie.mkv',
+    'path': '/movies/Movie.mkv',
+    'size': 1024,
+    'dateAdded': DateTime(2024, 1, 1).toIso8601String(),
+  });
+}
+
 /// Builds a [Torrent] from a minimal JSON map.
 Torrent _torrent({
   required String hash,
@@ -146,7 +157,14 @@ void main() {
             skipRedownload: any(named: 'skipRedownload'),
           ),
         ).thenAnswer((_) async {});
-        when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 3);
+        when(() => movieRepo.getMovieFiles(7)).thenAnswer(
+          (_) async => [
+            _mediaFile(id: 1),
+            _mediaFile(id: 2),
+            _mediaFile(id: 3),
+          ],
+        );
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -236,7 +254,10 @@ void main() {
             skipRedownload: any(named: 'skipRedownload'),
           ),
         ).thenAnswer((_) async {});
-        when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 1);
+        when(
+          () => movieRepo.getMovieFiles(7),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -315,7 +336,10 @@ void main() {
             skipRedownload: any(named: 'skipRedownload'),
           ),
         ).thenAnswer((_) async {});
-        when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 1);
+        when(
+          () => movieRepo.getMovieFiles(7),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -378,7 +402,7 @@ void main() {
             skipRedownload: any(named: 'skipRedownload'),
           ),
         ).thenThrow(Exception('already gone'));
-        when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 0);
+        when(() => movieRepo.getMovieFiles(7)).thenAnswer((_) async => []);
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -465,12 +489,10 @@ void main() {
           skipRedownload: any(named: 'skipRedownload'),
         ),
       ).thenAnswer((_) async {});
-      when(
-        () => seriesRepo.deleteSeriesFiles(
-          42,
-          seasonNumber: any(named: 'seasonNumber'),
-        ),
-      ).thenAnswer((_) async => 10);
+      when(() => seriesRepo.getSeriesFiles(42)).thenAnswer(
+        (_) async => [for (var i = 1; i <= 10; i++) _mediaFile(id: i)],
+      );
+      when(() => seriesRepo.deleteSeriesFile(any())).thenAnswer((_) async {});
       when(
         () => seriesRepo.deleteSeries(
           any(),
@@ -556,7 +578,10 @@ void main() {
           skipRedownload: any(named: 'skipRedownload'),
         ),
       ).thenAnswer((_) async {});
-      when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 1);
+      when(
+        () => movieRepo.getMovieFiles(7),
+      ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+      when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
       when(
         () => movieRepo.deleteMovie(
           any(),
@@ -631,7 +656,7 @@ void main() {
             skipRedownload: any(named: 'skipRedownload'),
           ),
         ).thenAnswer((_) async {});
-        when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 0);
+        when(() => movieRepo.getMovieFiles(7)).thenAnswer((_) async => []);
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -707,7 +732,10 @@ void main() {
           skipRedownload: any(named: 'skipRedownload'),
         ),
       ).thenAnswer((_) async {});
-      when(() => movieRepo.deleteMovieFiles(7)).thenAnswer((_) async => 1);
+      when(
+        () => movieRepo.getMovieFiles(7),
+      ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+      when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
       when(
         () => movieRepo.deleteMovie(
           any(),
@@ -747,5 +775,87 @@ void main() {
       expect(result.crossSeedDuplicatesDeleted, ['realdupe0000']);
       verify(() => qb.deleteTorrents(any(), deleteFiles: true)).called(1);
     });
+
+    test(
+      'purgeMovie counts only media files actually deleted when some '
+      'deleteMovieFile calls fail (regression: snackbar reported 0)',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 7,
+              downloadId: 'HASHAAA111',
+            ),
+          ],
+        );
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.deleteQueueItem(
+            any(),
+            removeFromClient: any(named: 'removeFromClient'),
+            blocklist: any(named: 'blocklist'),
+            skipRedownload: any(named: 'skipRedownload'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => movieRepo.getMovieFiles(7)).thenAnswer(
+          (_) async => [
+            _mediaFile(id: 1),
+            _mediaFile(id: 2),
+            _mediaFile(id: 3),
+          ],
+        );
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteMovieFile(2),
+        ).thenThrow(Exception('file busy'));
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [_torrent(hash: 'HASHAAA111', name: 'release.mkv')],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovie(7);
+
+        expect(result.mediaFilesDeleted, 2);
+        expect(result.catalogDeleted, 1);
+        verify(() => movieRepo.deleteMovieFile(1)).called(1);
+        verify(() => movieRepo.deleteMovieFile(2)).called(1);
+        verify(() => movieRepo.deleteMovieFile(3)).called(1);
+      },
+    );
   });
 }
