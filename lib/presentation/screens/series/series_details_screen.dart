@@ -10,6 +10,7 @@ import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
+import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_metadata_provider.dart';
@@ -395,7 +396,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildSeasonsList(context, ref, series),
+                _SeasonsSection(series: series),
                 const SizedBox(height: 32),
               ],
             ),
@@ -494,90 +495,6 @@ class SeriesDetailsScreen extends ConsumerWidget {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildSeasonsList(BuildContext context, WidgetRef ref, Series series) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: series.seasons.length,
-      itemBuilder: (context, index) {
-        final season = series.seasons[index];
-        if (season.seasonNumber == 0) {
-          return const SizedBox.shrink();
-        }
-
-        return Card(
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: Text('Season ${season.seasonNumber}'),
-            subtitle: Text('${season.statistics?.episodeCount ?? 0} Episodes'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    value: (season.statistics?.percentOfEpisodes ?? 0) / 100,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceDim,
-                    strokeWidth: 3,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  key: Key('seasonBookmark_${season.seasonNumber}'),
-                  icon: Icon(
-                    season.monitored ? Icons.bookmark : Icons.bookmark_border,
-                    color: season.monitored
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                  tooltip: season.monitored ? 'Unmonitor' : 'Monitor',
-                  onPressed: () async {
-                    try {
-                      await ref
-                          .read(seriesControllerProvider(seriesId))
-                          .toggleSeasonMonitor(series, season.seasonNumber);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              season.monitored ? 'Unmonitored' : 'Monitored',
-                            ),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: $e'),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      SeasonDetailsScreen(series: series, season: season),
-                ),
-              );
-            },
-          ),
-        );
-      },
     );
   }
 
@@ -836,4 +753,439 @@ class _InfoItem {
   final String label;
   final String value;
   _InfoItem(this.label, this.value);
+}
+
+/// Seasons list with multi-select and batch actions (unmonitor / delete files
+/// / purge) for the series details screen.
+class _SeasonsSection extends ConsumerStatefulWidget {
+  final Series series;
+
+  const _SeasonsSection({required this.series});
+
+  @override
+  ConsumerState<_SeasonsSection> createState() => _SeasonsSectionState();
+}
+
+class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
+  final Set<int> _selectedSeasons = {};
+
+  bool get _isSelecting => _selectedSeasons.isNotEmpty;
+
+  void _toggleSelection(int seasonNumber) {
+    setState(() {
+      if (_selectedSeasons.contains(seasonNumber)) {
+        _selectedSeasons.remove(seasonNumber);
+      } else {
+        _selectedSeasons.add(seasonNumber);
+      }
+    });
+  }
+
+  void _clearSelection() => setState(_selectedSeasons.clear);
+
+  void _selectAll() {
+    setState(() {
+      _selectedSeasons
+        ..clear()
+        ..addAll(
+          widget.series.seasons
+              .where((s) => s.seasonNumber != 0)
+              .map((s) => s.seasonNumber),
+        );
+    });
+  }
+
+  Future<void> _handleBatchUnmonitor() async {
+    final series = widget.series;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final controller = ref.read(seriesControllerProvider(series.id));
+    _showLoading(navigator);
+    try {
+      for (final seasonNumber in _selectedSeasons.toList()) {
+        final target = series.seasons.firstWhere(
+          (s) => s.seasonNumber == seasonNumber,
+        );
+        if (target.monitored) {
+          await controller.toggleSeasonMonitor(series, seasonNumber);
+        }
+      }
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Unmonitored ${_selectedSeasons.length} '
+              'season${_selectedSeasons.length == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+    _clearSelection();
+  }
+
+  Future<void> _handleBatchDeleteFiles() async {
+    final series = widget.series;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final metadataController = ref.read(
+      seriesMetadataControllerProvider(series.id),
+    );
+    final confirmed = await _confirm(
+      title:
+          'Delete files for ${_selectedSeasons.length} '
+          'season${_selectedSeasons.length == 1 ? '' : 's'}',
+      content:
+          'This deletes the episode files of the selected seasons from '
+          'disk. The series stays in Sonarr.',
+    );
+    if (confirmed != true) return;
+
+    _showLoading(navigator);
+    try {
+      var filesDeleted = 0;
+      for (final seasonNumber in _selectedSeasons.toList()) {
+        filesDeleted += await metadataController.deleteAllFiles(
+          seasonNumber: seasonNumber,
+        );
+      }
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Deleted $filesDeleted file${filesDeleted == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to delete files: $e')),
+        );
+      }
+    }
+    _clearSelection();
+  }
+
+  Future<void> _handleBatchPurge() async {
+    final series = widget.series;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final purgeService = ref.read(purgeServiceProvider);
+    final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
+    final repository = ref.read(seriesRepositoryProvider);
+
+    final confirmed = await _confirm(
+      title:
+          'Purge ${_selectedSeasons.length} '
+          'season${_selectedSeasons.length == 1 ? '' : 's'}',
+      content:
+          'This deletes the episode files of the selected seasons and '
+          'their source torrents from qBittorrent. The series stays in Sonarr.',
+    );
+    if (confirmed != true) return;
+
+    if (repository == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No Sonarr instance configured')),
+      );
+      return;
+    }
+
+    final Map<int, List<int>> episodeIdsBySeason = {};
+    try {
+      final episodes = await repository.getEpisodes(series.id);
+      for (final seasonNumber in _selectedSeasons) {
+        episodeIdsBySeason[seasonNumber] = episodes
+            .where(
+              (e) =>
+                  e.seasonNumber == seasonNumber &&
+                  e.hasFile &&
+                  e.episodeFileId != null &&
+                  e.episodeFileId! > 0,
+            )
+            .map((e) => e.id)
+            .toList();
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to load episodes: $e')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    SeedingAction? action;
+    try {
+      action = await resolveSeedingAction(
+        context: context,
+        minimumSeedingDays: minimumSeedingDays,
+        preview: (seconds) async {
+          final previews = await Future.wait(
+            _selectedSeasons.map(
+              (sn) => purgeService.previewSeason(
+                series.id,
+                episodeIdsBySeason[sn] ?? const [],
+                minimumSeedingSeconds: seconds,
+              ),
+            ),
+          );
+          final all = <Torrent>[];
+          final below = <Torrent>[];
+          for (final p in previews) {
+            all.addAll(p.torrentsToDelete);
+            below.addAll(p.belowThreshold);
+          }
+          return PurgePreview(
+            torrentsToDelete: all,
+            belowThreshold: below,
+            qbittorrentSkipped: previews.any((p) => p.qbittorrentSkipped),
+          );
+        },
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Failed to preview: $e')));
+      return;
+    }
+
+    if (action == null || action == SeedingAction.cancel) return;
+
+    _showLoading(navigator);
+    try {
+      var filesDeleted = 0;
+      final hashesDeleted = <String>{};
+      for (final seasonNumber in _selectedSeasons.toList()) {
+        final result = await purgeService.purgeSeason(
+          series.id,
+          seasonNumber,
+          episodeIdsBySeason[seasonNumber] ?? const [],
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
+        );
+        filesDeleted += result.mediaFilesDeleted;
+        hashesDeleted.addAll(result.torrentHashesDeleted);
+      }
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Purged ${_selectedSeasons.length} '
+              'season${_selectedSeasons.length == 1 ? '' : 's'}: '
+              '$filesDeleted file${filesDeleted == 1 ? '' : 's'}, '
+              '${hashesDeleted.length} torrent${hashesDeleted.length == 1 ? '' : 's'}.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _hideLoading(navigator);
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Failed to purge: $e')));
+      }
+    }
+    _clearSelection();
+  }
+
+  Future<bool?> _confirm({required String title, required String content}) {
+    final theme = Theme.of(context);
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLoading(NavigatorState navigator) {
+    showDialog(
+      context: navigator.context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  void _hideLoading(NavigatorState navigator) {
+    navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final series = widget.series;
+    return Column(
+      children: [
+        if (_isSelecting)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Text(
+                  '${_selectedSeasons.length} selected',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const Spacer(),
+                TextButton(onPressed: _selectAll, child: const Text('All')),
+                TextButton(
+                  onPressed: _clearSelection,
+                  child: const Text('None'),
+                ),
+              ],
+            ),
+          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: series.seasons.length,
+          itemBuilder: (context, index) {
+            final season = series.seasons[index];
+            if (season.seasonNumber == 0) {
+              return const SizedBox.shrink();
+            }
+
+            final isSelected = _selectedSeasons.contains(season.seasonNumber);
+            final theme = Theme.of(context);
+            return Card(
+              elevation: 0,
+              color: isSelected
+                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                  : theme.colorScheme.surfaceContainer,
+              shape: isSelected
+                  ? RoundedRectangleBorder(
+                      side: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    )
+                  : null,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                title: Text('Season ${season.seasonNumber}'),
+                subtitle: Text(
+                  '${season.statistics?.episodeCount ?? 0} Episodes',
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        value:
+                            (season.statistics?.percentOfEpisodes ?? 0) / 100,
+                        backgroundColor: theme.colorScheme.surfaceDim,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      key: Key('seasonBookmark_${season.seasonNumber}'),
+                      icon: Icon(
+                        season.monitored
+                            ? Icons.bookmark
+                            : Icons.bookmark_border,
+                        color: season.monitored
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline,
+                      ),
+                      tooltip: season.monitored ? 'Unmonitor' : 'Monitor',
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(seriesControllerProvider(series.id))
+                              .toggleSeasonMonitor(series, season.seasonNumber);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  season.monitored
+                                      ? 'Unmonitored'
+                                      : 'Monitored',
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: theme.colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                onTap: _isSelecting
+                    ? () => _toggleSelection(season.seasonNumber)
+                    : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SeasonDetailsScreen(
+                              series: series,
+                              season: season,
+                            ),
+                          ),
+                        );
+                      },
+                onLongPress: () => _toggleSelection(season.seasonNumber),
+              ),
+            );
+          },
+        ),
+        if (_isSelecting)
+          BatchActionBar(
+            selectedCount: _selectedSeasons.length,
+            actions: [
+              BatchAction(
+                icon: Icons.bookmark_border,
+                label: 'Unmonitor',
+                onPressed: _handleBatchUnmonitor,
+              ),
+              BatchAction(
+                icon: Icons.delete_sweep,
+                label: 'Delete files',
+                isDestructive: true,
+                onPressed: _handleBatchDeleteFiles,
+              ),
+              BatchAction(
+                icon: Icons.delete_forever,
+                label: 'Purge',
+                isDestructive: true,
+                onPressed: _handleBatchPurge,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
 }
