@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../shared/widgets/batch_action_bar.dart';
+import '../../shared/widgets/batch_actions_handler.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
@@ -23,11 +25,34 @@ class MoviesScreen extends ConsumerStatefulWidget {
 class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  final Set<int> _selectedIds = {};
+
+  bool get _isSelecting => _selectedIds.isNotEmpty;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() => setState(() => _selectedIds.clear());
+
+  void _selectAll(List<Movie> movies) {
+    setState(() {
+      _selectedIds
+        ..clear()
+        ..addAll(movies.map((m) => m.id));
+    });
   }
 
   void _showSortSheet(BuildContext context, WidgetRef ref) {
@@ -66,6 +91,20 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     );
   }
 
+  Future<void> _runBatchAction(
+    BuildContext context,
+    Future<BatchActionResult?> Function(BatchActionsHandler handler) action,
+  ) async {
+    final handler = BatchActionsHandler(ref);
+    final result = await action(handler);
+    if (result != null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
+    _clearSelection();
+  }
+
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(filteredMoviesProvider);
@@ -80,73 +119,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         },
         child: CustomScrollView(
           slivers: [
-            _isSearching
-                ? SliverAppBar(
-                    pinned: true,
-                    floating: true,
-                    toolbarHeight: 64,
-                    title: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: TextField(
-                        controller: _searchController,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Search movies...',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        onChanged: (value) => ref
-                            .read(movieSearchProvider.notifier)
-                            .update(value),
-                      ),
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          setState(() {
-                            _isSearching = false;
-                            _searchController.clear();
-                          });
-                          ref.read(movieSearchProvider.notifier).update('');
-                        },
-                      ),
-                    ],
-                  )
-                : SliverAppBar.medium(
-                    pinned: false,
-                    floating: false,
-                    title: const Text('Movies'),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: () => setState(() => _isSearching = true),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.sort),
-                        onPressed: () => _showSortSheet(context, ref),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          settings.viewMode == ViewMode.grid
-                              ? Icons.view_list
-                              : Icons.grid_view,
-                        ),
-                        tooltip: settings.viewMode == ViewMode.grid
-                            ? 'Switch to List'
-                            : 'Switch to Grid',
-                        onPressed: () {
-                          final newMode = settings.viewMode == ViewMode.grid
-                              ? ViewMode.list
-                              : ViewMode.grid;
-                          ref
-                              .read(settingsProvider.notifier)
-                              .setViewMode(newMode);
-                        },
-                      ),
-                      const NotificationIconButton(),
-                    ],
-                  ),
+            _isSelecting
+                ? _buildSelectionAppBar(context, moviesAsync)
+                : _isSearching
+                ? _buildSearchAppBar(context)
+                : _buildNormalAppBar(context, settings),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: moviesAsync.when(
@@ -177,9 +154,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         final movie = movies[index];
                         return MovieListTile(
                           movie: movie,
-                          onTap: () {
-                            context.go('/movies/${movie.id}');
-                          },
+                          isSelected: _selectedIds.contains(movie.id),
+                          onTap: _isSelecting
+                              ? () => _toggleSelection(movie.id)
+                              : () => context.go('/movies/${movie.id}'),
+                          onLongPress: () => _toggleSelection(movie.id),
                         );
                       }, childCount: movies.length),
                     );
@@ -197,9 +176,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       final movie = movies[index];
                       return MovieCard(
                         movie: movie,
-                        onTap: () {
-                          context.go('/movies/${movie.id}');
-                        },
+                        isSelected: _selectedIds.contains(movie.id),
+                        onTap: _isSelecting
+                            ? () => _toggleSelection(movie.id)
+                            : () => context.go('/movies/${movie.id}'),
+                        onLongPress: () => _toggleSelection(movie.id),
                       );
                     }, childCount: movies.length),
                   );
@@ -219,16 +200,147 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (context) => const MovieAddSheet(),
-          );
-        },
-        child: const Icon(Icons.add),
+      bottomNavigationBar: _isSelecting
+          ? BatchActionBar(
+              selectedCount: _selectedIds.length,
+              actions: [
+                BatchAction(
+                  icon: Icons.delete_outline,
+                  label: 'Delete',
+                  isDestructive: true,
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.deleteMovies(
+                      context,
+                      _selectedIds.toList(),
+                      deleteFiles: false,
+                    ),
+                  ),
+                ),
+                BatchAction(
+                  icon: Icons.delete_sweep,
+                  label: 'Delete files',
+                  isDestructive: true,
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.deleteMovieFiles(context, _selectedIds.toList()),
+                  ),
+                ),
+                BatchAction(
+                  icon: Icons.delete_forever,
+                  label: 'Purge',
+                  isDestructive: true,
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.purgeMovies(context, _selectedIds.toList()),
+                  ),
+                ),
+              ],
+            )
+          : null,
+      floatingActionButton: _isSelecting
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => const MovieAddSheet(),
+                );
+              },
+              child: const Icon(Icons.add),
+            ),
+    );
+  }
+
+  Widget _buildNormalAppBar(BuildContext context, SettingsState settings) {
+    return SliverAppBar.medium(
+      pinned: false,
+      floating: false,
+      title: const Text('Movies'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: () => setState(() => _isSearching = true),
+        ),
+        IconButton(
+          icon: const Icon(Icons.sort),
+          onPressed: () => _showSortSheet(context, ref),
+        ),
+        IconButton(
+          icon: Icon(
+            settings.viewMode == ViewMode.grid
+                ? Icons.view_list
+                : Icons.grid_view,
+          ),
+          tooltip: settings.viewMode == ViewMode.grid
+              ? 'Switch to List'
+              : 'Switch to Grid',
+          onPressed: () {
+            final newMode = settings.viewMode == ViewMode.grid
+                ? ViewMode.list
+                : ViewMode.grid;
+            ref.read(settingsProvider.notifier).setViewMode(newMode);
+          },
+        ),
+        const NotificationIconButton(),
+      ],
+    );
+  }
+
+  Widget _buildSearchAppBar(BuildContext context) {
+    return SliverAppBar(
+      pinned: true,
+      floating: true,
+      toolbarHeight: 64,
+      title: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Search movies...',
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onChanged: (value) =>
+              ref.read(movieSearchProvider.notifier).update(value),
+        ),
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            setState(() {
+              _isSearching = false;
+              _searchController.clear();
+            });
+            ref.read(movieSearchProvider.notifier).update('');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectionAppBar(
+    BuildContext context,
+    AsyncValue<List<Movie>> moviesAsync,
+  ) {
+    final allMovies = moviesAsync.valueOrNull ?? const <Movie>[];
+    return SliverAppBar(
+      pinned: true,
+      title: Text('${_selectedIds.length} selected'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _clearSelection,
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: 'Select all',
+          onPressed: () => _selectAll(allMovies),
+        ),
+      ],
     );
   }
 }

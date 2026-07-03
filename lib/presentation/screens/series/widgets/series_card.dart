@@ -8,20 +8,36 @@ import 'series_poster.dart';
 class SeriesCard extends StatelessWidget {
   final Series series;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelected;
 
-  const SeriesCard({super.key, required this.series, this.onTap});
+  const SeriesCard({
+    super.key,
+    required this.series,
+    this.onTap,
+    this.onLongPress,
+    this.isSelected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusMd),
+        side: isSelected
+            ? BorderSide(color: theme.colorScheme.primary, width: 3)
+            : BorderSide.none,
       ),
+      color: isSelected
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : null,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Stack(
           children: [
             Positioned.fill(child: SeriesPoster(series: series)),

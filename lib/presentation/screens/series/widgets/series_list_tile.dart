@@ -7,10 +7,18 @@ import '../../../../core/utils/formatters.dart';
 
 /// A list tile widget for displaying series details in a list view.
 class SeriesListTile extends StatelessWidget {
-  const SeriesListTile({super.key, required this.series, this.onTap});
+  const SeriesListTile({
+    super.key,
+    required this.series,
+    this.onTap,
+    this.onLongPress,
+    this.isSelected = false,
+  });
 
   final Series series;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +27,17 @@ class SeriesListTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        side: isSelected
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
+      color: isSelected
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : null,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Row(
           children: [
             SizedBox(width: 80, height: 120, child: _buildPoster(context)),
