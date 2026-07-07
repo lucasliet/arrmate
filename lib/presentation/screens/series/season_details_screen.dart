@@ -108,6 +108,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
     if (!context.mounted) return;
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,

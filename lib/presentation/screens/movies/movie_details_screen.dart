@@ -462,6 +462,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,
@@ -560,6 +561,7 @@ class MovieDetailsScreen extends ConsumerWidget {
 
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,

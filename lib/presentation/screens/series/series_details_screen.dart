@@ -613,6 +613,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,
@@ -714,6 +715,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
 
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,
@@ -1023,6 +1025,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
   void _showLoading(NavigatorState navigator) {
     showDialog(
       context: navigator.context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,

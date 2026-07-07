@@ -395,6 +395,7 @@ class BatchActionsHandler {
   void _showLoading(NavigatorState navigator) {
     showDialog(
       context: navigator.context,
+      useRootNavigator: false,
       barrierDismissible: false,
       builder: (_) => const PopScope(
         canPop: false,
