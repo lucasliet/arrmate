@@ -68,7 +68,7 @@ class BatchActionsHandler {
         deleted++;
       }
       _hideLoading(navigator);
-      _ref.invalidate(filteredMoviesProvider);
+      _ref.invalidate(moviesProvider);
       return BatchActionResult(
         message:
             'Deleted $deleted movie${_plural(deleted)}'
@@ -182,7 +182,7 @@ class BatchActionsHandler {
     try {
       final result = await purgeService.purgeMovies(movieIds);
       _hideLoading(navigator);
-      _ref.invalidate(filteredMoviesProvider);
+      _ref.invalidate(moviesProvider);
       return BatchActionResult(
         message: result.formatSummary(
           label:
@@ -233,7 +233,7 @@ class BatchActionsHandler {
         deleted++;
       }
       _hideLoading(navigator);
-      _ref.invalidate(filteredSeriesProvider);
+      _ref.invalidate(seriesProvider);
       return BatchActionResult(
         message:
             'Deleted $deleted series${_plural(deleted)}'
@@ -345,7 +345,7 @@ class BatchActionsHandler {
     try {
       final result = await purgeService.purgeSeriesList(seriesIds);
       _hideLoading(navigator);
-      _ref.invalidate(filteredSeriesProvider);
+      _ref.invalidate(seriesProvider);
       return BatchActionResult(
         message: result.formatSummary(
           label:
