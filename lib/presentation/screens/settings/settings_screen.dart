@@ -13,6 +13,8 @@ import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
+import '../../tour/app_tour_keys.dart';
+import '../../tour/app_tour_service.dart';
 import '../../widgets/notification_icon_button.dart';
 
 /// Main settings screen for configuring instances, appearance, notifications, and about info.
@@ -32,9 +34,7 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildAppearanceSection(context, ref),
           const Divider(),
-          _buildSystemSection(context),
-          const Divider(),
-          _buildPurgeSection(context, ref),
+          _buildSystemSection(context, ref),
           const Divider(),
           _buildNotificationsSection(context, ref),
           const Divider(),
@@ -46,11 +46,13 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildInstancesSection(BuildContext context, WidgetRef ref) {
     final instancesState = ref.watch(instancesProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
+          key: tourKeys.settingsInstancesHeaderKey,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             'Instances',
@@ -88,6 +90,7 @@ class SettingsScreen extends ConsumerWidget {
           );
         }),
         ListTile(
+          key: tourKeys.settingsAddInstanceKey,
           leading: const Icon(Icons.add),
           title: const Text('Add Instance'),
           onTap: () {
@@ -317,18 +320,19 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSystemSection(BuildContext context) {
+  Widget _buildSystemSection(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'SYSTEM MANAGEMENT',
-            style: TextStyle(
-              fontSize: 12,
+            'System Management',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
             ),
           ),
         ),
@@ -360,32 +364,15 @@ class SettingsScreen extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/quality-profiles'),
         ),
-      ],
-    );
-  }
-
-  Widget _buildPurgeSection(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'Purge',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
         ListTile(
           leading: const Icon(Icons.timer_outlined),
           title: const Text('Minimum seeding days'),
           subtitle: Text(
-            'Warn before deleting torrents that seeded for less than '
-            '${settings.minimumSeedingDays} day${settings.minimumSeedingDays == 1 ? '' : 's'}.',
+            settings.minimumSeedingDays == 0
+                ? 'Seeding warning disabled'
+                : 'Warn before deleting torrents that seeded for less than '
+                      '${settings.minimumSeedingDays} '
+                      'day${settings.minimumSeedingDays == 1 ? '' : 's'}.',
           ),
           trailing: Text(
             '${settings.minimumSeedingDays}d',
@@ -409,56 +396,62 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     int current,
   ) {
-    var value = current;
+    final controller = TextEditingController(text: current.toString());
+    final formKey = GlobalKey<FormState>();
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Minimum seeding days'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$value day${value == 1 ? '' : 's'}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+        return AlertDialog(
+          title: const Text('Minimum seeding days'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Days',
+                    hintText: '0',
+                    border: OutlineInputBorder(),
+                    helperText: '0 disables the warning',
                   ),
-                  Slider(
-                    min: 1,
-                    max: 60,
-                    divisions: 59,
-                    value: value.toDouble(),
-                    label: '$value',
-                    onChanged: (v) => setState(() => value = v.round()),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Torrents that seeded for less than this are flagged for '
-                    'confirmation before Purge deletes them.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .setMinimumSeedingDays(value);
-                    Navigator.pop(context);
+                  validator: (value) {
+                    final parsed = int.tryParse(value ?? '');
+                    if (parsed == null || parsed < 0) {
+                      return 'Enter a valid number (0 or more)';
+                    }
+                    return null;
                   },
-                  child: const Text('Save'),
                 ),
-              ],
-            );
-          },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Torrents that seeded for less than this are flagged for '
+                'confirmation before deletion. Set to 0 to disable.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setMinimumSeedingDays(int.parse(controller.text));
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         );
       },
     );
@@ -479,6 +472,13 @@ class SettingsScreen extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.school_outlined),
+          title: const Text('Getting Started'),
+          subtitle: const Text('Replay the setup tour'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => ref.read(appTourServiceProvider).startFull(),
         ),
         FutureBuilder<PackageInfo>(
           future: PackageInfo.fromPlatform(),

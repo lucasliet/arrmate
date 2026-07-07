@@ -64,7 +64,7 @@ Future<SeedingAction?> showSeedingWarningDialog({
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
-              ...belowThreshold.map((t) => _TorrentSeedingTile(torrent: t)),
+              ...belowThreshold.map((t) => TorrentSeedingTile(torrent: t)),
               const SizedBox(height: 12),
               Text(
                 'The title will still be removed from the library and its '
@@ -97,10 +97,60 @@ Future<SeedingAction?> showSeedingWarningDialog({
   );
 }
 
-class _TorrentSeedingTile extends StatelessWidget {
+/// Shows a warning dialog when a single torrent being deleted has seeded for
+/// less than the configured minimum.
+///
+/// Unlike [showSeedingWarningDialog], this is a binary confirm/cancel flow
+/// used by the qBittorrent torrent delete. Returns `true` when the user
+/// confirms deletion, `false` (or `null` on dismiss) when aborting.
+Future<bool?> showSingleTorrentSeedingWarning({
+  required BuildContext context,
+  required Torrent torrent,
+  required int minimumSeedingDays,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Torrent still seeding'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This torrent seeded for less than the minimum of '
+                '$minimumSeedingDays '
+                'day${minimumSeedingDays == 1 ? '' : 's'}:',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              TorrentSeedingTile(torrent: torrent),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep torrent'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete anyway'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class TorrentSeedingTile extends StatelessWidget {
   final Torrent torrent;
 
-  const _TorrentSeedingTile({required this.torrent});
+  const TorrentSeedingTile({super.key, required this.torrent});
 
   @override
   Widget build(BuildContext context) {

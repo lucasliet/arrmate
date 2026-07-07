@@ -103,6 +103,14 @@ enum TorrentStatus {
   bool get hasError =>
       this == TorrentStatus.error || this == TorrentStatus.missingFiles;
 
+  /// Returns true if the torrent has completed downloading and is in a seeding
+  /// state (active, stalled, queued, or paused upload).
+  bool get isSeeding =>
+      this == TorrentStatus.uploading ||
+      this == TorrentStatus.stalledUP ||
+      this == TorrentStatus.queuedUP ||
+      this == TorrentStatus.pausedUP;
+
   /// Returns the color associated with this status.
   Color get color {
     switch (this) {

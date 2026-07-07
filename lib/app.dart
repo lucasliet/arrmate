@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/widgets/update_dialog.dart';
+import 'presentation/providers/onboarding_provider.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/app_providers.dart'; // Added this import
+import 'presentation/tour/app_tour_service.dart';
 
 /// The root widget of the application.
 ///
@@ -21,9 +23,12 @@ class ArrmateApp extends ConsumerStatefulWidget {
 }
 
 class _ArrmateAppState extends ConsumerState<ArrmateApp> {
+  bool _tourTriggered = false;
+
   @override
   void initState() {
     super.initState();
+    ref.listenManual(onboardingProvider, _onOnboardingChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!kDebugMode) {
         ref.read(updateProvider.notifier).checkForUpdate();
@@ -35,6 +40,13 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
         _showErrorDialog(initError);
       }
     });
+  }
+
+  void _onOnboardingChanged(OnboardingState? previous, OnboardingState next) {
+    if (_tourTriggered || !next.isLoaded || next.isComplete) return;
+    if (rootNavigatorKey.currentContext == null) return;
+    _tourTriggered = true;
+    ref.read(appTourServiceProvider).startFull();
   }
 
   void _showErrorDialog(String message) {
@@ -87,6 +99,7 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
                 }
               }
             });
+
             return child!;
           },
           child: child,

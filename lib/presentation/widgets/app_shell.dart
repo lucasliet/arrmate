@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router/app_router.dart';
+import '../tour/app_tour_keys.dart';
 import 'deep_link_listener.dart';
 
 /// Main shell widget containing the app scaffold, navigation bar, and deep link listener.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tourKeys = ref.watch(appTourKeysProvider);
     return DeepLinkListener(
       child: Scaffold(
         body: child,
         bottomNavigationBar: NavigationBar(
+          key: tourKeys.navBarKey,
           selectedIndex: _calculateSelectedIndex(context),
           onDestinationSelected: (index) => _onItemTapped(context, index),
           destinations: AppTab.values.map((tab) {

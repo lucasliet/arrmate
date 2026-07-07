@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/seeding_warning_dialog.dart';
 import '../providers/qbittorrent_provider.dart';
 import '../qbittorrent/change_location_sheet.dart';
 import '../qbittorrent/torrent_files_sheet.dart';
@@ -343,7 +345,26 @@ class TorrentDetailsSheet extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
+    final minimumSeconds = minimumSeedingDays * 86400;
+    final needsWarning =
+        torrent.status.isSeeding && torrent.seedingTime < minimumSeconds;
+
+    if (needsWarning) {
+      final confirmed = await showSingleTorrentSeedingWarning(
+        context: context,
+        torrent: torrent,
+        minimumSeedingDays: minimumSeedingDays,
+      );
+      if (confirmed != true) return;
+    }
+
+    if (!context.mounted) return;
+    _showRemoveDialog(context, ref);
+  }
+
+  void _showRemoveDialog(BuildContext context, WidgetRef ref) {
     bool deleteFiles = false;
     final outerContext = context;
 
