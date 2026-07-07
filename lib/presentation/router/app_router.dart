@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/models/models.dart';
 import '../screens/assistant/assistant_screen.dart';
 import '../screens/movies/movies_screen.dart';
 import '../screens/movies/movie_details_screen.dart';
@@ -88,8 +89,10 @@ void initializeRouter(String initialLocation) {
                 path: 'instance/:id',
                 builder: (context, state) {
                   final id = state.pathParameters['id'];
+                  final extra = state.extra;
                   return InstanceEditScreen(
                     instanceId: id == 'new' ? null : id,
+                    initialType: extra is InstanceType ? extra : null,
                   );
                 },
               ),

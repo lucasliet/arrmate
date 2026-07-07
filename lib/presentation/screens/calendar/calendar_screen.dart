@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../widgets/common_widgets.dart';
 import '../../widgets/notification_icon_button.dart';
+import '../../tour/app_tour_keys.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_item.dart';
 
@@ -14,10 +15,11 @@ class CalendarScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final calendarState = ref.watch(calendarProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar'),
+        title: Text('Calendar', key: tourKeys.calendarTitleKey),
         actions: const [NotificationIconButton()],
       ),
       body: calendarState.when(

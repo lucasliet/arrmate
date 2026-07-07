@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../providers/instances_provider.dart'; // Add
+import '../../tour/app_tour_keys.dart';
 import 'providers/activity_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/qbittorrent_provider.dart'; // Add
@@ -19,6 +20,7 @@ class ActivityScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final qbittorrentInstance = ref.watch(currentQBittorrentInstanceProvider);
     final hasQBittorrent = qbittorrentInstance != null;
+    final tourKeys = ref.watch(appTourKeysProvider);
 
     return DefaultTabController(
       length: hasQBittorrent ? 3 : 2,
@@ -26,6 +28,7 @@ class ActivityScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Activity'),
           bottom: TabBar(
+            key: tourKeys.activityTabBarKey,
             tabs: [
               const Tab(text: 'Queue'),
               const Tab(text: 'History'),

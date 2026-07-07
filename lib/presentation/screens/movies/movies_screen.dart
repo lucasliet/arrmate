@@ -9,6 +9,7 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
 import '../../providers/settings_provider.dart';
+import '../../tour/app_tour_keys.dart';
 import 'movie_add_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
@@ -254,16 +255,19 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   }
 
   Widget _buildNormalAppBar(BuildContext context, SettingsState settings) {
+    final tourKeys = ref.watch(appTourKeysProvider);
     return SliverAppBar.medium(
       pinned: false,
       floating: false,
       title: const Text('Movies'),
       actions: [
         IconButton(
+          key: tourKeys.moviesSearchKey,
           icon: const Icon(Icons.search),
           onPressed: () => setState(() => _isSearching = true),
         ),
         IconButton(
+          key: tourKeys.moviesSortKey,
           icon: const Icon(Icons.sort),
           onPressed: () => _showSortSheet(context, ref),
         ),

@@ -13,6 +13,8 @@ import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
+import '../../tour/app_tour_keys.dart';
+import '../../tour/app_tour_service.dart';
 import '../../widgets/notification_icon_button.dart';
 
 /// Main settings screen for configuring instances, appearance, notifications, and about info.
@@ -32,9 +34,7 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildAppearanceSection(context, ref),
           const Divider(),
-          _buildSystemSection(context),
-          const Divider(),
-          _buildPurgeSection(context, ref),
+          _buildSystemSection(context, ref),
           const Divider(),
           _buildNotificationsSection(context, ref),
           const Divider(),
@@ -46,11 +46,13 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildInstancesSection(BuildContext context, WidgetRef ref) {
     final instancesState = ref.watch(instancesProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
+          key: tourKeys.settingsInstancesHeaderKey,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             'Instances',
@@ -88,6 +90,7 @@ class SettingsScreen extends ConsumerWidget {
           );
         }),
         ListTile(
+          key: tourKeys.settingsAddInstanceKey,
           leading: const Icon(Icons.add),
           title: const Text('Add Instance'),
           onTap: () {
@@ -317,19 +320,20 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSystemSection(BuildContext context) {
+  Widget _buildSystemSection(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'SYSTEM MANAGEMENT',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
+            'System Management',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         ListTile(
@@ -359,26 +363,6 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: const Text('Available profiles from instances'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/quality-profiles'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPurgeSection(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'Purge',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
         ),
         ListTile(
           leading: const Icon(Icons.timer_outlined),
@@ -479,6 +463,13 @@ class SettingsScreen extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.school_outlined),
+          title: const Text('Getting Started'),
+          subtitle: const Text('Replay the setup tour'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => ref.read(appTourServiceProvider).startFull(),
         ),
         FutureBuilder<PackageInfo>(
           future: PackageInfo.fromPlatform(),

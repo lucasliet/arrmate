@@ -7,12 +7,18 @@ import '../../../data/api/api.dart'; // Add this import
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/data_providers.dart';
+import '../../tour/app_tour_keys.dart';
 
 /// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent instances.
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
 
-  const InstanceEditScreen({super.key, this.instanceId});
+  /// Optional type to pre-select when adding a new instance.
+  ///
+  /// Ignored when [instanceId] is provided (edit mode).
+  final InstanceType? initialType;
+
+  const InstanceEditScreen({super.key, this.instanceId, this.initialType});
 
   @override
   ConsumerState<InstanceEditScreen> createState() => _InstanceEditScreenState();
@@ -54,6 +60,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             _headers = List.from(existing.headers);
           });
         }
+      } else if (widget.initialType != null) {
+        setState(() {
+          _type = widget.initialType!;
+        });
       }
     });
   }
@@ -186,6 +196,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.instanceId != null;
+    final tourKeys = ref.watch(appTourKeysProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -206,6 +217,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SegmentedButton<InstanceType>(
+                key: tourKeys.instanceTypeSelectorKey,
                 segments: const [
                   ButtonSegment(
                     value: InstanceType.radarr,
@@ -233,6 +245,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               const SizedBox(height: 24),
 
               TextFormField(
+                key: tourKeys.instanceNameFieldKey,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Name',
@@ -245,6 +258,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                key: tourKeys.instanceUrlFieldKey,
                 controller: _urlController,
                 decoration: const InputDecoration(
                   labelText: 'URL',
@@ -264,6 +278,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               const SizedBox(height: 16),
 
               TextFormField(
+                key: tourKeys.instanceApiKeyFieldKey,
                 controller: _apiKeyController,
                 decoration: InputDecoration(
                   labelText: 'API Key',
@@ -342,6 +357,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               const SizedBox(height: 24),
 
               OutlinedButton.icon(
+                key: tourKeys.instanceTestConnectionKey,
                 onPressed: _isTesting ? null : _testConnection,
                 icon: _isTesting
                     ? const SizedBox(
@@ -366,6 +382,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               const SizedBox(height: 32),
 
               FilledButton(
+                key: tourKeys.instanceSaveKey,
                 onPressed: _save,
                 child: const Text('Save Instance'),
               ),
