@@ -27,12 +27,9 @@ jobs:
       - name: Generate Release Notes with Claude
         continue-on-error: true
         env:
-          # Route Claude Code through the z.ai Anthropic-compatible endpoint.
-          # ANTHROPIC_AUTH_TOKEN is sent as a Bearer token; ANTHROPIC_API_KEY
-          # would be sent as x-api-key, which z.ai rejects with 401.
           ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
-          AI_MODEL: glm-5.2
+          AI_MODEL: glm-4.5-air
         run: |
           # Get previous tag or root
           PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
