@@ -210,7 +210,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
               selectedCount: _selectedIds.length,
               actions: [
                 BatchAction(
-                  icon: Icons.visibility_outlined,
+                  icon: Icons.bookmark,
                   label: 'Monitor',
                   onPressed: () => _runBatchAction(
                     context,
@@ -224,7 +224,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   ),
                 ),
                 BatchAction(
-                  icon: Icons.visibility_off_outlined,
+                  icon: Icons.bookmark_border,
                   label: 'Unmonitor',
                   onPressed: () => _runBatchAction(
                     context,
@@ -241,32 +241,40 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   icon: Icons.delete_outline,
                   label: 'Delete',
                   isDestructive: true,
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.deleteMovies(
-                      context,
-                      _selectedIds.toList(),
-                      deleteFiles: false,
+                  submenu: [
+                    BatchAction(
+                      icon: Icons.delete_outline,
+                      label: 'Delete',
+                      isDestructive: true,
+                      onPressed: () => _runBatchAction(
+                        context,
+                        (h) => h.deleteMovies(
+                          context,
+                          _selectedIds.toList(),
+                          deleteFiles: false,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.delete_sweep,
-                  label: 'Delete files',
-                  isDestructive: true,
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.deleteMovieFiles(context, _selectedIds.toList()),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.delete_forever,
-                  label: 'Purge',
-                  isDestructive: true,
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.purgeMovies(context, _selectedIds.toList()),
-                  ),
+                    BatchAction(
+                      icon: Icons.delete_sweep,
+                      label: 'Delete files',
+                      isDestructive: true,
+                      onPressed: () => _runBatchAction(
+                        context,
+                        (h) =>
+                            h.deleteMovieFiles(context, _selectedIds.toList()),
+                      ),
+                    ),
+                    BatchAction(
+                      icon: Icons.delete_forever,
+                      label: 'Purge',
+                      isDestructive: true,
+                      onPressed: () => _runBatchAction(
+                        context,
+                        (h) => h.purgeMovies(context, _selectedIds.toList()),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             )
