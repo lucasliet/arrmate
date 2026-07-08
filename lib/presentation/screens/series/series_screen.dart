@@ -55,6 +55,10 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
     });
   }
 
+  List<Series> _resolveSelected(List<Series> seriesList) {
+    return seriesList.where((s) => _selectedIds.contains(s.id)).toList();
+  }
+
   void _showSortSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -204,6 +208,34 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           ? BatchActionBar(
               selectedCount: _selectedIds.length,
               actions: [
+                BatchAction(
+                  icon: Icons.visibility_outlined,
+                  label: 'Monitor',
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.setSeriesMonitored(
+                      context,
+                      _resolveSelected(
+                        seriesAsync.valueOrNull ?? const <Series>[],
+                      ),
+                      monitored: true,
+                    ),
+                  ),
+                ),
+                BatchAction(
+                  icon: Icons.visibility_off_outlined,
+                  label: 'Unmonitor',
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.setSeriesMonitored(
+                      context,
+                      _resolveSelected(
+                        seriesAsync.valueOrNull ?? const <Series>[],
+                      ),
+                      monitored: false,
+                    ),
+                  ),
+                ),
                 BatchAction(
                   icon: Icons.delete_outline,
                   label: 'Delete',
