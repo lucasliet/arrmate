@@ -299,5 +299,16 @@ void main() {
       // Then
       verify(() => mockApi.episodeSearch(123)).called(1);
     });
+
+    test('searchSeason deve chamar API com seriesId e seasonNumber', () async {
+      // Given
+      when(() => mockApi.seasonSearch(any(), any())).thenAnswer((_) async {});
+
+      // When
+      await repository.searchSeason(42, 3);
+
+      // Then
+      verify(() => mockApi.seasonSearch(42, 3)).called(1);
+    });
   });
 }

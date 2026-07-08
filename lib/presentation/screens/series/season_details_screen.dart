@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
+import 'package:arrmate/presentation/shared/widgets/seeding_warning_dialog.dart';
 import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_metadata_provider.dart';
+import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
 import 'package:arrmate/presentation/screens/series/widgets/episode_details_sheet.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/providers/notifications_provider.dart';
+import 'package:arrmate/presentation/providers/settings_provider.dart';
 
 /// Screens that lists episodes for a specific season of a series.
 class SeasonDetailsScreen extends ConsumerWidget {
@@ -43,12 +48,43 @@ class SeasonDetailsScreen extends ConsumerWidget {
         title: Text('${series.title} - Season ${season.seasonNumber}'),
         actions: [
           IconButton(
+            key: const Key('seasonAutomaticSearchBtn'),
+            icon: const Icon(Icons.travel_explore),
+            tooltip: 'Automatic Search',
+            onPressed: () => _handleAutomaticSearch(context, ref),
+          ),
+          IconButton(
+            key: const Key('seasonInteractiveSearchBtn'),
+            icon: const Icon(Icons.troubleshoot),
+            tooltip: 'Interactive Search',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => ReleasesSheet(
+                  id: 0,
+                  isMovie: false,
+                  title: '${series.title} - Season ${season.seasonNumber}',
+                  episodeCode: 'Season ${season.seasonNumber}',
+                  seriesId: series.id,
+                  seasonNumber: season.seasonNumber,
+                ),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('deleteSeasonFilesBtn'),
             icon: const Icon(Icons.delete_sweep),
             tooltip: 'Delete season files',
             onPressed: hasAnyFile
                 ? () => _handleDeleteFiles(context, ref)
                 : null,
+          ),
+          IconButton(
+            key: const Key('purgeSeasonBtn'),
+            icon: const Icon(Icons.delete_forever),
+            tooltip: 'Purge season',
+            onPressed: hasAnyFile ? () => _handlePurge(context, ref) : null,
           ),
         ],
       ),
@@ -138,6 +174,171 @@ class SeasonDetailsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete files: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleAutomaticSearch(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final theme = Theme.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Searching for ${series.title} - Season ${season.seasonNumber}...',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      await ref
+          .read(seriesControllerProvider(series.id))
+          .seasonAutomaticSearch(season.seasonNumber);
+      if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Search started'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to search: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handlePurge(BuildContext context, WidgetRef ref) async {
+    final theme = Theme.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final purgeService = ref.read(purgeServiceProvider);
+    final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
+    final repository = ref.read(seriesRepositoryProvider);
+
+    if (repository == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No Sonarr instance configured')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Purge season'),
+        content: Text(
+          'Delete all files for "${series.title} - Season ${season.seasonNumber}" '
+          'and remove their source torrents from qBittorrent? '
+          'The series stays in Sonarr.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Purge'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    List<int> episodeIds;
+    try {
+      final episodes = await repository.getEpisodes(series.id);
+      episodeIds = episodes
+          .where(
+            (e) =>
+                e.seasonNumber == season.seasonNumber &&
+                e.hasFile &&
+                e.episodeFileId != null &&
+                e.episodeFileId! > 0,
+          )
+          .map((e) => e.id)
+          .toList();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to load episodes: $e')),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    SeedingAction? action;
+    try {
+      action = await resolveSeedingAction(
+        context: context,
+        minimumSeedingDays: minimumSeedingDays,
+        preview: (seconds) => purgeService.previewSeason(
+          series.id,
+          episodeIds,
+          minimumSeedingSeconds: seconds,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Failed to preview: $e')));
+      return;
+    }
+
+    if (action == null || action == SeedingAction.cancel) return;
+
+    showDialog(
+      context: context,
+      useRootNavigator: false,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final result = await purgeService.purgeSeason(
+        series.id,
+        season.seasonNumber,
+        episodeIds,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
+      );
+      if (context.mounted) navigator.pop();
+      ref.read(notificationActionsProvider.notifier).refresh();
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Purged: ${result.mediaFilesDeleted} '
+              'file${result.mediaFilesDeleted == 1 ? '' : 's'}, '
+              '${result.torrentHashesDeleted.length} '
+              'torrent${result.torrentHashesDeleted.length == 1 ? '' : 's'}.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) navigator.pop();
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to purge: $e'),
             backgroundColor: theme.colorScheme.error,
           ),
         );

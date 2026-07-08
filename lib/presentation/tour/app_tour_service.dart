@@ -42,7 +42,8 @@ class AppTourService {
           key: _keys.settingsInstancesHeaderKey,
           identify: 'settings_instances',
           title: 'Instances',
-          body: 'Your Radarr, Sonarr, and qBittorrent servers live here. '
+          body:
+              'Your Radarr, Sonarr, and qBittorrent servers live here. '
               'Let\'s add your first one.',
           align: ContentAlign.bottom,
         ),
@@ -50,7 +51,8 @@ class AppTourService {
           key: _keys.settingsAddInstanceKey,
           identify: 'settings_add_instance',
           title: 'Add Instance',
-          body: 'Tap here to create a new server connection. The next steps '
+          body:
+              'Tap here to create a new server connection. The next steps '
               'walk through the form.',
           align: ContentAlign.top,
         ),
@@ -70,7 +72,8 @@ class AppTourService {
           key: _keys.instanceTypeSelectorKey,
           identify: 'instance_type',
           title: 'Choose the server type',
-          body: 'Pick Radarr (movies), Sonarr (series), or qBittorrent '
+          body:
+              'Pick Radarr (movies), Sonarr (series), or qBittorrent '
               '(downloads). Each needs its own connection.',
           align: ContentAlign.bottom,
         ),
@@ -78,7 +81,8 @@ class AppTourService {
           key: _keys.instanceNameFieldKey,
           identify: 'instance_name',
           title: 'Name',
-          body: 'A friendly label so you can tell your servers apart '
+          body:
+              'A friendly label so you can tell your servers apart '
               '(e.g. "Home Server").',
           align: ContentAlign.bottom,
         ),
@@ -86,7 +90,8 @@ class AppTourService {
           key: _keys.instanceUrlFieldKey,
           identify: 'instance_url',
           title: 'URL',
-          body: 'Your server address including http(s):// and port, '
+          body:
+              'Your server address including http(s):// and port, '
               'e.g. http://192.168.1.10:7878.',
           align: ContentAlign.bottom,
         ),
@@ -94,7 +99,8 @@ class AppTourService {
           key: _keys.instanceApiKeyFieldKey,
           identify: 'instance_api_key',
           title: 'API Key',
-          body: 'Radarr/Sonarr require an API key from Settings → General. '
+          body:
+              'Radarr/Sonarr require an API key from Settings → General. '
               'qBittorrent uses a Bearer token (v5.2.0+) or Basic Auth.',
           align: ContentAlign.bottom,
         ),
@@ -109,7 +115,8 @@ class AppTourService {
           key: _keys.instanceSaveKey,
           identify: 'instance_save',
           title: 'Save Instance',
-          body: 'When everything checks out, save to finish setup. You can '
+          body:
+              'When everything checks out, save to finish setup. You can '
               'add the other servers any time from Settings.',
           align: ContentAlign.top,
         ),
@@ -174,7 +181,8 @@ class AppTourService {
           key: _keys.activityTabBarKey,
           identify: 'activity_tabs',
           title: 'Activity',
-          body: 'Monitor your download queue, history, and qBittorrent '
+          body:
+              'Monitor your download queue, history, and qBittorrent '
               'torrents here.',
           align: ContentAlign.bottom,
         ),
@@ -182,7 +190,8 @@ class AppTourService {
           key: _keys.navBarKey,
           identify: 'nav_bar',
           title: 'Navigation',
-          body: 'Switch between Movies, Series, Calendar, Activity, and '
+          body:
+              'Switch between Movies, Series, Calendar, Activity, and '
               'Settings anytime.',
           align: ContentAlign.top,
         ),
@@ -314,16 +323,16 @@ class _TourBubble extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             body,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ],
       ),

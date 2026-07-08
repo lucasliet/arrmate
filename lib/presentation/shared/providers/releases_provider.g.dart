@@ -291,6 +291,157 @@ class _EpisodeReleasesProviderElement
   int get episodeId => (origin as EpisodeReleasesProvider).episodeId;
 }
 
+String _$seasonReleasesHash() => r'6e19c60f506de9847fffca1ecc3bc2875fc47b17';
+
+/// Fetches current releases (search results, including season packs) for a
+/// season of a series.
+///
+/// Copied from [seasonReleases].
+@ProviderFor(seasonReleases)
+const seasonReleasesProvider = SeasonReleasesFamily();
+
+/// Fetches current releases (search results, including season packs) for a
+/// season of a series.
+///
+/// Copied from [seasonReleases].
+class SeasonReleasesFamily extends Family<AsyncValue<List<Release>>> {
+  /// Fetches current releases (search results, including season packs) for a
+  /// season of a series.
+  ///
+  /// Copied from [seasonReleases].
+  const SeasonReleasesFamily();
+
+  /// Fetches current releases (search results, including season packs) for a
+  /// season of a series.
+  ///
+  /// Copied from [seasonReleases].
+  SeasonReleasesProvider call(int seriesId, int seasonNumber) {
+    return SeasonReleasesProvider(seriesId, seasonNumber);
+  }
+
+  @override
+  SeasonReleasesProvider getProviderOverride(
+    covariant SeasonReleasesProvider provider,
+  ) {
+    return call(provider.seriesId, provider.seasonNumber);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'seasonReleasesProvider';
+}
+
+/// Fetches current releases (search results, including season packs) for a
+/// season of a series.
+///
+/// Copied from [seasonReleases].
+class SeasonReleasesProvider extends AutoDisposeFutureProvider<List<Release>> {
+  /// Fetches current releases (search results, including season packs) for a
+  /// season of a series.
+  ///
+  /// Copied from [seasonReleases].
+  SeasonReleasesProvider(int seriesId, int seasonNumber)
+    : this._internal(
+        (ref) =>
+            seasonReleases(ref as SeasonReleasesRef, seriesId, seasonNumber),
+        from: seasonReleasesProvider,
+        name: r'seasonReleasesProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$seasonReleasesHash,
+        dependencies: SeasonReleasesFamily._dependencies,
+        allTransitiveDependencies:
+            SeasonReleasesFamily._allTransitiveDependencies,
+        seriesId: seriesId,
+        seasonNumber: seasonNumber,
+      );
+
+  SeasonReleasesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.seriesId,
+    required this.seasonNumber,
+  }) : super.internal();
+
+  final int seriesId;
+  final int seasonNumber;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Release>> Function(SeasonReleasesRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SeasonReleasesProvider._internal(
+        (ref) => create(ref as SeasonReleasesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        seriesId: seriesId,
+        seasonNumber: seasonNumber,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Release>> createElement() {
+    return _SeasonReleasesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SeasonReleasesProvider &&
+        other.seriesId == seriesId &&
+        other.seasonNumber == seasonNumber;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, seriesId.hashCode);
+    hash = _SystemHash.combine(hash, seasonNumber.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin SeasonReleasesRef on AutoDisposeFutureProviderRef<List<Release>> {
+  /// The parameter `seriesId` of this provider.
+  int get seriesId;
+
+  /// The parameter `seasonNumber` of this provider.
+  int get seasonNumber;
+}
+
+class _SeasonReleasesProviderElement
+    extends AutoDisposeFutureProviderElement<List<Release>>
+    with SeasonReleasesRef {
+  _SeasonReleasesProviderElement(super.provider);
+
+  @override
+  int get seriesId => (origin as SeasonReleasesProvider).seriesId;
+  @override
+  int get seasonNumber => (origin as SeasonReleasesProvider).seasonNumber;
+}
+
 String _$releaseActionsHash() => r'63270c2b784eae59f0e5918d1e5e0fcb606b4fa8';
 
 /// Controller for handling release actions like downloading.

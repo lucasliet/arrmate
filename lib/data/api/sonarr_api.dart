@@ -87,11 +87,23 @@ class SonarrApi {
         .toList();
   }
 
-  /// Searches for releases for a specific episode or series.
-  Future<List<Release>> getSeriesReleases({int? episodeId}) async {
+  /// Searches for releases for a specific episode, season or series.
+  ///
+  /// - [episodeId]: looks up releases for a single episode.
+  /// - [seriesId] + [seasonNumber]: looks up releases (including season packs)
+  ///   for an entire season.
+  Future<List<Release>> getSeriesReleases({
+    int? episodeId,
+    int? seriesId,
+    int? seasonNumber,
+  }) async {
     final response = await _client.get(
       '/release',
-      queryParameters: {if (episodeId != null) 'episodeId': episodeId},
+      queryParameters: {
+        if (episodeId != null) 'episodeId': episodeId,
+        if (seriesId != null) 'seriesId': seriesId,
+        if (seasonNumber != null) 'seasonNumber': seasonNumber,
+      },
       customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
     );
     return (response as List)
@@ -136,6 +148,19 @@ class SonarrApi {
       data: {
         'name': 'EpisodeSearch',
         'episodeIds': [episodeId],
+      },
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
+    );
+  }
+
+  /// Commands Sonarr to search for every monitored episode of a season.
+  Future<void> seasonSearch(int seriesId, int seasonNumber) async {
+    await _client.post(
+      '/command',
+      data: {
+        'name': 'SeasonSearch',
+        'seriesId': seriesId,
+        'seasonNumber': seasonNumber,
       },
       customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
     );

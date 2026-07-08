@@ -71,6 +71,14 @@ class SeriesRepositoryImpl implements SeriesRepository {
   }
 
   @override
+  Future<void> searchSeason(int seriesId, int seasonNumber) async {
+    logger.info(
+      '[SeriesRepository] Triggering automatic search for series $seriesId season $seasonNumber',
+    );
+    return _api.seasonSearch(seriesId, seasonNumber);
+  }
+
+  @override
   Future<List<Episode>> getEpisodes(int seriesId) => _api.getEpisodes(seriesId);
 
   @override

@@ -155,6 +155,13 @@ class SeriesController {
     await repository.searchSeries(seriesId);
   }
 
+  /// Triggers an automatic search for every monitored episode of [seasonNumber].
+  Future<void> seasonAutomaticSearch(int seasonNumber) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    await repository.searchSeason(seriesId, seasonNumber);
+  }
+
   Future<void> rescan() async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;

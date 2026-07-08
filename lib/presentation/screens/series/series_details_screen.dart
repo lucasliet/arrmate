@@ -12,6 +12,7 @@ import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
+import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_metadata_provider.dart';
@@ -880,6 +881,93 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     _clearSelection();
   }
 
+  Future<void> _handleSeasonAutomaticSearch(
+    Series series,
+    Season season,
+  ) async {
+    final theme = Theme.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Searching for ${series.title} - Season ${season.seasonNumber}...',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      await ref
+          .read(seriesControllerProvider(series.id))
+          .seasonAutomaticSearch(season.seasonNumber);
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Search started'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to search: $e'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSeasonReleases(Series series, Season season) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ReleasesSheet(
+        id: 0,
+        isMovie: false,
+        title: '${series.title} - Season ${season.seasonNumber}',
+        episodeCode: 'Season ${season.seasonNumber}',
+        seriesId: series.id,
+        seasonNumber: season.seasonNumber,
+      ),
+    );
+  }
+
+  Future<void> _handleBatchSearch() async {
+    final series = widget.series;
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(seriesControllerProvider(series.id));
+
+    _showLoading(Navigator.of(context));
+    try {
+      await Future.wait(
+        _selectedSeasons.map(
+          (seasonNumber) => controller.seasonAutomaticSearch(seasonNumber),
+        ),
+      );
+      _hideLoading(Navigator.of(context));
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Search started for ${_selectedSeasons.length} '
+              'season${_selectedSeasons.length == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _hideLoading(Navigator.of(context));
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Failed to search: $e')));
+      }
+    }
+    _clearSelection();
+  }
+
   Future<void> _handleBatchPurge() async {
     final series = widget.series;
     final messenger = ScaffoldMessenger.of(context);
@@ -1109,7 +1197,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
                         strokeWidth: 3,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 4),
                     IconButton(
                       key: Key('seasonBookmark_${season.seasonNumber}'),
                       icon: Icon(
@@ -1149,6 +1237,38 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
                         }
                       },
                     ),
+                    PopupMenuButton<String>(
+                      key: Key('seasonSearchMenu_${season.seasonNumber}'),
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'Season actions',
+                      onSelected: (value) {
+                        if (value == 'automatic') {
+                          _handleSeasonAutomaticSearch(series, season);
+                        } else if (value == 'interactive') {
+                          _showSeasonReleases(series, season);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'automatic',
+                          child: ListTile(
+                            leading: Icon(Icons.travel_explore),
+                            title: Text('Automatic Search'),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'interactive',
+                          child: ListTile(
+                            leading: Icon(Icons.troubleshoot),
+                            title: Text('Interactive Search'),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 onTap: _isSelecting
@@ -1173,21 +1293,33 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
             selectedCount: _selectedSeasons.length,
             actions: [
               BatchAction(
+                icon: Icons.travel_explore,
+                label: 'Search',
+                onPressed: _handleBatchSearch,
+              ),
+              BatchAction(
                 icon: Icons.bookmark_border,
                 label: 'Unmonitor',
                 onPressed: _handleBatchUnmonitor,
               ),
               BatchAction(
-                icon: Icons.delete_sweep,
-                label: 'Delete files',
+                icon: Icons.delete_outline,
+                label: 'Delete',
                 isDestructive: true,
-                onPressed: _handleBatchDeleteFiles,
-              ),
-              BatchAction(
-                icon: Icons.delete_forever,
-                label: 'Purge',
-                isDestructive: true,
-                onPressed: _handleBatchPurge,
+                submenu: [
+                  BatchAction(
+                    icon: Icons.delete_sweep,
+                    label: 'Delete files',
+                    isDestructive: true,
+                    onPressed: _handleBatchDeleteFiles,
+                  ),
+                  BatchAction(
+                    icon: Icons.delete_forever,
+                    label: 'Purge',
+                    isDestructive: true,
+                    onPressed: _handleBatchPurge,
+                  ),
+                ],
               ),
             ],
           ),

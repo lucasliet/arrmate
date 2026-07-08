@@ -21,6 +21,19 @@ Future<List<Release>> episodeReleases(Ref ref, int episodeId) async {
   return api.getSeriesReleases(episodeId: episodeId);
 }
 
+/// Fetches current releases (search results, including season packs) for a
+/// season of a series.
+@riverpod
+Future<List<Release>> seasonReleases(
+  Ref ref,
+  int seriesId,
+  int seasonNumber,
+) async {
+  final api = ref.watch(sonarrApiProvider);
+  if (api == null) throw Exception('API not available');
+  return api.getSeriesReleases(seriesId: seriesId, seasonNumber: seasonNumber);
+}
+
 // Logic to grab (download) a release can be a method in a Notifier or just a function call via API.
 // Using a Notifier for the "Grab" action state might be overkill if it's just a fire-and-forget with loading overlay.
 // I'll keep it simple in the UI or a simple controller.

@@ -4,12 +4,19 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 
-/// A modal sheet that searches for and displays available releases for a movie or episode.
+/// A modal sheet that searches for and displays available releases for a
+/// movie, episode or season.
 class ReleasesSheet extends ConsumerStatefulWidget {
   final int id;
-  final bool isMovie; // true for Movie, false for Episode
+  final bool isMovie; // true for Movie, false for Episode/Season
   final String title;
   final String? episodeCode; // e.g., S01E01 for subtitle
+
+  /// When provided together with [seasonNumber], switches the sheet into
+  /// season mode: it looks up releases (including season packs) for the
+  /// whole season instead of a single episode.
+  final int? seriesId;
+  final int? seasonNumber;
 
   const ReleasesSheet({
     super.key,
@@ -17,7 +24,11 @@ class ReleasesSheet extends ConsumerStatefulWidget {
     required this.isMovie,
     required this.title,
     this.episodeCode,
+    this.seriesId,
+    this.seasonNumber,
   });
+
+  bool get _isSeason => !isMovie && seriesId != null && seasonNumber != null;
 
   @override
   ConsumerState<ReleasesSheet> createState() => _ReleasesSheetState();
@@ -123,7 +134,11 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   @override
   Widget build(BuildContext context) {
     // Determine provider
-    final releaseListAsync = widget.isMovie
+    final releaseListAsync = widget._isSeason
+        ? ref.watch(
+            seasonReleasesProvider(widget.seriesId!, widget.seasonNumber!),
+          )
+        : widget.isMovie
         ? ref.watch(movieReleasesProvider(widget.id))
         : ref.watch(episodeReleasesProvider(widget.id));
 
