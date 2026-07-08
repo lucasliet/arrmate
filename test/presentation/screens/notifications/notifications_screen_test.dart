@@ -489,8 +489,8 @@ void main() {
       });
 
       testWidgets('should handle all notification types', (tester) async {
-        final notifications = NotificationType.values.map((type) {
-          return AppNotification(
+        for (final type in NotificationType.values) {
+          final notification = AppNotification(
             id: type.name,
             title: type.name,
             message: 'Test ${type.name}',
@@ -498,16 +498,13 @@ void main() {
             priority: NotificationPriority.medium,
             timestamp: DateTime.now(),
           );
-        }).toList();
 
-        await tester.pumpWidget(
-          buildWidget(notifications: notifications, unreadCount: 0),
-        );
+          await tester.pumpWidget(
+            buildWidget(notifications: [notification], unreadCount: 0),
+          );
 
-        expect(
-          find.byType(NotificationCard),
-          findsNWidgets(NotificationType.values.length),
-        );
+          expect(find.byType(NotificationCard), findsOneWidget);
+        }
       });
     });
 

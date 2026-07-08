@@ -9,6 +9,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
@@ -577,6 +578,7 @@ class MovieDetailsScreen extends ConsumerWidget {
       );
       navigator.pop();
       ref.invalidate(moviesProvider);
+      ref.read(notificationActionsProvider.notifier).refresh();
       if (context.mounted) {
         context.pop();
         messenger.showSnackBar(

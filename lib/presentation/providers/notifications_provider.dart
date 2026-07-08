@@ -88,4 +88,13 @@ class NotificationActionsNotifier extends Notifier<void> {
     ref.invalidate(notificationsProvider);
     ref.invalidate(unreadNotificationCountProvider);
   }
+
+  /// Refreshes the notification list and unread count providers.
+  ///
+  /// Call this after adding notifications outside the ntfy service (e.g. when
+  /// the PurgeService emits purge notifications) so the feed and badge update.
+  void refresh() {
+    ref.invalidate(notificationsProvider);
+    ref.invalidate(unreadNotificationCountProvider);
+  }
 }

@@ -14,6 +14,9 @@ enum NotificationType {
   /// Upgrade available for *arr instance.
   upgrade,
 
+  /// Torrents purged from qBittorrent.
+  purged,
+
   /// System warning.
   warning,
 
@@ -153,6 +156,8 @@ class AppNotification extends Equatable {
         return 'check_circle';
       case NotificationType.upgrade:
         return 'system_update';
+      case NotificationType.purged:
+        return 'delete';
       case NotificationType.warning:
         return 'warning';
       case NotificationType.info:

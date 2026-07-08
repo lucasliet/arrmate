@@ -4,11 +4,12 @@ import 'package:arrmate/domain/models/notification/app_notification.dart';
 void main() {
   group('NotificationType', () {
     test('should have all expected notification types', () {
-      expect(NotificationType.values.length, 6);
+      expect(NotificationType.values.length, 7);
       expect(NotificationType.values, contains(NotificationType.download));
       expect(NotificationType.values, contains(NotificationType.error));
       expect(NotificationType.values, contains(NotificationType.imported));
       expect(NotificationType.values, contains(NotificationType.upgrade));
+      expect(NotificationType.values, contains(NotificationType.purged));
       expect(NotificationType.values, contains(NotificationType.warning));
       expect(NotificationType.values, contains(NotificationType.info));
     });

@@ -5,6 +5,7 @@ import '../../domain/repositories/repositories.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/api/api.dart';
 import 'instances_provider.dart';
+import 'notifications_provider.dart';
 
 /// Provider for the [RadarrApi] of the currently selected Radarr instance.
 final radarrApiProvider = Provider<RadarrApi?>((ref) {
@@ -53,5 +54,7 @@ final purgeServiceProvider = Provider<PurgeService>((ref) {
     movieRepositoryFactory: () => ref.read(movieRepositoryProvider),
     seriesRepositoryFactory: () => ref.read(seriesRepositoryProvider),
     qbittorrentServiceFactory: () => ref.read(qbittorrentServiceProvider),
+    inAppNotificationServiceFactory: () =>
+        ref.read(inAppNotificationServiceProvider),
   );
 });

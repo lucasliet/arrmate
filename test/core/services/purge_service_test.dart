@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:arrmate/core/services/in_app_notification_service.dart';
 import 'package:arrmate/core/services/purge_service.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/domain/models/notification/app_notification.dart';
 import 'package:arrmate/domain/repositories/repositories.dart';
 
 class MockMovieRepository extends Mock implements MovieRepository {}
@@ -12,15 +14,20 @@ class MockSeriesRepository extends Mock implements SeriesRepository {}
 
 class MockQBittorrentService extends Mock implements QBittorrentService {}
 
+class MockInAppNotificationService extends Mock
+    implements InAppNotificationService {}
+
 PurgeService _service({
   required MockMovieRepository movieRepo,
   MockSeriesRepository? seriesRepo,
   MockQBittorrentService? qb,
+  MockInAppNotificationService? notifications,
 }) {
   return PurgeService(
     movieRepositoryFactory: () => movieRepo,
     seriesRepositoryFactory: () => seriesRepo ?? MockSeriesRepository(),
     qbittorrentServiceFactory: () => qb,
+    inAppNotificationServiceFactory: () => notifications,
   );
 }
 
@@ -1172,6 +1179,184 @@ void main() {
           () =>
               qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
         );
+      },
+    );
+
+    test(
+      'purgeMovie emits one in-app notification per deleted torrent, including cross-seed dupes',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+        final notifications = MockInAppNotificationService();
+
+        registerFallbackValue(
+          AppNotification(
+            id: 'fallback',
+            title: 't',
+            message: 'm',
+            type: NotificationType.info,
+            priority: NotificationPriority.medium,
+            timestamp: DateTime(2024),
+          ),
+        );
+
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 7,
+              downloadId: 'SOURCEHASH001',
+            ),
+          ],
+        );
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.deleteQueueItem(
+            any(),
+            removeFromClient: any(named: 'removeFromClient'),
+            blocklist: any(named: 'blocklist'),
+            skipRedownload: any(named: 'skipRedownload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => movieRepo.getMovieFiles(7),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(
+              hash: 'SOURCEHASH001',
+              name: 'The.Matrix.1999.1080p.BluRay.mkv',
+            ),
+            _torrent(
+              hash: 'DUPEHASH000AA',
+              name: 'the.matrix.1999.1080p.bluray.mkv',
+            ),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+        when(
+          () => notifications.addNotification(any()),
+        ).thenAnswer((_) async {});
+
+        await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+          notifications: notifications,
+        ).purgeMovie(7);
+
+        final captured = verify(
+          () => notifications.addNotification(captureAny<AppNotification>()),
+        ).captured;
+
+        expect(captured.length, 2);
+        for (final raw in captured) {
+          final n = raw as AppNotification;
+          expect(n.type, NotificationType.purged);
+          expect(n.priority, NotificationPriority.medium);
+          expect(n.metadata!['instanceType'], 'movie');
+          expect(n.metadata!['instanceId'], 7);
+          expect(n.metadata!['isCrossSeed'], isA<bool>());
+          expect(n.metadata!.containsKey('hash'), isTrue);
+          expect(n.metadata!.containsKey('size'), isTrue);
+          expect(n.metadata!.containsKey('savePath'), isTrue);
+        }
+      },
+    );
+
+    test(
+      'purgeMovie does not emit notifications when no notification service is configured',
+      () async {
+        final movieRepo = MockMovieRepository();
+        final qb = MockQBittorrentService();
+
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+          (_) async => [
+            _historyEvent(
+              eventType: 'grabbed',
+              movieId: 7,
+              downloadId: 'HASHAAA111',
+            ),
+          ],
+        );
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 20,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.deleteQueueItem(
+            any(),
+            removeFromClient: any(named: 'removeFromClient'),
+            blocklist: any(named: 'blocklist'),
+            skipRedownload: any(named: 'skipRedownload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => movieRepo.getMovieFiles(7),
+        ).thenAnswer((_) async => [_mediaFile(id: 1)]);
+        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [_torrent(hash: 'HASHAAA111', name: 'release.mkv')],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovie(7);
+
+        expect(result.torrentHashesDeleted, ['hashaaa111']);
       },
     );
   });

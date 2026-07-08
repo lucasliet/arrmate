@@ -8,6 +8,7 @@ import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
@@ -731,6 +732,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
       );
       navigator.pop();
       ref.invalidate(seriesProvider);
+      ref.read(notificationActionsProvider.notifier).refresh();
       if (context.mounted) {
         context.pop();
         messenger.showSnackBar(
@@ -977,6 +979,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         hashesDeleted.addAll(result.torrentHashesDeleted);
       }
       _hideLoading(navigator);
+      ref.read(notificationActionsProvider.notifier).refresh();
       if (mounted) {
         messenger.showSnackBar(
           SnackBar(

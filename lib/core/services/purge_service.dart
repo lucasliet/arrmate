@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../domain/models/notification/app_notification.dart';
+import '../../core/services/in_app_notification_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../data/api/qbittorrent_service.dart';
 import '../../domain/models/models.dart';
@@ -52,6 +55,10 @@ enum SeedingAction {
   /// Delete every resolved torrent regardless of seeding time.
   deleteAll,
 }
+
+/// Context of a purge operation, used when emitting per-torrent
+/// notifications so the notification carries the origin (movie/series/season).
+typedef PurgeContext = ({String type, int id, int? seasonNumber});
 
 /// Read-only preview of the torrents a purge would delete.
 ///
@@ -170,14 +177,21 @@ class PurgeService {
   final MovieRepository? Function() _movieRepositoryFactory;
   final SeriesRepository? Function() _seriesRepositoryFactory;
   final QBittorrentService? Function() _qbittorrentServiceFactory;
+  final InAppNotificationService? Function() _inAppNotificationServiceFactory;
+  final Uuid _uuid;
 
   PurgeService({
     required MovieRepository? Function() movieRepositoryFactory,
     required SeriesRepository? Function() seriesRepositoryFactory,
     required QBittorrentService? Function() qbittorrentServiceFactory,
+    required InAppNotificationService? Function()
+    inAppNotificationServiceFactory,
+    Uuid? uuid,
   }) : _movieRepositoryFactory = movieRepositoryFactory,
        _seriesRepositoryFactory = seriesRepositoryFactory,
-       _qbittorrentServiceFactory = qbittorrentServiceFactory;
+       _qbittorrentServiceFactory = qbittorrentServiceFactory,
+       _inAppNotificationServiceFactory = inAppNotificationServiceFactory,
+       _uuid = uuid ?? const Uuid();
 
   /// Purges a movie from Radarr and qBittorrent.
   Future<PurgeResult> purgeMovie(int movieId) async {
@@ -204,7 +218,10 @@ class PurgeService {
       '[PurgeService] Movie $movieId deleted (files: $mediaFilesDeleted)',
     );
 
-    final torrentOutcome = await _purgeTorrents(hashes);
+    final torrentOutcome = await _purgeTorrents(
+      hashes,
+      context: (type: 'movie', id: movieId, seasonNumber: null),
+    );
 
     return PurgeResult(
       queueItemsRemoved: queueItemsRemoved,
@@ -241,7 +258,10 @@ class PurgeService {
       '[PurgeService] Series $seriesId deleted (files: $mediaFilesDeleted)',
     );
 
-    final torrentOutcome = await _purgeTorrents(hashes);
+    final torrentOutcome = await _purgeTorrents(
+      hashes,
+      context: (type: 'series', id: seriesId, seasonNumber: null),
+    );
 
     return PurgeResult(
       queueItemsRemoved: queueItemsRemoved,
@@ -334,6 +354,7 @@ class PurgeService {
       sourceHashes: hashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
+      context: (type: 'season', id: seriesId, seasonNumber: seasonNumber),
     );
 
     return PurgeResult(
@@ -440,6 +461,7 @@ class PurgeService {
       sourceHashes: hashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
+      context: (type: 'movie', id: movieId, seasonNumber: null),
     );
 
     return PurgeResult(
@@ -483,6 +505,7 @@ class PurgeService {
       sourceHashes: hashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
+      context: (type: 'series', id: seriesId, seasonNumber: null),
     );
 
     return PurgeResult(
@@ -812,6 +835,7 @@ class PurgeService {
     required Set<String> sourceHashes,
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
+    PurgeContext? context,
   }) async {
     final service = _qbittorrentServiceFactory();
     if (service == null) {
@@ -842,7 +866,10 @@ class PurgeService {
         continue;
       }
       final h = t.hash.toLowerCase();
-      if (hashesToDelete.add(h)) sourceDeleted.add(h);
+      if (hashesToDelete.add(h)) {
+        sourceDeleted.add(h);
+        _emitTorrentPurgedNotification(t, context, isCrossSeed: false);
+      }
     }
     for (final t in crossSeed) {
       if (isBelowThreshold(t)) {
@@ -853,7 +880,10 @@ class PurgeService {
         continue;
       }
       final h = t.hash.toLowerCase();
-      if (hashesToDelete.add(h)) crossSeedDeleted.add(h);
+      if (hashesToDelete.add(h)) {
+        crossSeedDeleted.add(h);
+        _emitTorrentPurgedNotification(t, context, isCrossSeed: true);
+      }
     }
 
     if (hashesToDelete.isEmpty) {
@@ -878,7 +908,10 @@ class PurgeService {
   ///
   /// Convenience wrapper around [_resolveTorrents] + [_deleteTorrents] for the
   /// non-interactive purge path (no seeding check).
-  Future<_TorrentPurgeOutcome> _purgeTorrents(Set<String> sourceHashes) async {
+  Future<_TorrentPurgeOutcome> _purgeTorrents(
+    Set<String> sourceHashes, {
+    PurgeContext? context,
+  }) async {
     final service = _qbittorrentServiceFactory();
     if (service == null) {
       logger.info('[PurgeService] qBittorrent not configured; skipping');
@@ -893,7 +926,53 @@ class PurgeService {
       resolved.source,
       resolved.crossSeed,
       sourceHashes: sourceHashes,
+      context: context,
     );
+  }
+
+  /// Emits an in-app notification recording that [t] was purged.
+  ///
+  /// Fire-and-forget: failures are logged and never propagated, so a
+  /// notification hiccup cannot break the purge flow. [context] carries the
+  /// origin (movie/series/season) and [isCrossSeed] flags cross-seed dupes.
+  void _emitTorrentPurgedNotification(
+    Torrent t,
+    PurgeContext? context, {
+    required bool isCrossSeed,
+  }) {
+    final service = _inAppNotificationServiceFactory();
+    if (service == null) return;
+
+    final season = context?.seasonNumber;
+    final notification = AppNotification(
+      id: _uuid.v4(),
+      title: season != null
+          ? 'Purged torrent (season $season)'
+          : 'Purged torrent',
+      message: t.name,
+      type: NotificationType.purged,
+      priority: NotificationPriority.medium,
+      timestamp: DateTime.now(),
+      metadata: {
+        if (context != null) 'instanceType': context.type,
+        if (context != null) 'instanceId': context.id,
+        if (season != null) 'seasonNumber': season,
+        'hash': t.hash,
+        'size': t.size,
+        'savePath': t.savePath,
+        'isCrossSeed': isCrossSeed,
+      },
+    );
+
+    try {
+      service.addNotification(notification);
+    } catch (e, stackTrace) {
+      logger.warning(
+        '[PurgeService] Failed to emit purge notification for ${t.hash}: $e',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   /// Lowercases and trims a torrent name for case-insensitive comparison.

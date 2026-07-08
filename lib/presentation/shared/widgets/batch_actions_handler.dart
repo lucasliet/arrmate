@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/purge_service.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../screens/movies/providers/movies_provider.dart';
 import '../../screens/series/providers/series_provider.dart';
@@ -183,6 +184,7 @@ class BatchActionsHandler {
       final result = await purgeService.purgeMovies(movieIds);
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
+      _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
         message: result.formatSummary(
           label:
@@ -386,6 +388,7 @@ class BatchActionsHandler {
       final result = await purgeService.purgeSeriesList(seriesIds);
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
+      _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
         message: result.formatSummary(
           label:

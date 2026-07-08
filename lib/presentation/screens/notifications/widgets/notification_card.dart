@@ -155,6 +155,8 @@ class NotificationCard extends StatelessWidget {
         return Colors.green;
       case NotificationType.upgrade:
         return Colors.purple;
+      case NotificationType.purged:
+        return theme.colorScheme.error;
       case NotificationType.warning:
         return Colors.orange;
       case NotificationType.info:
@@ -172,6 +174,8 @@ class NotificationCard extends StatelessWidget {
         return Icons.check_circle_outline_rounded;
       case NotificationType.upgrade:
         return Icons.system_update_rounded;
+      case NotificationType.purged:
+        return Icons.delete_outline_rounded;
       case NotificationType.warning:
         return Icons.warning_amber_rounded;
       case NotificationType.info:
