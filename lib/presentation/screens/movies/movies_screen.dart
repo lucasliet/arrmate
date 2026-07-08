@@ -56,6 +56,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     });
   }
 
+  List<Movie> _resolveSelected(List<Movie> movies) {
+    return movies.where((m) => _selectedIds.contains(m.id)).toList();
+  }
+
   void _showSortSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -205,6 +209,34 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           ? BatchActionBar(
               selectedCount: _selectedIds.length,
               actions: [
+                BatchAction(
+                  icon: Icons.visibility_outlined,
+                  label: 'Monitor',
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.setMoviesMonitored(
+                      context,
+                      _resolveSelected(
+                        moviesAsync.valueOrNull ?? const <Movie>[],
+                      ),
+                      monitored: true,
+                    ),
+                  ),
+                ),
+                BatchAction(
+                  icon: Icons.visibility_off_outlined,
+                  label: 'Unmonitor',
+                  onPressed: () => _runBatchAction(
+                    context,
+                    (h) => h.setMoviesMonitored(
+                      context,
+                      _resolveSelected(
+                        moviesAsync.valueOrNull ?? const <Movie>[],
+                      ),
+                      monitored: false,
+                    ),
+                  ),
+                ),
                 BatchAction(
                   icon: Icons.delete_outline,
                   label: 'Delete',

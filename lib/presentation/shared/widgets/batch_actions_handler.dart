@@ -197,6 +197,46 @@ class BatchActionsHandler {
     }
   }
 
+  /// Batch-sets the monitored flag of the selected movies. Non-destructive,
+  /// so no confirmation dialog is shown.
+  Future<BatchActionResult?> setMoviesMonitored(
+    BuildContext context,
+    List<Movie> movies, {
+    required bool monitored,
+  }) async {
+    final repository = _ref.read(movieRepositoryProvider);
+    if (repository == null) {
+      return const BatchActionResult(message: 'No Radarr instance configured');
+    }
+
+    final navigator = Navigator.of(context);
+    _showLoading(navigator);
+
+    var updated = 0;
+    try {
+      for (final movie in movies) {
+        await repository.updateMovie(movie.copyWith(monitored: monitored));
+        updated++;
+      }
+      _hideLoading(navigator);
+      _ref.invalidate(moviesProvider);
+      return BatchActionResult(
+        message:
+            '${monitored ? 'Monitored' : 'Unmonitored'} $updated '
+            'movie${_plural(updated)}',
+        refreshCatalog: true,
+      );
+    } catch (e) {
+      _hideLoading(navigator);
+      return BatchActionResult(
+        message:
+            'Updated $updated of ${movies.length} '
+            'movie${_plural(movies.length)} before error: $e',
+        refreshCatalog: updated > 0,
+      );
+    }
+  }
+
   // ---- Series equivalents ------------------------------------------------
 
   Future<BatchActionResult?> deleteSeriesList(
@@ -357,6 +397,54 @@ class BatchActionsHandler {
     } catch (e) {
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to purge: $e');
+    }
+  }
+
+  /// Batch-sets the monitored flag of the selected series. Cascades the flag
+  /// to every season of each series, mirroring the unit toggle behaviour.
+  /// Non-destructive, so no confirmation dialog is shown.
+  Future<BatchActionResult?> setSeriesMonitored(
+    BuildContext context,
+    List<Series> seriesList, {
+    required bool monitored,
+  }) async {
+    final repository = _ref.read(seriesRepositoryProvider);
+    if (repository == null) {
+      return const BatchActionResult(message: 'No Sonarr instance configured');
+    }
+
+    final navigator = Navigator.of(context);
+    _showLoading(navigator);
+
+    var updated = 0;
+    try {
+      for (final series in seriesList) {
+        await repository.updateSeries(
+          series.copyWith(
+            monitored: monitored,
+            seasons: series.seasons
+                .map((s) => s.copyWith(monitored: monitored))
+                .toList(),
+          ),
+        );
+        updated++;
+      }
+      _hideLoading(navigator);
+      _ref.invalidate(seriesProvider);
+      return BatchActionResult(
+        message:
+            '${monitored ? 'Monitored' : 'Unmonitored'} $updated '
+            'series${_plural(updated)}',
+        refreshCatalog: true,
+      );
+    } catch (e) {
+      _hideLoading(navigator);
+      return BatchActionResult(
+        message:
+            'Updated $updated of ${seriesList.length} '
+            'series${_plural(seriesList.length)} before error: $e',
+        refreshCatalog: updated > 0,
+      );
     }
   }
 

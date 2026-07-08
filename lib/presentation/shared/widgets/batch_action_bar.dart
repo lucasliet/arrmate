@@ -36,8 +36,11 @@ class BatchActionBar extends StatelessWidget {
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            OverflowBar(
+              spacing: 4,
+              overflowSpacing: 4,
+              overflowAlignment: OverflowBarAlignment.center,
+              alignment: MainAxisAlignment.spaceEvenly,
               children: actions
                   .map((action) => _buildAction(context, action, theme))
                   .toList(),
