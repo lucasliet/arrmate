@@ -124,4 +124,71 @@ class AssistantKnowledgeService {
     final content = await rootBundle.loadString(skill.assetPath);
     return content.trim();
   }
+
+  /// Loads the most relevant assistant skills for a question.
+  Future<String> loadRelevantSkills(String question) async {
+    final selectedSkills = _selectRelevantSkills(question);
+    final contents = await Future.wait(
+      selectedSkills.map((skill) async {
+        final content = await rootBundle.loadString(skill.assetPath);
+        return '# ${skill.id}\n\n${content.trim()}';
+      }),
+    );
+
+    return contents.join('\n\n---\n\n');
+  }
+
+  List<AssistantSkill> _selectRelevantSkills(String question) {
+    final normalizedQuestion = _normalize(question);
+    final scoredSkills =
+        _skills
+            .map(
+              (skill) =>
+                  MapEntry(skill, _scoreSkill(skill, normalizedQuestion)),
+            )
+            .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+    final selectedSkills = scoredSkills
+        .where((entry) => entry.value > 0)
+        .take(4)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (selectedSkills.isEmpty) {
+      return _skills
+          .where(
+            (skill) => ['overview', 'assistant', 'support'].contains(skill.id),
+          )
+          .toList();
+    }
+
+    if (!selectedSkills.any((skill) => skill.id == 'overview')) {
+      selectedSkills.add(_skills.firstWhere((skill) => skill.id == 'overview'));
+    }
+
+    return selectedSkills;
+  }
+
+  int _scoreSkill(AssistantSkill skill, String normalizedQuestion) {
+    final searchableText = _normalize(
+      '${skill.id} ${skill.title} ${skill.description}',
+    );
+    final terms = normalizedQuestion
+        .split(RegExp(r'\s+'))
+        .where((term) => term.length >= 3)
+        .toSet();
+
+    return terms.where(searchableText.contains).length;
+  }
+
+  String _normalize(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp('[áàâãä]'), 'a')
+        .replaceAll(RegExp('[éèêë]'), 'e')
+        .replaceAll(RegExp('[íìîï]'), 'i')
+        .replaceAll(RegExp('[óòôõö]'), 'o')
+        .replaceAll(RegExp('[úùûü]'), 'u')
+        .replaceAll('ç', 'c');
+  }
 }

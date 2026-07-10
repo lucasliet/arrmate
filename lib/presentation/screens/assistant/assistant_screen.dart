@@ -106,6 +106,14 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   ) {
     final theme = Theme.of(context);
     final hasModel = state.hasModel;
+    final title = state.isOnlineMode
+        ? 'OpenCode Zen'
+        : state.selectedModel?.label ?? 'No local model selected';
+    final subtitle = state.isOnlineMode
+        ? 'Online model: ${state.selectedOnlineModelId ?? 'deepseek-v4-flash-free'}'
+        : hasModel
+        ? _formatModelSize(state.selectedModel!.sizeBytes)
+        : 'Use OpenCode Zen or import/download a local model';
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -115,22 +123,22 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              hasModel ? Icons.smart_toy : Icons.smart_toy_outlined,
+              state.isOnlineMode
+                  ? Icons.cloud_outlined
+                  : hasModel
+                  ? Icons.smart_toy
+                  : Icons.smart_toy_outlined,
               color: hasModel ? theme.colorScheme.primary : null,
             ),
-            title: Text(
-              state.selectedModel?.label ?? 'No model selected',
-              style: theme.textTheme.titleSmall,
-            ),
-            subtitle: Text(
-              hasModel
-                  ? _formatModelSize(state.selectedModel!.sizeBytes)
-                  : 'Import or download a model to start',
-              style: theme.textTheme.bodySmall,
-            ),
+            title: Text(title, style: theme.textTheme.titleSmall),
+            subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
             trailing: PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'download') {
+                if (value == 'online') {
+                  notifier.useOnlineMode();
+                } else if (value == 'online_models') {
+                  _showOnlineModels(context, notifier, state);
+                } else if (value == 'download') {
                   _showCatalog(context, notifier, state);
                 } else if (value == 'import') {
                   notifier.importModel();
@@ -140,6 +148,26 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               },
               itemBuilder: (context) {
                 final items = [
+                  const PopupMenuItem(
+                    value: 'online',
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_outlined),
+                        SizedBox(width: 12),
+                        Text('OpenCode Zen'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'online_models',
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_queue),
+                        SizedBox(width: 12),
+                        Text('Online Models'),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'download',
                     child: Row(
@@ -170,7 +198,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                         children: [
                           Icon(Icons.swap_horiz),
                           SizedBox(width: 12),
-                          Text('Switch'),
+                          Text('Local Models'),
                         ],
                       ),
                     ),
@@ -307,6 +335,68 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const _DownloadProgressDialog(),
+    );
+  }
+
+  void _showOnlineModels(
+    BuildContext context,
+    AssistantNotifier notifier,
+    AssistantState state,
+  ) {
+    final theme = Theme.of(context);
+    final models = state.onlineModels.isEmpty
+        ? ['deepseek-v4-flash-free']
+        : state.onlineModels;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.4,
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('Online Models', style: theme.textTheme.titleLarge),
+          ),
+          const Divider(height: 1),
+          ...models.map((modelId) {
+            final isSelected = modelId == state.selectedOnlineModelId;
+
+            return ListTile(
+              leading: Icon(
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: isSelected ? theme.colorScheme.primary : null,
+              ),
+              title: Text(modelId),
+              subtitle: const Text('OpenCode Zen free model'),
+              onTap: isSelected
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      notifier.selectOnlineModel(modelId);
+                    },
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 

@@ -116,7 +116,6 @@ class AssistantModelService {
           );
 
   static const _selectedModelIdKey = 'assistant_selected_model_id';
-  static const _catalogCacheKey = 'assistant_model_catalog_cache';
 
   final Dio _dio;
   CancelToken? _activeCancelToken;

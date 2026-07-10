@@ -6,10 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/assistant_chat_service.dart';
 import '../../core/services/assistant_knowledge_service.dart';
 import '../../core/services/assistant_model_service.dart';
+import '../../core/services/assistant_online_chat_service.dart';
 import '../../core/services/logger_service.dart';
 
 /// Conversation message roles supported by the assistant.
 enum AssistantMessageRole { user, assistant }
+
+/// Model runtime options supported by the assistant.
+enum AssistantModelMode { online, local }
 
 /// Represents one chat message in the assistant conversation.
 class AssistantMessage {
@@ -40,9 +44,12 @@ class AssistantState {
   const AssistantState({
     this.catalog = const [],
     this.installedModels = const [],
+    this.onlineModels = const [],
     this.messages = const [],
+    this.mode = AssistantModelMode.online,
     this.selectedModelId,
     this.selectedModelPath,
+    this.selectedOnlineModelId,
     this.isLoading = true,
     this.isGenerating = false,
     this.isDownloading = false,
@@ -57,14 +64,23 @@ class AssistantState {
   /// Installed local models.
   final List<AssistantInstalledModel> installedModels;
 
+  /// Available online OpenCode Zen models.
+  final List<String> onlineModels;
+
   /// Conversation messages.
   final List<AssistantMessage> messages;
 
-  /// Selected model id.
+  /// Active model runtime mode.
+  final AssistantModelMode mode;
+
+  /// Selected local model id.
   final String? selectedModelId;
 
-  /// Selected model absolute file path.
+  /// Selected local model absolute file path.
   final String? selectedModelPath;
+
+  /// Selected OpenCode Zen online model id.
+  final String? selectedOnlineModelId;
 
   /// Whether the assistant is loading initial data.
   final bool isLoading;
@@ -85,7 +101,15 @@ class AssistantState {
   final String? error;
 
   /// Returns whether a model is ready to answer.
-  bool get hasModel => selectedModelPath != null;
+  bool get hasModel {
+    return switch (mode) {
+      AssistantModelMode.online => selectedOnlineModelId != null,
+      AssistantModelMode.local => selectedModelPath != null,
+    };
+  }
+
+  /// Returns whether the online OpenCode Zen model is active.
+  bool get isOnlineMode => mode == AssistantModelMode.online;
 
   /// Returns the selected installed model, if any.
   AssistantInstalledModel? get selectedModel {
@@ -100,9 +124,12 @@ class AssistantState {
   AssistantState copyWith({
     List<AssistantModelCatalogEntry>? catalog,
     List<AssistantInstalledModel>? installedModels,
+    List<String>? onlineModels,
     List<AssistantMessage>? messages,
+    AssistantModelMode? mode,
     String? selectedModelId,
     String? selectedModelPath,
+    String? selectedOnlineModelId,
     bool? isLoading,
     bool? isGenerating,
     bool? isDownloading,
@@ -111,18 +138,24 @@ class AssistantState {
     String? error,
     bool clearSelectedModelId = false,
     bool clearSelectedModelPath = false,
+    bool clearSelectedOnlineModelId = false,
     bool clearError = false,
   }) {
     return AssistantState(
       catalog: catalog ?? this.catalog,
       installedModels: installedModels ?? this.installedModels,
+      onlineModels: onlineModels ?? this.onlineModels,
       messages: messages ?? this.messages,
+      mode: mode ?? this.mode,
       selectedModelId: clearSelectedModelId
           ? null
           : selectedModelId ?? this.selectedModelId,
       selectedModelPath: clearSelectedModelPath
           ? null
           : selectedModelPath ?? this.selectedModelPath,
+      selectedOnlineModelId: clearSelectedOnlineModelId
+          ? null
+          : selectedOnlineModelId ?? this.selectedOnlineModelId,
       isLoading: isLoading ?? this.isLoading,
       isGenerating: isGenerating ?? this.isGenerating,
       isDownloading: isDownloading ?? this.isDownloading,
@@ -144,6 +177,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
   final AssistantKnowledgeService _knowledgeService =
       AssistantKnowledgeService();
   final AssistantChatService _chatService = AssistantChatService();
+  final AssistantOnlineChatService _onlineChatService =
+      AssistantOnlineChatService();
 
   @override
   AssistantState build() {
@@ -158,33 +193,27 @@ class AssistantNotifier extends Notifier<AssistantState> {
     try {
       final catalog = await _modelService.loadCatalog();
       final installedModels = await _modelService.listInstalledModels();
+      final onlineSelection = await _onlineChatService.initialize();
       final persistedSelectedModelId = await _modelService.getSelectedModelId();
       final selectedModel = installedModels.firstWhereOrNull(
         (model) => model.id == persistedSelectedModelId,
       );
 
-      var didLoadSelectedModel = false;
-
       if (selectedModel == null && persistedSelectedModelId != null) {
         await _modelService.setSelectedModelId(null);
-      }
-
-      if (selectedModel != null) {
-        didLoadSelectedModel = await _selectModel(selectedModel);
-        if (!didLoadSelectedModel) {
-          await _modelService.setSelectedModelId(null);
-        }
       }
 
       state = state.copyWith(
         catalog: catalog,
         installedModels: installedModels,
-        selectedModelId: didLoadSelectedModel ? selectedModel!.id : null,
-        selectedModelPath: didLoadSelectedModel ? selectedModel!.path : null,
-        clearSelectedModelId: !didLoadSelectedModel,
-        clearSelectedModelPath: !didLoadSelectedModel,
+        onlineModels: onlineSelection.models,
+        selectedOnlineModelId: onlineSelection.selectedModelId,
+        selectedModelId: selectedModel?.id,
+        selectedModelPath: selectedModel?.path,
+        clearSelectedModelId: selectedModel == null,
+        clearSelectedModelPath: selectedModel == null,
         isLoading: false,
-        clearError: selectedModel == null || didLoadSelectedModel,
+        clearError: true,
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to initialize assistant', e, st);
@@ -308,6 +337,39 @@ class AssistantNotifier extends Notifier<AssistantState> {
     await _selectModel(model);
   }
 
+  /// Selects the online OpenCode Zen mode.
+  Future<void> useOnlineMode() async {
+    try {
+      final selection = await _onlineChatService.initialize();
+      await _chatService.dispose();
+      state = state.copyWith(
+        mode: AssistantModelMode.online,
+        onlineModels: selection.models,
+        selectedOnlineModelId: selection.selectedModelId,
+        clearError: true,
+      );
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
+      state = state.copyWith(error: 'Failed to enable online model.');
+    }
+  }
+
+  /// Selects an online OpenCode Zen model by id.
+  Future<void> selectOnlineModel(String modelId) async {
+    try {
+      final selectedModelId = await _onlineChatService.selectModel(modelId);
+      await _chatService.dispose();
+      state = state.copyWith(
+        mode: AssistantModelMode.online,
+        selectedOnlineModelId: selectedModelId,
+        clearError: true,
+      );
+    } catch (e, st) {
+      logger.error('[AssistantNotifier] Failed to select online model', e, st);
+      state = state.copyWith(error: 'Failed to select online model.');
+    }
+  }
+
   /// Sends a user message to the selected model.
   Future<void> sendMessage(String content) async {
     final trimmed = content.trim();
@@ -334,16 +396,22 @@ class AssistantNotifier extends Notifier<AssistantState> {
     );
 
     try {
-      final reply = await _chatService.sendMessage(trimmed);
+      final currentMessages = state.messages;
+      final result = state.isOnlineMode
+          ? await _sendOnlineMessage(currentMessages)
+          : _AssistantSendResult(
+              content: await _chatService.sendMessage(trimmed),
+            );
       final assistantMessage = AssistantMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         role: AssistantMessageRole.assistant,
-        content: reply,
+        content: result.content,
         createdAt: DateTime.now(),
       );
 
       state = state.copyWith(
         messages: [...state.messages, assistantMessage],
+        selectedOnlineModelId: result.onlineModelId,
         isGenerating: false,
       );
     } catch (e, st) {
@@ -353,6 +421,29 @@ class AssistantNotifier extends Notifier<AssistantState> {
         error: 'Failed to generate a response.',
       );
     }
+  }
+
+  Future<_AssistantSendResult> _sendOnlineMessage(
+    List<AssistantMessage> messages,
+  ) async {
+    final result = await _onlineChatService.sendMessage(
+      messages.map(_toOnlineMessage).toList(growable: false),
+      _knowledgeService,
+    );
+
+    return _AssistantSendResult(
+      content: result.content,
+      onlineModelId: result.modelId,
+    );
+  }
+
+  AssistantOnlineChatMessage _toOnlineMessage(AssistantMessage message) {
+    return AssistantOnlineChatMessage(
+      role: message.role == AssistantMessageRole.user
+          ? AssistantOnlineMessageRole.user
+          : AssistantOnlineMessageRole.assistant,
+      content: message.content,
+    );
   }
 
   /// Deletes an installed model and clears selection if it was active.
@@ -400,6 +491,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       await _chatService.loadModel(model.path);
       await _modelService.setSelectedModelId(model.id);
       state = state.copyWith(
+        mode: AssistantModelMode.local,
         selectedModelId: model.id,
         selectedModelPath: model.path,
         clearError: true,
@@ -411,4 +503,11 @@ class AssistantNotifier extends Notifier<AssistantState> {
       return false;
     }
   }
+}
+
+class _AssistantSendResult {
+  const _AssistantSendResult({required this.content, this.onlineModelId});
+
+  final String content;
+  final String? onlineModelId;
 }
