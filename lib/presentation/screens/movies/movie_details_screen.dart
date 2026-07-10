@@ -540,6 +540,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
 
     SeedingAction? action;
+    var approvedCrossSeedHashes = <String>{};
     try {
       action = await resolveSeedingAction(
         context: context,
@@ -547,6 +548,17 @@ class MovieDetailsScreen extends ConsumerWidget {
         preview: (seconds) =>
             purgeService.previewMovie(movie.id, minimumSeedingSeconds: seconds),
       );
+      if (action != null && action != SeedingAction.cancel && context.mounted) {
+        final preview = await purgeService.previewMovie(
+          movie.id,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
+        );
+        if (!context.mounted) return;
+        approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: preview.crossSeedCandidates,
+        );
+      }
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
@@ -575,6 +587,7 @@ class MovieDetailsScreen extends ConsumerWidget {
         movie.id,
         action: action,
         minimumSeedingSeconds: minimumSeedingDays * 86400,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
       navigator.pop();
       ref.invalidate(moviesProvider);

@@ -303,7 +303,7 @@ void main() {
         final result = await _service(
           movieRepo: movieRepo,
           qb: qb,
-        ).purgeMovie(7);
+        ).purgeMovieWithAction(7, approvedCrossSeedHashes: {'dupehash000aa'});
 
         expect(result.torrentHashesDeleted, ['sourcehash001']);
         expect(result.crossSeedDuplicatesDeleted, ['dupehash000aa']);
@@ -706,8 +706,8 @@ void main() {
       },
     );
 
-    test('purgeMovie ignores cross-seed candidates with matching name but '
-        'different savePath', () async {
+    test('previewMovie finds cross-seed candidates with matching names across '
+        'different save paths', () async {
       final movieRepo = MockMovieRepository();
       final qb = MockQBittorrentService();
 
@@ -764,13 +764,13 @@ void main() {
             name: 'The.Matrix.1999.1080p.BluRay.mkv',
             savePath: '/downloads/movies',
           ),
-          // Same name but different savePath: must NOT be deleted.
+          // Same name but different savePath: must be proposed for approval.
           _torrent(
             hash: 'DUPEHASH000AA',
             name: 'the.matrix.1999.1080p.bluray.mkv',
             savePath: '/elsewhere/cross-seed',
           ),
-          // Same name AND same savePath: real cross-seed dupe, delete it.
+          // Same name in the original path: also proposed for approval.
           _torrent(
             hash: 'REALDUPE0000',
             name: 'THE.MATRIX.1999.1080P.BLURAY.MKV',
@@ -782,11 +782,18 @@ void main() {
         () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
       ).thenAnswer((_) async {});
 
-      final result = await _service(movieRepo: movieRepo, qb: qb).purgeMovie(7);
+      final preview = await _service(
+        movieRepo: movieRepo,
+        qb: qb,
+      ).previewMovie(7);
 
-      expect(result.torrentHashesDeleted, ['sourcehash001']);
-      expect(result.crossSeedDuplicatesDeleted, ['realdupe0000']);
-      verify(() => qb.deleteTorrents(any(), deleteFiles: true)).called(1);
+      expect(
+        preview.crossSeedCandidates.map((torrent) => torrent.hash),
+        containsAll(['DUPEHASH000AA', 'REALDUPE0000']),
+      );
+      verifyNever(
+        () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+      );
     });
 
     test(
@@ -1270,7 +1277,7 @@ void main() {
           movieRepo: movieRepo,
           qb: qb,
           notifications: notifications,
-        ).purgeMovie(7);
+        ).purgeMovieWithAction(7, approvedCrossSeedHashes: {'dupehash000aa'});
 
         final captured = verify(
           () => notifications.addNotification(captureAny<AppNotification>()),

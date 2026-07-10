@@ -36,4 +36,28 @@ void main() {
       expect(req.isValid, false);
     });
   });
+
+  group('Torrent', () {
+    test('should discard empty tags when parsing qBittorrent data', () {
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'pausedUP',
+        'tags': 'cross-seed, , radarr',
+      });
+
+      expect(torrent.tags, ['cross-seed', 'radarr']);
+    });
+
+    test('should expose no tags when qBittorrent returns an empty value', () {
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'pausedUP',
+        'tags': '',
+      });
+
+      expect(torrent.tags, isEmpty);
+    });
+  });
 }

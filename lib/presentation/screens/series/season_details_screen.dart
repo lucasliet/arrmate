@@ -284,6 +284,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     SeedingAction? action;
+    var approvedCrossSeedHashes = <String>{};
     try {
       action = await resolveSeedingAction(
         context: context,
@@ -294,12 +295,25 @@ class SeasonDetailsScreen extends ConsumerWidget {
           minimumSeedingSeconds: seconds,
         ),
       );
+      if (action != null && action != SeedingAction.cancel && context.mounted) {
+        final preview = await purgeService.previewSeason(
+          series.id,
+          episodeIds,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
+        );
+        if (!context.mounted) return;
+        approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: preview.crossSeedCandidates,
+        );
+      }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Failed to preview: $e')));
       return;
     }
 
     if (action == null || action == SeedingAction.cancel) return;
+    if (!context.mounted) return;
 
     showDialog(
       context: context,
@@ -318,6 +332,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
         episodeIds,
         action: action,
         minimumSeedingSeconds: minimumSeedingDays * 86400,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
       if (context.mounted) navigator.pop();
       ref.read(notificationActionsProvider.notifier).refresh();

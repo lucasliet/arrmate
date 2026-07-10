@@ -64,7 +64,11 @@ class Torrent extends Equatable {
       state: json['state'] as String? ?? 'unknown',
       category: json['category'] as String?,
       tags:
-          (json['tags'] as String?)?.split(',').map((e) => e.trim()).toList() ??
+          (json['tags'] as String?)
+              ?.split(',')
+              .map((e) => e.trim())
+              .where((tag) => tag.isNotEmpty)
+              .toList() ??
           [],
       savePath: json['save_path'] as String? ?? '',
       numSeeds: json['num_seeds'] as int? ?? 0,

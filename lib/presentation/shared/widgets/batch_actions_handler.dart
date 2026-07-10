@@ -161,13 +161,16 @@ class BatchActionsHandler {
             ),
           );
           final all = <Torrent>[];
+          final crossSeedCandidates = <Torrent>[];
           final below = <Torrent>[];
           for (final p in previews) {
             all.addAll(p.torrentsToDelete);
+            crossSeedCandidates.addAll(p.crossSeedCandidates);
             below.addAll(p.belowThreshold);
           }
           return PurgePreview(
             torrentsToDelete: all,
+            crossSeedCandidates: crossSeedCandidates,
             belowThreshold: below,
             qbittorrentSkipped: previews.any((p) => p.qbittorrentSkipped),
           );
@@ -178,10 +181,33 @@ class BatchActionsHandler {
     }
 
     if (action == null || action == SeedingAction.cancel) return null;
+    if (!context.mounted) return null;
+    final Set<String> approvedCrossSeedHashes;
+    try {
+      approvedCrossSeedHashes = await _resolveCrossSeedApprovals(
+        context,
+        () => Future.wait(
+          movieIds.map(
+            (id) => purgeService.previewMovie(
+              id,
+              minimumSeedingSeconds: minimumSeedingDays * 86400,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      return BatchActionResult(message: 'Failed to preview cross-seeds: $e');
+    }
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     try {
-      final result = await purgeService.purgeMovies(movieIds);
+      final result = await purgeService.purgeMovies(
+        movieIds,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
+      );
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -365,13 +391,16 @@ class BatchActionsHandler {
             ),
           );
           final all = <Torrent>[];
+          final crossSeedCandidates = <Torrent>[];
           final below = <Torrent>[];
           for (final p in previews) {
             all.addAll(p.torrentsToDelete);
+            crossSeedCandidates.addAll(p.crossSeedCandidates);
             below.addAll(p.belowThreshold);
           }
           return PurgePreview(
             torrentsToDelete: all,
+            crossSeedCandidates: crossSeedCandidates,
             belowThreshold: below,
             qbittorrentSkipped: previews.any((p) => p.qbittorrentSkipped),
           );
@@ -382,10 +411,33 @@ class BatchActionsHandler {
     }
 
     if (action == null || action == SeedingAction.cancel) return null;
+    if (!context.mounted) return null;
+    final Set<String> approvedCrossSeedHashes;
+    try {
+      approvedCrossSeedHashes = await _resolveCrossSeedApprovals(
+        context,
+        () => Future.wait(
+          seriesIds.map(
+            (id) => purgeService.previewSeries(
+              id,
+              minimumSeedingSeconds: minimumSeedingDays * 86400,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      return BatchActionResult(message: 'Failed to preview cross-seeds: $e');
+    }
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     try {
-      final result = await purgeService.purgeSeriesList(seriesIds);
+      final result = await purgeService.purgeSeriesList(
+        seriesIds,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
+      );
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -454,6 +506,21 @@ class BatchActionsHandler {
   // ---- helpers -----------------------------------------------------------
 
   String _plural(int count) => count == 1 ? '' : 's';
+
+  Future<Set<String>> _resolveCrossSeedApprovals(
+    BuildContext context,
+    Future<List<PurgePreview>> Function() previews,
+  ) async {
+    final candidates = <Torrent>[];
+    for (final preview in await previews()) {
+      candidates.addAll(preview.crossSeedCandidates);
+    }
+    if (!context.mounted) return const {};
+    return resolveCrossSeedApprovals(
+      context: context,
+      crossSeedCandidates: candidates,
+    );
+  }
 
   Future<bool?> _confirm(
     BuildContext context, {

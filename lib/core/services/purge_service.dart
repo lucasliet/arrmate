@@ -67,8 +67,11 @@ typedef PurgeContext = ({String type, int id, int? seasonNumber});
 /// [belowThreshold] to decide whether to show the [SeedingAction] dialog
 /// before committing.
 class PurgePreview extends Equatable {
-  /// Every torrent (source + cross-seed) that the purge would delete.
+  /// Every torrent (source + cross-seed) that the purge may delete.
   final List<Torrent> torrentsToDelete;
+
+  /// Cross-seed torrents requiring explicit user approval before deletion.
+  final List<Torrent> crossSeedCandidates;
 
   /// Subset of [torrentsToDelete] whose seeding time is below the configured
   /// threshold. Empty when no warning is needed.
@@ -80,6 +83,7 @@ class PurgePreview extends Equatable {
 
   const PurgePreview({
     required this.torrentsToDelete,
+    required this.crossSeedCandidates,
     required this.belowThreshold,
     required this.qbittorrentSkipped,
   });
@@ -87,6 +91,7 @@ class PurgePreview extends Equatable {
   @override
   List<Object?> get props => [
     torrentsToDelete,
+    crossSeedCandidates,
     belowThreshold,
     qbittorrentSkipped,
   ];
@@ -112,9 +117,8 @@ class PurgeResult extends Equatable {
 
   /// Hashes of cross-seed duplicates deleted in qBittorrent.
   ///
-  /// These are torrents not in the source-hash set but whose `name` AND
-  /// `savePath` matched a source torrent — a best-effort signal that the
-  /// candidate is a hardlinked duplicate of the source content.
+  /// These are torrents not in the source-hash set whose normalized `name`
+  /// matched a source torrent and were explicitly approved by the user.
   final List<String> crossSeedDuplicatesDeleted;
 
   /// `true` when qBittorrent steps were skipped because no instance is
@@ -168,11 +172,8 @@ class PurgeResult extends Equatable {
 /// call time via injected factory closures, so it always uses the currently
 /// selected instances.
 ///
-/// Cross-seed duplicate detection is best-effort: a torrent is treated as a
-/// duplicate only when both its `name` (case-insensitive) and `savePath`
-/// match a source torrent. This avoids deleting unrelated torrents that
-/// happen to share a release name with the source. Releases in separate
-/// directories hardlinked to the same content are NOT caught by this rule.
+/// Cross-seed detection matches normalized torrent names. Candidates must be
+/// explicitly approved by the user before their files are deleted.
 class PurgeService {
   final MovieRepository? Function() _movieRepositoryFactory;
   final SeriesRepository? Function() _seriesRepositoryFactory;
@@ -194,7 +195,10 @@ class PurgeService {
        _uuid = uuid ?? const Uuid();
 
   /// Purges a movie from Radarr and qBittorrent.
-  Future<PurgeResult> purgeMovie(int movieId) async {
+  Future<PurgeResult> purgeMovie(
+    int movieId, {
+    Set<String> approvedCrossSeedHashes = const {},
+  }) async {
     final repository = _movieRepositoryFactory();
     if (repository == null) {
       throw StateError('Movie repository not available');
@@ -220,6 +224,7 @@ class PurgeService {
 
     final torrentOutcome = await _purgeTorrents(
       hashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'movie', id: movieId, seasonNumber: null),
     );
 
@@ -234,7 +239,10 @@ class PurgeService {
   }
 
   /// Purges a series from Sonarr and qBittorrent.
-  Future<PurgeResult> purgeSeries(int seriesId) async {
+  Future<PurgeResult> purgeSeries(
+    int seriesId, {
+    Set<String> approvedCrossSeedHashes = const {},
+  }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
       throw StateError('Series repository not available');
@@ -260,6 +268,7 @@ class PurgeService {
 
     final torrentOutcome = await _purgeTorrents(
       hashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'series', id: seriesId, seasonNumber: null),
     );
 
@@ -328,6 +337,7 @@ class PurgeService {
     List<int> episodeIds, {
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
+    Set<String> approvedCrossSeedHashes = const {},
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
@@ -351,7 +361,7 @@ class PurgeService {
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
-      sourceHashes: hashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
       context: (type: 'season', id: seriesId, seasonNumber: seasonNumber),
@@ -369,7 +379,12 @@ class PurgeService {
 
   /// Purges multiple movies, aggregating the results into a single
   /// [PurgeResult].
-  Future<PurgeResult> purgeMovies(List<int> movieIds) async {
+  Future<PurgeResult> purgeMovies(
+    List<int> movieIds, {
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+    Set<String> approvedCrossSeedHashes = const {},
+  }) async {
     var queueItemsRemoved = 0;
     var catalogDeleted = 0;
     var mediaFilesDeleted = 0;
@@ -378,7 +393,12 @@ class PurgeService {
     var qbittorrentSkipped = false;
 
     for (final id in movieIds) {
-      final result = await purgeMovie(id);
+      final result = await purgeMovieWithAction(
+        id,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingSeconds,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
+      );
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -399,7 +419,12 @@ class PurgeService {
 
   /// Purges multiple series, aggregating the results into a single
   /// [PurgeResult].
-  Future<PurgeResult> purgeSeriesList(List<int> seriesIds) async {
+  Future<PurgeResult> purgeSeriesList(
+    List<int> seriesIds, {
+    SeedingAction action = SeedingAction.deleteAll,
+    int minimumSeedingSeconds = 0,
+    Set<String> approvedCrossSeedHashes = const {},
+  }) async {
     var queueItemsRemoved = 0;
     var catalogDeleted = 0;
     var mediaFilesDeleted = 0;
@@ -408,7 +433,12 @@ class PurgeService {
     var qbittorrentSkipped = false;
 
     for (final id in seriesIds) {
-      final result = await purgeSeries(id);
+      final result = await purgeSeriesWithAction(
+        id,
+        action: action,
+        minimumSeedingSeconds: minimumSeedingSeconds,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
+      );
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -436,6 +466,7 @@ class PurgeService {
     int movieId, {
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
+    Set<String> approvedCrossSeedHashes = const {},
   }) async {
     final repository = _movieRepositoryFactory();
     if (repository == null) {
@@ -458,7 +489,7 @@ class PurgeService {
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
-      sourceHashes: hashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
       context: (type: 'movie', id: movieId, seasonNumber: null),
@@ -480,6 +511,7 @@ class PurgeService {
     int seriesId, {
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
+    Set<String> approvedCrossSeedHashes = const {},
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
@@ -502,7 +534,7 @@ class PurgeService {
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
-      sourceHashes: hashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
       context: (type: 'series', id: seriesId, seasonNumber: null),
@@ -620,6 +652,7 @@ class PurgeService {
     if (service == null) {
       return const PurgePreview(
         torrentsToDelete: [],
+        crossSeedCandidates: [],
         belowThreshold: [],
         qbittorrentSkipped: true,
       );
@@ -631,6 +664,7 @@ class PurgeService {
         : const <Torrent>[];
     return PurgePreview(
       torrentsToDelete: all,
+      crossSeedCandidates: resolved.crossSeed,
       belowThreshold: below,
       qbittorrentSkipped: false,
     );
@@ -796,20 +830,17 @@ class PurgeService {
 
     final source = <Torrent>[];
     final sourceNames = <String>{};
-    final sourceSavePaths = <String>{};
     for (final t in torrents) {
       if (sourceFoundHashes.contains(t.hash.toLowerCase())) {
         source.add(t);
         sourceNames.add(_normalizeName(t.name));
-        sourceSavePaths.add(_normalizePath(t.savePath));
       }
     }
     final crossSeed = <Torrent>[];
     for (final t in torrents) {
       final h = t.hash.toLowerCase();
       if (sourceFoundHashes.contains(h)) continue; // already source
-      if (sourceNames.contains(_normalizeName(t.name)) &&
-          sourceSavePaths.contains(_normalizePath(t.savePath))) {
+      if (sourceNames.contains(_normalizeName(t.name))) {
         crossSeed.add(t);
       }
     }
@@ -823,8 +854,8 @@ class PurgeService {
 
   /// Deletes the resolved torrents in qBittorrent, honoring [action].
   ///
-  /// [sourceHashes] classifies which resolved torrents are source vs cross-seed
-  /// so the outcome keeps the split. When [action] is
+  /// [approvedCrossSeedHashes] restricts cross-seed deletions to torrents that
+  /// the user explicitly approved. When [action] is
   /// [SeedingAction.keepBelowThreshold], torrents whose seeding time is below
   /// [minimumSeedingSeconds] are kept in qBittorrent (they keep seeding); only
   /// the eligible ones are deleted. All deletes use `deleteFiles: true` so
@@ -832,7 +863,7 @@ class PurgeService {
   Future<_TorrentPurgeOutcome> _deleteTorrents(
     List<Torrent> source,
     List<Torrent> crossSeed, {
-    required Set<String> sourceHashes,
+    Set<String> approvedCrossSeedHashes = const {},
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
     PurgeContext? context,
@@ -872,6 +903,11 @@ class PurgeService {
       }
     }
     for (final t in crossSeed) {
+      final h = t.hash.toLowerCase();
+      if (!approvedCrossSeedHashes.contains(h)) {
+        logger.info('[PurgeService] Keeping unapproved cross-seed ${t.name}');
+        continue;
+      }
       if (isBelowThreshold(t)) {
         logger.info(
           '[PurgeService] Keeping cross-seed torrent ${t.name} '
@@ -879,7 +915,6 @@ class PurgeService {
         );
         continue;
       }
-      final h = t.hash.toLowerCase();
       if (hashesToDelete.add(h)) {
         crossSeedDeleted.add(h);
         _emitTorrentPurgedNotification(t, context, isCrossSeed: true);
@@ -910,6 +945,7 @@ class PurgeService {
   /// non-interactive purge path (no seeding check).
   Future<_TorrentPurgeOutcome> _purgeTorrents(
     Set<String> sourceHashes, {
+    Set<String> approvedCrossSeedHashes = const {},
     PurgeContext? context,
   }) async {
     final service = _qbittorrentServiceFactory();
@@ -925,7 +961,7 @@ class PurgeService {
     return _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
-      sourceHashes: sourceHashes,
+      approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: context,
     );
   }
@@ -977,14 +1013,4 @@ class PurgeService {
 
   /// Lowercases and trims a torrent name for case-insensitive comparison.
   static String _normalizeName(String name) => name.toLowerCase().trim();
-
-  /// Normalizes a save path for cross-seed comparison: trims whitespace,
-  /// lowercases (paths are case-sensitive on Linux but cross-seed typically
-  /// links into the same directory), and strips a single trailing slash so
-  /// `/downloads/` and `/downloads` compare equal.
-  static String _normalizePath(String path) {
-    var p = path.trim().toLowerCase();
-    if (p.endsWith('/') && p.length > 1) p = p.substring(0, p.length - 1);
-    return p;
-  }
 }

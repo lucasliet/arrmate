@@ -35,6 +35,74 @@ Future<SeedingAction?> resolveSeedingAction({
   );
 }
 
+/// Requests deletion approval for every detected cross-seed torrent.
+///
+/// Returns the normalized hashes of torrents explicitly approved for deletion.
+Future<Set<String>> resolveCrossSeedApprovals({
+  required BuildContext context,
+  required List<Torrent> crossSeedCandidates,
+}) async {
+  final approvedHashes = <String>{};
+  final seenHashes = <String>{};
+
+  for (final torrent in crossSeedCandidates) {
+    final hash = torrent.hash.toLowerCase();
+    if (!seenHashes.add(hash) || !context.mounted) continue;
+
+    final shouldDelete = await showCrossSeedConfirmationDialog(
+      context: context,
+      torrent: torrent,
+    );
+    if (shouldDelete == true) approvedHashes.add(hash);
+  }
+
+  return approvedHashes;
+}
+
+/// Shows the details of a detected cross-seed torrent before deletion.
+///
+/// Returns `true` only when the user explicitly confirms deletion.
+Future<bool?> showCrossSeedConfirmationDialog({
+  required BuildContext context,
+  required Torrent torrent,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      final theme = Theme.of(context);
+      return AlertDialog(
+        title: const Text('Cross-seed torrent found'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'A torrent with the same release name was found. Delete it too?',
+              ),
+              const SizedBox(height: 16),
+              CrossSeedTorrentDetails(torrent: torrent),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep torrent'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete torrent'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 /// Shows a confirmation dialog when some torrents being purged have seeded for
 /// less than the configured minimum.
 ///
@@ -180,6 +248,59 @@ class TorrentSeedingTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Displays the identifying details of a cross-seed candidate.
+class CrossSeedTorrentDetails extends StatelessWidget {
+  /// Torrent proposed for cross-seed deletion.
+  final Torrent torrent;
+
+  /// Creates a details view for a cross-seed torrent.
+  const CrossSeedTorrentDetails({super.key, required this.torrent});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tags = torrent.tags.isEmpty ? 'No tags' : torrent.tags.join(', ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(torrent.name, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        _DetailRow(label: 'Hash', value: torrent.hash),
+        _DetailRow(label: 'Size', value: formatBytes(torrent.size)),
+        _DetailRow(label: 'Save path', value: torrent.savePath),
+        _DetailRow(label: 'Tags', value: tags),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: RichText(
+        text: TextSpan(
+          style: theme.textTheme.bodySmall,
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
       ),
     );
   }

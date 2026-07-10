@@ -693,6 +693,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
 
     SeedingAction? action;
+    var approvedCrossSeedHashes = <String>{};
     try {
       action = await resolveSeedingAction(
         context: context,
@@ -702,6 +703,17 @@ class SeriesDetailsScreen extends ConsumerWidget {
           minimumSeedingSeconds: seconds,
         ),
       );
+      if (action != null && action != SeedingAction.cancel && context.mounted) {
+        final preview = await purgeService.previewSeries(
+          series.id,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
+        );
+        if (!context.mounted) return;
+        approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: preview.crossSeedCandidates,
+        );
+      }
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
@@ -730,6 +742,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
         series.id,
         action: action,
         minimumSeedingSeconds: minimumSeedingDays * 86400,
+        approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
       navigator.pop();
       ref.invalidate(seriesProvider);
@@ -1032,13 +1045,16 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
             ),
           );
           final all = <Torrent>[];
+          final crossSeedCandidates = <Torrent>[];
           final below = <Torrent>[];
           for (final p in previews) {
             all.addAll(p.torrentsToDelete);
+            crossSeedCandidates.addAll(p.crossSeedCandidates);
             below.addAll(p.belowThreshold);
           }
           return PurgePreview(
             torrentsToDelete: all,
+            crossSeedCandidates: crossSeedCandidates,
             belowThreshold: below,
             qbittorrentSkipped: previews.any((p) => p.qbittorrentSkipped),
           );
@@ -1050,6 +1066,33 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     }
 
     if (action == null || action == SeedingAction.cancel) return;
+    if (!mounted) return;
+
+    final Set<String> approvedCrossSeedHashes;
+    try {
+      final previews = await Future.wait(
+        _selectedSeasons.map(
+          (sn) => purgeService.previewSeason(
+            series.id,
+            episodeIdsBySeason[sn] ?? const [],
+            minimumSeedingSeconds: minimumSeedingDays * 86400,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+        context: context,
+        crossSeedCandidates: [
+          for (final preview in previews) ...preview.crossSeedCandidates,
+        ],
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to preview cross-seeds: $e')),
+      );
+      return;
+    }
+    if (!mounted) return;
 
     _showLoading(navigator);
     try {
@@ -1062,6 +1105,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           episodeIdsBySeason[seasonNumber] ?? const [],
           action: action,
           minimumSeedingSeconds: minimumSeedingDays * 86400,
+          approvedCrossSeedHashes: approvedCrossSeedHashes,
         );
         filesDeleted += result.mediaFilesDeleted;
         hashesDeleted.addAll(result.torrentHashesDeleted);
