@@ -41,6 +41,7 @@ description: Filtrar/ordenar filmes e séries, alternar grade/lista, busca local
 **Observações:**
 - Você pode combinar sort + filter (ex: ordenar por Rating descendente + mostrar apenas Downloaded).
 - Pull-to-refresh (arrastar para baixo) limpa a busca e recarrega.
+- A barra de seleção em lote permite ações rápidas para múltiplos itens (Monitor, Unmonitor e opções de Delete via submenu).
 
 ## Filtrar e ordenar a lista de séries
 
@@ -69,7 +70,7 @@ Funciona exatamente como Filmes:
   - **Continuing:** séries em produção (status continuing).
 - **Nota:** Séries usam status de série (Ended/Continuing) em vez de arquivos individuais.
 
-**Observações:** O filtro de séries é pensado em termos de séries inteiras, não episódios individuais.
+**Observações:** O filtro de séries é pensado em termos de séries inteiras, não episódios individuais. A seleção em lote também suporta ações de Monitor/Unmonitor e submenu de Delete para múltiplas séries.
 
 ## Alternar entre visualização em grade e lista
 

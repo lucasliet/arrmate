@@ -187,21 +187,23 @@ Use o **Purge** quando quiser remover completamente um filme **e** liberar o esp
 7. Snackbar confirma `Movie purged.` seguido de um resumo multi-linha:
    - `Queue items: N` — itens removidos da fila do Radarr.
    - `Media files: N` — arquivos de mídia apagados.
-   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed).
+   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed aprovadas).
    - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Radarr é afetado).
-8. Volta automaticamente à lista de filmes (que é recarregada).
+8. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
+9. Volta automaticamente à lista de filmes (que é recarregada).
 
 **O que o Purge faz, por trás:**
 1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Radarr.
 2. Remove os itens da fila no Radarr (`removeFromClient: true`).
 3. Deleta os arquivos de mídia e o filme do Radarr (`deleteFiles: true`).
-4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** duplicatas cross-seed (mesmo `name` **E** mesmo `savePath`, ambos normalizados maiúsculas/minúsculas).
-5. Deleta esses torrents com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
+5. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
+6. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
 
 **Observações:**
 - **Irreversível:** o filme sai do Radarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
 - **Sem blocklist:** como o filme é removido do catálogo, ele deixa de ser monitorado e não é re-grabbed automaticamente.
-- **Cross-seed em pasta diferente NÃO é pego:** duplicatas hardlinked em diretórios distintos de cross-seed não são detectadas pela regra de `name` + `savePath`, então seu espaço pode não ser totalmente liberado.
+- **Aprovação manual por duplicata:** candidatos cross-seed só são deletados quando você aprova no diálogo; os não aprovados permanecem no qBittorrent.
 - **Sem instância do qBittorrent:** o Purge só atua no lado Radarr; um aviso é exibido no snackbar.
 - Se você usa **múltiplas instâncias** de qBittorrent/Radarr/Sonarr, o Purge usa a primeira instância do qBittorrent configurada — pode não ser a correta.
 

@@ -130,7 +130,7 @@ description: Configurar ntfy.sh, tópico, auto-configurar webhooks, tipos de eve
 
 - **Lista de notificações:**
   - Cada card exibe:
-    - **Badge colorido** indicando tipo (Grab, Import, Failure, etc).
+    - **Badge colorido** indicando tipo (Grab, Import, Failure, Purged, etc).
     - **Título** da notificação.
     - **Timestamp relativo** (ex: "2 hours ago").
     - **Indicador de leitura:** notificações não lidas têm fundo destacado ou ponto visual.
@@ -150,5 +150,6 @@ description: Configurar ntfy.sh, tópico, auto-configurar webhooks, tipos de eve
 
 **Observações:**
 - Notificações são **persistidas localmente** (entre sessões).
+- Eventos de **purge** também aparecem na central (incluindo indicação quando a remoção foi de cross-seed).
 - Tocar em uma notificação não navega para conteúdo específico (ainda; pode ser futuro).
 - Useful para auditar o que aconteceu no servidor.

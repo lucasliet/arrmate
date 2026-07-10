@@ -128,7 +128,10 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 
 **AppBar da SeasonDetailsScreen:**
 - **Título**: "[Nome da série] - Season [N]".
+- **Botão "Automatic Search"** (ícone `travel_explore` no canto superior direito): dispara busca automática de releases para toda a temporada.
+- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download).
 - **Botão "Delete season files"** (ícone `delete_sweep` no canto superior direito): apaga todos os arquivos dessa temporada em disco. **Desabilitado** (acinzentado) quando a temporada não tem nenhum episódio com arquivo baixado.
+- **Botão "Purge season"** (ícone `delete_forever` no canto superior direito): remove episódios e arquivos da temporada no Sonarr e também remove torrents fonte no qBittorrent (com aprovação individual de cross-seed).
 
 **Cada episódio exibe:**
    - **Número do episódio** (ex: "S01E01", "S01E02").
@@ -142,9 +145,11 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
    - **Toggle de monitoramento** (ao lado do episódio) — ON/OFF.
    - **Ícone de busca** (lupa) para buscar manualmente esse episódio.
 
-5. **Opções por episódio:**
+5. **Opções da temporada e por episódio:**
+   - Tocar em **Automatic Search** na AppBar para buscar releases da temporada inteira.
+   - Tocar em **Interactive Search** na AppBar para abrir o sheet de releases da temporada com ordenação por score/seeders/idade/tamanho/indexador.
    - Tocar no toggle para monitorar/desmonitorar episódio individual.
-   - Tocar no ícone de busca (lupa) para abrir sheet de releases (mesmo padrão de busca do Radarr).
+   - Tocar no ícone de busca (lupa) para abrir sheet de releases de um episódio específico.
    - Tocar em qualquer lugar do tile para ver **detalhes completos do episódio** (nome, sinopse, elenco, etc).
 
 6. Se tocou em uma release na busca:
@@ -239,21 +244,23 @@ Use o **Purge** quando quiser remover completamente uma série **e** liberar o e
 7. Snackbar confirma `Series purged.` seguido de um resumo multi-linha:
    - `Queue items: N` — itens removidos da fila do Sonarr.
    - `Media files: N` — arquivos de mídia apagados.
-   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed).
+   - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed aprovadas).
    - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Sonarr é afetado).
-8. Volta automaticamente à lista de séries (que é recarregada).
+8. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
+9. Volta automaticamente à lista de séries (que é recarregada).
 
 **O que o Purge faz, por trás:**
 1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Sonarr.
 2. Remove os itens da fila no Sonarr (`removeFromClient: true`).
 3. Deleta os arquivos de mídia e a série do Sonarr (`deleteFiles: true`).
-4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** duplicatas cross-seed (mesmo `name` **E** mesmo `savePath`, ambos normalizados maiúsculas/minúsculas).
-5. Deleta esses torrents com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
+5. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
+6. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
 
 **Observações:**
 - **Irreversível:** a série sai do Sonarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
 - **Sem blocklist:** como a série é removida do catálogo, ela deixa de ser monitorada e não é re-grabbed automaticamente.
-- **Cross-seed em pasta diferente NÃO é pego:** duplicatas hardlinked em diretórios distintos de cross-seed não são detectadas pela regra de `name` + `savePath`, então seu espaço pode não ser totalmente liberado.
+- **Aprovação manual por duplicata:** candidatos cross-seed só são deletados quando você aprova no diálogo; os não aprovados permanecem no qBittorrent.
 - **Sem instância do qBittorrent:** o Purge só atua no lado Sonarr; um aviso é exibido no snackbar.
 - Se você usa **múltiplas instâncias** de qBittorrent/Radarr/Sonarr, o Purge usa a primeira instância do qBittorrent configurada — pode não ser a correta.
 
@@ -282,6 +289,27 @@ Use esta opção quando quiser **liberar espaço em disco** mas continuar acompa
 - Todos os episódios passam para status "Missing" (vermelho).
 - Se a série estiver monitorada, o Sonarr voltará a buscar releases automaticamente.
 - A operação pode demorar alguns segundos em séries com muitos episódios (cada arquivo é apagado em sequência).
+
+## Purge de temporada — remover temporada + arquivos + torrents fonte
+
+**Onde fica:** SeasonDetailsScreen → botão "Purge season" (ícone `delete_forever` na AppBar).
+
+Use esta opção quando quiser remover completamente uma temporada específica, incluindo episódios no Sonarr, arquivos em disco e torrents fonte no qBittorrent.
+
+**Passo a passo:**
+1. Abrir detalhes da série.
+2. Scroll para **"Seasons"** e tocar na temporada desejada.
+3. Na AppBar da SeasonDetailsScreen, tocar no ícone **"Purge season"** (`delete_forever`).
+4. Um **diálogo de confirmação** aparece explicando que a operação remove episódios/arquivos da temporada e torrents fonte no qBittorrent.
+5. Tocar **"Purge"** para confirmar.
+6. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata.
+7. **Indicador de progresso** (spinner) aparece durante a execução completa.
+8. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
+
+**Observações:**
+- A operação atua apenas na temporada selecionada; o restante da série permanece no Sonarr.
+- A central de notificações recebe registros locais do tipo purge para cada torrent removido.
+- Se não houver instância qBittorrent configurada, somente o lado Sonarr é afetado e um aviso é exibido.
 
 ## Deletar arquivos de uma temporada inteira
 

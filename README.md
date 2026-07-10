@@ -15,10 +15,15 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 
 ## 🚀 Features
 
-- **Library Management**: Browse, search, filter, and manage your movie and
-  series libraries with a native mobile experience.
-- **Media Management**: Delete movies and series from your library, and remove
-  individual media files with confirmation dialogs.
+- **Library Management**: Browse, search, filter, sort, batch select, and
+  manage your movie and series libraries with a native mobile experience.
+- **Media Management**: Delete, monitor/unmonitor in batch, and purge movies or
+  series from your library, plus remove individual media files with
+  confirmation dialogs.
+- **Season Management (Sonarr)**: Run automatic and interactive season search,
+  purge full seasons, and delete season files directly from season details.
+- **Safer Purge Flow**: Purge now detects cross-seed candidates and requires
+  explicit per-torrent approval before deleting duplicates in qBittorrent.
 - **Download Client Integration**: Full qBittorrent support to view, pause,
   resume, and delete downloads, plus add new torrents via URL or file.
 - **Torrent Import**: Import completed torrent files directly to your
@@ -40,7 +45,10 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 - **Notifications**: Receive real-time push notifications via
   [ntfy.sh](https://ntfy.sh) integration with **unique multi-device
   synchronization**, **automatic configuration**, and **background polling**
-  (every 30 min) with optional Battery Saver mode.
+  (every 30 min) with optional Battery Saver mode, plus in-app purge event
+  notifications for removed torrents.
+- **Guided Onboarding**: Built-in setup tour with coach marks on first launch,
+  with replay available at Settings → Getting Started.
 - **Multi-Instance Support**: Manage multiple Radarr and Sonarr server instances
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
