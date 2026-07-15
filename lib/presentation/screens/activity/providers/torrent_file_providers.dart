@@ -16,6 +16,16 @@ final torrentFilesProvider = FutureProvider.family<List<TorrentFile>, String>((
   return service.getTorrentFiles(hash);
 });
 
+/// Fetches the list of peers connected to a specific torrent.
+final torrentPeersProvider = FutureProvider.family<List<TorrentPeer>, String>((
+  ref,
+  hash,
+) async {
+  final service = ref.watch(qbittorrentServiceProvider);
+  if (service == null) return [];
+  return service.getTorrentPeers(hash);
+});
+
 /// Controller for torrent file actions (priority, location).
 final torrentActionProvider =
     AsyncNotifierProvider.autoDispose<TorrentActionNotifier, void>(

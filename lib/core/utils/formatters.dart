@@ -115,3 +115,20 @@ String formatDurationSeconds(int totalSeconds) {
   if (minutes > 0 && days == 0) parts.add('${minutes}m');
   return parts.isEmpty ? '0m' : parts.join(' ');
 }
+
+/// Converts an ISO 3166-1 alpha-2 country code into a flag emoji.
+///
+/// [code] is a two-letter uppercase code (e.g. "BR", "US").
+/// Returns the regional-indicator flag emoji, or a white flag when the code is
+/// missing or not a valid alpha-2 value.
+String countryFlagEmoji(String? code) {
+  if (code == null || code.length != 2) return '🏳️';
+
+  final upper = code.toUpperCase();
+  final buffer = StringBuffer();
+  for (final char in upper.runes) {
+    if (char < 0x41 || char > 0x5A) return '🏳️';
+    buffer.writeCharCode(0x1F1E6 + (char - 0x41));
+  }
+  return buffer.toString();
+}

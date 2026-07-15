@@ -8,6 +8,7 @@ import '../../../shared/widgets/seeding_warning_dialog.dart';
 import '../providers/qbittorrent_provider.dart';
 import '../qbittorrent/change_location_sheet.dart';
 import '../qbittorrent/torrent_files_sheet.dart';
+import '../qbittorrent/torrent_peers_sheet.dart';
 import 'torrent_import_target_sheet.dart';
 
 class TorrentDetailsSheet extends ConsumerWidget {
@@ -174,12 +175,14 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               'Seeds',
                               '${torrent.numSeeds} connected',
                               width: width,
+                              onTap: () => _showPeersSheet(context),
                             ),
                             _buildStatItem(
                               context,
                               'Leechers',
                               '${torrent.numLeechs} connected',
                               width: width,
+                              onTap: () => _showPeersSheet(context),
                             ),
                           ],
                         );
@@ -345,6 +348,15 @@ class TorrentDetailsSheet extends ConsumerWidget {
     );
   }
 
+  void _showPeersSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TorrentPeersSheet(torrent: torrent),
+    );
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
     final minimumSeconds = minimumSeedingDays * 86400;
@@ -453,27 +465,51 @@ class TorrentDetailsSheet extends ConsumerWidget {
     String value, {
     required double width,
     Color? color,
+    VoidCallback? onTap,
   }) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: context.textTheme.labelMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: context.textTheme.titleMedium?.copyWith(
+            color: color,
+            fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+
+    if (onTap == null) {
+      return SizedBox(width: width, child: content);
+    }
+
     return SizedBox(
       width: width,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: context.textTheme.labelMedium?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: content),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: context.textTheme.titleMedium?.copyWith(
-              color: color,
-              fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

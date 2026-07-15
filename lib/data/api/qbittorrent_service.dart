@@ -421,6 +421,36 @@ class QBittorrentService {
     }
   }
 
+  /// Gets the list of peers connected to a specific torrent.
+  ///
+  /// Calls `GET /api/v2/sync/torrentPeers`, whose response nests a `peers` map
+  /// keyed by "ip:port".
+  Future<List<TorrentPeer>> getTorrentPeers(String hash) async {
+    try {
+      final response = await _request<Map<String, dynamic>>(
+        '/api/v2/sync/torrentPeers',
+        queryParameters: {'hash': hash},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final peersMap = response.data!['peers'];
+        if (peersMap is! Map<String, dynamic>) return [];
+        return peersMap.entries
+            .map(
+              (entry) => TorrentPeer.fromJson(
+                entry.value as Map<String, dynamic>,
+                entry.key,
+              ),
+            )
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get torrent peers', e);
+      rethrow;
+    }
+  }
+
   /// Sets the priority of files within a torrent.
   ///
   /// [hash] The torrent hash.
