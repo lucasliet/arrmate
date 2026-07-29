@@ -6,13 +6,19 @@ import '../screens/assistant/assistant_screen.dart';
 import '../screens/movies/movies_screen.dart';
 import '../screens/movies/movie_details_screen.dart';
 import '../screens/series/series_screen.dart';
+import '../screens/series/season_route_screen.dart';
+import '../screens/series/episode_route_screen.dart';
 import '../screens/series/series_details_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 import '../screens/activity/activity_screen.dart';
+import '../screens/discovery/discovery_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/instance_edit_screen.dart';
 import '../screens/settings/logs_screen.dart';
 import '../screens/settings/health_screen.dart';
+import '../screens/settings/system_overview_screen.dart';
+import '../screens/settings/version_history_screen.dart';
+import '../screens/settings/diagnostics_screen.dart';
 import '../screens/settings/quality_profiles_screen.dart';
 import '../screens/settings/notification_settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
@@ -63,6 +69,47 @@ void initializeRouter(String initialLocation) {
                       int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
                   return SeriesDetailsScreen(seriesId: id);
                 },
+                routes: [
+                  GoRoute(
+                    path: 'season/:season',
+                    builder: (context, state) {
+                      final id =
+                          int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                      final season =
+                          int.tryParse(state.pathParameters['season'] ?? '') ??
+                          0;
+                      return SeasonRouteScreen(
+                        seriesId: id,
+                        seasonNumber: season,
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'episode/:episode',
+                        builder: (context, state) {
+                          final id =
+                              int.tryParse(state.pathParameters['id'] ?? '') ??
+                              0;
+                          final season =
+                              int.tryParse(
+                                state.pathParameters['season'] ?? '',
+                              ) ??
+                              0;
+                          final episode =
+                              int.tryParse(
+                                state.pathParameters['episode'] ?? '',
+                              ) ??
+                              0;
+                          return EpisodeRouteScreen(
+                            seriesId: id,
+                            seasonNumber: season,
+                            episodeId: episode,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -75,6 +122,19 @@ void initializeRouter(String initialLocation) {
             path: '/activity',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: ActivityScreen()),
+          ),
+          GoRoute(
+            path: '/discover',
+            builder: (context, state) => DiscoveryScreen(
+              initialType: state.uri.queryParameters['type'] ?? 'movie',
+            ),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (context, state) => DiscoveryScreen(
+              initialType: state.uri.queryParameters['type'] ?? 'movie',
+              initialQuery: state.uri.queryParameters['q'],
+            ),
           ),
           GoRoute(
             path: '/settings',
@@ -103,6 +163,18 @@ void initializeRouter(String initialLocation) {
               GoRoute(
                 path: 'health',
                 builder: (context, state) => const HealthScreen(),
+              ),
+              GoRoute(
+                path: 'system-overview',
+                builder: (context, state) => const SystemOverviewScreen(),
+              ),
+              GoRoute(
+                path: 'version-history',
+                builder: (context, state) => const VersionHistoryScreen(),
+              ),
+              GoRoute(
+                path: 'diagnostics',
+                builder: (context, state) => const DiagnosticsScreen(),
               ),
               GoRoute(
                 path: 'quality-profiles',

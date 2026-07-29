@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instances_provider.dart';
+import '../../widgets/tags/tag_list.dart';
 import 'providers/series_provider.dart';
 
 /// Screen for editing an existing series' configuration (monitor status, profile, path).
@@ -18,8 +20,10 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   late bool _monitored;
   late bool _seasonFolder;
   late SeriesType _seriesType;
+  late SeriesMonitorNewItems _monitorNewItems;
   late int? _qualityProfileId;
   late String? _rootFolderPath;
+  late Set<int> _selectedTagIds;
 
   bool _isSaving = false;
 
@@ -29,9 +33,11 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
     _monitored = widget.series.monitored;
     _seasonFolder = widget.series.seasonFolder;
     _seriesType = widget.series.seriesType;
+    _monitorNewItems =
+        widget.series.monitorNewItems ?? SeriesMonitorNewItems.none;
     _qualityProfileId = widget.series.qualityProfileId;
     _rootFolderPath = widget.series.rootFolderPath ?? widget.series.path;
-    // Map tags if available in future
+    _selectedTagIds = widget.series.tags.toSet();
   }
 
   Future<void> _save() async {
@@ -93,10 +99,12 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   Future<void> _performUpdate({required bool moveFiles}) async {
     final updatedSeries = widget.series.copyWith(
       monitored: _monitored,
+      monitorNewItems: _monitorNewItems,
       seasonFolder: _seasonFolder,
       seriesType: _seriesType,
       qualityProfileId: _qualityProfileId,
       rootFolderPath: _rootFolderPath,
+      tags: _selectedTagIds.toList(),
     );
 
     // Using the controller to update ensures the provider is refreshed
@@ -112,6 +120,8 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(seriesRepositoryProvider);
+    final tags =
+        ref.watch(currentSonarrInstanceProvider)?.tags ?? const <Tag>[];
 
     if (repository == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -167,6 +177,22 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
                 subtitle: const Text('Monitor episodes for this series'),
                 value: _monitored,
                 onChanged: (value) => setState(() => _monitored = value),
+              ),
+              const Divider(),
+
+              SwitchListTile(
+                title: const Text('Monitor New Seasons'),
+                subtitle: const Text(
+                  'Automatically monitor seasons added in the future',
+                ),
+                value: _monitorNewItems == SeriesMonitorNewItems.all,
+                onChanged: (value) {
+                  setState(
+                    () => _monitorNewItems = value
+                        ? SeriesMonitorNewItems.all
+                        : SeriesMonitorNewItems.none,
+                  );
+                },
               ),
               const Divider(),
 
@@ -252,6 +278,17 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
                   ),
                 ),
               ),
+              if (tags.isNotEmpty) ...[
+                const Divider(),
+                Text('Tags', style: Theme.of(context).textTheme.titleMedium),
+                TagList(
+                  tags: tags,
+                  selectedTagIds: _selectedTagIds,
+                  onSelectionChanged: (value) {
+                    setState(() => _selectedTagIds = value);
+                  },
+                ),
+              ],
             ],
           );
         },
