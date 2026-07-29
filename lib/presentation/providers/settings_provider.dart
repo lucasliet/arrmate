@@ -265,6 +265,23 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setInt(_minimumSeedingDaysKey, clamped);
   }
 
+  /// Clears every persisted application preference and restores the defaults.
+  ///
+  /// Only resets app-level settings; configured instances are preserved and
+  /// must be removed individually from the instance manager.
+  Future<void> resetSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_colorSchemeKey);
+    await prefs.remove(_appearanceKey);
+    await prefs.remove(viewModeKey);
+    await prefs.remove(_notificationsKey);
+    await prefs.remove(_homeTabKey);
+    await prefs.remove(_movieSortKey);
+    await prefs.remove(_seriesSortKey);
+    await prefs.remove(_minimumSeedingDaysKey);
+    state = const SettingsState();
+  }
+
   /// Updates notification settings and manages the ntfy connection.
   ///
   /// With in-app notifications, there's no background polling.

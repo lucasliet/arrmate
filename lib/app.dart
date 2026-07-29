@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/widgets/update_dialog.dart';
+import 'presentation/widgets/whats_new_dialog.dart';
 import 'presentation/providers/onboarding_provider.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
@@ -32,6 +33,11 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!kDebugMode) {
         ref.read(updateProvider.notifier).checkForUpdate();
+      }
+
+      final navContext = rootNavigatorKey.currentContext;
+      if (navContext != null) {
+        WhatsNewDialog.showIfNeeded(navContext, ref);
       }
 
       // Check for initialization errors
