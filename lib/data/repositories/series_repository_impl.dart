@@ -85,8 +85,11 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<Episode> getEpisode(int id) => _api.getEpisode(id);
 
   @override
-  Future<List<Episode>> getCalendar({DateTime? start, DateTime? end}) =>
-      _api.getCalendar(start: start, end: end);
+  Future<List<Episode>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  }) => _api.getCalendar(start: start, end: end, unmonitored: unmonitored);
 
   @override
   Future<QueueItems> getQueue({
@@ -157,31 +160,40 @@ class SeriesRepositoryImpl implements SeriesRepository {
   Future<void> deleteSeriesFile(int fileId) => _api.deleteSeriesFile(fileId);
 
   @override
+  Future<void> monitorEpisodes(List<int> episodeIds, bool monitored) {
+    return _api.monitorEpisodes(episodeIds, monitored);
+  }
+
+  @override
   Future<int> deleteSeriesFiles(int seriesId, {int? seasonNumber}) async {
     final Set<int> fileIds;
+    final Set<int> episodeIds;
     if (seasonNumber == null) {
       final files = await _api.getSeriesFiles(seriesId);
       fileIds = files.map((f) => f.id).toSet();
+      episodeIds = {};
     } else {
       final episodes = await _api.getEpisodes(seriesId);
-      fileIds = episodes
-          .where(
-            (e) =>
-                e.seasonNumber == seasonNumber &&
-                e.hasFile &&
-                e.episodeFileId != null &&
-                e.episodeFileId! > 0,
-          )
-          .map((e) => e.episodeFileId!)
+      final affectedEpisodes = episodes.where(
+        (episode) =>
+            episode.seasonNumber == seasonNumber &&
+            episode.hasFile &&
+            episode.episodeFileId != null &&
+            episode.episodeFileId! > 0,
+      );
+      fileIds = affectedEpisodes
+          .map((episode) => episode.episodeFileId!)
           .toSet();
+      episodeIds = affectedEpisodes.map((episode) => episode.id).toSet();
     }
 
     logger.info(
       '[SeriesRepository] Deleting ${fileIds.length} file(s) for series $seriesId${seasonNumber != null ? ' season $seasonNumber' : ''}',
     );
 
-    for (final id in fileIds) {
-      await _api.deleteSeriesFile(id);
+    await _api.deleteSeriesFiles(fileIds.toList());
+    if (episodeIds.isNotEmpty) {
+      await _api.monitorEpisodes(episodeIds.toList(), false);
     }
     return fileIds.length;
   }

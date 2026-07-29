@@ -11,8 +11,13 @@ class SonarrApi {
     : _client =
           client ??
           ApiClient(
-            baseUrl: '${instance.url}${ApiConstants.apiPath}',
+            baseUrl: '${instance.connectionUrls.first}${ApiConstants.apiPath}',
+            fallbackBaseUrls: instance.connectionUrls
+                .skip(1)
+                .map((url) => '$url${ApiConstants.apiPath}')
+                .toList(),
             headers: instance.authHeaders,
+            diagnosticSource: instance.id,
           );
 
   /// Retrieves all series from the Sonarr library.
@@ -42,12 +47,23 @@ class SonarrApi {
   ///
   /// [moveFiles] - If true, moves files to the new path if the path has changed.
   Future<Series> updateSeries(Series series, {bool moveFiles = false}) async {
-    final response = await _client.put(
-      '/series/${series.id}',
-      data: series.toJson(),
-      queryParameters: {'moveFiles': moveFiles},
+    await _client.put(
+      '/series/editor',
+      data: {
+        'seriesIds': [series.id],
+        'monitored': series.monitored,
+        'monitorNewItems':
+            (series.monitorNewItems ?? SeriesMonitorNewItems.none).name,
+        'seriesType': series.seriesType.name,
+        'seasonFolder': series.seasonFolder,
+        'qualityProfileId': series.qualityProfileId,
+        'rootFolderPath': series.rootFolderPath,
+        'tags': series.tags,
+        'applyTags': 'replace',
+        if (moveFiles) 'moveFiles': true,
+      },
     );
-    return Series.fromJson(response as Map<String, dynamic>);
+    return series;
   }
 
   /// Deletes a series from the library.
@@ -63,7 +79,7 @@ class SonarrApi {
       '/series/$id',
       queryParameters: {
         'deleteFiles': deleteFiles,
-        'addExclusion': addExclusion,
+        'addImportListExclusion': addExclusion,
       },
     );
   }
@@ -186,12 +202,18 @@ class SonarrApi {
   /// Retrieves upcoming episodes from the calendar.
   ///
   /// [start] and [end] define the date range.
-  Future<List<Episode>> getCalendar({DateTime? start, DateTime? end}) async {
+  /// [unmonitored] includes episodes that are not monitored when true.
+  Future<List<Episode>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  }) async {
     final response = await _client.get(
       '/calendar',
       queryParameters: {
         if (start != null) 'start': start.toIso8601String(),
         if (end != null) 'end': end.toIso8601String(),
+        'unmonitored': unmonitored,
         'includeSeries': true,
         'includeEpisodeFile': true,
       },
@@ -323,6 +345,28 @@ class SonarrApi {
     await _client.delete('/episodefile/$fileId');
   }
 
+  /// Deletes episode files in a single Sonarr operation.
+  Future<void> deleteSeriesFiles(List<int> fileIds) async {
+    if (fileIds.isEmpty) {
+      return;
+    }
+    await _client.delete(
+      '/episodefile/bulk',
+      data: {'episodeFileIds': fileIds},
+    );
+  }
+
+  /// Updates the monitored state of the selected episodes.
+  Future<void> monitorEpisodes(List<int> episodeIds, bool monitored) async {
+    if (episodeIds.isEmpty) {
+      return;
+    }
+    await _client.put(
+      '/episode/monitor',
+      data: {'episodeIds': episodeIds, 'monitored': monitored},
+    );
+  }
+
   /// Retrieves a specific episode file by its [id].
   Future<MediaFile> getEpisodeFile(int id) async {
     final response = await _client.get('/episodefile/$id');
@@ -370,6 +414,14 @@ class SonarrApi {
   Future<InstanceStatus> getSystemStatus() async {
     final response = await _client.get('/system/status');
     return InstanceStatus.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Retrieves the storage locations available to Sonarr.
+  Future<List<InstanceDiskSpace>> getDiskSpace() async {
+    final response = await _client.get('/diskspace');
+    return (response as List)
+        .map((item) => InstanceDiskSpace.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Retrieves available tags.

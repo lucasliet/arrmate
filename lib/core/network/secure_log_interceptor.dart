@@ -13,12 +13,13 @@ class SecureLogInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final sanitizedHeaders = _sanitizeHeaders(options.headers);
     final sanitizedQueryParams = _sanitizeQueryParams(options.queryParameters);
+    final bodyType = options.data?.runtimeType.toString() ?? 'none';
 
     logger.debug(
       '[API] Request: ${options.method} ${options.path}\n'
       'Query: $sanitizedQueryParams\n'
       'Headers: $sanitizedHeaders\n'
-      'Data: ${options.data}',
+      'Body type: $bodyType',
     );
     handler.next(options);
   }
@@ -27,7 +28,7 @@ class SecureLogInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     logger.debug(
       '[API] Response: ${response.statusCode} ${response.requestOptions.path}\n'
-      'Data: ${response.data}',
+      'Body type: ${response.data?.runtimeType ?? 'none'}',
     );
     handler.next(response);
   }
@@ -37,7 +38,7 @@ class SecureLogInterceptor extends Interceptor {
     logger.error(
       '[API] Error: ${err.message} (${err.type})\n'
       'Path: ${err.requestOptions.path}\n'
-      'Data: ${err.response?.data}',
+      'Status: ${err.response?.statusCode ?? 'unavailable'}',
       err,
       err.stackTrace,
     );

@@ -39,8 +39,13 @@ abstract class SeriesRepository {
   /// Retrieves a specific episode by its [id].
   Future<Episode> getEpisode(int id);
 
-  /// Retrieves upcoming episodes from the calendar.
-  Future<List<Episode>> getCalendar({DateTime? start, DateTime? end});
+  /// Retrieves upcoming episodes from the calendar, including unmonitored
+  /// episodes by default.
+  Future<List<Episode>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  });
 
   /// Retrieves the current activity queue.
   Future<QueueItems> getQueue({
@@ -88,6 +93,9 @@ abstract class SeriesRepository {
 
   /// Deletes an episode file.
   Future<void> deleteSeriesFile(int fileId);
+
+  /// Updates the monitored state of [episodeIds].
+  Future<void> monitorEpisodes(List<int> episodeIds, bool monitored);
 
   /// Deletes every episode file belonging to [seriesId].
   ///

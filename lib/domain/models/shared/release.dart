@@ -1,9 +1,6 @@
 import 'package:equatable/equatable.dart';
-
-// Usually Quality is a shared nested object like { "quality": { "id": 1, "name": "..." }, "revision": ... }
-// I'll check if we already have a generic Quality model or if I should just map it dynamically or define it here.
-// Checking `media_file.dart` or similar might give a hint, but I'll define a simple one here or reuse if existing.
-// I'll assume Quality Model needs to be robust.
+import 'package:arrmate/domain/models/shared/media_custom_format.dart';
+import 'package:arrmate/domain/models/shared/media_language.dart';
 
 /// Represents a release found by an indexer.
 class Release extends Equatable {
@@ -12,17 +9,24 @@ class Release extends Equatable {
   final int size;
   final String link;
   final String indexer;
-  final String indexerId; // Sometimes null or string
+  final String indexerId;
   final int seeders;
   final int leechers;
-  final String protocol; // 'torrent' or 'usenet'
+  final String protocol;
   final bool rejected;
   final List<String> rejections;
   final int age;
-  final List<String> indexerFlags; // Sometimes used for scoring
+  final List<String> indexerFlags;
   final String? infoUrl;
   final String? downloadUrl;
-  final int score;
+  final int customFormatScore;
+  final int qualityWeight;
+  final int releaseWeight;
+  final List<MediaLanguage> languages;
+  final List<MediaCustomFormat> customFormats;
+  final List<int> mappedEpisodeNumbers;
+  final bool fullSeason;
+  final bool episodeRequested;
   final ReleaseQuality quality;
 
   const Release({
@@ -41,9 +45,17 @@ class Release extends Equatable {
     this.indexerFlags = const [],
     this.infoUrl,
     this.downloadUrl,
-    this.score = 0,
+    int customFormatScore = 0,
+    int? score,
+    this.qualityWeight = 0,
+    this.releaseWeight = 0,
+    this.languages = const [],
+    this.customFormats = const [],
+    this.mappedEpisodeNumbers = const [],
+    this.fullSeason = false,
+    this.episodeRequested = false,
     required this.quality,
-  });
+  }) : customFormatScore = score ?? customFormatScore;
 
   factory Release.fromJson(Map<String, dynamic> json) {
     return Release(
@@ -62,13 +74,32 @@ class Release extends Equatable {
           : [],
       age: json['age'] as int? ?? 0,
       indexerFlags: (json['indexerFlags'] is List)
-          ? (json['indexerFlags'] as List).map((e) => e.toString()).toList()
-          : [],
+          ? _parseStringList(json['indexerFlags'])
+          : _parseIndexerFlagBitmask(json['indexerFlags']),
       infoUrl: json['infoUrl'] as String?,
       downloadUrl: json['downloadUrl'] as String?,
-      score: json['score'] as int? ?? 0,
+      customFormatScore: _parseInt(json['customFormatScore']),
+      qualityWeight: _parseInt(json['qualityWeight']),
+      releaseWeight: _parseInt(json['releaseWeight']),
+      languages: _parseModelList(json['languages'], MediaLanguage.fromJson),
+      customFormats: _parseModelList(
+        json['customFormats'],
+        MediaCustomFormat.fromJson,
+      ),
+      mappedEpisodeNumbers: _parseIntList(json['mappedEpisodeNumbers']),
+      fullSeason: json['fullSeason'] as bool? ?? false,
+      episodeRequested: json['episodeRequested'] as bool? ?? false,
       quality: ReleaseQuality.fromJson(json['quality'] as Map<String, dynamic>),
     );
+  }
+
+  int get score => customFormatScore;
+
+  bool get isFreeleech {
+    return indexerFlags.any((flag) {
+      final normalized = flag.split('_').last.toLowerCase();
+      return normalized == 'freeleech';
+    });
   }
 
   @override
@@ -76,11 +107,72 @@ class Release extends Equatable {
     guid,
     title,
     size,
+    link,
     indexer,
+    indexerId,
     seeders,
+    leechers,
+    protocol,
     rejected,
-    score,
+    rejections,
+    age,
+    indexerFlags,
+    infoUrl,
+    downloadUrl,
+    customFormatScore,
+    qualityWeight,
+    releaseWeight,
+    languages,
+    customFormats,
+    mappedEpisodeNumbers,
+    fullSeason,
+    episodeRequested,
+    quality,
   ];
+}
+
+const _indexerFlagNames = <int, String>{
+  1: 'Freeleech',
+  2: 'Halfleech',
+  4: 'DoubleUpload',
+  8: 'Internal',
+  16: 'Scene',
+  32: 'Freeleech75',
+  64: 'Freeleech25',
+  128: 'Nuked',
+};
+
+int _parseInt(Object? value) {
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+List<int> _parseIntList(Object? value) {
+  if (value is! List) return const [];
+  return value.whereType<num>().map((item) => item.toInt()).toList();
+}
+
+List<String> _parseStringList(Object? value) {
+  if (value is! List) return const [];
+  return value.map((item) => item.toString()).toList();
+}
+
+List<String> _parseIndexerFlagBitmask(Object? value) {
+  final bitmask = _parseInt(value);
+  if (bitmask <= 0) return const [];
+  return _indexerFlagNames.entries
+      .where((entry) => bitmask & entry.key != 0)
+      .map((entry) => entry.value)
+      .toList();
+}
+
+List<T> _parseModelList<T>(
+  Object? value,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  if (value is! List) return const [];
+  return value.whereType<Map<String, dynamic>>().map(fromJson).toList();
 }
 
 /// Describes the quality of a release.

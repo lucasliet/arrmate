@@ -24,8 +24,13 @@ abstract class MovieRepository {
   /// Searches for movies by [term].
   Future<List<Movie>> lookupMovie(String term);
 
-  /// Retrieves upcoming movies from the calendar.
-  Future<List<Movie>> getCalendar({DateTime? start, DateTime? end});
+  /// Retrieves upcoming movies from the calendar, including unmonitored
+  /// movies by default.
+  Future<List<Movie>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  });
 
   /// Retrieves the current activity queue.
   Future<QueueItems> getQueue({

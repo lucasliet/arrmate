@@ -177,6 +177,26 @@ class HistoryEvent extends Equatable {
     );
   }
 
+  /// Returns a copy associated with [instanceId].
+  HistoryEvent copyWith({String? instanceId}) {
+    return HistoryEvent(
+      id: id,
+      eventType: eventType,
+      date: date,
+      sourceTitle: sourceTitle,
+      instanceId: instanceId ?? this.instanceId,
+      movieId: movieId,
+      seriesId: seriesId,
+      episodeId: episodeId,
+      quality: quality,
+      languages: languages,
+      customFormats: customFormats,
+      customFormatScore: customFormatScore,
+      downloadId: downloadId,
+      data: data,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
