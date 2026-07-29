@@ -78,6 +78,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
         SliverAppBar(
           expandedHeight: 300,
           pinned: true,
+          iconTheme: const IconThemeData(color: Colors.white),
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
