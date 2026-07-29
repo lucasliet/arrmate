@@ -36,6 +36,36 @@ void main() {
 
   tearDown(RequestDiagnosticsRecorder.instance.clear);
 
+  test(
+    'should complete the initial diagnostics future after instances load',
+    () async {
+      // Given
+      final snapshot = _snapshot(checks: _checks());
+      final container = ProviderContainer(
+        overrides: [
+          diagnosticsInstancesStateProvider.overrideWith((ref) {
+            return ref.watch(_instancesStateProvider);
+          }),
+          systemDiagnosticsRunnerProvider.overrideWithValue(
+            (_) async => snapshot,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // When
+      final initialFuture = container.read(systemDiagnosticsProvider.future);
+      container
+          .read(_instancesStateProvider.notifier)
+          .replace(
+            InstancesState(instances: _configuredInstances(), isLoading: false),
+          );
+
+      // Then
+      expect(await initialFuture, snapshot);
+    },
+  );
+
   testWidgets(
     'should wait for configured instances and run all supported types',
     (tester) async {

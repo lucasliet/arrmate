@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/logger_service.dart';
 import '../../core/services/update_service.dart';
 
 /// Dialog that presents the changelog of the running version when the user
@@ -13,17 +14,25 @@ class WhatsNewDialog extends ConsumerWidget {
 
   /// Presents the dialog when a "What's New" release is available.
   static Future<void> showIfNeeded(BuildContext context, WidgetRef ref) async {
-    final service = ref.read(updateServiceProvider);
-    final release = await service.whatsNewForCurrentVersion();
-    if (release == null) return;
-    if (!context.mounted) return;
+    try {
+      final service = ref.read(updateServiceProvider);
+      final release = await service.whatsNewForCurrentVersion();
+      if (release == null) return;
+      if (!context.mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => WhatsNewDialog(release: release),
-    );
-    await service.markVersionSeen(release.version);
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WhatsNewDialog(release: release),
+      );
+      await service.markVersionSeen(release.version);
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[WhatsNewDialog] Failed to show release notes',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   @override

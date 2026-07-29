@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +40,7 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
 
       final navContext = rootNavigatorKey.currentContext;
       if (navContext != null) {
-        WhatsNewDialog.showIfNeeded(navContext, ref);
+        unawaited(WhatsNewDialog.showIfNeeded(navContext, ref));
       }
 
       // Check for initialization errors

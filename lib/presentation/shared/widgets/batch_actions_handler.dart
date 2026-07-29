@@ -28,6 +28,7 @@ class BatchActionResult {
 /// `null` when the user cancels.
 class BatchActionsHandler {
   final WidgetRef _ref;
+  bool _isLoadingVisible = false;
 
   BatchActionsHandler(this._ref);
 
@@ -55,6 +56,7 @@ class BatchActionsHandler {
           : 'This removes the selected movies from Radarr. Files stay on disk.',
     );
     if (options == null) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
@@ -68,6 +70,7 @@ class BatchActionsHandler {
         );
         deleted++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
@@ -77,6 +80,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -108,6 +112,7 @@ class BatchActionsHandler {
           'They stay in Radarr.',
     );
     if (confirmed != true) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
@@ -116,12 +121,14 @@ class BatchActionsHandler {
       for (final id in movieIds) {
         filesDeleted += await repository.deleteMovieFiles(id);
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to delete files: $e');
     }
@@ -208,6 +215,7 @@ class BatchActionsHandler {
         minimumSeedingSeconds: minimumSeedingDays * 86400,
         approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -220,6 +228,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to purge: $e');
     }
@@ -238,6 +247,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     var updated = 0;
@@ -246,6 +256,7 @@ class BatchActionsHandler {
         await repository.updateMovie(movie.copyWith(monitored: monitored));
         updated++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
@@ -255,6 +266,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -287,6 +299,7 @@ class BatchActionsHandler {
           : 'This removes the selected series from Sonarr. Files stay on disk.',
     );
     if (options == null) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
@@ -300,6 +313,7 @@ class BatchActionsHandler {
         );
         deleted++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
@@ -309,6 +323,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -338,6 +353,7 @@ class BatchActionsHandler {
           'They stay in Sonarr.',
     );
     if (confirmed != true) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
@@ -346,12 +362,14 @@ class BatchActionsHandler {
       for (final id in seriesIds) {
         filesDeleted += await repository.deleteSeriesFiles(id);
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to delete files: $e');
     }
@@ -438,6 +456,7 @@ class BatchActionsHandler {
         minimumSeedingSeconds: minimumSeedingDays * 86400,
         approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -450,6 +469,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to purge: $e');
     }
@@ -469,6 +489,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     var updated = 0;
@@ -484,6 +505,7 @@ class BatchActionsHandler {
         );
         updated++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
@@ -493,6 +515,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -604,6 +627,8 @@ class BatchActionsHandler {
   }
 
   void _showLoading(NavigatorState navigator) {
+    if (_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = true;
     showDialog(
       context: navigator.context,
       useRootNavigator: false,
@@ -612,10 +637,12 @@ class BatchActionsHandler {
         canPop: false,
         child: Center(child: CircularProgressIndicator()),
       ),
-    );
+    ).whenComplete(() => _isLoadingVisible = false);
   }
 
   void _hideLoading(NavigatorState navigator) {
+    if (!_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = false;
     navigator.pop();
   }
 }

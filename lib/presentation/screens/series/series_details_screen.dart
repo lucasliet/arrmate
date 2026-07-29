@@ -861,6 +861,7 @@ class _SeasonsSection extends ConsumerStatefulWidget {
 
 class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
   final Set<int> _selectedSeasons = {};
+  bool _isLoadingVisible = false;
 
   bool get _isSelecting => _selectedSeasons.isNotEmpty;
 
@@ -895,30 +896,26 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     final controller = ref.read(seriesControllerProvider(series.id));
     _showLoading(navigator);
     try {
-      for (final seasonNumber in _selectedSeasons.toList()) {
-        final target = series.seasons.firstWhere(
-          (s) => s.seasonNumber == seasonNumber,
-        );
-        if (target.monitored) {
-          await controller.toggleSeasonMonitor(series, seasonNumber);
-        }
-      }
+      final selectedSeasons = _selectedSeasons.toSet();
+      await controller.setSeasonsMonitored(
+        series,
+        selectedSeasons,
+        monitored: false,
+      );
+      if (!mounted) return;
       _hideLoading(navigator);
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Unmonitored ${_selectedSeasons.length} '
-              'season${_selectedSeasons.length == 1 ? '' : 's'}',
-            ),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unmonitored ${_selectedSeasons.length} '
+            'season${_selectedSeasons.length == 1 ? '' : 's'}',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
       _hideLoading(navigator);
-      if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
     _clearSelection();
   }
@@ -939,6 +936,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           'disk. The series stays in Sonarr.',
     );
     if (confirmed != true) return;
+    if (!mounted) return;
 
     _showLoading(navigator);
     try {
@@ -948,23 +946,21 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           seasonNumber: seasonNumber,
         );
       }
+      if (!mounted) return;
       _hideLoading(navigator);
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Deleted $filesDeleted file${filesDeleted == 1 ? '' : 's'}',
-            ),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Deleted $filesDeleted file${filesDeleted == 1 ? '' : 's'}',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
       _hideLoading(navigator);
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Failed to delete files: $e')),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to delete files: $e')),
+      );
     }
     _clearSelection();
   }
@@ -1029,30 +1025,29 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     final series = widget.series;
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(seriesControllerProvider(series.id));
+    final navigator = Navigator.of(context);
 
-    _showLoading(Navigator.of(context));
+    _showLoading(navigator);
     try {
       await Future.wait(
         _selectedSeasons.map(
           (seasonNumber) => controller.seasonAutomaticSearch(seasonNumber),
         ),
       );
-      _hideLoading(Navigator.of(context));
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Search started for ${_selectedSeasons.length} '
-              'season${_selectedSeasons.length == 1 ? '' : 's'}',
-            ),
+      if (!mounted) return;
+      _hideLoading(navigator);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Search started for ${_selectedSeasons.length} '
+            'season${_selectedSeasons.length == 1 ? '' : 's'}',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      _hideLoading(Navigator.of(context));
-      if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text('Failed to search: $e')));
-      }
+      if (!mounted) return;
+      _hideLoading(navigator);
+      messenger.showSnackBar(SnackBar(content: Text('Failed to search: $e')));
     }
     _clearSelection();
   }
@@ -1074,6 +1069,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           'their source torrents from qBittorrent. The series stays in Sonarr.',
     );
     if (confirmed != true) return;
+    if (!mounted) return;
 
     if (repository == null) {
       messenger.showSnackBar(
@@ -1098,6 +1094,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
             .toList();
       }
     } catch (e) {
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Failed to load episodes: $e')),
       );
@@ -1137,6 +1134,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         },
       );
     } catch (e) {
+      if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text('Failed to preview: $e')));
       return;
     }
@@ -1163,6 +1161,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         ],
       );
     } catch (e) {
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Failed to preview cross-seeds: $e')),
       );
@@ -1186,25 +1185,23 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         filesDeleted += result.mediaFilesDeleted;
         hashesDeleted.addAll(result.torrentHashesDeleted);
       }
+      if (!mounted) return;
       _hideLoading(navigator);
       ref.read(notificationActionsProvider.notifier).refresh();
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Purged ${_selectedSeasons.length} '
-              'season${_selectedSeasons.length == 1 ? '' : 's'}: '
-              '$filesDeleted file${filesDeleted == 1 ? '' : 's'}, '
-              '${hashesDeleted.length} torrent${hashesDeleted.length == 1 ? '' : 's'}.',
-            ),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Purged ${_selectedSeasons.length} '
+            'season${_selectedSeasons.length == 1 ? '' : 's'}: '
+            '$filesDeleted file${filesDeleted == 1 ? '' : 's'}, '
+            '${hashesDeleted.length} torrent${hashesDeleted.length == 1 ? '' : 's'}.',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
       _hideLoading(navigator);
-      if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text('Failed to purge: $e')));
-      }
+      messenger.showSnackBar(SnackBar(content: Text('Failed to purge: $e')));
     }
     _clearSelection();
   }
@@ -1234,6 +1231,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
   }
 
   void _showLoading(NavigatorState navigator) {
+    if (_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = true;
     showDialog(
       context: navigator.context,
       useRootNavigator: false,
@@ -1242,10 +1241,12 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         canPop: false,
         child: Center(child: CircularProgressIndicator()),
       ),
-    );
+    ).whenComplete(() => _isLoadingVisible = false);
   }
 
   void _hideLoading(NavigatorState navigator) {
+    if (!_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = false;
     navigator.pop();
   }
 

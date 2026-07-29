@@ -69,18 +69,57 @@ final systemDiagnosticsProvider =
 class SystemDiagnosticsController
     extends AutoDisposeAsyncNotifier<SystemDiagnosticsSnapshot> {
   int _generation = 0;
+  Completer<List<Instance>>? _instancesCompleter;
+  bool _isWatchingInstances = false;
 
   @override
   Future<SystemDiagnosticsSnapshot> build() async {
     _generation++;
-    ref.onDispose(() => _generation++);
-    final instancesState = ref.watch(diagnosticsInstancesStateProvider);
-    if (instancesState.isLoading) {
-      return Completer<SystemDiagnosticsSnapshot>().future;
-    }
-    return ref
-        .watch(systemDiagnosticsRunnerProvider)
-        .call(instancesState.instances);
+    _watchInstances();
+    final instancesState = ref.read(diagnosticsInstancesStateProvider);
+    final instances = instancesState.isLoading
+        ? await _waitForInstances()
+        : instancesState.instances;
+    return ref.read(systemDiagnosticsRunnerProvider).call(instances);
+  }
+
+  void _watchInstances() {
+    if (_isWatchingInstances) return;
+    _isWatchingInstances = true;
+    ref.onDispose(() {
+      _generation++;
+      _isWatchingInstances = false;
+      final completer = _instancesCompleter;
+      if (completer != null && !completer.isCompleted) {
+        completer.completeError(
+          StateError('Connection diagnostics was disposed before loading.'),
+        );
+      }
+      _instancesCompleter = null;
+    });
+    ref.listen<InstancesState>(diagnosticsInstancesStateProvider, (
+      previous,
+      next,
+    ) {
+      if (next.isLoading) return;
+      final completer = _instancesCompleter;
+      if (completer != null && !completer.isCompleted) {
+        _instancesCompleter = null;
+        completer.complete(next.instances);
+        return;
+      }
+      if (previous != null && previous.instances != next.instances) {
+        ref.invalidateSelf();
+      }
+    });
+  }
+
+  Future<List<Instance>> _waitForInstances() {
+    final existing = _instancesCompleter;
+    if (existing != null) return existing.future;
+    final completer = Completer<List<Instance>>();
+    _instancesCompleter = completer;
+    return completer.future;
   }
 
   /// Runs the diagnostics against every configured instance.

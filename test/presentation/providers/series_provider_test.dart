@@ -220,6 +220,68 @@ void main() {
       );
     });
 
+    group('setSeasonsMonitored', () {
+      test(
+        'Deve atualizar todas as seasons selecionadas em uma única ação',
+        () async {
+          // Given
+          final series = Series(
+            guid: 100,
+            title: 'Test Series',
+            sortTitle: 'Test Series',
+            tvdbId: 12345,
+            status: SeriesStatus.continuing,
+            seriesType: SeriesType.standard,
+            year: 2024,
+            added: DateTime(2024, 1, 1),
+            monitored: true,
+            seasons: const [
+              Season(seasonNumber: 1, monitored: true),
+              Season(seasonNumber: 2, monitored: true),
+              Season(seasonNumber: 3, monitored: true),
+            ],
+          );
+          when(
+            () => mockRepository.updateSeries(
+              any(),
+              moveFiles: any(named: 'moveFiles'),
+            ),
+          ).thenAnswer((_) async => series);
+          final container = ProviderContainer(
+            overrides: [
+              seriesRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+          );
+          addTearDown(container.dispose);
+          final controller = container.read(seriesControllerProvider(100));
+
+          // When
+          await controller.setSeasonsMonitored(series, [
+            1,
+            2,
+          ], monitored: false);
+
+          // Then
+          final captured = verify(
+            () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+          ).captured;
+          final updatedSeries = captured.single as Series;
+          expect(
+            updatedSeries.seasons
+                .where((season) => season.seasonNumber != 3)
+                .every((season) => !season.monitored),
+            isTrue,
+          );
+          expect(
+            updatedSeries.seasons
+                .firstWhere((season) => season.seasonNumber == 3)
+                .monitored,
+            isTrue,
+          );
+        },
+      );
+    });
+
     group('monitorAllSeasons', () {
       test(
         'Deve marcar todas as seasons como monitoradas quando true',

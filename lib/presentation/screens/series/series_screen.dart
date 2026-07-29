@@ -222,7 +222,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   ) async {
     final handler = BatchActionsHandler(ref);
     final result = await action(handler);
-    if (result != null && context.mounted) {
+    if (!mounted || !context.mounted) return;
+    if (result != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result.message)));

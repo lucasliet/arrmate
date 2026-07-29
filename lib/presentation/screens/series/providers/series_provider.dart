@@ -211,6 +211,32 @@ class SeriesController {
     ref.invalidate(seriesProvider);
   }
 
+  /// Sets the monitoring state for the selected seasons in one series update.
+  Future<void> setSeasonsMonitored(
+    Series series,
+    Iterable<int> seasonNumbers, {
+    required bool monitored,
+  }) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+
+    final selectedSeasons = seasonNumbers.toSet();
+    if (selectedSeasons.isEmpty) return;
+
+    final updatedSeasons = series.seasons.map((season) {
+      if (!selectedSeasons.contains(season.seasonNumber)) return season;
+      return season.copyWith(monitored: monitored);
+    }).toList();
+    final updatedSeries = series.copyWith(
+      monitored: updatedSeasons.any((season) => season.monitored),
+      seasons: updatedSeasons,
+    );
+
+    await repository.updateSeries(updatedSeries);
+    ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesProvider);
+  }
+
   /// Sets the monitoring status for all seasons of the series.
   ///
   /// When [monitored] is true, all seasons will be monitored and the
