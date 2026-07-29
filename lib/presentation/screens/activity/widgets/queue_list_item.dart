@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../widgets/instance_origin_badge.dart';
 import 'queue_item_sheet.dart';
 
 /// A card widget displaying a summary of a download queue item.
@@ -38,14 +39,52 @@ class QueueListItem extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.displayTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.displayTitle,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (item.taskGroupCount > 1) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${item.taskGroupCount} tasks',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSecondaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
+                        if (_metadata.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            formatListWithSeparator(_metadata),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                         if (item.episode != null) ...[
                           const SizedBox(height: 2),
                           Text(
@@ -55,6 +94,16 @@ class QueueListItem extends ConsumerWidget {
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        if (item.instanceId != null) ...[
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: InstanceOriginBadge(
+                              instanceId: item.instanceId,
+                              instanceType: item.instanceType,
+                            ),
                           ),
                         ],
                         const SizedBox(height: 4),
@@ -136,6 +185,15 @@ class QueueListItem extends ConsumerWidget {
     );
   }
 
+  List<String> get _metadata {
+    return [
+      if (item.qualityLabel != null) item.qualityLabel!,
+      if (item.languages.isNotEmpty) item.languagesLabel,
+      item.protocol.toUpperCase(),
+      if (item.downloadClient?.trim().isNotEmpty ?? false) item.downloadClient!,
+    ];
+  }
+
   void _showQueueItemSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -145,7 +203,6 @@ class QueueListItem extends ConsumerWidget {
   }
 
   Widget _buildIcon(BuildContext context) {
-    // Distinguish Series vs Movie
     final isMovie = item.movieId != null || item.movie != null;
     return Container(
       width: 48,

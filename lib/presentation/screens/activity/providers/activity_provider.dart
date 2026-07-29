@@ -2,8 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import '../../../providers/instances_provider.dart';
+
+typedef _QueuePageLoader = Future<QueueItems> Function(int page, int pageSize);
 
 // Queue Provider
 /// Provider for fetching and managing the download queue, auto-refreshes every 5 seconds.
@@ -26,34 +31,43 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   }
 
   Future<List<QueueItem>> _fetchQueue() async {
-    final movieRepo = ref.watch(movieRepositoryProvider);
-    final seriesRepo = ref.watch(seriesRepositoryProvider);
+    final radarrInstances = ref.watch(
+      instancesByTypeProvider(InstanceType.radarr),
+    );
+    final sonarrInstances = ref.watch(
+      instancesByTypeProvider(InstanceType.sonarr),
+    );
+    final requests = <Future<List<QueueItem>>>[];
 
-    final items = <QueueItem>[];
-
-    if (movieRepo != null) {
-      try {
-        final queue = await movieRepo.getQueue();
-        items.addAll(queue.records);
-      } catch (e) {
-        /*ignore*/
-      }
+    for (final instance in radarrInstances) {
+      final repository = ref.watch(
+        movieRepositoryForInstanceProvider(instance),
+      );
+      requests.add(
+        _fetchInstanceQueue(
+          instance,
+          (page, pageSize) =>
+              repository.getQueue(page: page, pageSize: pageSize),
+        ),
+      );
     }
 
-    if (seriesRepo != null) {
-      try {
-        final queue = await seriesRepo.getQueue();
-        items.addAll(queue.records);
-      } catch (e) {
-        /*ignore*/
-      }
+    for (final instance in sonarrInstances) {
+      final repository = ref.watch(
+        seriesRepositoryForInstanceProvider(instance),
+      );
+      requests.add(
+        _fetchInstanceQueue(
+          instance,
+          (page, pageSize) =>
+              repository.getQueue(page: page, pageSize: pageSize),
+        ),
+      );
     }
 
-    // Sort by timeleft? or added?
-    // Usually users want to see what's finishing soonest first, or what's stalling.
-    // Let's sort by timeleft (estimatedCompletionTime).
-    // Note: timeleft is a String in some models or calculated?
-    // QueueItem has `timeleft` string usually, but `estimatedCompletionTime` DateTime.
+    final items = (await Future.wait(
+      requests,
+    )).expand((items) => items).toList();
 
     items.sort((a, b) {
       if (a.estimatedCompletionTime == null &&
@@ -72,6 +86,39 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     return items;
   }
 
+  Future<List<QueueItem>> _fetchInstanceQueue(
+    Instance instance,
+    _QueuePageLoader loadPage,
+  ) async {
+    final items = <QueueItem>[];
+    var page = 1;
+
+    try {
+      while (true) {
+        final queue = await loadPage(page, ApiConstants.queuePageSize);
+        items.addAll(
+          queue.records.map(
+            (item) => item.copyWith(
+              instanceId: instance.id,
+              instanceType: instance.type,
+            ),
+          ),
+        );
+        if (items.length >= queue.totalRecords || queue.records.isEmpty) {
+          return items;
+        }
+        page++;
+      }
+    } catch (error, stackTrace) {
+      logger.error(
+        '[QueueProvider] Failed to fetch queue for instance ${instance.id}',
+        error,
+        stackTrace,
+      );
+      return items;
+    }
+  }
+
   /// Manually refreshes the queue.
   Future<void> refresh() async {
     // Silent refresh if already loaded?
@@ -86,54 +133,50 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
 
   /// Removes an item from the queue with optional parameters.
   Future<bool> removeQueueItem(
-    int id, {
+    QueueItem item, {
     bool removeFromClient = true,
     bool blocklist = false,
     bool skipRedownload = false,
   }) async {
-    final movieRepo = ref.read(movieRepositoryProvider);
-    final seriesRepo = ref.read(seriesRepositoryProvider);
-
-    bool success = false;
-    Object? lastError;
-
-    try {
-      if (movieRepo != null) {
-        await movieRepo.deleteQueueItem(
-          id,
-          removeFromClient: removeFromClient,
-          blocklist: blocklist,
-          skipRedownload: skipRedownload,
-        );
-        success = true;
-      }
-    } catch (e) {
-      lastError = e;
+    final instanceId = item.instanceId;
+    final instanceType = item.instanceType;
+    if (instanceId == null || instanceType == null) {
+      throw StateError('Queue item origin is missing');
     }
 
-    if (!success && seriesRepo != null) {
-      try {
-        await seriesRepo.deleteQueueItem(
-          id,
-          removeFromClient: removeFromClient,
-          blocklist: blocklist,
-          skipRedownload: skipRedownload,
-        );
-        success = true;
-      } catch (e) {
-        lastError = e;
-      }
+    final instance = ref
+        .read(instancesByTypeProvider(instanceType))
+        .where((candidate) => candidate.id == instanceId)
+        .firstOrNull;
+    if (instance == null) {
+      throw StateError('Queue item instance is no longer configured');
     }
 
-    if (success) {
-      await refresh();
-      return true;
-    } else {
-      if (lastError != null) {
-        throw lastError;
-      }
-      return false;
+    switch (instance.type) {
+      case InstanceType.radarr:
+        await ref
+            .read(movieRepositoryForInstanceProvider(instance))
+            .deleteQueueItem(
+              item.id,
+              removeFromClient: removeFromClient,
+              blocklist: blocklist,
+              skipRedownload: skipRedownload,
+            );
+      case InstanceType.sonarr:
+        await ref
+            .read(seriesRepositoryForInstanceProvider(instance))
+            .deleteQueueItem(
+              item.id,
+              removeFromClient: removeFromClient,
+              blocklist: blocklist,
+              skipRedownload: skipRedownload,
+            );
+      case InstanceType.qbittorrent:
+        throw StateError('qBittorrent items are not part of the Arr queue');
     }
+
+    await refresh();
+    return true;
   }
 }
 

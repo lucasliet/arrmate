@@ -46,7 +46,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
-    final confirmed = await _confirm(
+    final options = await _confirmDeletion(
       context,
       title: 'Delete ${movieIds.length} movie${_plural(movieIds.length)}',
       content: deleteFiles
@@ -54,7 +54,7 @@ class BatchActionsHandler {
                 'files from disk.'
           : 'This removes the selected movies from Radarr. Files stay on disk.',
     );
-    if (confirmed != true) return null;
+    if (options == null) return null;
 
     _showLoading(navigator);
 
@@ -64,7 +64,7 @@ class BatchActionsHandler {
         await repository.deleteMovie(
           id,
           deleteFiles: deleteFiles,
-          addExclusion: false,
+          addExclusion: options.addExclusion,
         );
         deleted++;
       }
@@ -278,7 +278,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
-    final confirmed = await _confirm(
+    final options = await _confirmDeletion(
       context,
       title: 'Delete ${seriesIds.length} series${_plural(seriesIds.length)}',
       content: deleteFiles
@@ -286,7 +286,7 @@ class BatchActionsHandler {
                 'files from disk.'
           : 'This removes the selected series from Sonarr. Files stay on disk.',
     );
-    if (confirmed != true) return null;
+    if (options == null) return null;
 
     _showLoading(navigator);
 
@@ -296,7 +296,7 @@ class BatchActionsHandler {
         await repository.deleteSeries(
           id,
           deleteFiles: deleteFiles,
-          addExclusion: false,
+          addExclusion: options.addExclusion,
         );
         deleted++;
       }
@@ -550,6 +550,59 @@ class BatchActionsHandler {
     );
   }
 
+  Future<_BatchDeleteOptions?> _confirmDeletion(
+    BuildContext context, {
+    required String title,
+    required String content,
+  }) {
+    final theme = Theme.of(context);
+    var addExclusion = false;
+    return showDialog<_BatchDeleteOptions>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(content),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                value: addExclusion,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Add to import exclusion list'),
+                subtitle: const Text(
+                  'Prevent the item from being added again by an import list.',
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+                onChanged: (value) {
+                  setState(() => addExclusion = value ?? false);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                _BatchDeleteOptions(addExclusion: addExclusion),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showLoading(NavigatorState navigator) {
     showDialog(
       context: navigator.context,
@@ -565,4 +618,10 @@ class BatchActionsHandler {
   void _hideLoading(NavigatorState navigator) {
     navigator.pop();
   }
+}
+
+class _BatchDeleteOptions {
+  final bool addExclusion;
+
+  const _BatchDeleteOptions({required this.addExclusion});
 }

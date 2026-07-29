@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../providers/instances_provider.dart';
+import '../../../widgets/instance_origin_badge.dart';
 import '../providers/activity_provider.dart';
 import '../manual_import_screen.dart';
 
@@ -67,28 +70,40 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
-              if (item.size != null)
-                Row(
-                  children: [
-                    Text(
-                      item.protocol,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('•'),
-                    const SizedBox(width: 8),
-                    Text(
-                      formatBytes(item.size!),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+              if (item.instanceId != null) ...[
+                const SizedBox(height: 8),
+                InstanceOriginBadge(
+                  instanceId: item.instanceId,
+                  instanceType: item.instanceType,
                 ),
+              ],
+              const SizedBox(height: 8),
+              if (item.qualityLabel != null || item.size != null)
+                Text(
+                  formatListWithSeparator([
+                    if (item.qualityLabel != null) item.qualityLabel!,
+                    if (item.size != null) formatBytes(item.size!),
+                  ]),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (item.movieId != null ||
+                  item.seriesId != null ||
+                  item.movie != null ||
+                  item.series != null) ...[
+                const SizedBox(height: 16),
+                _buildOpenMediaSection(context),
+              ],
+              if (item.customFormats.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildCustomFormats(context, item),
+              ],
               if (item.status == QueueStatus.downloading) ...[
                 const SizedBox(height: 16),
                 _buildProgressSection(context, item, progress),
               ],
-              if (item.errorMessage != null ||
+              if ((item.errorMessage?.trim().isNotEmpty ?? false) ||
                   item.statusMessages.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildErrorSection(context, item),
@@ -106,6 +121,55 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         );
       },
     );
+  }
+
+  Widget _buildOpenMediaSection(BuildContext context) {
+    final item = widget.item;
+    final movieId = item.movieId ?? item.movie?.id;
+    final seriesId = item.seriesId ?? item.series?.id;
+    final isMovie = movieId != null;
+    final isSeries = seriesId != null;
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: () => _openRelatedMedia(),
+        icon: const Icon(Icons.open_in_new),
+        label: Text(
+          isMovie
+              ? 'Open Movie'
+              : isSeries
+              ? 'Open Series'
+              : 'Open Details',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openRelatedMedia() async {
+    final item = widget.item;
+    final movieId = item.movieId ?? item.movie?.id;
+    final seriesId = item.seriesId ?? item.series?.id;
+
+    if (movieId == null && seriesId == null) return;
+
+    if (item.instanceId != null && item.instanceType != null) {
+      try {
+        await ref
+            .read(instancesProvider.notifier)
+            .selectInstance(item.instanceType!, item.instanceId!);
+      } catch (_) {
+        // Instance selection is best-effort; navigation should still proceed.
+      }
+    }
+    if (!mounted) return;
+
+    Navigator.of(context).pop();
+    if (movieId != null) {
+      context.go('/movies/$movieId');
+    } else if (seriesId != null) {
+      context.go('/series/$seriesId');
+    }
   }
 
   Widget _buildStatusBadge(BuildContext context) {
@@ -179,10 +243,12 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
   }
 
   Widget _buildErrorSection(BuildContext context, QueueItem item) {
-    final message =
-        item.errorMessage ??
-        item.statusMessages.firstOrNull?.messages.firstOrNull ??
-        'Unknown error';
+    final errorMessage = item.errorMessage?.trim();
+    final message = errorMessage?.isNotEmpty == true
+        ? errorMessage!
+        : item.statusMessages.firstOrNull?.messages.firstOrNull ??
+              item.statusMessages.firstOrNull?.title ??
+              'Unknown error';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -241,9 +307,6 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
   }
 
   void _showManualImportScreen(BuildContext context) {
-    final downloadId = widget.item.downloadId!;
-    final title = widget.item.displayTitle;
-
     Navigator.pop(context);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -251,8 +314,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        builder: (sheetContext) =>
-            ManualImportScreen(downloadId: downloadId, title: title),
+        builder: (sheetContext) => ManualImportScreen(item: widget.item),
       );
     });
   }
@@ -321,12 +383,59 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
+        if (item.qualityLabel != null)
+          _DetailRow(label: 'Quality', value: item.qualityLabel!),
+        _DetailRow(label: 'Language', value: item.languagesLabel),
+        if (item.customFormatsLabel != null)
+          _DetailRow(label: 'Custom Formats', value: item.customFormatsLabel!),
+        if (item.customFormatScore != null)
+          _DetailRow(
+            label: 'Custom Format Score',
+            value: formatCustomScore(item.customFormatScore!),
+          ),
+        if (item.indexer != null)
+          _DetailRow(label: 'Indexer', value: item.indexer!),
         _DetailRow(label: 'Protocol', value: item.protocol),
         if (item.downloadClient != null)
           _DetailRow(label: 'Client', value: item.downloadClient!),
+        if (item.added != null)
+          _DetailRow(label: 'Added', value: formatDate(item.added!.toLocal())),
+        if (item.taskGroupCount > 1)
+          _DetailRow(label: 'Grouped Tasks', value: '${item.taskGroupCount}'),
         if (item.outputPath != null)
           _DetailRow(label: 'Path', value: item.outputPath!),
       ],
+    );
+  }
+
+  Widget _buildCustomFormats(BuildContext context, QueueItem item) {
+    final color = Theme.of(context).colorScheme.secondary;
+    final labels = [
+      if (item.customFormatScore != null)
+        formatCustomScore(item.customFormatScore!),
+      ...item.customFormats.map((format) => format.name),
+    ];
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: labels.map((label) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -351,7 +460,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       await ref
           .read(queueProvider.notifier)
           .removeQueueItem(
-            item.id,
+            item,
             removeFromClient: _removeFromClient,
             blocklist: _addToBlocklist,
             skipRedownload: !_searchForReplacement,
@@ -391,7 +500,14 @@ class _DetailRow extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );
