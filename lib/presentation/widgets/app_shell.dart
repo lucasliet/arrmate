@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../router/app_router.dart';
 import '../tour/app_tour_keys.dart';
 import 'deep_link_listener.dart';
+import 'offline_status_banner.dart';
 
 /// Main shell widget containing the app scaffold, navigation bar, and deep link listener.
 class AppShell extends ConsumerWidget {
@@ -17,7 +18,12 @@ class AppShell extends ConsumerWidget {
     final tourKeys = ref.watch(appTourKeysProvider);
     return DeepLinkListener(
       child: Scaffold(
-        body: child,
+        body: Column(
+          children: [
+            const OfflineStatusBanner(),
+            Expanded(child: child),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           key: tourKeys.navBarKey,
           selectedIndex: _calculateSelectedIndex(context),

@@ -6,6 +6,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/services/logger_service.dart';
 
+/// Reconciles the identifier-in-host form (`arrmate://movies/123`) with the
+/// authority-less form (`arrmate:///movies/123`) so both resolve to the same
+/// GoRouter location.
+String deepLinkToLocation(Uri uri) {
+  final segments = <String>[
+    if (uri.host.isNotEmpty) uri.host,
+    ...uri.pathSegments,
+  ].where((segment) => segment.isNotEmpty).toList();
+
+  if (segments.isEmpty) return '';
+
+  final path = '/${segments.join('/')}';
+  if (uri.queryParameters.isEmpty) return path;
+  return Uri(path: path, queryParameters: uri.queryParameters).toString();
+}
+
 /// Widget that listens for deep links and handles navigation.
 class DeepLinkListener extends StatefulWidget {
   final Widget child;
@@ -35,10 +51,18 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // Check initial link
-    // Note: AppLinks automatically handles initial link via the stream usually,
-    // but getInitialUri() is also available for cold start check if needed specific logic.
-    // Stream is preferred using latest 6.x/7.x best practices.
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleLink(initialUri);
+      }
+    } catch (e, stack) {
+      logger.warning(
+        '[DeepLinkListener] No initial deep link resolved',
+        e,
+        stack,
+      );
+    }
 
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       _handleLink(uri);
@@ -48,29 +72,22 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   void _handleLink(Uri uri) {
     if (!mounted) return;
 
-    // Example: arrmate://movies/123
-    // GoRouter can handle this if we configured it, but manual handling gives more control
+    final location = deepLinkToLocation(uri);
+    if (location.isEmpty) return;
 
-    // Simplest approach: Just let GoRouter handle the path if it matches our routes
-    // Ensure the path is compatible
-    final path = uri.path;
-    if (path.isNotEmpty) {
-      // Assuming arrmate://host/path format, uri.path gives /path
-      // If arrmate:///path, uri.path is /path
-      logger.debug(
-        'Deep link detected: $path with params ${uri.queryParameters}',
+    logger.debug(
+      '[DeepLinkListener] Deep link detected: $location '
+      'with params ${uri.queryParameters}',
+    );
+
+    try {
+      context.go(location);
+    } catch (e, stack) {
+      logger.error(
+        '[DeepLinkListener] Failed to navigate to deep link',
+        e,
+        stack,
       );
-
-      try {
-        // Create a valid location string including query params
-        final location = Uri(
-          path: path,
-          queryParameters: uri.queryParameters,
-        ).toString();
-        context.go(location);
-      } catch (e, stack) {
-        logger.error('Failed to navigate to deep link', e, stack);
-      }
     }
   }
 
