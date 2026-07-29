@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:arrmate/core/services/logger_service.dart';
 import 'package:arrmate/domain/models/shared/release_query.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,7 +21,18 @@ class ReleaseQueryStore {
 
   /// Loads the persisted query for the requested media type.
   Future<SavedReleaseQuery> load({required bool isMovie}) async {
-    final preferences = await SharedPreferences.getInstance();
+    SharedPreferences preferences;
+    try {
+      preferences = await SharedPreferences.getInstance();
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[ReleaseQueryStore] SharedPreferences unavailable, using defaults',
+        error,
+        stackTrace,
+      );
+      return const SavedReleaseQuery(query: ReleaseQuery(), remember: false);
+    }
+
     final remember = preferences.getBool(_rememberKey(isMovie)) ?? false;
     final encodedQuery = preferences.getString(_queryKey(isMovie));
     if (!remember || encodedQuery == null) {
@@ -36,7 +48,13 @@ class ReleaseQueryStore {
         query: ReleaseQuery.fromJson(json),
         remember: true,
       );
-    } on FormatException {
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[ReleaseQueryStore] Stored release query is malformed, '
+        'restoring safe defaults',
+        error,
+        stackTrace,
+      );
       return const SavedReleaseQuery(query: ReleaseQuery(), remember: true);
     }
   }

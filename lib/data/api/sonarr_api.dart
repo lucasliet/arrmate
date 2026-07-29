@@ -258,8 +258,8 @@ class SonarrApi {
       queryParameters: {
         'page': page,
         'pageSize': pageSize,
-        if (eventType != null && eventType.toSonarrEventType() != null)
-          'eventType': eventType.toSonarrEventType(),
+        if (eventType != null && eventType.toSonarrEventTypes() != null)
+          'eventType': eventType.toSonarrEventTypes(),
         if (episodeId != null) 'episodeId': episodeId,
       },
     );

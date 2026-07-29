@@ -259,10 +259,9 @@ bool _matchesRelease(
   if (query.releaseType == ReleaseTypeFilter.episodes && release.fullSeason) {
     return false;
   }
-  if (query.originalLanguageOnly) {
-    final normalizedOriginalLanguage = originalLanguage?.trim().toLowerCase();
-    if (normalizedOriginalLanguage == null ||
-        normalizedOriginalLanguage.isEmpty ||
+  if (query.originalLanguageOnly && originalLanguage != null) {
+    final normalizedOriginalLanguage = originalLanguage.trim().toLowerCase();
+    if (normalizedOriginalLanguage.isNotEmpty &&
         !languageNames.any(
           (language) =>
               language.trim().toLowerCase() == normalizedOriginalLanguage,
