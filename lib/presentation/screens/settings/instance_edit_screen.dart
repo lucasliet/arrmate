@@ -6,7 +6,6 @@ import '../../../core/services/logger_service.dart';
 import '../../../data/api/api.dart'; // Add this import
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
-import '../../providers/data_providers.dart';
 import '../../tour/app_tour_keys.dart';
 
 /// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent instances.
@@ -28,10 +27,12 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _urlController;
+  late TextEditingController _alternativeUrlController;
   late TextEditingController _apiKeyController;
   InstanceType _type = InstanceType.radarr;
   bool _slowMode = false;
   bool _isTesting = false;
+  bool _isSaving = false;
   bool _testSuccess = false;
   String? _testMessage;
   List<InstanceHeader> _headers = [];
@@ -41,6 +42,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     super.initState();
     _nameController = TextEditingController();
     _urlController = TextEditingController();
+    _alternativeUrlController = TextEditingController();
     _apiKeyController = TextEditingController();
 
     // Load existing if editing
@@ -52,6 +54,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         if (existing != null) {
           _nameController.text = existing.label;
           _urlController.text = existing.url;
+          _alternativeUrlController.text = existing.alternativeUrl ?? '';
           _apiKeyController.text = existing.apiKey;
 
           setState(() {
@@ -72,6 +75,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   void dispose() {
     _nameController.dispose();
     _urlController.dispose();
+    _alternativeUrlController.dispose();
     _apiKeyController.dispose();
     super.dispose();
   }
@@ -88,6 +92,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final tempInstance = Instance(
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
+      alternativeUrl: _alternativeUrl,
       apiKey: _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
@@ -108,20 +113,14 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               'Connection successful!\nAuth: $authLabel\nTorrents: ${torrents.length}';
         });
       } else {
-        final instanceRepo = ref.read(instanceRepositoryProvider);
-
-        final results = await Future.wait([
-          instanceRepo.getSystemStatus(tempInstance),
-          instanceRepo.getTags(tempInstance),
-        ]);
-
-        final status = results[0] as InstanceStatus;
-        final tags = results[1] as List<Tag>;
+        final validatedInstance = await ref
+            .read(instancesProvider.notifier)
+            .validateInstance(tempInstance);
 
         setState(() {
           _testSuccess = true;
           _testMessage =
-              'Connection successful!\nVersion: ${status.version}\nInstance: ${status.instanceName}\nTags: ${tags.length} available';
+              'Connection successful!\nVersion: ${validatedInstance.version}\nInstance: ${validatedInstance.name}\nTags: ${validatedInstance.tags.length} available';
         });
       }
     } catch (e) {
@@ -154,36 +153,57 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() {
+      _isSaving = true;
+      _testMessage = null;
+      _testSuccess = false;
+    });
+
     final instance = Instance(
       id: widget.instanceId,
       label: _nameController.text.trim(),
       url: _urlController.text.trim(),
+      alternativeUrl: _alternativeUrl,
       apiKey: _apiKeyController.text.trim(),
       type: _type,
       mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
       headers: _headers,
     );
 
-    if (widget.instanceId != null) {
-      await ref.read(instancesProvider.notifier).updateInstance(instance);
-    } else {
-      await ref.read(instancesProvider.notifier).addInstance(instance);
-    }
-
     try {
       await ref
           .read(instancesProvider.notifier)
-          .validateAndCacheInstanceData(instance, ref);
-    } catch (e) {
+          .validateAndSaveInstance(instance);
+      if (mounted) {
+        context.pop();
+      }
+    } catch (e, stackTrace) {
       logger.warning(
-        '[InstanceEditScreen] Failed to validate and cache instance data',
+        '[InstanceEditScreen] Instance validation failed',
         e,
+        stackTrace,
       );
+      if (mounted) {
+        setState(() {
+          _testMessage = 'Validation failed: $e';
+          _testSuccess = false;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
+  }
 
-    if (mounted) {
-      context.pop();
+  String? get _alternativeUrl {
+    final value = _alternativeUrlController.text.trim();
+    if (_type == InstanceType.qbittorrent || value.isEmpty) {
+      return null;
     }
+    return value;
   }
 
   void _delete() {
@@ -268,14 +288,50 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 ),
                 keyboardType: TextInputType.url,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Required';
-                  if (!value.startsWith('http')) {
-                    return 'Must start with http:// or https://';
+                  final url = value?.trim() ?? '';
+                  if (url.isEmpty) {
+                    return 'Required';
+                  }
+                  final uri = Uri.tryParse(url);
+                  if (uri == null ||
+                      uri.host.isEmpty ||
+                      (!uri.isScheme('http') && !uri.isScheme('https'))) {
+                    return 'Must be a valid HTTP or HTTPS URL';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+
+              if (_type != InstanceType.qbittorrent) ...[
+                TextFormField(
+                  controller: _alternativeUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Alternative URL',
+                    hintText: 'https://media.example.com',
+                    border: OutlineInputBorder(),
+                    helperText: 'Optional URL used outside your local network',
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: (value) {
+                    final alternativeUrl = value?.trim() ?? '';
+                    if (alternativeUrl.isEmpty) {
+                      return null;
+                    }
+                    final uri = Uri.tryParse(alternativeUrl);
+                    if (uri == null ||
+                        uri.host.isEmpty ||
+                        (!uri.isScheme('http') && !uri.isScheme('https'))) {
+                      return 'Must be a valid HTTP or HTTPS URL';
+                    }
+                    if (alternativeUrl == _urlController.text.trim()) {
+                      return 'Must differ from the primary URL';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
 
               TextFormField(
                 key: tourKeys.instanceApiKeyFieldKey,
@@ -383,8 +439,14 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
               FilledButton(
                 key: tourKeys.instanceSaveKey,
-                onPressed: _save,
-                child: const Text('Save Instance'),
+                onPressed: _isSaving ? null : _save,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Instance'),
               ),
             ],
           ),
