@@ -222,13 +222,6 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   await _handleDeleteSeriesFiles(context, ref, series);
                 } else if (value == 'purge') {
                   await _handlePurgeSeries(context, ref, series);
-                } else {
-                  final link = MediaExternalLinks.series(
-                    title: series.title,
-                    tvdbId: series.tvdbId,
-                    imdbId: series.imdbId,
-                  ).firstWhere((link) => link.label == value);
-                  await _openExternalUri(context, link.uri);
                 }
               },
               itemBuilder: (context) => [
@@ -273,22 +266,6 @@ class SeriesDetailsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuDivider(),
-                for (final link in MediaExternalLinks.series(
-                  title: series.title,
-                  tvdbId: series.tvdbId,
-                  imdbId: series.imdbId,
-                ))
-                  PopupMenuItem(
-                    value: link.label,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.open_in_new),
-                        const SizedBox(width: 8),
-                        Text('Open in ${link.label}'),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ],

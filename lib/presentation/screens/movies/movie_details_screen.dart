@@ -233,12 +233,6 @@ class MovieDetailsScreen extends ConsumerWidget {
                   await _handleDeleteMovieFiles(context, ref, movie);
                 } else if (value == 'purge') {
                   await _handlePurgeMovie(context, ref, movie, theme);
-                } else {
-                  final link = MediaExternalLinks.movie(
-                    title: movie.title,
-                    imdbId: movie.imdbId,
-                  ).firstWhere((link) => link.label == value);
-                  await _openExternalUri(context, link.uri);
                 }
               },
               itemBuilder: (context) => [
@@ -283,21 +277,6 @@ class MovieDetailsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuDivider(),
-                for (final link in MediaExternalLinks.movie(
-                  title: movie.title,
-                  imdbId: movie.imdbId,
-                ))
-                  PopupMenuItem(
-                    value: link.label,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.open_in_new),
-                        const SizedBox(width: 8),
-                        Text('Open in ${link.label}'),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ],
