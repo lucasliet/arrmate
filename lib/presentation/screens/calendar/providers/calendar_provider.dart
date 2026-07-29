@@ -418,6 +418,11 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   DateTime? _loadedStart;
   DateTime? _loadedEnd;
 
+  /// Monotonic generation token incremented whenever [build] or [refresh]
+  /// starts, so late completions from an abandoned fetch cannot overwrite a
+  /// newer state, its failures, or its loaded range boundaries.
+  int _generation = 0;
+
   /// Returns the current range loading metadata.
   CalendarLoadStatus get loadStatus => CalendarLoadStatus(
     failures: _failures,
@@ -441,11 +446,13 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
     _isLoadingMore = false;
     _loadedStart = start;
     _loadedEnd = end;
+    final generation = ++_generation;
 
     final result = await _fetchRange(start, end, [
       ...radarrInstances,
       ...sonarrInstances,
     ]);
+    if (generation != _generation) return state.valueOrNull ?? const [];
     _failures = result.failures;
     return _sortAndDeduplicate(result.events);
   }
@@ -461,9 +468,11 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
     final end = start.add(const Duration(days: _rangeDays));
     _isLoadingMore = true;
     state = const AsyncLoading<List<CalendarEvent>>().copyWithPrevious(state);
+    final generation = _generation;
     final result = await _fetchRange(start, end, _configuredInstances());
-    _failures = _mergeFailures(_failures, result.failures);
     _isLoadingMore = false;
+    if (generation != _generation) return;
+    _failures = _mergeFailures(_failures, result.failures);
     _loadedEnd = end;
     state = AsyncData(
       _sortAndDeduplicate([...currentEvents, ...result.events]),
@@ -478,7 +487,9 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
         _loadedStart ?? now.subtract(const Duration(days: _initialPastDays));
     final end = _loadedEnd ?? now.add(const Duration(days: _rangeDays));
     state = const AsyncLoading<List<CalendarEvent>>().copyWithPrevious(state);
+    final generation = ++_generation;
     final result = await _fetchRange(start, end, _configuredInstances());
+    if (generation != _generation) return;
     final successfulOrigins = result.successfulOriginKeys;
     final retainedEvents = currentEvents.where(
       (event) => !successfulOrigins.contains(_originKeyForEvent(event)),
