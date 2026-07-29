@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:arrmate/core/network/api_client.dart';
 import 'package:arrmate/core/network/api_error.dart';
+import 'package:arrmate/core/services/logger_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -88,15 +89,68 @@ void main() {
         ]);
       },
     );
+
+    test('should persist only sanitized connection errors', () async {
+      // Given
+      logger.clearLogs();
+      final adapter = _RecordingAdapter(
+        unavailableHosts: {'primary.test', 'alternative.test'},
+        failureReason: "Failed host lookup: 'private.home.arpa'",
+      );
+      final client = _client(adapter);
+
+      // When
+      await expectLater(
+        client.get<Map<String, dynamic>>('/status'),
+        throwsA(isA<ConnectionError>()),
+      );
+
+      // Then
+      final errorEntries = logger.logs.where(
+        (entry) => entry.message.startsWith('[API] Error:'),
+      );
+      expect(errorEntries, isNotEmpty);
+      for (final entry in errorEntries) {
+        expect(entry.error, isA<String>());
+        expect(entry.toLogString(), isNot(contains('private.home.arpa')));
+      }
+    });
+
+    test('should mask values from arbitrary custom headers', () async {
+      // Given
+      logger.clearLogs();
+      final client = _client(
+        _RecordingAdapter(),
+        headers: const {
+          'X-Auth': 'private-auth-value',
+          'CF-Access-Client-Id': 'private-client-id',
+        },
+      );
+
+      // When
+      await client.get<Map<String, dynamic>>('/status');
+
+      // Then
+      final requestLog = logger.logs
+          .firstWhere((entry) => entry.message.startsWith('[API] Request:'))
+          .toLogString();
+      expect(requestLog, contains('X-Auth'));
+      expect(requestLog, contains('CF-Access-Client-Id'));
+      expect(requestLog, isNot(contains('private-auth-value')));
+      expect(requestLog, isNot(contains('private-client-id')));
+    });
   });
 }
 
-ApiClient _client(_RecordingAdapter adapter) {
+ApiClient _client(
+  _RecordingAdapter adapter, {
+  Map<String, String> headers = const {'X-Api-Key': 'key'},
+}) {
   final dio = Dio()..httpClientAdapter = adapter;
   return ApiClient(
     baseUrl: 'https://primary.test/api/v3',
     fallbackBaseUrls: const ['https://alternative.test/api/v3'],
-    headers: const {'X-Api-Key': 'key'},
+    headers: headers,
     dio: dio,
   );
 }
@@ -104,11 +158,13 @@ ApiClient _client(_RecordingAdapter adapter) {
 class _RecordingAdapter implements HttpClientAdapter {
   final Set<String> unavailableHosts;
   final Map<String, int> statusCodes;
+  final String failureReason;
   final List<Uri> requests = [];
 
   _RecordingAdapter({
     this.unavailableHosts = const {},
     this.statusCodes = const {},
+    this.failureReason = 'unreachable',
   });
 
   @override
@@ -122,7 +178,7 @@ class _RecordingAdapter implements HttpClientAdapter {
     if (unavailableHosts.contains(uri.host)) {
       throw DioException.connectionError(
         requestOptions: options,
-        reason: 'unreachable',
+        reason: failureReason,
       );
     }
 

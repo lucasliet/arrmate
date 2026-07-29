@@ -18,12 +18,18 @@ class ReleaseQueryStore {
   static const _seriesQueryKey = 'series_release_query';
   static const _movieRememberKey = 'remember_movie_release_query';
   static const _seriesRememberKey = 'remember_series_release_query';
+  final Future<SharedPreferences> Function() _preferencesLoader;
+  Future<void> _saveQueue = Future<void>.value();
+
+  /// Creates a store backed by shared preferences.
+  ReleaseQueryStore({Future<SharedPreferences> Function()? preferencesLoader})
+    : _preferencesLoader = preferencesLoader ?? SharedPreferences.getInstance;
 
   /// Loads the persisted query for the requested media type.
   Future<SavedReleaseQuery> load({required bool isMovie}) async {
     SharedPreferences preferences;
     try {
-      preferences = await SharedPreferences.getInstance();
+      preferences = await _preferencesLoader();
     } catch (error, stackTrace) {
       logger.warning(
         '[ReleaseQueryStore] SharedPreferences unavailable, using defaults',
@@ -33,8 +39,30 @@ class ReleaseQueryStore {
       return const SavedReleaseQuery(query: ReleaseQuery(), remember: false);
     }
 
-    final remember = preferences.getBool(_rememberKey(isMovie)) ?? false;
-    final encodedQuery = preferences.getString(_queryKey(isMovie));
+    Object? storedRemember;
+    Object? storedQuery;
+    try {
+      storedRemember = preferences.get(_rememberKey(isMovie));
+      storedQuery = preferences.get(_queryKey(isMovie));
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[ReleaseQueryStore] Stored release preferences are unavailable, '
+        'using defaults',
+        error,
+        stackTrace,
+      );
+      return const SavedReleaseQuery(query: ReleaseQuery(), remember: false);
+    }
+
+    final remember = storedRemember is bool ? storedRemember : false;
+    final encodedQuery = storedQuery is String ? storedQuery : null;
+    if ((storedRemember != null && storedRemember is! bool) ||
+        (storedQuery != null && storedQuery is! String)) {
+      logger.warning(
+        '[ReleaseQueryStore] Stored release preferences have unexpected types, '
+        'restoring safe defaults',
+      );
+    }
     if (!remember || encodedQuery == null) {
       return SavedReleaseQuery(query: const ReleaseQuery(), remember: remember);
     }
@@ -64,17 +92,37 @@ class ReleaseQueryStore {
     required bool isMovie,
     required ReleaseQuery query,
     required bool remember,
+  }) {
+    final save = _saveQueue.then(
+      (_) => _write(isMovie: isMovie, query: query, remember: remember),
+    );
+    _saveQueue = save;
+    return save;
+  }
+
+  Future<void> _write({
+    required bool isMovie,
+    required ReleaseQuery query,
+    required bool remember,
   }) async {
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(_rememberKey(isMovie), remember);
-    if (remember) {
-      await preferences.setString(
-        _queryKey(isMovie),
-        jsonEncode(query.toJson()),
+    try {
+      final preferences = await _preferencesLoader();
+      await preferences.setBool(_rememberKey(isMovie), remember);
+      if (remember) {
+        await preferences.setString(
+          _queryKey(isMovie),
+          jsonEncode(query.toJson()),
+        );
+        return;
+      }
+      await preferences.remove(_queryKey(isMovie));
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[ReleaseQueryStore] Failed to save release preferences',
+        error,
+        stackTrace,
       );
-      return;
     }
-    await preferences.remove(_queryKey(isMovie));
   }
 
   String _queryKey(bool isMovie) => isMovie ? _movieQueryKey : _seriesQueryKey;

@@ -11,10 +11,12 @@ void main() {
       'should test the primary and alternative URLs independently',
       () async {
         final testedUrls = <String>[];
+        final testedConnectionUrls = <List<String>>[];
         final service = SystemDiagnosticsService(
           loadConnectivity: () async => [ConnectivityResult.wifi],
           loadStatus: (instance) async {
             testedUrls.add(instance.effectiveUrl);
+            testedConnectionUrls.add(instance.connectionUrls);
             if (instance.effectiveUrl.contains('remote')) {
               throw const ConnectionError();
             }
@@ -39,9 +41,15 @@ void main() {
         ]);
 
         expect(testedUrls, ['http://local.test:7878', 'https://remote.test']);
+        expect(testedConnectionUrls, [
+          ['http://local.test:7878'],
+          ['https://remote.test'],
+        ]);
         expect(snapshot.checks, hasLength(2));
         expect(snapshot.checks.first.isSuccessful, isTrue);
         expect(snapshot.checks.last.isSuccessful, isFalse);
+        expect(snapshot.checks.first.endpointLabel, 'Primary · Active');
+        expect(snapshot.checks.last.endpointLabel, 'Alternative');
         expect(
           snapshot.checks.last.error,
           'Connection failed. Please check your network.',
@@ -51,7 +59,7 @@ void main() {
     );
 
     test(
-      'should mark the snapshot offline when every endpoint fails',
+      'should keep the network available when every endpoint fails',
       () async {
         final service = SystemDiagnosticsService(
           loadConnectivity: () async => [ConnectivityResult.wifi],
@@ -68,7 +76,25 @@ void main() {
           ),
         ]);
 
+        expect(snapshot.hasNetworkInterface, isTrue);
+        expect(snapshot.isOffline, isFalse);
+        expect(snapshot.areAllEndpointsUnavailable, isTrue);
+      },
+    );
+
+    test(
+      'should mark the device offline only without a network interface',
+      () async {
+        final service = SystemDiagnosticsService(
+          loadConnectivity: () async => [ConnectivityResult.none],
+          loadStatus: (_) async => throw const TimeoutError(),
+        );
+
+        final snapshot = await service.run(const []);
+
+        expect(snapshot.hasNetworkInterface, isFalse);
         expect(snapshot.isOffline, isTrue);
+        expect(snapshot.areAllEndpointsUnavailable, isFalse);
       },
     );
   });
@@ -109,19 +135,17 @@ void main() {
         appVersion: '1.0.0',
         buildNumber: '1',
         platform: 'Android authorization=Bearer-secret',
-        appLogs: const [
-          'Authorization: Bearer abcdef',
-          'URL https://private.example/path?apikey=secret',
-        ],
       );
 
       expect(report, contains('Instance 1'));
       expect(report, contains('https://<redacted-host>:7878/base'));
       expect(report, isNot(contains('private.example')));
       expect(report, isNot(contains('Private label')));
-      expect(report, isNot(contains('Bearer abcdef')));
       expect(report, isNot(contains('secret')));
       expect(report, isNot(contains('private-id')));
+      expect(report, isNot(contains('Recent app logs')));
+      expect(report, contains('Network available: true'));
+      expect(report, contains('All endpoints unavailable: false'));
     });
   });
 }

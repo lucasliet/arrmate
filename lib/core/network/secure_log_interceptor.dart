@@ -6,18 +6,6 @@ import '../utils/sensitive_data_redactor.dart';
 /// information — credentials, endpoints and tokens — so logs are safe to
 /// share in diagnostic reports.
 class SecureLogInterceptor extends Interceptor {
-  /// Header substrings whose values must always be masked in logs.
-  static const _sensitiveHeaderSubstrings = [
-    'api-key',
-    'apikey',
-    'authorization',
-    'token',
-    'secret',
-    'cookie',
-    'set-cookie',
-    'password',
-  ];
-
   /// Query parameter substrings whose values must always be masked in logs.
   static const _sensitiveQueryParamSubstrings = [
     'apikey',
@@ -61,25 +49,20 @@ class SecureLogInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final sanitizedMessage = SensitiveDataRedactor.redactOptional(err.message);
     final sanitizedPath = SensitiveDataRedactor.redact(err.requestOptions.path);
+    final sanitizedError = SensitiveDataRedactor.redact(err.toString());
     logger.error(
       '[API] Error: $sanitizedMessage (${err.type})\n'
       'Path: $sanitizedPath\n'
       'Status: ${err.response?.statusCode ?? 'unavailable'}',
-      err,
+      sanitizedError,
       err.stackTrace,
     );
     handler.next(err);
   }
 
-  /// Returns a copy of [headers] with sensitive values masked.
+  /// Returns header names with every value masked.
   Map<String, dynamic> _sanitizeHeaders(Map<String, dynamic> headers) {
-    final sanitized = Map<String, dynamic>.from(headers);
-    for (final key in sanitized.keys) {
-      if (_isSensitive(key, _sensitiveHeaderSubstrings)) {
-        sanitized[key] = '***MASKED***';
-      }
-    }
-    return sanitized;
+    return {for (final key in headers.keys) key: '***MASKED***'};
   }
 
   /// Returns a copy of [params] with sensitive values masked.

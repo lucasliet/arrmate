@@ -17,6 +17,9 @@ class ReleasesSheet extends ConsumerStatefulWidget {
   final int? seasonNumber;
   final String? originalLanguage;
 
+  /// Optional persistence store used to load and save release filters.
+  final ReleaseQueryStore? queryStore;
+
   const ReleasesSheet({
     super.key,
     required this.id,
@@ -26,6 +29,7 @@ class ReleasesSheet extends ConsumerStatefulWidget {
     this.seriesId,
     this.seasonNumber,
     this.originalLanguage,
+    this.queryStore,
   });
 
   bool get _isSeason => !isMovie && seriesId != null && seasonNumber != null;
@@ -36,13 +40,15 @@ class ReleasesSheet extends ConsumerStatefulWidget {
 
 class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   final _searchController = TextEditingController();
-  final _queryStore = ReleaseQueryStore();
+  late final ReleaseQueryStore _queryStore;
   ReleaseQuery _query = const ReleaseQuery();
   bool _rememberFilters = false;
+  bool _queryModified = false;
 
   @override
   void initState() {
     super.initState();
+    _queryStore = widget.queryStore ?? ReleaseQueryStore();
     unawaited(_loadQuery());
   }
 
@@ -55,6 +61,17 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   Future<void> _loadQuery() async {
     final savedQuery = await _queryStore.load(isMovie: widget.isMovie);
     if (!mounted) return;
+    if (_queryModified) {
+      setState(() => _rememberFilters = savedQuery.remember);
+      if (savedQuery.remember) {
+        await _queryStore.save(
+          isMovie: widget.isMovie,
+          query: _query,
+          remember: true,
+        );
+      }
+      return;
+    }
     _searchController.text = savedQuery.query.search;
     setState(() {
       _query = savedQuery.query;
@@ -63,6 +80,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   }
 
   void _updateQuery(ReleaseQuery query) {
+    _queryModified = true;
     setState(() => _query = query);
     if (_rememberFilters) {
       unawaited(
@@ -150,6 +168,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
     );
     if (result == null || !mounted) return;
 
+    _queryModified = true;
     _searchController.text = result.query.search;
     setState(() {
       _query = result.query;
@@ -178,6 +197,14 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       originalLanguage: widget.originalLanguage,
     );
     final hiddenCount = releases.length - visibleReleases.length;
+    final hasOriginalLanguage =
+        widget.originalLanguage?.trim().isNotEmpty ?? false;
+    final hasVisibleActiveFilters = _query
+        .copyWith(
+          originalLanguageOnly:
+              hasOriginalLanguage && _query.originalLanguageOnly,
+        )
+        .hasActiveFilters;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -272,11 +299,11 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                     tooltip: 'Filter releases',
                     onPressed: () => _showFilters(releases),
                     icon: Badge(
-                      isLabelVisible: _query.hasActiveFilters,
+                      isLabelVisible: hasVisibleActiveFilters,
                       child: const Icon(Icons.filter_list),
                     ),
                   ),
-                  if (_query.hasActiveFilters)
+                  if (hasVisibleActiveFilters)
                     TextButton(
                       key: const Key('clearReleaseFiltersButton'),
                       onPressed: () {

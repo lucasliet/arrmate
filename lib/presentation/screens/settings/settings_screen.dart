@@ -354,9 +354,18 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.health_and_safety_outlined),
           title: const Text('Health'),
-          subtitle: const Text('System health and issues'),
+          subtitle: const Text('Server-reported Radarr and Sonarr alerts'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/health'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.network_check),
+          title: const Text('Connection Diagnostics'),
+          subtitle: const Text(
+            'Test endpoints, latency, request traces, and export a report',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/diagnostics'),
         ),
         ListTile(
           leading: const Icon(Icons.storage_outlined),
@@ -401,15 +410,6 @@ class SettingsScreen extends ConsumerWidget {
             ref,
             settings.minimumSeedingDays,
           ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.network_check),
-          title: const Text('Diagnostics'),
-          subtitle: const Text(
-            'Network checks, request log, and bug report export',
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/settings/diagnostics'),
         ),
         ListTile(
           leading: const Icon(Icons.cleaning_services_outlined),

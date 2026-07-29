@@ -54,82 +54,177 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
   }
 }
 
+/// Identifies the operation that failed while retrieving health information.
+enum HealthConnectionOperation {
+  /// Loading the server-reported health status failed.
+  loadStatus,
+
+  /// Starting a new server health check failed.
+  runCheck,
+}
+
+/// Describes an operation that failed for a health source.
+class HealthConnectionFailure {
+  /// Creates a health connection failure.
+  const HealthConnectionFailure({
+    required this.service,
+    required this.operation,
+  });
+
+  /// The service whose health operation failed.
+  final String service;
+
+  /// The operation that could not be completed.
+  final HealthConnectionOperation operation;
+}
+
+/// Combines server-reported health checks with connection failures.
+class HealthOverview {
+  /// Creates a health overview.
+  const HealthOverview({
+    required this.configuredSourceCount,
+    this.serverChecks = const [],
+    this.connectionFailures = const [],
+  });
+
+  /// The number of configured services queried for health information.
+  final int configuredSourceCount;
+
+  /// Warnings and errors reported by the connected servers.
+  final List<HealthCheck> serverChecks;
+
+  /// Services whose health information could not be retrieved or refreshed.
+  final List<HealthConnectionFailure> connectionFailures;
+}
+
 /// Provider for fetching system health checks from all active instances.
-final healthProvider = AsyncNotifierProvider<HealthNotifier, List<HealthCheck>>(
+final healthProvider = AsyncNotifierProvider<HealthNotifier, HealthOverview>(
   () {
     return HealthNotifier();
   },
 );
 
-class HealthNotifier extends AsyncNotifier<List<HealthCheck>> {
+/// Loads and refreshes health information from active Arr instances.
+class HealthNotifier extends AsyncNotifier<HealthOverview> {
+  int _generation = 0;
+
   @override
-  Future<List<HealthCheck>> build() async {
+  Future<HealthOverview> build() async {
+    _generation++;
     final movieRepo = ref.watch(movieRepositoryProvider);
     final seriesRepo = ref.watch(seriesRepositoryProvider);
     return _fetchHealth(movieRepo, seriesRepo);
   }
 
-  Future<List<HealthCheck>> _fetchHealth(
+  Future<HealthOverview> _fetchHealth(
     MovieRepository? movieRepo,
     SeriesRepository? seriesRepo,
   ) async {
-    List<HealthCheck> allChecks = [];
-
+    final requests = <Future<_HealthSourceResult>>[];
     if (movieRepo != null) {
-      try {
-        final checks = await movieRepo.getHealth();
-        allChecks.addAll(checks);
-      } catch (e, stack) {
-        logger.error('health: movies fetch failed', e, stack);
-      }
+      requests.add(_fetchSource(service: 'Radarr', load: movieRepo.getHealth));
     }
-
     if (seriesRepo != null) {
-      try {
-        final checks = await seriesRepo.getHealth();
-        allChecks.addAll(checks);
-      } catch (e, stack) {
-        logger.error('health: series fetch failed', e, stack);
-      }
+      requests.add(_fetchSource(service: 'Sonarr', load: seriesRepo.getHealth));
     }
 
-    return allChecks;
+    final results = await Future.wait(requests);
+    return HealthOverview(
+      configuredSourceCount: requests.length,
+      serverChecks: [for (final result in results) ...result.serverChecks],
+      connectionFailures: [
+        for (final result in results)
+          if (result.failure != null) result.failure!,
+      ],
+    );
   }
 
+  Future<_HealthSourceResult> _fetchSource({
+    required String service,
+    required Future<List<HealthCheck>> Function() load,
+  }) async {
+    try {
+      return _HealthSourceResult(serverChecks: await load());
+    } catch (error, stackTrace) {
+      logger.error(
+        '[HealthNotifier] Failed to load $service health status',
+        error,
+        stackTrace,
+      );
+      return _HealthSourceResult(
+        failure: HealthConnectionFailure(
+          service: service,
+          operation: HealthConnectionOperation.loadStatus,
+        ),
+      );
+    }
+  }
+
+  /// Starts new checks and then reloads the server-reported health status.
   Future<void> runHealthChecks() async {
+    final generation = ++_generation;
     final movieRepo = ref.read(movieRepositoryProvider);
     final seriesRepo = ref.read(seriesRepositoryProvider);
 
-    state = AsyncLoading<List<HealthCheck>>().copyWithPrevious(state);
-
-    final futures = <Future<void>>[];
+    state = AsyncLoading<HealthOverview>().copyWithPrevious(state);
+    final requests = <Future<HealthConnectionFailure?>>[];
     if (movieRepo != null) {
-      futures.add(
-        movieRepo.healthCheck().catchError((e, stack) {
-          logger.warning(
-            '[HealthNotifier] healthCheck command failed for movie instance',
-            e,
-            stack,
-          );
-        }),
-      );
+      requests.add(_runSource(service: 'Radarr', run: movieRepo.healthCheck));
     }
     if (seriesRepo != null) {
-      futures.add(
-        seriesRepo.healthCheck().catchError((e, stack) {
-          logger.warning(
-            '[HealthNotifier] healthCheck command failed for series instance',
-            e,
-            stack,
-          );
-        }),
-      );
+      requests.add(_runSource(service: 'Sonarr', run: seriesRepo.healthCheck));
     }
 
-    await Future.wait(futures);
-    await Future.delayed(const Duration(seconds: 2));
-    state = await AsyncValue.guard(() => _fetchHealth(movieRepo, seriesRepo));
+    final runFailures = await Future.wait(requests);
+    if (generation != _generation) return;
+
+    if (requests.isNotEmpty) {
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    if (generation != _generation) return;
+
+    final overview = await _fetchHealth(movieRepo, seriesRepo);
+    if (generation != _generation) return;
+
+    state = AsyncData(
+      HealthOverview(
+        configuredSourceCount: overview.configuredSourceCount,
+        serverChecks: overview.serverChecks,
+        connectionFailures: [
+          for (final failure in runFailures)
+            if (failure != null) failure,
+          ...overview.connectionFailures,
+        ],
+      ),
+    );
   }
+
+  Future<HealthConnectionFailure?> _runSource({
+    required String service,
+    required Future<void> Function() run,
+  }) async {
+    try {
+      await run();
+      return null;
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[HealthNotifier] Failed to start $service health check',
+        error,
+        stackTrace,
+      );
+      return HealthConnectionFailure(
+        service: service,
+        operation: HealthConnectionOperation.runCheck,
+      );
+    }
+  }
+}
+
+class _HealthSourceResult {
+  const _HealthSourceResult({this.serverChecks = const [], this.failure});
+
+  final List<HealthCheck> serverChecks;
+  final HealthConnectionFailure? failure;
 }
 
 /// Provider for fetching Radarr quality profiles.

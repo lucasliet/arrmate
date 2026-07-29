@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/widgets/update_dialog.dart';
 import 'presentation/widgets/whats_new_dialog.dart';
+import 'presentation/widgets/deep_link_listener.dart';
 import 'presentation/providers/onboarding_provider.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
@@ -77,40 +78,43 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
-    return MaterialApp.router(
-      title: 'Arrmate',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(settings.colorScheme),
-      darkTheme: AppTheme.dark(settings.colorScheme),
-      themeMode: settings.appearance.themeMode,
-      routerConfig: appRouter,
-      builder: (context, child) {
-        return Consumer(
-          builder: (context, ref, child) {
-            // Listen for update availability inside the MaterialApp context
-            ref.listen(updateProvider, (previous, next) {
-              if (kDebugMode) {
-                return;
-              }
-
-              if (next.status == UpdateStatus.available &&
-                  previous?.status != UpdateStatus.available) {
-                final navContext = rootNavigatorKey.currentContext;
-                if (navContext != null) {
-                  showDialog(
-                    context: navContext,
-                    barrierDismissible: false,
-                    builder: (context) => const UpdateDialog(),
-                  );
+    return DeepLinkListener(
+      onNavigate: appRouter.go,
+      child: MaterialApp.router(
+        title: 'Arrmate',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(settings.colorScheme),
+        darkTheme: AppTheme.dark(settings.colorScheme),
+        themeMode: settings.appearance.themeMode,
+        routerConfig: appRouter,
+        builder: (context, child) {
+          return Consumer(
+            builder: (context, ref, child) {
+              // Listen for update availability inside the MaterialApp context
+              ref.listen(updateProvider, (previous, next) {
+                if (kDebugMode) {
+                  return;
                 }
-              }
-            });
 
-            return child!;
-          },
-          child: child,
-        );
-      },
+                if (next.status == UpdateStatus.available &&
+                    previous?.status != UpdateStatus.available) {
+                  final navContext = rootNavigatorKey.currentContext;
+                  if (navContext != null) {
+                    showDialog(
+                      context: navContext,
+                      barrierDismissible: false,
+                      builder: (context) => const UpdateDialog(),
+                    );
+                  }
+                }
+              });
+
+              return child!;
+            },
+            child: child,
+          );
+        },
+      ),
     );
   }
 }

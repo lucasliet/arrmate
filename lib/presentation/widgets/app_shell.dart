@@ -4,10 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../router/app_router.dart';
 import '../tour/app_tour_keys.dart';
-import 'deep_link_listener.dart';
 import 'offline_status_banner.dart';
 
-/// Main shell widget containing the app scaffold, navigation bar, and deep link listener.
+/// Main shell widget containing the app scaffold and navigation bar.
 class AppShell extends ConsumerWidget {
   final Widget child;
 
@@ -16,26 +15,24 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
-    return DeepLinkListener(
-      child: Scaffold(
-        body: Column(
-          children: [
-            const OfflineStatusBanner(),
-            Expanded(child: child),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          key: tourKeys.navBarKey,
-          selectedIndex: _calculateSelectedIndex(context),
-          onDestinationSelected: (index) => _onItemTapped(context, index),
-          destinations: AppTab.values.map((tab) {
-            return NavigationDestination(
-              icon: Icon(tab.icon),
-              selectedIcon: Icon(tab.selectedIcon),
-              label: tab.label,
-            );
-          }).toList(),
-        ),
+    return Scaffold(
+      body: Column(
+        children: [
+          const OfflineStatusBanner(),
+          Expanded(child: child),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        key: tourKeys.navBarKey,
+        selectedIndex: _calculateSelectedIndex(context),
+        onDestinationSelected: (index) => _onItemTapped(context, index),
+        destinations: AppTab.values.map((tab) {
+          return NavigationDestination(
+            icon: Icon(tab.icon),
+            selectedIcon: Icon(tab.selectedIcon),
+            label: tab.label,
+          );
+        }).toList(),
       ),
     );
   }

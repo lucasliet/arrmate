@@ -17,10 +17,36 @@ typedef _HistoryPageLoader =
     );
 
 class _InstanceHistoryResult {
+  final String instanceId;
   final List<HistoryEvent> events;
   final InstanceLoadFailure? failure;
+  final int nextPage;
+  final bool hasMore;
+  final bool attempted;
 
-  const _InstanceHistoryResult({required this.events, this.failure});
+  const _InstanceHistoryResult({
+    required this.instanceId,
+    required this.events,
+    required this.nextPage,
+    required this.hasMore,
+    required this.attempted,
+    this.failure,
+  });
+}
+
+class _HistoryFetchResult {
+  final List<_InstanceHistoryResult> instances;
+
+  const _HistoryFetchResult(this.instances);
+
+  List<HistoryEvent> get events =>
+      instances.expand((result) => result.events).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+  List<InstanceLoadFailure> get failures => instances
+      .map((result) => result.failure)
+      .whereType<InstanceLoadFailure>()
+      .toList();
 }
 
 /// Provider for fetching and paginating history events.
@@ -78,7 +104,7 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
 
   @override
   Future<List<HistoryEvent>> build() async {
-    ref.watch(historyEventTypeFilterProvider);
+    final eventType = ref.watch(historyEventTypeFilterProvider);
     final radarrInstances = ref.watch(
       instancesByTypeProvider(InstanceType.radarr),
     );
@@ -86,23 +112,40 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
       instancesByTypeProvider(InstanceType.sonarr),
     );
     final instances = [...radarrInstances, ...sonarrInstances];
+    final nextPages = {for (final instance in instances) instance.id: 1};
+    final hasMoreByInstance = {
+      for (final instance in instances) instance.id: true,
+    };
+    final generation = ++_generation;
 
+    final result = await _fetchHistory(
+      radarrInstances,
+      sonarrInstances,
+      eventType: eventType,
+      nextPages: nextPages,
+      hasMoreByInstance: hasMoreByInstance,
+    );
+    if (generation != _generation) {
+      return state.valueOrNull ?? const [];
+    }
     _nextPageByInstance
       ..clear()
-      ..addEntries(instances.map((instance) => MapEntry(instance.id, 1)));
+      ..addAll(nextPages);
     _hasMoreByInstance
       ..clear()
-      ..addEntries(instances.map((instance) => MapEntry(instance.id, true)));
-    _failures = const [];
-    _generation++;
-    return _fetchHistory(radarrInstances, sonarrInstances);
+      ..addAll(hasMoreByInstance);
+    _applyPagination(result);
+    _failures = result.failures;
+    return result.events;
   }
 
-  Future<List<HistoryEvent>> _fetchHistory(
+  Future<_HistoryFetchResult> _fetchHistory(
     List<Instance> radarrInstances,
-    List<Instance> sonarrInstances,
-  ) async {
-    final eventType = ref.read(historyEventTypeFilterProvider);
+    List<Instance> sonarrInstances, {
+    required HistoryEventType? eventType,
+    required Map<String, int> nextPages,
+    required Map<String, bool> hasMoreByInstance,
+  }) async {
     final requests = <Future<_InstanceHistoryResult>>[];
 
     for (final instance in radarrInstances) {
@@ -116,6 +159,8 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
             eventType: eventType,
           ),
           eventType,
+          page: nextPages[instance.id] ?? 1,
+          hasMore: hasMoreByInstance[instance.id] ?? false,
         ),
       );
     }
@@ -133,42 +178,46 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
             eventType: eventType,
           ),
           eventType,
+          page: nextPages[instance.id] ?? 1,
+          hasMore: hasMoreByInstance[instance.id] ?? false,
         ),
       );
     }
 
-    final results = await Future.wait(requests);
-    final events = results.expand((result) => result.events).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
-    _failures = results
-        .map((result) => result.failure)
-        .whereType<InstanceLoadFailure>()
-        .toList();
-    return events;
+    return _HistoryFetchResult(await Future.wait(requests));
   }
 
   Future<_InstanceHistoryResult> _fetchInstanceHistory(
     Instance instance,
     _HistoryPageLoader loadPage,
-    HistoryEventType? eventType,
-  ) async {
-    if (!(_hasMoreByInstance[instance.id] ?? false)) {
-      return const _InstanceHistoryResult(events: []);
+    HistoryEventType? eventType, {
+    required int page,
+    required bool hasMore,
+  }) async {
+    if (!hasMore) {
+      return _InstanceHistoryResult(
+        instanceId: instance.id,
+        events: const [],
+        nextPage: page,
+        hasMore: false,
+        attempted: false,
+      );
     }
 
-    final page = _nextPageByInstance[instance.id] ?? 1;
     try {
       final historyPage = await loadPage(
         page,
         ApiConstants.historyPageSize,
         eventType,
       );
-      _nextPageByInstance[instance.id] = page + 1;
-      _hasMoreByInstance[instance.id] = historyPage.hasMore;
       return _InstanceHistoryResult(
+        instanceId: instance.id,
         events: historyPage.records
             .map((event) => event.copyWith(instanceId: instance.id))
             .toList(),
+        nextPage: page + 1,
+        hasMore: historyPage.hasMore,
+        attempted: true,
       );
     } catch (error, stackTrace) {
       logger.error(
@@ -176,9 +225,12 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
         error,
         stackTrace,
       );
-      _hasMoreByInstance[instance.id] = false;
       return _InstanceHistoryResult(
+        instanceId: instance.id,
         events: const [],
+        nextPage: page,
+        hasMore: false,
+        attempted: true,
         failure: InstanceLoadFailure(
           instanceId: instance.id,
           instanceType: instance.type,
@@ -187,6 +239,29 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
         ),
       );
     }
+  }
+
+  void _applyPagination(_HistoryFetchResult result) {
+    for (final instance in result.instances) {
+      if (!instance.attempted) {
+        continue;
+      }
+      _nextPageByInstance[instance.instanceId] = instance.nextPage;
+      _hasMoreByInstance[instance.instanceId] = instance.hasMore;
+    }
+  }
+
+  List<InstanceLoadFailure> _mergeFailures(
+    List<InstanceLoadFailure> existing,
+    List<InstanceLoadFailure> added,
+  ) {
+    final failures = {
+      for (final failure in existing)
+        '${failure.instanceType.name}:${failure.instanceId}': failure,
+      for (final failure in added)
+        '${failure.instanceType.name}:${failure.instanceId}': failure,
+    };
+    return failures.values.toList();
   }
 
   /// Checks if there are more pages available to load.
@@ -203,6 +278,9 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
       previousState,
     );
     final generation = _generation;
+    final eventType = ref.read(historyEventTypeFilterProvider);
+    final nextPages = Map<String, int>.of(_nextPageByInstance);
+    final hasMoreByInstance = Map<String, bool>.of(_hasMoreByInstance);
 
     try {
       final radarrInstances = ref.read(
@@ -211,9 +289,21 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
       final sonarrInstances = ref.read(
         instancesByTypeProvider(InstanceType.sonarr),
       );
-      final newEvents = await _fetchHistory(radarrInstances, sonarrInstances);
+      final result = await _fetchHistory(
+        radarrInstances,
+        sonarrInstances,
+        eventType: eventType,
+        nextPages: nextPages,
+        hasMoreByInstance: hasMoreByInstance,
+      );
       if (generation != _generation) return;
-      final events = [...currentEvents, ...newEvents]
+      _applyPagination(result);
+      _failures = _mergeFailures(_failures, result.failures);
+      final eventsByIdentity = <String, HistoryEvent>{};
+      for (final event in [...currentEvents, ...result.events]) {
+        eventsByIdentity['${event.instanceId}:${event.id}'] = event;
+      }
+      final events = eventsByIdentity.values.toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       state = AsyncValue.data(events);
     } catch (e, stack) {
@@ -225,6 +315,7 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
 
   /// Refreshes the history list, resetting pagination.
   Future<void> refresh() async {
+    _generation++;
     ref.invalidateSelf();
     await future;
   }

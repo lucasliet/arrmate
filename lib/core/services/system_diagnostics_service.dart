@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/models/models.dart';
 import '../network/api_error.dart';
 import '../network/request_diagnostics.dart';
+import '../utils/sensitive_data_redactor.dart';
 
 /// Loads system status from a specific configured instance.
 typedef InstanceStatusLoader =
@@ -62,15 +63,18 @@ class SystemDiagnosticsSnapshot extends Equatable {
     required this.checks,
   });
 
-  /// Whether the device or every configured instance is unreachable.
-  bool get isOffline {
-    final platformOffline =
-        networkInterfaces.isEmpty ||
-        networkInterfaces.every((interface) => interface == 'none');
-    final allInstancesUnavailable =
-        checks.isNotEmpty && checks.every((check) => !check.isSuccessful);
-    return platformOffline || allInstancesUnavailable;
-  }
+  /// Whether the platform reports an available network interface.
+  bool get hasNetworkInterface => networkInterfaces.any(
+    (interface) =>
+        interface.trim().isNotEmpty && interface.toLowerCase() != 'none',
+  );
+
+  /// Whether every configured endpoint check failed.
+  bool get areAllEndpointsUnavailable =>
+      checks.isNotEmpty && checks.every((check) => !check.isSuccessful);
+
+  /// Whether the platform reports no available network interface.
+  bool get isOffline => !hasNetworkInterface;
 
   @override
   List<Object?> get props => [generatedAt, networkInterfaces, checks];
@@ -117,7 +121,7 @@ class SystemDiagnosticsService {
   ) async {
     final stopwatch = Stopwatch()..start();
     try {
-      final status = await _loadStatus(instance.copyWith(activeUrl: endpoint));
+      final status = await _loadStatus(_isolateEndpoint(instance, endpoint));
       stopwatch.stop();
       return InstanceDiagnosticCheck(
         instanceId: instance.id,
@@ -145,13 +149,48 @@ class SystemDiagnosticsService {
   }
 
   String _endpointLabel(Instance instance, String endpoint) {
-    if (endpoint == instance.effectiveUrl) {
+    final normalizedEndpoint = _normalizeEndpoint(endpoint);
+    final primary = _normalizeEndpoint(instance.url);
+    final alternative = instance.alternativeUrl == null
+        ? null
+        : _normalizeEndpoint(instance.alternativeUrl!);
+    final active = _normalizeEndpoint(instance.effectiveUrl);
+
+    if (normalizedEndpoint == active) {
+      if (normalizedEndpoint == primary) {
+        return 'Primary · Active';
+      }
+      if (normalizedEndpoint == alternative) {
+        return 'Alternative · Active';
+      }
       return 'Active';
     }
-    if (endpoint == instance.url) {
+    if (normalizedEndpoint == primary) {
       return 'Primary';
     }
     return 'Alternative';
+  }
+
+  Instance _isolateEndpoint(Instance instance, String endpoint) {
+    return Instance(
+      id: instance.id,
+      type: instance.type,
+      mode: instance.mode,
+      label: instance.label,
+      url: endpoint,
+      activeUrl: endpoint,
+      apiKey: instance.apiKey,
+      headers: instance.headers,
+      rootFolders: instance.rootFolders,
+      qualityProfiles: instance.qualityProfiles,
+      tags: instance.tags,
+      name: instance.name,
+      version: instance.version,
+    );
+  }
+
+  String _normalizeEndpoint(String endpoint) {
+    return endpoint.trim().replaceFirst(RegExp(r'/+$'), '');
   }
 
   String _safeError(Object error) {
@@ -172,7 +211,6 @@ class DiagnosticReportBuilder {
     required String appVersion,
     required String buildNumber,
     required String platform,
-    List<String> appLogs = const [],
     DateTime? imageCacheClearedAt,
   }) {
     final aliases = <String, String>{};
@@ -188,7 +226,10 @@ class DiagnosticReportBuilder {
       ..writeln('Generated: ${snapshot.generatedAt.toIso8601String()}')
       ..writeln('App: $appVersion+$buildNumber')
       ..writeln('Platform: ${sanitize(platform)}')
-      ..writeln('Offline: ${snapshot.isOffline}')
+      ..writeln('Network available: ${snapshot.hasNetworkInterface}')
+      ..writeln(
+        'All endpoints unavailable: ${snapshot.areAllEndpointsUnavailable}',
+      )
       ..writeln('Network interfaces: ${snapshot.networkInterfaces.join(', ')}')
       ..writeln(
         'Image cache last cleared: '
@@ -228,16 +269,6 @@ class DiagnosticReportBuilder {
       );
     }
 
-    buffer
-      ..writeln()
-      ..writeln('Recent app logs');
-    if (appLogs.isEmpty) {
-      buffer.writeln('- No app logs recorded');
-    }
-    for (final log in appLogs.take(50)) {
-      buffer.writeln('- ${sanitize(log)}');
-    }
-
     return buffer.toString();
   }
 
@@ -259,7 +290,7 @@ class DiagnosticReportBuilder {
       RegExp(r'https?://[^\s)\]}]+', caseSensitive: false),
       (match) => sanitizeUrl(match.group(0)!),
     );
-    return sanitized;
+    return SensitiveDataRedactor.redact(sanitized);
   }
 
   /// Returns a URL shape without user info, host, query, or fragment values.

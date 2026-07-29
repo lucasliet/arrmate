@@ -16,34 +16,91 @@ import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/common_widgets.dart';
 
+/// Runs connectivity diagnostics for the provided configured instances.
+typedef SystemDiagnosticsRunner =
+    Future<SystemDiagnosticsSnapshot> Function(List<Instance> instances);
+
+/// Exports a fully built, sanitized diagnostic report.
+typedef DiagnosticReportExporter = Future<void> Function(String report);
+
+/// Loads the package metadata included in an exported diagnostic report.
+typedef DiagnosticsPackageInfoLoader = Future<PackageInfo> Function();
+
+/// Exposes the instance loading state used by connection diagnostics.
+final diagnosticsInstancesStateProvider = Provider<InstancesState>((ref) {
+  return ref.watch(instancesProvider);
+});
+
+/// Creates the runner used for authenticated endpoint checks.
+final systemDiagnosticsRunnerProvider = Provider<SystemDiagnosticsRunner>((
+  ref,
+) {
+  final repository = ref.watch(instanceRepositoryProvider);
+  final service = SystemDiagnosticsService(
+    loadStatus: repository.getSystemStatus,
+  );
+  return service.run;
+});
+
+/// Loads package metadata for report generation.
+final diagnosticsPackageInfoLoaderProvider =
+    Provider<DiagnosticsPackageInfoLoader>((ref) {
+      return PackageInfo.fromPlatform;
+    });
+
+/// Shares a generated diagnostic report through the platform share sheet.
+final diagnosticReportExporterProvider = Provider<DiagnosticReportExporter>((
+  ref,
+) {
+  return (report) async {
+    await SharePlus.instance.share(
+      ShareParams(text: report, subject: 'Arrmate Diagnostic Report'),
+    );
+  };
+});
+
 /// Provider exposing the latest system diagnostics snapshot.
 final systemDiagnosticsProvider =
     AsyncNotifierProvider.autoDispose<
       SystemDiagnosticsController,
-      SystemDiagnosticsSnapshot?
+      SystemDiagnosticsSnapshot
     >(SystemDiagnosticsController.new);
 
 class SystemDiagnosticsController
-    extends AutoDisposeAsyncNotifier<SystemDiagnosticsSnapshot?> {
+    extends AutoDisposeAsyncNotifier<SystemDiagnosticsSnapshot> {
+  int _generation = 0;
+
   @override
-  Future<SystemDiagnosticsSnapshot?> build() async => null;
+  Future<SystemDiagnosticsSnapshot> build() async {
+    _generation++;
+    ref.onDispose(() => _generation++);
+    final instancesState = ref.watch(diagnosticsInstancesStateProvider);
+    if (instancesState.isLoading) {
+      return Completer<SystemDiagnosticsSnapshot>().future;
+    }
+    return ref
+        .watch(systemDiagnosticsRunnerProvider)
+        .call(instancesState.instances);
+  }
 
   /// Runs the diagnostics against every configured instance.
   Future<void> run() async {
+    final generation = ++_generation;
     final previous = state;
-    state = const AsyncValue<SystemDiagnosticsSnapshot?>.loading()
+    state = const AsyncValue<SystemDiagnosticsSnapshot>.loading()
         .copyWithPrevious(previous);
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(instanceRepositoryProvider);
-      final service = SystemDiagnosticsService(
-        loadStatus: repository.getSystemStatus,
-      );
-      final instances = [
-        ...ref.read(instancesByTypeProvider(InstanceType.radarr)),
-        ...ref.read(instancesByTypeProvider(InstanceType.sonarr)),
-      ];
-      return service.run(instances);
+    final next = await AsyncValue.guard(() async {
+      final instancesState = ref.read(diagnosticsInstancesStateProvider);
+      if (instancesState.isLoading) {
+        throw StateError('Configured instances are still loading.');
+      }
+      return ref
+          .read(systemDiagnosticsRunnerProvider)
+          .call(instancesState.instances);
     });
+    if (generation == _generation) {
+      state = next;
+    }
   }
 }
 
@@ -55,31 +112,49 @@ class DiagnosticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshotAsync = ref.watch(systemDiagnosticsProvider);
+    final isRefreshing = snapshotAsync.isLoading && snapshotAsync.hasValue;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Diagnostics'),
+        title: const Text('Connection Diagnostics'),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            onPressed: () => ref.read(systemDiagnosticsProvider.notifier).run(),
+            tooltip: 'Run connection checks again',
+            onPressed: snapshotAsync.isLoading
+                ? null
+                : () => ref.read(systemDiagnosticsProvider.notifier).run(),
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
             tooltip: 'Export report',
-            onPressed: () => _exportReport(context, ref),
+            onPressed: snapshotAsync.hasValue
+                ? () => _exportReport(context, ref)
+                : null,
             icon: const Icon(Icons.ios_share),
           ),
         ],
       ),
-      body: snapshotAsync.when(
-        data: (snapshot) => _DiagnosticsBody(snapshot: snapshot),
-        loading: () =>
-            const LoadingIndicator(message: 'Running diagnostics...'),
-        error: (error, _) => ErrorDisplay(
-          message: 'Failed to run diagnostics: $error',
-          onRetry: () => ref.read(systemDiagnosticsProvider.notifier).run(),
-        ),
+      body: Column(
+        children: [
+          if (isRefreshing)
+            const _DiagnosticsProgress(
+              message: 'Refreshing endpoint checks...',
+            ),
+          Expanded(
+            child: snapshotAsync.when(
+              skipLoadingOnRefresh: true,
+              data: (snapshot) => _DiagnosticsBody(snapshot: snapshot),
+              loading: () => const LoadingIndicator(
+                message: 'Checking configured endpoints...',
+              ),
+              error: (error, _) => ErrorDisplay(
+                message: 'Failed to run connection diagnostics: $error',
+                onRetry: () =>
+                    ref.read(systemDiagnosticsProvider.notifier).run(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -97,7 +172,9 @@ class DiagnosticsScreen extends ConsumerWidget {
     final requests = RequestDiagnosticsRecorder.instance.entries;
     final cacheService = ref.read(cacheMaintenanceProvider);
     try {
-      final packageInfo = await PackageInfo.fromPlatform();
+      final packageInfo = await ref.read(
+        diagnosticsPackageInfoLoaderProvider,
+      )();
 
       final builder = DiagnosticReportBuilder();
       final report = builder.build(
@@ -109,9 +186,7 @@ class DiagnosticsScreen extends ConsumerWidget {
         imageCacheClearedAt: cacheService.lastClearedAt,
       );
 
-      await SharePlus.instance.share(
-        ShareParams(text: report, subject: 'Arrmate Diagnostic Report'),
-      );
+      await ref.read(diagnosticReportExporterProvider)(report);
     } catch (error, stackTrace) {
       logger.error('[Diagnostics] Export failed', error, stackTrace);
       messenger.showSnackBar(
@@ -121,47 +196,100 @@ class DiagnosticsScreen extends ConsumerWidget {
   }
 }
 
-class _DiagnosticsBody extends ConsumerWidget {
-  final SystemDiagnosticsSnapshot? snapshot;
+class _DiagnosticsProgress extends StatelessWidget {
+  final String message;
+
+  const _DiagnosticsProgress({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: paddingMd,
+              vertical: paddingXs,
+            ),
+            child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticsBody extends StatelessWidget {
+  final SystemDiagnosticsSnapshot snapshot;
 
   const _DiagnosticsBody({required this.snapshot});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (snapshot == null) {
-      return EmptyState(
-        icon: Icons.network_check,
-        title: 'No diagnostics yet',
-        subtitle: 'Run a diagnostic check to inspect instance connectivity.',
-        action: FilledButton.icon(
-          onPressed: () => ref.read(systemDiagnosticsProvider.notifier).run(),
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('Run diagnostics'),
-        ),
-      );
-    }
-
+  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(paddingMd),
       children: [
-        _NetworkSummary(snapshot: snapshot!),
+        const _DiagnosticsPurpose(),
         const SizedBox(height: paddingMd),
-        Text('Instance checks', style: Theme.of(context).textTheme.titleMedium),
+        _NetworkSummary(snapshot: snapshot),
+        const SizedBox(height: paddingMd),
+        Text(
+          'Endpoint connectivity',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: paddingSm),
-        if (snapshot!.checks.isEmpty)
-          const Text('No instances configured.')
+        if (snapshot.checks.isEmpty)
+          const Text(
+            'No Radarr, Sonarr, or qBittorrent instances are configured.',
+          )
         else
-          ...snapshot!.checks.map(
+          ...snapshot.checks.map(
             (check) => Padding(
               padding: const EdgeInsets.only(bottom: paddingSm),
               child: _CheckTile(check: check),
             ),
           ),
         const SizedBox(height: paddingMd),
-        Text('Recent requests', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Recent request traces',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: paddingSm),
         const _RequestDiagnosticsList(),
       ],
+    );
+  }
+}
+
+class _DiagnosticsPurpose extends StatelessWidget {
+  const _DiagnosticsPurpose();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(paddingMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Connection troubleshooting',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: paddingXs),
+            const Text(
+              'Tests every configured endpoint for reachability and latency, '
+              'shows recent request traces, and exports a sanitized report. '
+              'Health shows alerts reported by Radarr and Sonarr.',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -174,6 +302,15 @@ class _NetworkSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final failedEndpointCount = snapshot.checks
+        .where((check) => !check.isSuccessful)
+        .length;
+    final hasEndpointFailures = failedEndpointCount > 0;
+    final endpointStatus = snapshot.areAllEndpointsUnavailable
+        ? 'Endpoints unavailable'
+        : hasEndpointFailures
+        ? 'Some endpoints unavailable'
+        : 'Endpoints available';
     return Card(
       elevation: 0,
       child: Padding(
@@ -184,20 +321,41 @@ class _NetworkSummary extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  snapshot.isOffline ? Icons.cloud_off : Icons.cloud_done,
-                  color: snapshot.isOffline
-                      ? theme.colorScheme.error
-                      : Colors.green,
+                  snapshot.hasNetworkInterface
+                      ? Icons.wifi_rounded
+                      : Icons.wifi_off_rounded,
+                  color: snapshot.hasNetworkInterface
+                      ? Colors.green
+                      : theme.colorScheme.error,
                 ),
                 const SizedBox(width: paddingSm),
                 Text(
-                  snapshot.isOffline ? 'Offline' : 'Online',
+                  snapshot.hasNetworkInterface
+                      ? 'Network available'
+                      : 'No network interface',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
+            if (snapshot.checks.isNotEmpty) ...[
+              const SizedBox(height: paddingSm),
+              Row(
+                children: [
+                  Icon(
+                    hasEndpointFailures
+                        ? Icons.dns_outlined
+                        : Icons.dns_rounded,
+                    color: hasEndpointFailures
+                        ? theme.colorScheme.error
+                        : Colors.green,
+                  ),
+                  const SizedBox(width: paddingSm),
+                  Text(endpointStatus, style: theme.textTheme.bodyMedium),
+                ],
+              ),
+            ],
             const SizedBox(height: paddingSm),
             Text(
               'Generated ${formatDate(snapshot.generatedAt.toLocal())}',
@@ -230,7 +388,7 @@ class _CheckTile extends StatelessWidget {
         check.isSuccessful ? Icons.check_circle : Icons.error,
         color: check.isSuccessful ? Colors.green : theme.colorScheme.error,
       ),
-      title: Text('${check.instanceLabel} · ${check.endpointLabel}'),
+      title: Text('${check.instanceLabel} · ${_endpointLabel(check)}'),
       subtitle: Text(
         check.isSuccessful
             ? 'OK · ${check.duration.inMilliseconds}ms'
@@ -238,6 +396,17 @@ class _CheckTile extends StatelessWidget {
             : 'Failed · ${check.error ?? 'unknown error'}',
       ),
     );
+  }
+
+  String _endpointLabel(InstanceDiagnosticCheck check) {
+    return switch (check.endpointLabel) {
+      'Active' => 'Active endpoint',
+      'Primary' => 'Primary endpoint',
+      'Alternative' => 'Alternative endpoint',
+      'Primary · Active' => 'Primary endpoint · Active',
+      'Alternative · Active' => 'Alternative endpoint · Active',
+      _ => check.endpointLabel,
+    };
   }
 }
 

@@ -173,6 +173,97 @@ void main() {
       expect(find.byIcon(Icons.downloading), findsNothing);
     },
   );
+
+  testWidgets(
+    'QueueStatusIndicator should use tracked warnings over the raw status',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          queueProvider.overrideWith(
+            () => _FakeQueueNotifier([
+              const QueueItem(
+                id: 1,
+                movieId: 8,
+                title: 'Completed with warning',
+                status: QueueStatus.completed,
+                trackedDownloadStatus: 'warning',
+                protocol: 'torrent',
+                sizeleft: 0,
+                instanceId: 'inst-a',
+                instanceType: InstanceType.radarr,
+              ),
+            ]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: QueueStatusIndicator(
+                instanceType: InstanceType.radarr,
+                instanceId: 'inst-a',
+                movieId: 8,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.warning), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'QueueStatusIndicator should prioritize errors over tracked warnings',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          queueProvider.overrideWith(
+            () => _FakeQueueNotifier([
+              const QueueItem(
+                id: 1,
+                movieId: 9,
+                title: 'Warning with error',
+                status: QueueStatus.completed,
+                trackedDownloadStatus: 'warning',
+                errorMessage: 'Import failed',
+                protocol: 'torrent',
+                sizeleft: 0,
+                instanceId: 'inst-a',
+                instanceType: InstanceType.radarr,
+              ),
+            ]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: QueueStatusIndicator(
+                instanceType: InstanceType.radarr,
+                instanceId: 'inst-a',
+                movieId: 9,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.error), findsOneWidget);
+      expect(find.byIcon(Icons.warning), findsNothing);
+    },
+  );
 }
 
 class _FakeQueueNotifier extends QueueNotifier {

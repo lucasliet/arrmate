@@ -415,6 +415,7 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   static const _rangeDays = 45;
   List<CalendarInstanceFailure> _failures = const [];
   bool _isLoadingMore = false;
+  bool _isRefreshing = false;
   DateTime? _loadedStart;
   DateTime? _loadedEnd;
 
@@ -444,6 +445,7 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
     final end = now.add(const Duration(days: _rangeDays));
     _failures = const [];
     _isLoadingMore = false;
+    _isRefreshing = false;
     _loadedStart = start;
     _loadedEnd = end;
     final generation = ++_generation;
@@ -461,46 +463,77 @@ class CalendarNotifier extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
   Future<void> loadMore() async {
     final currentEvents = state.valueOrNull;
     final start = _loadedEnd;
-    if (currentEvents == null || start == null || _isLoadingMore) {
+    if (currentEvents == null ||
+        start == null ||
+        _isLoadingMore ||
+        _isRefreshing ||
+        state.isLoading) {
       return;
     }
 
     final end = start.add(const Duration(days: _rangeDays));
+    final generation = _generation;
     _isLoadingMore = true;
     state = const AsyncLoading<List<CalendarEvent>>().copyWithPrevious(state);
-    final generation = _generation;
-    final result = await _fetchRange(start, end, _configuredInstances());
-    _isLoadingMore = false;
-    if (generation != _generation) return;
-    _failures = _mergeFailures(_failures, result.failures);
-    _loadedEnd = end;
-    state = AsyncData(
-      _sortAndDeduplicate([...currentEvents, ...result.events]),
-    );
+    try {
+      final result = await _fetchRange(start, end, _configuredInstances());
+      if (generation != _generation) return;
+      _failures = _mergeFailures(_failures, result.failures);
+      _loadedEnd = end;
+      _isLoadingMore = false;
+      state = AsyncData(
+        _sortAndDeduplicate([...currentEvents, ...result.events]),
+      );
+    } catch (error, stackTrace) {
+      if (generation != _generation) return;
+      _isLoadingMore = false;
+      state = AsyncError(error, stackTrace);
+      logger.error('[CalendarProvider] Loading more failed', error, stackTrace);
+    } finally {
+      if (generation == _generation) {
+        _isLoadingMore = false;
+      }
+    }
   }
 
   /// Reloads the complete requested range while preserving failed origins.
   Future<void> refresh() async {
+    if (_isRefreshing || _isLoadingMore) {
+      return;
+    }
     final currentEvents = state.valueOrNull ?? const <CalendarEvent>[];
+    if (state.isLoading && currentEvents.isEmpty) {
+      return;
+    }
     final now = ref.read(calendarNowProvider);
     final start =
         _loadedStart ?? now.subtract(const Duration(days: _initialPastDays));
     final end = _loadedEnd ?? now.add(const Duration(days: _rangeDays));
-    state = const AsyncLoading<List<CalendarEvent>>().copyWithPrevious(state);
     final generation = ++_generation;
-    final result = await _fetchRange(start, end, _configuredInstances());
-    if (generation != _generation) return;
-    final successfulOrigins = result.successfulOriginKeys;
-    final retainedEvents = currentEvents.where(
-      (event) => !successfulOrigins.contains(_originKeyForEvent(event)),
-    );
-    _failures = result.failures;
-    _isLoadingMore = false;
-    _loadedStart = start;
-    _loadedEnd = end;
-    state = AsyncData(
-      _sortAndDeduplicate([...retainedEvents, ...result.events]),
-    );
+    _isRefreshing = true;
+    state = const AsyncLoading<List<CalendarEvent>>().copyWithPrevious(state);
+    try {
+      final result = await _fetchRange(start, end, _configuredInstances());
+      if (generation != _generation) return;
+      final successfulOrigins = result.successfulOriginKeys;
+      final retainedEvents = currentEvents.where(
+        (event) => !successfulOrigins.contains(_originKeyForEvent(event)),
+      );
+      _failures = result.failures;
+      _loadedStart = start;
+      _loadedEnd = end;
+      state = AsyncData(
+        _sortAndDeduplicate([...retainedEvents, ...result.events]),
+      );
+    } catch (error, stackTrace) {
+      if (generation != _generation) return;
+      state = AsyncError(error, stackTrace);
+      logger.error('[CalendarProvider] Refresh failed', error, stackTrace);
+    } finally {
+      if (generation == _generation) {
+        _isRefreshing = false;
+      }
+    }
   }
 
   List<Instance> _configuredInstances() {

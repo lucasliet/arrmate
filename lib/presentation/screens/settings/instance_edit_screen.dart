@@ -1,9 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:convert';
+
 import '../../../core/services/logger_service.dart';
-import '../../../data/api/api.dart'; // Add this import
+import '../../../data/api/api.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../tour/app_tour_keys.dart';
@@ -33,7 +35,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   bool _slowMode = false;
   bool _isTesting = false;
   bool _isSaving = false;
+  bool _isDeleting = false;
   bool _testSuccess = false;
+  int _operationGeneration = 0;
   String? _testMessage;
   List<InstanceHeader> _headers = [];
 
@@ -61,7 +65,20 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant InstanceEditScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.instanceId == widget.instanceId &&
+        oldWidget.initialType == widget.initialType) {
+      return;
+    }
+
+    _operationGeneration++;
+    _resetForm();
+  }
+
+  @override
   void dispose() {
+    _operationGeneration++;
     _nameController.dispose();
     _urlController.dispose();
     _alternativeUrlController.dispose();
@@ -78,10 +95,31 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _slowMode = existing.mode == InstanceMode.slow;
     _headers = List.from(existing.headers);
     _initialized = true;
+    _notFound = false;
+  }
+
+  void _resetForm() {
+    _nameController.clear();
+    _urlController.clear();
+    _alternativeUrlController.clear();
+    _apiKeyController.clear();
+    _type = widget.instanceId == null && widget.initialType != null
+        ? widget.initialType!
+        : InstanceType.radarr;
+    _slowMode = false;
+    _isTesting = false;
+    _isSaving = false;
+    _isDeleting = false;
+    _testSuccess = false;
+    _testMessage = null;
+    _headers = [];
+    _initialized = false;
+    _notFound = false;
   }
 
   Future<void> _testConnection() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isBusy || !_formKey.currentState!.validate()) return;
+    final operationGeneration = ++_operationGeneration;
 
     setState(() {
       _isTesting = true;
@@ -106,6 +144,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         final torrents = await testService.getTorrents();
 
         final authLabel = _authModeLabel(tempInstance);
+        if (!mounted || operationGeneration != _operationGeneration) return;
 
         setState(() {
           _testSuccess = true;
@@ -116,6 +155,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         final validatedInstance = await ref
             .read(instancesProvider.notifier)
             .validateInstance(tempInstance);
+        if (!mounted || operationGeneration != _operationGeneration) return;
 
         setState(() {
           _testSuccess = true;
@@ -124,14 +164,17 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         });
       }
     } catch (e) {
+      if (!mounted || operationGeneration != _operationGeneration) return;
       setState(() {
         _testSuccess = false;
         _testMessage = 'Error: ${e.toString()}';
       });
     } finally {
-      setState(() {
-        _isTesting = false;
-      });
+      if (mounted && operationGeneration == _operationGeneration) {
+        setState(() {
+          _isTesting = false;
+        });
+      }
     }
   }
 
@@ -151,7 +194,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   );
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isBusy || !_formKey.currentState!.validate()) return;
+    final operationGeneration = ++_operationGeneration;
 
     setState(() {
       _isSaving = true;
@@ -174,23 +218,22 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       await ref
           .read(instancesProvider.notifier)
           .validateAndSaveInstance(instance);
-      if (mounted) {
-        context.pop();
-      }
+      if (!mounted || operationGeneration != _operationGeneration) return;
+      context.pop();
     } catch (e, stackTrace) {
       logger.warning(
         '[InstanceEditScreen] Instance validation failed',
         e,
         stackTrace,
       );
-      if (mounted) {
+      if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _testMessage = 'Validation failed: $e';
           _testSuccess = false;
         });
       }
     } finally {
-      if (mounted) {
+      if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _isSaving = false;
         });
@@ -206,12 +249,36 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     return value;
   }
 
-  void _delete() {
-    if (widget.instanceId != null) {
-      ref.read(instancesProvider.notifier).removeInstance(widget.instanceId!);
+  Future<void> _delete() async {
+    final instanceId = widget.instanceId;
+    if (instanceId == null || _isBusy) return;
+    final operationGeneration = ++_operationGeneration;
+    setState(() => _isDeleting = true);
+
+    try {
+      await ref.read(instancesProvider.notifier).removeInstance(instanceId);
+      if (!mounted || operationGeneration != _operationGeneration) return;
       context.pop();
+    } catch (error, stackTrace) {
+      logger.error(
+        '[InstanceEditScreen] Failed to delete instance',
+        error,
+        stackTrace,
+      );
+      if (mounted && operationGeneration == _operationGeneration) {
+        setState(() {
+          _testSuccess = false;
+          _testMessage = 'Delete failed: $error';
+        });
+      }
+    } finally {
+      if (mounted && operationGeneration == _operationGeneration) {
+        setState(() => _isDeleting = false);
+      }
     }
   }
+
+  bool get _isBusy => _isTesting || _isSaving || _isDeleting;
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +306,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           if (isEditing && _initialized)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () => _confirmDelete(),
+              onPressed: _isBusy ? null : _confirmDelete,
             ),
         ],
       ),
@@ -469,7 +536,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
             OutlinedButton.icon(
               key: tourKeys.instanceTestConnectionKey,
-              onPressed: _isTesting ? null : _testConnection,
+              onPressed: _isBusy ? null : _testConnection,
               icon: _isTesting
                   ? const SizedBox(
                       width: 16,
@@ -494,7 +561,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
             FilledButton(
               key: tourKeys.instanceSaveKey,
-              onPressed: _isSaving ? null : _save,
+              onPressed: _isBusy ? null : _save,
               child: _isSaving
                   ? const SizedBox(
                       width: 16,
@@ -617,9 +684,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.pop(); // Close dialog
-              _delete();
+            onPressed: () async {
+              context.pop();
+              await _delete();
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),

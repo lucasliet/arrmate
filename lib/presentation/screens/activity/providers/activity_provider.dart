@@ -18,6 +18,13 @@ class _InstanceQueueResult {
   const _InstanceQueueResult({required this.items, this.failure});
 }
 
+class _QueueFetchResult {
+  final List<QueueItem> items;
+  final List<InstanceLoadFailure> failures;
+
+  const _QueueFetchResult({required this.items, required this.failures});
+}
+
 // Queue Provider
 /// Provider for fetching and managing the download queue, auto-refreshes every 5 seconds.
 final queueProvider =
@@ -39,7 +46,9 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Timer? _timer;
   bool _isFetching = false;
   bool _refreshPending = false;
+  Completer<void>? _activeFetchCycle;
   List<InstanceLoadFailure> _failures = const [];
+  int _generation = 0;
 
   /// Returns the per-instance failures from the latest fetch, so the UI can
   /// distinguish partial data from a genuinely empty queue.
@@ -47,14 +56,56 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
 
   @override
   Future<List<QueueItem>> build() async {
-    // Poll every 5 seconds
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => refresh());
+    final generation = ++_generation;
+    _refreshPending = false;
+    _failures = const [];
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_isFetching) return;
+      unawaited(refresh());
+    });
     ref.onDispose(() => _timer?.cancel());
 
-    return _fetchQueue();
+    final result = await _fetchUntilCurrent(generation);
+    if (generation == _generation) {
+      _failures = result.failures;
+    }
+    return result.items;
   }
 
-  Future<List<QueueItem>> _fetchQueue() async {
+  Future<_QueueFetchResult> _fetchUntilCurrent(int generation) async {
+    final cycle = Completer<void>();
+    final previousCycle = _activeFetchCycle;
+    _activeFetchCycle = cycle;
+    if (previousCycle != null && !previousCycle.isCompleted) {
+      previousCycle.complete();
+    }
+    _isFetching = true;
+    try {
+      while (true) {
+        final result = await _fetchQueue();
+        if (generation != _generation) {
+          return result;
+        }
+        if (!_refreshPending) {
+          return result;
+        }
+        _refreshPending = false;
+      }
+    } finally {
+      if (generation == _generation) {
+        _isFetching = false;
+      }
+      if (identical(_activeFetchCycle, cycle)) {
+        _activeFetchCycle = null;
+      }
+      if (!cycle.isCompleted) {
+        cycle.complete();
+      }
+    }
+  }
+
+  Future<_QueueFetchResult> _fetchQueue() async {
     final radarrInstances = ref.watch(
       instancesByTypeProvider(InstanceType.radarr),
     );
@@ -91,7 +142,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
 
     final results = await Future.wait(requests);
     final items = results.expand((result) => result.items).toList();
-    _failures = results
+    final failures = results
         .map((result) => result.failure)
         .whereType<InstanceLoadFailure>()
         .toList();
@@ -110,29 +161,29 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       return a.estimatedCompletionTime!.compareTo(b.estimatedCompletionTime!);
     });
 
-    return items;
+    return _QueueFetchResult(items: items, failures: failures);
   }
 
   Future<_InstanceQueueResult> _fetchInstanceQueue(
     Instance instance,
     _QueuePageLoader loadPage,
   ) async {
-    final items = <QueueItem>[];
+    final itemsById = <int, QueueItem>{};
+    var fetchedRecordCount = 0;
     var page = 1;
 
     try {
       while (true) {
         final queue = await loadPage(page, ApiConstants.queuePageSize);
-        items.addAll(
-          queue.records.map(
-            (item) => item.copyWith(
-              instanceId: instance.id,
-              instanceType: instance.type,
-            ),
-          ),
-        );
-        if (items.length >= queue.totalRecords || queue.records.isEmpty) {
-          return _InstanceQueueResult(items: items);
+        fetchedRecordCount += queue.records.length;
+        for (final item in queue.records) {
+          itemsById[item.id] = item.copyWith(
+            instanceId: instance.id,
+            instanceType: instance.type,
+          );
+        }
+        if (fetchedRecordCount >= queue.totalRecords || queue.records.isEmpty) {
+          return _InstanceQueueResult(items: itemsById.values.toList());
         }
         page++;
       }
@@ -143,7 +194,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
         stackTrace,
       );
       return _InstanceQueueResult(
-        items: items,
+        items: itemsById.values.toList(),
         failure: InstanceLoadFailure(
           instanceId: instance.id,
           instanceType: instance.type,
@@ -164,21 +215,22 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Future<void> refresh() async {
     if (_isFetching) {
       _refreshPending = true;
+      while (_isFetching) {
+        final cycle = _activeFetchCycle;
+        if (cycle == null) return;
+        await cycle.future;
+      }
       return;
     }
-    await _runFetch();
-    while (_refreshPending) {
-      _refreshPending = false;
-      await _runFetch();
-    }
-  }
-
-  Future<void> _runFetch() async {
-    _isFetching = true;
+    final generation = ++_generation;
     try {
-      state = await AsyncValue.guard(() => _fetchQueue());
-    } finally {
-      _isFetching = false;
+      final result = await _fetchUntilCurrent(generation);
+      if (generation != _generation) return;
+      _failures = result.failures;
+      state = AsyncValue.data(result.items);
+    } catch (error, stackTrace) {
+      if (generation != _generation) return;
+      state = AsyncValue.error(error, stackTrace);
     }
   }
 

@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:async';
+
+import 'package:arrmate/core/services/release_query_store.dart';
 import 'package:arrmate/domain/models/shared/release.dart';
+import 'package:arrmate/domain/models/shared/release_query.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:flutter/material.dart';
@@ -133,6 +138,128 @@ void main() {
     );
     expect(downloadButton.onPressed, isNull);
   });
+
+  testWidgets(
+    'should hide an unavailable remembered original language filter',
+    (tester) async {
+      // Given
+      SharedPreferences.setMockInitialValues({
+        'remember_movie_release_query': true,
+        'movie_release_query': jsonEncode(
+          const ReleaseQuery(originalLanguageOnly: true).toJson(),
+        ),
+      });
+      final release = _release(rejected: false);
+
+      // When
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            movieReleasesProvider(1).overrideWith((ref) async => [release]),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Then
+      final badge = tester.widget<Badge>(
+        find.descendant(
+          of: find.byKey(const Key('releaseFilterButton')),
+          matching: find.byType(Badge),
+        ),
+      );
+      expect(badge.isLabelVisible, isFalse);
+      expect(find.byKey(const Key('clearReleaseFiltersButton')), findsNothing);
+      expect(find.text(release.title), findsOneWidget);
+      expect(find.text('1 results'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'should preserve edits made before saved filters finish loading',
+    (tester) async {
+      // Given
+      final loadCompleter = Completer<SavedReleaseQuery>();
+      final matching = _release(rejected: false, title: 'Movie.HEVC');
+      final persistedMatch = _release(rejected: false, title: 'Movie.H264');
+      final store = _DelayedReleaseQueryStore(loadCompleter.future);
+
+      // When
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            movieReleasesProvider(
+              1,
+            ).overrideWith((ref) async => [matching, persistedMatch]),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ReleasesSheet(
+                id: 1,
+                isMovie: true,
+                title: 'Example Movie',
+                queryStore: store,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('releaseSearchField')),
+        'HEVC',
+      );
+      loadCompleter.complete(
+        const SavedReleaseQuery(
+          query: ReleaseQuery(search: 'H264'),
+          remember: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Then
+      final searchField = tester.widget<TextField>(
+        find.byKey(const Key('releaseSearchField')),
+      );
+      expect(searchField.controller?.text, 'HEVC');
+      expect(find.text(matching.title), findsOneWidget);
+      expect(find.text(persistedMatch.title), findsNothing);
+      expect(store.savedQuery, const ReleaseQuery(search: 'HEVC'));
+      expect(store.savedRemember, isTrue);
+      await tester.tap(find.byKey(const Key('releaseFilterButton')));
+      await tester.pumpAndSettle();
+      final rememberSwitch = tester.widget<SwitchListTile>(
+        find.byKey(const Key('rememberReleaseFiltersSwitch')),
+      );
+      expect(rememberSwitch.value, isTrue);
+    },
+  );
+}
+
+class _DelayedReleaseQueryStore extends ReleaseQueryStore {
+  final Future<SavedReleaseQuery> result;
+  ReleaseQuery? savedQuery;
+  bool? savedRemember;
+
+  _DelayedReleaseQueryStore(this.result);
+
+  @override
+  Future<SavedReleaseQuery> load({required bool isMovie}) => result;
+
+  @override
+  Future<void> save({
+    required bool isMovie,
+    required ReleaseQuery query,
+    required bool remember,
+  }) async {
+    savedQuery = query;
+    savedRemember = remember;
+  }
 }
 
 Release _release({

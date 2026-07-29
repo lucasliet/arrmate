@@ -114,6 +114,7 @@ final queueMediaLookupProvider = Provider<AsyncValue<QueueMediaLookup>>((ref) {
       final instanceType = item.instanceType;
       final instanceId = item.instanceId;
       if (instanceType == null || instanceId == null) continue;
+      final status = _effectiveStatus(item);
 
       final movieId = item.movieId ?? item.movie?.guid;
       if (movieId != null) {
@@ -125,7 +126,7 @@ final queueMediaLookupProvider = Provider<AsyncValue<QueueMediaLookup>>((ref) {
             kind: _MediaKind.movie,
             mediaId: movieId,
           ),
-          item.status,
+          status,
         );
         continue;
       }
@@ -139,13 +140,23 @@ final queueMediaLookupProvider = Provider<AsyncValue<QueueMediaLookup>>((ref) {
             kind: _MediaKind.series,
             mediaId: seriesId,
           ),
-          item.status,
+          status,
         );
       }
     }
     return QueueMediaLookup._(statuses);
   });
 });
+
+QueueStatus _effectiveStatus(QueueItem item) {
+  if (item.hasError) {
+    return QueueStatus.failed;
+  }
+  if (item.hasWarning) {
+    return QueueStatus.warning;
+  }
+  return item.status;
+}
 
 void _accumulate(
   Map<_LookupKey, QueueStatus> statuses,

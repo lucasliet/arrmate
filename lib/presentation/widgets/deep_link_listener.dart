@@ -2,12 +2,22 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/services/logger_service.dart';
 
 /// The custom URI scheme handled by the app's deep links.
 const String kDeepLinkScheme = 'arrmate';
+
+const Set<String> _settingsRoutes = {
+  'assistant',
+  'logs',
+  'health',
+  'system-overview',
+  'version-history',
+  'diagnostics',
+  'quality-profiles',
+  'notifications',
+};
 
 /// Reconciles the identifier-in-host form (`arrmate://movies/123`) with the
 /// authority-less form (`arrmate:///movies/123`) so both resolve to the same
@@ -20,9 +30,10 @@ String deepLinkToLocation(Uri uri) {
 
   if (segments.isEmpty) return '';
 
-  final path = '/${segments.join('/')}';
-  if (uri.queryParameters.isEmpty) return path;
-  return Uri(path: path, queryParameters: uri.queryParameters).toString();
+  return Uri(
+    pathSegments: ['', ...segments],
+    queryParameters: uri.hasQuery ? uri.queryParametersAll : null,
+  ).toString();
 }
 
 /// Validates that [uri] targets the app scheme and matches a known route
@@ -35,8 +46,11 @@ String? validateDeepLink(Uri uri) {
   final location = deepLinkToLocation(uri);
   if (location.isEmpty) return null;
 
-  final path = Uri.parse(location).path;
-  final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+  final normalizedUri = Uri.tryParse(location);
+  if (normalizedUri == null) return null;
+  final segments = normalizedUri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList();
   if (segments.isEmpty) return null;
 
   switch (segments.first) {
@@ -47,22 +61,27 @@ String? validateDeepLink(Uri uri) {
       if (segments.length == 2 && _isPositiveInt(segments[1])) return location;
       if (segments.length == 4 &&
           segments[2] == 'season' &&
-          _isNonNegativeInt(segments[1]) &&
+          _isPositiveInt(segments[1]) &&
           _isNonNegativeInt(segments[3])) {
         return location;
       }
       if (segments.length == 6 &&
           segments[2] == 'season' &&
           segments[4] == 'episode' &&
-          _isNonNegativeInt(segments[1]) &&
+          _isPositiveInt(segments[1]) &&
           _isNonNegativeInt(segments[3]) &&
           _isPositiveInt(segments[5])) {
         return location;
       }
       return segments.length == 1 ? location : null;
     case 'settings':
-      if (segments.length == 3 && segments[1] == 'instance') return location;
-      if (segments.length <= 2) return location;
+      if (segments.length == 1) return location;
+      if (segments.length == 2 && _settingsRoutes.contains(segments[1])) {
+        return location;
+      }
+      if (segments.length == 3 && segments[1] == 'instance') {
+        return location;
+      }
       return null;
     case 'calendar':
     case 'activity':
@@ -93,9 +112,21 @@ bool _isNonNegativeInt(String value) {
 /// would duplicate navigation. The subscription is created synchronously in
 /// [initState] to avoid losing an intent delivered before an async gap.
 class DeepLinkListener extends StatefulWidget {
+  /// The widget tree kept under the global deep-link subscription.
   final Widget child;
 
-  const DeepLinkListener({super.key, required this.child});
+  /// Navigates to a validated application location.
+  final ValueChanged<String> onNavigate;
+
+  /// Optional link stream used by focused widget tests.
+  final Stream<Uri>? linkStream;
+
+  const DeepLinkListener({
+    super.key,
+    required this.child,
+    required this.onNavigate,
+    this.linkStream,
+  });
 
   @override
   State<DeepLinkListener> createState() => _DeepLinkListenerState();
@@ -109,7 +140,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   void initState() {
     super.initState();
     _appLinks = AppLinks();
-    _linkSubscription = _appLinks.uriLinkStream.listen(
+    _linkSubscription = (widget.linkStream ?? _appLinks.uriLinkStream).listen(
       _handleLink,
       onError: (Object error, StackTrace stack) {
         logger.warning(
@@ -132,17 +163,26 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
 
     final location = validateDeepLink(uri);
     if (location == null) {
-      logger.warning('[DeepLinkListener] Rejected unsupported deep link: $uri');
+      logger.warning(
+        '[DeepLinkListener] Rejected unsupported deep link for scheme: '
+        '${uri.scheme}',
+      );
       return;
     }
 
-    logger.debug(
-      '[DeepLinkListener] Deep link detected: $location '
-      'with params ${uri.queryParameters}',
-    );
+    final routePath = Uri.tryParse(location)?.path ?? '/';
+    logger.debug('[DeepLinkListener] Deep link detected for route: $routePath');
+
+    final binding = WidgetsBinding.instance;
+    binding.addPostFrameCallback((_) => _navigate(location));
+    binding.scheduleFrame();
+  }
+
+  void _navigate(String location) {
+    if (!mounted) return;
 
     try {
-      context.go(location);
+      widget.onNavigate(location);
     } catch (e, stack) {
       logger.error(
         '[DeepLinkListener] Failed to navigate to deep link',
