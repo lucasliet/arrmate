@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../providers/data_providers.dart';
+import '../../providers/instances_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
-import '../../providers/settings_provider.dart';
 import '../../tour/app_tour_keys.dart';
-import 'movie_add_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
@@ -60,6 +63,62 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     return movies.where((m) => _selectedIds.contains(m.id)).toList();
   }
 
+  Future<void> _runAutomaticSearch(Movie movie) async {
+    try {
+      final instanceId = movie.instanceId;
+      if (instanceId == null) {
+        final repository = ref.read(movieRepositoryProvider);
+        if (repository == null) {
+          throw StateError('Radarr instance is unavailable');
+        }
+        await repository.searchMovies([movie.id]);
+      } else {
+        final instance = ref
+            .read(instancesByTypeProvider(InstanceType.radarr))
+            .where((candidate) => candidate.id == instanceId)
+            .firstOrNull;
+        if (instance == null) {
+          throw StateError('Movie instance is no longer configured');
+        }
+        await ref
+            .read(movieRepositoryForInstanceProvider(instance))
+            .searchMovies([movie.id]);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Automatic search started for ${movie.title}')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to start automatic search: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openExternalUri(Uri uri) async {
+    try {
+      if (uri.scheme != 'https') {
+        throw const FormatException('Only HTTPS links are supported');
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw StateError('Unable to open link');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+    }
+  }
+
   void _showSortSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -67,6 +126,13 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       useSafeArea: true,
       builder: (context) {
         final currentSort = ref.read(movieSortProvider);
+        final rootFolders =
+            (ref.read(moviesProvider).valueOrNull ?? const <Movie>[])
+                .map((movie) => movie.rootFolderPath)
+                .whereType<String>()
+                .toSet()
+                .toList()
+              ..sort();
         return SortBottomSheet<MovieSortOption, MovieFilter>(
           title: 'Sort & Filter',
           currentSort: currentSort.option,
@@ -91,6 +157,61 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                 .read(movieSortProvider.notifier)
                 .update(currentSort.copyWith(filter: filter));
           },
+          additionalFilters: rootFolders.isEmpty
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ROOT FOLDER',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All folders'),
+                            selected: currentSort.rootFolderPath == null,
+                            onSelected: (selected) {
+                              if (!selected) return;
+                              ref
+                                  .read(movieSortProvider.notifier)
+                                  .update(
+                                    currentSort.copyWith(
+                                      clearRootFolderPath: true,
+                                    ),
+                                  );
+                              Navigator.pop(context);
+                            },
+                          ),
+                          for (final path in rootFolders)
+                            FilterChip(
+                              label: Text(path),
+                              selected: currentSort.rootFolderPath == path,
+                              onSelected: (selected) {
+                                if (!selected) return;
+                                ref
+                                    .read(movieSortProvider.notifier)
+                                    .update(
+                                      currentSort.copyWith(
+                                        rootFolderPath: path,
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
         );
       },
     );
@@ -164,6 +285,12 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               ? () => _toggleSelection(movie.id)
                               : () => context.go('/movies/${movie.id}'),
                           onLongPress: () => _toggleSelection(movie.id),
+                          onAutomaticSearch: _isSelecting
+                              ? null
+                              : () => _runAutomaticSearch(movie),
+                          onOpenExternal: _isSelecting
+                              ? null
+                              : _openExternalUri,
                         );
                       }, childCount: movies.length),
                     );
@@ -186,6 +313,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ? () => _toggleSelection(movie.id)
                             : () => context.go('/movies/${movie.id}'),
                         onLongPress: () => _toggleSelection(movie.id),
+                        onAutomaticSearch: _isSelecting
+                            ? null
+                            : () => _runAutomaticSearch(movie),
+                        onOpenExternal: _isSelecting ? null : _openExternalUri,
                       );
                     }, childCount: movies.length),
                   );
@@ -282,13 +413,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       floatingActionButton: _isSelecting
           ? null
           : FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => const MovieAddSheet(),
-                );
-              },
+              onPressed: () => context.push('/discover?type=movie'),
               child: const Icon(Icons.add),
             ),
     );
@@ -301,6 +426,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       floating: false,
       title: const Text('Movies'),
       actions: [
+        const InstanceSelector(type: InstanceType.radarr),
         IconButton(
           key: tourKeys.moviesSearchKey,
           icon: const Icon(Icons.search),

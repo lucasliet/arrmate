@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
+import '../../../widgets/media/media_quick_actions_menu.dart';
+import '../../../widgets/queue_status_indicator.dart';
 import 'series_poster.dart';
 
 /// A card widget displaying a series poster and status, utilized in grid view.
@@ -9,6 +12,8 @@ class SeriesCard extends StatelessWidget {
   final Series series;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Future<void> Function()? onAutomaticSearch;
+  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   const SeriesCard({
@@ -16,6 +21,8 @@ class SeriesCard extends StatelessWidget {
     required this.series,
     this.onTap,
     this.onLongPress,
+    this.onAutomaticSearch,
+    this.onOpenExternal,
     this.isSelected = false,
   });
 
@@ -100,7 +107,6 @@ class SeriesCard extends StatelessWidget {
       left: 6,
       right: 6,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left: Monitored Status
           if (series.monitored)
@@ -111,8 +117,7 @@ class SeriesCard extends StatelessWidget {
               size: 20,
               color: Colors.white.withValues(alpha: 0.7),
             ),
-
-          // Right: Download Status
+          const Spacer(),
           if (series.isDownloaded)
             const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (series.monitored)
@@ -122,6 +127,24 @@ class SeriesCard extends StatelessWidget {
               const Icon(Icons.cancel_outlined, size: 20, color: Colors.white)
           else
             const SizedBox(),
+          const SizedBox(width: 4),
+          QueueStatusIndicator(seriesId: series.id),
+          if (onAutomaticSearch != null && onOpenExternal != null)
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: MediaQuickActionsMenu(
+                key: Key('seriesQuickActions-${series.id}'),
+                links: MediaExternalLinks.series(
+                  title: series.title,
+                  tvdbId: series.tvdbId,
+                  imdbId: series.imdbId,
+                ),
+                onAutomaticSearch: onAutomaticSearch!,
+                onOpenExternal: onOpenExternal!,
+                iconColor: Colors.white,
+              ),
+            ),
         ],
       ),
     );

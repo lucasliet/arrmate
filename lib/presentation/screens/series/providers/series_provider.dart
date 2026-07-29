@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'season_episodes_provider.dart';
 
 /// Provider that holds the list of series fetched from Sonarr.
 final seriesProvider = AsyncNotifierProvider<SeriesNotifier, List<Series>>(
@@ -54,7 +55,7 @@ final filteredSeriesProvider = Provider<AsyncValue<List<Series>>>((ref) {
       }).toList();
     }
 
-    filtered = filtered.where((s) => sort.filter.filter(s)).toList();
+    filtered = filtered.where(sort.matches).toList();
 
     filtered.sort((a, b) {
       final comparison = sort.option.compare(a, b);
@@ -160,6 +161,14 @@ class SeriesController {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
     await repository.searchSeason(seriesId, seasonNumber);
+  }
+
+  /// Updates monitoring for one episode and refreshes its season.
+  Future<void> setEpisodeMonitoring(Episode episode, bool monitored) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    await repository.monitorEpisodes([episode.id], monitored);
+    ref.invalidate(seasonEpisodesProvider(seriesId, episode.seasonNumber));
   }
 
   Future<void> rescan() async {

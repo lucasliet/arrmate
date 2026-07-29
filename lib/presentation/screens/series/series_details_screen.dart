@@ -2,9 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/purge_service.dart';
+import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -15,6 +17,7 @@ import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/media/poster_viewer.dart';
 import 'providers/series_metadata_provider.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_poster.dart';
@@ -64,8 +67,9 @@ class SeriesDetailsScreen extends ConsumerWidget {
     if (fanartRemoteUrl != null) {
       backgroundImageUrl = fanartRemoteUrl;
     } else if (fanartLocalUrl != null && instance != null) {
+      final instanceUrl = instance.effectiveUrl;
       backgroundImageUrl =
-          '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartLocalUrl';
+          '${instanceUrl.endsWith('/') ? instanceUrl.substring(0, instanceUrl.length - 1) : instanceUrl}$fanartLocalUrl';
       backgroundHeaders = instance.authHeaders;
     }
 
@@ -279,9 +283,27 @@ class SeriesDetailsScreen extends ConsumerWidget {
                       width: 100,
                       child: AspectRatio(
                         aspectRatio: 2 / 3,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(radiusMd),
-                          child: SeriesPoster(series: series),
+                        child: Semantics(
+                          button: true,
+                          label: 'View ${series.title} poster',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(radiusMd),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                key: const Key('viewSeriesPoster'),
+                                onTap: () => showPosterViewer(
+                                  context: context,
+                                  title: series.title,
+                                  poster: SeriesPoster(
+                                    series: series,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                child: SeriesPoster(series: series),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -309,6 +331,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
                           _buildStatusChip(context, series),
                           const SizedBox(height: 8),
                           _buildRatings(context, series),
+                          const SizedBox(height: 12),
+                          _buildExternalActions(context, series),
                         ],
                       ),
                     ),
@@ -457,6 +481,47 @@ class SeriesDetailsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildExternalActions(BuildContext context, Series series) {
+    final links = MediaExternalLinks.series(
+      title: series.title,
+      tvdbId: series.tvdbId,
+      imdbId: series.imdbId,
+    );
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final link in links)
+          ActionChip(
+            avatar: const Icon(Icons.open_in_new, size: 18),
+            label: Text(link.label),
+            onPressed: () => _openExternalUri(context, link.uri),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openExternalUri(BuildContext context, Uri uri) async {
+    try {
+      if (uri.scheme != 'https') {
+        throw const FormatException('Only HTTPS links are supported');
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw StateError('Unable to open link');
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+    }
+  }
+
   Widget _buildInfoGrid(BuildContext context, WidgetRef ref, Series series) {
     final qualityProfilesAsync = ref.watch(seriesQualityProfilesProvider);
     final qualityProfileLabel = qualityProfilesAsync.maybeWhen(
@@ -506,6 +571,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     Series series,
   ) async {
     bool deleteFiles = false;
+    bool addExclusion = false;
     final theme = Theme.of(context);
 
     final confirm = await showDialog<bool>(
@@ -527,6 +593,15 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   value: deleteFiles,
                   onChanged: (val) =>
                       setState(() => deleteFiles = val ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                CheckboxListTile(
+                  key: const Key('deleteSeriesAddImportListExclusion'),
+                  title: const Text('Prevent this series from being re-added'),
+                  contentPadding: EdgeInsets.zero,
+                  value: addExclusion,
+                  onChanged: (val) =>
+                      setState(() => addExclusion = val ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
               ],
@@ -554,7 +629,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     try {
       await ref
           .read(seriesControllerProvider(seriesId))
-          .deleteSeries(deleteFiles: deleteFiles);
+          .deleteSeries(deleteFiles: deleteFiles, addExclusion: addExclusion);
       if (context.mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -945,6 +1020,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         episodeCode: 'Season ${season.seasonNumber}',
         seriesId: series.id,
         seasonNumber: season.seasonNumber,
+        originalLanguage: series.originalLanguage?.name,
       ),
     );
   }

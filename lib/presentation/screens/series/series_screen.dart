@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../providers/data_providers.dart';
+import '../../providers/instances_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
-import '../../providers/settings_provider.dart';
-import 'series_add_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
@@ -59,6 +62,62 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
     return seriesList.where((s) => _selectedIds.contains(s.id)).toList();
   }
 
+  Future<void> _runAutomaticSearch(Series series) async {
+    try {
+      final instanceId = series.instanceId;
+      if (instanceId == null) {
+        final repository = ref.read(seriesRepositoryProvider);
+        if (repository == null) {
+          throw StateError('Sonarr instance is unavailable');
+        }
+        await repository.searchSeries(series.id);
+      } else {
+        final instance = ref
+            .read(instancesByTypeProvider(InstanceType.sonarr))
+            .where((candidate) => candidate.id == instanceId)
+            .firstOrNull;
+        if (instance == null) {
+          throw StateError('Series instance is no longer configured');
+        }
+        await ref
+            .read(seriesRepositoryForInstanceProvider(instance))
+            .searchSeries(series.id);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Automatic search started for ${series.title}')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to start automatic search: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openExternalUri(Uri uri) async {
+    try {
+      if (uri.scheme != 'https') {
+        throw const FormatException('Only HTTPS links are supported');
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw StateError('Unable to open link');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+    }
+  }
+
   void _showSortSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -66,6 +125,13 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       useSafeArea: true,
       builder: (context) {
         final currentSort = ref.read(seriesSortProvider);
+        final rootFolders =
+            (ref.read(seriesProvider).valueOrNull ?? const <Series>[])
+                .map((series) => series.rootFolderPath)
+                .whereType<String>()
+                .toSet()
+                .toList()
+              ..sort();
         return SortBottomSheet<SeriesSortOption, SeriesFilter>(
           title: 'Sort & Filter',
           currentSort: currentSort.option,
@@ -90,6 +156,61 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                 .read(seriesSortProvider.notifier)
                 .update(currentSort.copyWith(filter: filter));
           },
+          additionalFilters: rootFolders.isEmpty
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ROOT FOLDER',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All folders'),
+                            selected: currentSort.rootFolderPath == null,
+                            onSelected: (selected) {
+                              if (!selected) return;
+                              ref
+                                  .read(seriesSortProvider.notifier)
+                                  .update(
+                                    currentSort.copyWith(
+                                      clearRootFolderPath: true,
+                                    ),
+                                  );
+                              Navigator.pop(context);
+                            },
+                          ),
+                          for (final path in rootFolders)
+                            FilterChip(
+                              label: Text(path),
+                              selected: currentSort.rootFolderPath == path,
+                              onSelected: (selected) {
+                                if (!selected) return;
+                                ref
+                                    .read(seriesSortProvider.notifier)
+                                    .update(
+                                      currentSort.copyWith(
+                                        rootFolderPath: path,
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
         );
       },
     );
@@ -163,6 +284,12 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                               ? () => _toggleSelection(series.id)
                               : () => context.go('/series/${series.id}'),
                           onLongPress: () => _toggleSelection(series.id),
+                          onAutomaticSearch: _isSelecting
+                              ? null
+                              : () => _runAutomaticSearch(series),
+                          onOpenExternal: _isSelecting
+                              ? null
+                              : _openExternalUri,
                         );
                       }, childCount: seriesList.length),
                     );
@@ -185,6 +312,10 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             ? () => _toggleSelection(series.id)
                             : () => context.go('/series/${series.id}'),
                         onLongPress: () => _toggleSelection(series.id),
+                        onAutomaticSearch: _isSelecting
+                            ? null
+                            : () => _runAutomaticSearch(series),
+                        onOpenExternal: _isSelecting ? null : _openExternalUri,
                       );
                     }, childCount: seriesList.length),
                   );
@@ -282,13 +413,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       floatingActionButton: _isSelecting
           ? null
           : FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => const SeriesAddSheet(),
-                );
-              },
+              onPressed: () => context.push('/discover?type=series'),
               child: const Icon(Icons.add),
             ),
     );
@@ -300,6 +425,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       floating: false,
       title: const Text('Series'),
       actions: [
+        const InstanceSelector(type: InstanceType.sonarr),
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: () => setState(() => _isSearching = true),

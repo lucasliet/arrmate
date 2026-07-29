@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../domain/models/models.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/media_external_links.dart';
+import '../../../../domain/models/models.dart';
+import '../../../widgets/media/media_quick_actions_menu.dart';
+import '../../../widgets/queue_status_indicator.dart';
 import 'movie_poster.dart';
 
 /// A card widget displaying a movie poster and status, utilized in grid view.
-class MovieCard extends StatelessWidget {
+class MovieCard extends ConsumerWidget {
   final Movie movie;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Future<void> Function()? onAutomaticSearch;
+  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   const MovieCard({
@@ -16,11 +22,13 @@ class MovieCard extends StatelessWidget {
     required this.movie,
     this.onTap,
     this.onLongPress,
+    this.onAutomaticSearch,
+    this.onOpenExternal,
     this.isSelected = false,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -100,7 +108,6 @@ class MovieCard extends StatelessWidget {
       left: 6,
       right: 6,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (movie.monitored)
             const Icon(Icons.bookmark, size: 20, color: Colors.white)
@@ -110,7 +117,7 @@ class MovieCard extends StatelessWidget {
               size: 20,
               color: Colors.white.withValues(alpha: 0.7),
             ),
-
+          const Spacer(),
           if (movie.isDownloaded)
             const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (movie.monitored)
@@ -120,6 +127,23 @@ class MovieCard extends StatelessWidget {
               const Icon(Icons.cancel_outlined, size: 20, color: Colors.white)
           else
             const SizedBox(),
+          const SizedBox(width: 4),
+          QueueStatusIndicator(movieId: movie.guid),
+          if (onAutomaticSearch != null && onOpenExternal != null)
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: MediaQuickActionsMenu(
+                key: Key('movieQuickActions-${movie.id}'),
+                links: MediaExternalLinks.movie(
+                  title: movie.title,
+                  imdbId: movie.imdbId,
+                ),
+                onAutomaticSearch: onAutomaticSearch!,
+                onOpenExternal: onOpenExternal!,
+                iconColor: Colors.white,
+              ),
+            ),
         ],
       ),
     );

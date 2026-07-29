@@ -2,10 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -15,6 +17,7 @@ import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/media/poster_viewer.dart';
 import 'providers/movie_details_provider.dart';
 import 'providers/movie_metadata_provider.dart';
 import 'providers/movies_provider.dart';
@@ -62,8 +65,9 @@ class MovieDetailsScreen extends ConsumerWidget {
     if (fanartRemoteUrl != null) {
       backgroundImageUrl = fanartRemoteUrl;
     } else if (fanartLocalUrl != null && instance != null) {
+      final instanceUrl = instance.effectiveUrl;
       backgroundImageUrl =
-          '${instance.url.endsWith('/') ? instance.url.substring(0, instance.url.length - 1) : instance.url}$fanartLocalUrl';
+          '${instanceUrl.endsWith('/') ? instanceUrl.substring(0, instanceUrl.length - 1) : instanceUrl}$fanartLocalUrl';
       backgroundHeaders = instance.authHeaders;
     }
 
@@ -179,6 +183,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                     id: movie.id,
                     isMovie: true,
                     title: movie.title,
+                    originalLanguage: movie.originalLanguage?.name,
                   ),
                 );
               },
@@ -289,9 +294,27 @@ class MovieDetailsScreen extends ConsumerWidget {
                       width: 100,
                       child: AspectRatio(
                         aspectRatio: 2 / 3,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(radiusMd),
-                          child: MoviePoster(movie: movie),
+                        child: Semantics(
+                          button: true,
+                          label: 'View ${movie.title} poster',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(radiusMd),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                key: const Key('viewMoviePoster'),
+                                onTap: () => showPosterViewer(
+                                  context: context,
+                                  title: movie.title,
+                                  poster: MoviePoster(
+                                    movie: movie,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                child: MoviePoster(movie: movie),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -319,6 +342,8 @@ class MovieDetailsScreen extends ConsumerWidget {
                           _buildStatusChip(context, movie),
                           const SizedBox(height: 8),
                           _buildRatings(context, movie),
+                          const SizedBox(height: 12),
+                          _buildExternalActions(context, movie),
                         ],
                       ),
                     ),
@@ -355,6 +380,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     ThemeData theme,
   ) async {
     bool deleteFiles = false;
+    bool addExclusion = false;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -375,6 +401,15 @@ class MovieDetailsScreen extends ConsumerWidget {
                   value: deleteFiles,
                   onChanged: (val) =>
                       setState(() => deleteFiles = val ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                CheckboxListTile(
+                  key: const Key('deleteMovieAddImportExclusion'),
+                  title: const Text('Prevent this movie from being re-added'),
+                  contentPadding: EdgeInsets.zero,
+                  value: addExclusion,
+                  onChanged: (val) =>
+                      setState(() => addExclusion = val ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
               ],
@@ -402,7 +437,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     try {
       await ref
           .read(movieControllerProvider(movieId))
-          .deleteMovie(deleteFiles: deleteFiles);
+          .deleteMovie(deleteFiles: deleteFiles, addExclusion: addExclusion);
       if (context.mounted) {
         context.pop(); // Pop details screen
         ScaffoldMessenger.of(context).showSnackBar(
@@ -646,29 +681,122 @@ class MovieDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildRatings(BuildContext context, Movie movie) {
-    if (movie.ratings == null) return const SizedBox();
+    final ratings = movie.ratings;
+    if (ratings == null) return const SizedBox();
 
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 6,
       children: [
-        if (movie.ratings!.imdb != null) ...[
-          const Icon(Icons.star, color: Colors.amber, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            movie.ratings!.imdb!.value.toString(),
-            style: Theme.of(context).textTheme.bodySmall,
+        if (ratings.rottenTomatoes?.value case final value? when value > 0)
+          _buildRatingBadge(
+            context,
+            icon: Icons.local_movies_outlined,
+            color: value >= 60 ? Colors.red : Colors.green,
+            label: 'RT',
+            value: '${value.round()}%',
           ),
-          const SizedBox(width: 12),
-        ],
-        if (movie.ratings!.tmdb != null) ...[
-          const Icon(Icons.movie, color: Colors.blue, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            '${(movie.ratings!.tmdb!.value * 10).toInt()}%',
-            style: Theme.of(context).textTheme.bodySmall,
+        if (ratings.imdb?.value case final value? when value > 0)
+          _buildRatingBadge(
+            context,
+            icon: Icons.star,
+            color: Colors.amber,
+            label: 'IMDb',
+            value: value.toStringAsFixed(1),
           ),
-        ],
+        if (ratings.tmdb?.value case final value? when value > 0)
+          _buildRatingBadge(
+            context,
+            icon: Icons.movie_outlined,
+            color: Colors.blue,
+            label: 'TMDb',
+            value: '${(value * 10).round()}%',
+          ),
+        if (ratings.metacritic?.value case final value? when value > 0)
+          _buildRatingBadge(
+            context,
+            icon: Icons.assessment_outlined,
+            color: Colors.green,
+            label: 'Metacritic',
+            value: value.round().toString(),
+          ),
+        if (ratings.trakt?.value case final value? when value > 0)
+          _buildRatingBadge(
+            context,
+            icon: Icons.favorite_outline,
+            color: Colors.redAccent,
+            label: 'Trakt',
+            value: '${(value * 10).round()}%',
+          ),
       ],
     );
+  }
+
+  Widget _buildRatingBadge(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 4),
+        Text('$label $value', style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+
+  Widget _buildExternalActions(BuildContext context, Movie movie) {
+    final trailerUri = MediaExternalLinks.youTubeTrailer(
+      movie.youTubeTrailerId,
+    );
+    final links = MediaExternalLinks.movie(
+      title: movie.title,
+      imdbId: movie.imdbId,
+    );
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (trailerUri != null)
+          ActionChip(
+            key: const Key('openMovieTrailer'),
+            avatar: const Icon(Icons.play_circle_outline, size: 18),
+            label: const Text('Trailer'),
+            onPressed: () => _openExternalUri(context, trailerUri),
+          ),
+        for (final link in links)
+          ActionChip(
+            avatar: const Icon(Icons.open_in_new, size: 18),
+            label: Text(link.label),
+            onPressed: () => _openExternalUri(context, link.uri),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openExternalUri(BuildContext context, Uri uri) async {
+    try {
+      if (uri.scheme != 'https') {
+        throw const FormatException('Only HTTPS links are supported');
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw StateError('Unable to open link');
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+    }
   }
 
   Widget _buildInfoGrid(BuildContext context, WidgetRef ref, Movie movie) {

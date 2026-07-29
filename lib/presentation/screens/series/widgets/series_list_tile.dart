@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/media_external_links.dart';
+import '../../../../domain/models/models.dart';
+import '../../../widgets/media/media_quick_actions_menu.dart';
+import '../../../widgets/queue_status_indicator.dart';
 
 /// A list tile widget for displaying series details in a list view.
 class SeriesListTile extends StatelessWidget {
@@ -12,12 +15,16 @@ class SeriesListTile extends StatelessWidget {
     required this.series,
     this.onTap,
     this.onLongPress,
+    this.onAutomaticSearch,
+    this.onOpenExternal,
     this.isSelected = false,
   });
 
   final Series series;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Future<void> Function()? onAutomaticSearch;
+  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   @override
@@ -196,6 +203,25 @@ class SeriesListTile extends StatelessWidget {
             ),
         const SizedBox(width: 8),
         _buildStatusChip(context),
+        const SizedBox(width: 4),
+        QueueStatusIndicator(seriesId: series.id),
+        const Spacer(),
+        if (onAutomaticSearch != null && onOpenExternal != null)
+          SizedBox(
+            width: 40,
+            height: 32,
+            child: MediaQuickActionsMenu(
+              key: Key('seriesListQuickActions-${series.id}'),
+              links: MediaExternalLinks.series(
+                title: series.title,
+                tvdbId: series.tvdbId,
+                imdbId: series.imdbId,
+              ),
+              onAutomaticSearch: onAutomaticSearch!,
+              onOpenExternal: onOpenExternal!,
+              iconColor: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }

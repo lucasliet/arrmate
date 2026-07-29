@@ -61,11 +61,9 @@ class MoviePoster extends ConsumerWidget {
     }
 
     // Better URL construction:
-    final uri = Uri.parse(instance.url).replace(
-      path: '${Uri.parse(instance.url).path}$localPosterPath'.replaceAll(
-        '//',
-        '/',
-      ),
+    final uri = Uri.parse(instance.effectiveUrl).replace(
+      path: '${Uri.parse(instance.effectiveUrl).path}$localPosterPath'
+          .replaceAll('//', '/'),
     );
 
     return CachedNetworkImage(
