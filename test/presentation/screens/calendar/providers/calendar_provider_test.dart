@@ -6,6 +6,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/movie_repository.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/calendar/providers/calendar_provider.dart';
 
 class MockMovieRepository extends Mock implements MovieRepository {}
@@ -15,11 +16,46 @@ class MockSeriesRepository extends Mock implements SeriesRepository {}
 void main() {
   late MockMovieRepository mockMovieRepository;
   late MockSeriesRepository mockSeriesRepository;
+  late Instance radarrInstance;
+  late Instance sonarrInstance;
 
   setUp(() {
     mockMovieRepository = MockMovieRepository();
     mockSeriesRepository = MockSeriesRepository();
+    radarrInstance = Instance(
+      id: 'radarr',
+      type: InstanceType.radarr,
+      label: 'Radarr',
+      url: 'https://radarr.example.com',
+      apiKey: 'key',
+    );
+    sonarrInstance = Instance(
+      id: 'sonarr',
+      type: InstanceType.sonarr,
+      label: 'Sonarr',
+      url: 'https://sonarr.example.com',
+      apiKey: 'key',
+    );
   });
+
+  ProviderContainer createContainer() {
+    return ProviderContainer(
+      overrides: [
+        instancesByTypeProvider(
+          InstanceType.radarr,
+        ).overrideWithValue([radarrInstance]),
+        instancesByTypeProvider(
+          InstanceType.sonarr,
+        ).overrideWithValue([sonarrInstance]),
+        movieRepositoryForInstanceProvider(
+          radarrInstance,
+        ).overrideWithValue(mockMovieRepository),
+        seriesRepositoryForInstanceProvider(
+          sonarrInstance,
+        ).overrideWithValue(mockSeriesRepository),
+      ],
+    );
+  }
 
   group('CalendarEventType', () {
     test('should have correct labels', () {
@@ -170,12 +206,7 @@ void main() {
           physicalRelease: physicalRelease,
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-            seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-          ],
-        );
+        final container = createContainer();
         addTearDown(container.dispose);
 
         when(
@@ -234,12 +265,7 @@ void main() {
         inCinemas: inCinemas,
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-          seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       when(
@@ -265,59 +291,48 @@ void main() {
       expect(events.first.type, CalendarEventType.cinema);
     });
 
-    test(
-      'should use fallback digital event for movie without specific dates',
-      () async {
-        final now = DateTime.now();
+    test('should omit movies without release dates', () async {
+      final now = DateTime.now();
 
-        final movie = Movie(
-          tmdbId: 1,
-          title: 'Test Movie',
-          sortTitle: 'test movie',
-          runtime: 120,
-          year: 2023,
-          monitored: true,
-          hasFile: false,
-          isAvailable: true,
-          minimumAvailability: MovieStatus.released,
-          status: MovieStatus.released,
-          added: now,
-          qualityProfileId: 1,
-          images: [],
-        );
+      final movie = Movie(
+        tmdbId: 1,
+        title: 'Test Movie',
+        sortTitle: 'test movie',
+        runtime: 120,
+        year: 2023,
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+        minimumAvailability: MovieStatus.released,
+        status: MovieStatus.released,
+        added: now,
+        qualityProfileId: 1,
+        images: [],
+      );
 
-        final container = ProviderContainer(
-          overrides: [
-            movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-            seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = createContainer();
+      addTearDown(container.dispose);
 
-        when(
-          () => mockMovieRepository.getCalendar(
-            start: any(named: 'start'),
-            end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => [movie]);
+      when(
+        () => mockMovieRepository.getCalendar(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((_) async => [movie]);
 
-        when(
-          () => mockSeriesRepository.getCalendar(
-            start: any(named: 'start'),
-            end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => []);
+      when(
+        () => mockSeriesRepository.getCalendar(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((_) async => []);
 
-        await container.read(calendarProvider.future);
+      await container.read(calendarProvider.future);
 
-        final events = container.read(calendarProvider).value!;
+      final events = container.read(calendarProvider).value!;
 
-        // Should generate 1 event: digital fallback using 'added' date
-        expect(events.length, 1);
-        expect(events.first.type, CalendarEventType.digital);
-        expect(events.first.releaseDate, movie.added);
-      },
-    );
+      expect(events, isEmpty);
+    });
 
     test('should sort events by date and then by type priority', () async {
       final now = DateTime.now();
@@ -357,12 +372,7 @@ void main() {
         inCinemas: sameDate,
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-          seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       when(
@@ -422,12 +432,7 @@ void main() {
         series: series,
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          movieRepositoryProvider.overrideWithValue(mockMovieRepository),
-          seriesRepositoryProvider.overrideWithValue(mockSeriesRepository),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       when(
@@ -451,6 +456,91 @@ void main() {
       expect(events.length, 1);
       expect(events.first.type, CalendarEventType.episode);
       expect(events.first.isEpisode, true);
+    });
+
+    test('should aggregate events from every configured instance', () async {
+      final secondRadarr = Instance(
+        id: 'radarr-remote',
+        type: InstanceType.radarr,
+        label: 'Remote',
+        url: 'https://remote.example.com',
+        apiKey: 'key',
+      );
+      final secondRepository = MockMovieRepository();
+      final releaseDate = DateTime.now().add(const Duration(days: 1));
+      final firstMovie = Movie(
+        tmdbId: 1,
+        title: 'First Movie',
+        sortTitle: 'first movie',
+        runtime: 120,
+        year: 2023,
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+        minimumAvailability: MovieStatus.released,
+        status: MovieStatus.released,
+        added: DateTime.now(),
+        qualityProfileId: 1,
+        images: [],
+        digitalRelease: releaseDate,
+      );
+      final secondMovie = Movie(
+        tmdbId: 2,
+        title: 'Second Movie',
+        sortTitle: 'second movie',
+        runtime: 120,
+        year: 2023,
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+        minimumAvailability: MovieStatus.released,
+        status: MovieStatus.released,
+        added: DateTime.now(),
+        qualityProfileId: 1,
+        images: [],
+        digitalRelease: releaseDate,
+      );
+      when(
+        () => mockMovieRepository.getCalendar(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((_) async => [firstMovie]);
+      when(
+        () => secondRepository.getCalendar(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((_) async => [secondMovie]);
+      final container = ProviderContainer(
+        overrides: [
+          instancesByTypeProvider(
+            InstanceType.radarr,
+          ).overrideWithValue([radarrInstance, secondRadarr]),
+          instancesByTypeProvider(
+            InstanceType.sonarr,
+          ).overrideWithValue(const []),
+          movieRepositoryForInstanceProvider(
+            radarrInstance,
+          ).overrideWithValue(mockMovieRepository),
+          movieRepositoryForInstanceProvider(
+            secondRadarr,
+          ).overrideWithValue(secondRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final events = await container.read(calendarProvider.future);
+
+      expect(events, hasLength(2));
+      expect(events.map((event) => event.instanceId).toSet(), {
+        radarrInstance.id,
+        secondRadarr.id,
+      });
+      expect(
+        events.every((event) => event.instanceType == InstanceType.radarr),
+        isTrue,
+      );
     });
   });
 }

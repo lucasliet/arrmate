@@ -124,5 +124,46 @@ void main() {
       expect(updatedInstance.headers.length, 1);
       expect(updatedInstance.headers[0].name, 'Custom');
     });
+
+    test(
+      'should persist the alternative URL without persisting active URL',
+      () {
+        final instance = Instance(
+          id: '1',
+          label: 'My Radarr',
+          url: 'http://192.168.1.10:7878',
+          alternativeUrl: 'https://radarr.example.com',
+          activeUrl: 'https://radarr.example.com',
+          apiKey: 'apikey123',
+          type: InstanceType.radarr,
+        );
+
+        final json = instance.toJson();
+        final restored = Instance.fromJson(json);
+
+        expect(json['alternativeUrl'], 'https://radarr.example.com');
+        expect(json.containsKey('activeUrl'), isFalse);
+        expect(restored.alternativeUrl, 'https://radarr.example.com');
+        expect(restored.activeUrl, isNull);
+        expect(restored.effectiveUrl, 'http://192.168.1.10:7878');
+      },
+    );
+
+    test('should order unique connection URLs with the active URL first', () {
+      final instance = Instance(
+        id: '1',
+        label: 'My Radarr',
+        url: 'http://192.168.1.10:7878/',
+        alternativeUrl: 'https://radarr.example.com/',
+        activeUrl: 'https://radarr.example.com/',
+        apiKey: 'apikey123',
+        type: InstanceType.radarr,
+      );
+
+      expect(instance.connectionUrls, [
+        'https://radarr.example.com',
+        'http://192.168.1.10:7878',
+      ]);
+    });
   });
 }

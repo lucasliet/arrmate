@@ -111,5 +111,26 @@ void main() {
       expect(state.movieSort, customMovieSort);
       expect(state.seriesSort, customSeriesSort);
     });
+
+    test('should restore defaults and clear preferences after reset', () async {
+      // Given
+      SharedPreferences.setMockInitialValues({
+        'home_tab': AppTab.activity.name,
+      });
+      container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(settingsProvider);
+      await Future.delayed(Duration.zero);
+      expect(container.read(settingsProvider).homeTab, AppTab.activity);
+
+      // When
+      await container.read(settingsProvider.notifier).resetSettings();
+
+      // Then
+      final state = container.read(settingsProvider);
+      expect(state.homeTab, AppTab.movies);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('home_tab'), isNull);
+    });
   });
 }

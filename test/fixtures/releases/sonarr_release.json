@@ -1,0 +1,98 @@
+{
+  "guid": "ExampleIndexer-454379",
+  "quality": {
+    "quality": {
+      "id": 20,
+      "name": "Bluray-1080p Remux",
+      "source": "blurayRaw",
+      "resolution": 1080
+    },
+    "revision": {
+      "version": 1,
+      "real": 0,
+      "isRepack": false
+    }
+  },
+  "qualityWeight": 1201,
+  "age": 2748,
+  "ageHours": 65952.74849548914,
+  "ageMinutes": 3957164.90972935,
+  "size": 59901521829,
+  "indexerId": 14,
+  "indexer": "Example Indexer (Prowlarr)",
+  "releaseGroup": "BMF",
+  "releaseHash": "",
+  "title": "Example.Series.S01.BluRay.Remux.1080p.AVC.DTS-HD.MA.5.1-BMF",
+  "fullSeason": true,
+  "sceneSource": false,
+  "seasonNumber": 1,
+  "languages": [
+    {
+      "id": 1,
+      "name": "English"
+    }
+  ],
+  "languageWeight": 0,
+  "seriesTitle": "Example Series",
+  "episodeNumbers": [],
+  "absoluteEpisodeNumbers": [],
+  "mappedSeasonNumber": 1,
+  "mappedEpisodeNumbers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "mappedAbsoluteEpisodeNumbers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "mappedSeriesId": 67,
+  "mappedEpisodeInfo": [
+    {
+      "id": 5496,
+      "seasonNumber": 1,
+      "episodeNumber": 1,
+      "absoluteEpisodeNumber": 1,
+      "title": "Episode 1"
+    }
+  ],
+  "approved": false,
+  "temporarilyRejected": false,
+  "rejected": true,
+  "tvdbId": 0,
+  "tvRageId": 0,
+  "rejections": [
+    "Existing file meets cutoff: HDTV-1080p"
+  ],
+  "publishDate": "2023-02-05T00:49:25Z",
+  "commentUrl": "https://indexer.example/torrent/series-release",
+  "downloadUrl": "https://indexer.example/download/series-release",
+  "infoUrl": "https://indexer.example/torrent/series-release",
+  "episodeRequested": true,
+  "downloadAllowed": true,
+  "releaseWeight": 14,
+  "customFormats": [
+    {
+      "id": 2,
+      "name": "Surround Sound"
+    }
+  ],
+  "customFormatScore": 75,
+  "magnetUrl": "",
+  "infoHash": "",
+  "seeders": 17,
+  "leechers": 0,
+  "protocol": "torrent",
+  "indexerFlags": 9,
+  "isDaily": false,
+  "isAbsoluteNumbering": false,
+  "isPossibleSpecialEpisode": false,
+  "special": false
+}

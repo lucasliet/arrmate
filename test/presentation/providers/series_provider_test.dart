@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/screens/series/providers/season_episodes_provider.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
 
 class MockSeriesRepository extends Mock implements SeriesRepository {}
@@ -22,6 +23,42 @@ void main() {
   });
 
   group('SeriesController', () {
+    group('setEpisodeMonitoring', () {
+      test(
+        'should update only the selected episode monitoring state',
+        () async {
+          // Given
+          const episode = Episode(
+            id: 42,
+            seriesId: 100,
+            seasonNumber: 3,
+            episodeNumber: 2,
+            monitored: false,
+          );
+          when(
+            () => mockRepository.monitorEpisodes(any(), any()),
+          ).thenAnswer((_) async {});
+          final container = ProviderContainer(
+            overrides: [
+              seriesRepositoryProvider.overrideWithValue(mockRepository),
+              seasonEpisodesProvider(
+                100,
+                3,
+              ).overrideWith((ref) async => const []),
+            ],
+          );
+          addTearDown(container.dispose);
+          final controller = container.read(seriesControllerProvider(100));
+
+          // When
+          await controller.setEpisodeMonitoring(episode, true);
+
+          // Then
+          verify(() => mockRepository.monitorEpisodes([42], true)).called(1);
+        },
+      );
+    });
+
     group('toggleSeasonMonitor', () {
       test('Deve inverter monitored da season e chamar updateSeries', () async {
         // Given

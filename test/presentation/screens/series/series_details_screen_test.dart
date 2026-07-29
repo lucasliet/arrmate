@@ -5,6 +5,7 @@ import 'package:arrmate/presentation/screens/series/providers/series_provider.da
 import 'package:arrmate/presentation/screens/series/providers/series_metadata_provider.dart';
 import 'package:arrmate/presentation/shared/providers/formatted_options_provider.dart';
 import 'package:arrmate/presentation/screens/series/series_details_screen.dart';
+import 'package:arrmate/presentation/widgets/media/poster_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,10 +20,11 @@ final mockInstance = Instance(
   type: InstanceType.sonarr,
 );
 
-Series createMockSeries({List<MediaImage> images = const []}) {
+Series createMockSeries({List<MediaImage> images = const [], String? imdbId}) {
   return Series(
     guid: 1,
     tvdbId: 100,
+    imdbId: imdbId,
     title: 'Test Series',
     sortTitle: 'Test Series',
     year: 2023,
@@ -167,4 +169,60 @@ void main() {
       expect(cachedImageInBackground, findsNothing);
     },
   );
+
+  testWidgets('SeriesDetailsScreen should show external actions', (
+    tester,
+  ) async {
+    // Given
+    final series = createMockSeries(imdbId: 'tt11280740');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+          seriesDetailsProvider(1).overrideWith((ref) => series),
+          seriesFilesProvider(1).overrideWith((ref) async => []),
+          seriesExtraFilesProvider(1).overrideWith((ref) async => []),
+          seriesHistoryProvider(1).overrideWith((ref) async => []),
+          seriesQualityProfilesProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+      ),
+    );
+
+    // When
+    await tester.pump();
+
+    // Then
+    expect(find.text('IMDb'), findsOneWidget);
+    expect(find.text('Trakt'), findsOneWidget);
+    expect(find.text('TVDB'), findsOneWidget);
+  });
+
+  testWidgets('SeriesDetailsScreen should open the poster viewer', (
+    tester,
+  ) async {
+    // Given
+    final series = createMockSeries();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+          seriesDetailsProvider(1).overrideWith((ref) => series),
+          seriesFilesProvider(1).overrideWith((ref) async => []),
+          seriesExtraFilesProvider(1).overrideWith((ref) async => []),
+          seriesHistoryProvider(1).overrideWith((ref) async => []),
+          seriesQualityProfilesProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+      ),
+    );
+    await tester.pump();
+
+    // When
+    await tester.tap(find.byKey(const Key('viewSeriesPoster')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.byType(PosterViewer), findsOneWidget);
+  });
 }

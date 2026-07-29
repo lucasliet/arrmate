@@ -150,7 +150,7 @@ void main() {
         when(
           () => mockApi.getSeriesFiles(any()),
         ).thenAnswer((_) async => files);
-        when(() => mockApi.deleteSeriesFile(any())).thenAnswer((_) async {});
+        when(() => mockApi.deleteSeriesFiles(any())).thenAnswer((_) async {});
 
         // When
         final count = await repository.deleteSeriesFiles(7);
@@ -159,9 +159,13 @@ void main() {
         expect(count, 3);
         verify(() => mockApi.getSeriesFiles(7)).called(1);
         verifyNever(() => mockApi.getEpisodes(any()));
-        verify(() => mockApi.deleteSeriesFile(10)).called(1);
-        verify(() => mockApi.deleteSeriesFile(20)).called(1);
-        verify(() => mockApi.deleteSeriesFile(30)).called(1);
+        final fileIds =
+            verify(
+                  () => mockApi.deleteSeriesFiles(captureAny()),
+                ).captured.single
+                as List<int>;
+        expect(fileIds.toSet(), {10, 20, 30});
+        verifyNever(() => mockApi.monitorEpisodes(any(), any()));
       },
     );
 
@@ -228,7 +232,10 @@ void main() {
         when(
           () => mockApi.getEpisodes(any()),
         ).thenAnswer((_) async => episodes);
-        when(() => mockApi.deleteSeriesFile(any())).thenAnswer((_) async {});
+        when(() => mockApi.deleteSeriesFiles(any())).thenAnswer((_) async {});
+        when(
+          () => mockApi.monitorEpisodes(any(), any()),
+        ).thenAnswer((_) async {});
 
         // When
         final count = await repository.deleteSeriesFiles(7, seasonNumber: 1);
@@ -237,12 +244,33 @@ void main() {
         expect(count, 2);
         verify(() => mockApi.getEpisodes(7)).called(1);
         verifyNever(() => mockApi.getSeriesFiles(any()));
-        verify(() => mockApi.deleteSeriesFile(100)).called(1);
-        verify(() => mockApi.deleteSeriesFile(101)).called(1);
-        verifyNever(() => mockApi.deleteSeriesFile(200));
-        verifyNever(() => mockApi.deleteSeriesFile(0));
+        final fileIds =
+            verify(
+                  () => mockApi.deleteSeriesFiles(captureAny()),
+                ).captured.single
+                as List<int>;
+        final episodeIds =
+            verify(
+                  () => mockApi.monitorEpisodes(captureAny(), false),
+                ).captured.single
+                as List<int>;
+        expect(fileIds.toSet(), {100, 101});
+        expect(episodeIds.toSet(), {1, 2, 3});
       },
     );
+
+    test('monitorEpisodes deve encaminhar IDs e estado para a API', () async {
+      // Given
+      when(
+        () => mockApi.monitorEpisodes(any(), any()),
+      ).thenAnswer((_) async {});
+
+      // When
+      await repository.monitorEpisodes([10, 20], true);
+
+      // Then
+      verify(() => mockApi.monitorEpisodes([10, 20], true)).called(1);
+    });
   });
 
   group('SeriesRepositoryImpl - Manual Import', () {
