@@ -53,6 +53,16 @@ class UpdateService {
 
   UpdateService(this._dio);
 
+  /// Strips a single leading `v` or `V` from a version tag (e.g. `v1.2.3`
+  /// -> `1.2.3`), preserving any other `v` characters inside the version
+  /// string itself.
+  static String stripVersionPrefix(String version) {
+    if (version.isEmpty) return version;
+    final first = version[0];
+    if (first == 'v' || first == 'V') return version.substring(1);
+    return version;
+  }
+
   /// Checks if a new update is available.
   ///
   /// [force] - If true, bypasses the daily check limit.
@@ -89,7 +99,7 @@ class UpdateService {
       final rawTagName = data['tag_name'] as String;
       logger.debug('[UpdateService] GitHub latest release tag: "$rawTagName"');
 
-      final latestVersionStr = rawTagName.replaceAll('v', '');
+      final latestVersionStr = stripVersionPrefix(rawTagName);
       logger.debug(
         '[UpdateService] Latest version (parsed): "$latestVersionStr"',
       );
@@ -152,7 +162,7 @@ class UpdateService {
       );
 
       final currentVersion = Version.parse(
-        currentVersionStr.replaceAll('v', ''),
+        stripVersionPrefix(currentVersionStr),
       );
       final latestVersion = Version.parse(latestVersionStr);
 
@@ -199,7 +209,7 @@ class UpdateService {
     logger.debug('[UpdateService] Fetching release history from GitHub');
 
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version.replaceAll('v', '');
+    final currentVersion = stripVersionPrefix(packageInfo.version);
 
     try {
       final response = await _dio.get<dynamic>(
@@ -220,8 +230,9 @@ class UpdateService {
 
       final releases = response.data as List;
       return releases.whereType<Map<String, dynamic>>().map((release) {
-        final version =
-            (release['tag_name'] as String?)?.replaceAll('v', '') ?? '';
+        final version = stripVersionPrefix(
+          (release['tag_name'] as String?) ?? '',
+        );
         final publishedAtStr = release['published_at'] as String?;
         return AppReleaseInfo(
           version: version,
@@ -255,7 +266,7 @@ class UpdateService {
   /// has not seen it yet, or null when it was already presented.
   Future<AppReleaseInfo?> whatsNewForCurrentVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version.replaceAll('v', '');
+    final currentVersion = stripVersionPrefix(packageInfo.version);
     final seenVersion = await lastSeenVersion();
 
     if (seenVersion == currentVersion) {

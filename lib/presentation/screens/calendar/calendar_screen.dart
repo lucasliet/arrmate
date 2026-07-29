@@ -145,11 +145,8 @@ class CalendarScreen extends ConsumerWidget {
   Map<DateTime, List<CalendarEvent>> _groupByDate(List<CalendarEvent> events) {
     final groups = <DateTime, List<CalendarEvent>>{};
     for (var event in events) {
-      final date = DateTime(
-        event.releaseDate.year,
-        event.releaseDate.month,
-        event.releaseDate.day,
-      );
+      final localDate = event.releaseDate.toLocal();
+      final date = DateTime(localDate.year, localDate.month, localDate.day);
       if (groups[date] == null) groups[date] = [];
       groups[date]!.add(event);
     }

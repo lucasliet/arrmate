@@ -87,17 +87,17 @@ class DiagnosticsScreen extends ConsumerWidget {
   Future<void> _exportReport(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final platform = Theme.of(context).platform.name;
+    final snapshot =
+        ref.read(systemDiagnosticsProvider).valueOrNull ??
+        SystemDiagnosticsSnapshot(
+          generatedAt: DateTime.now(),
+          networkInterfaces: const [],
+          checks: const [],
+        );
+    final requests = RequestDiagnosticsRecorder.instance.entries;
+    final cacheService = ref.read(cacheMaintenanceProvider);
     try {
-      final snapshot =
-          ref.read(systemDiagnosticsProvider).valueOrNull ??
-          SystemDiagnosticsSnapshot(
-            generatedAt: DateTime.now(),
-            networkInterfaces: const [],
-            checks: const [],
-          );
-      final requests = RequestDiagnosticsRecorder.instance.entries;
       final packageInfo = await PackageInfo.fromPlatform();
-      final cacheService = ref.read(cacheMaintenanceProvider);
 
       final builder = DiagnosticReportBuilder();
       final report = builder.build(

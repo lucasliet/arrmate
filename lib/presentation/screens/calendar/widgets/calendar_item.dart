@@ -124,6 +124,8 @@ class CalendarItem extends ConsumerWidget {
                           instanceType: event.instanceType,
                         ),
                         QueueStatusIndicator(
+                          instanceType: event.instanceType,
+                          instanceId: event.instanceId,
                           movieId: event.movie?.guid,
                           seriesId: event.series?.id,
                         ),

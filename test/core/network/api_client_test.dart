@@ -67,6 +67,27 @@ void main() {
         expect(adapter.requests.map((uri) => uri.host), ['primary.test']);
       },
     );
+
+    test(
+      'should not promote a fallback that returns a non-connection error',
+      () async {
+        final adapter = _RecordingAdapter(
+          unavailableHosts: {'primary.test'},
+          statusCodes: {'alternative.test': 500},
+        );
+        final client = _client(adapter);
+
+        await expectLater(
+          client.get<Map<String, dynamic>>('/status'),
+          throwsA(isA<ServerError>()),
+        );
+
+        expect(adapter.requests.map((uri) => uri.host), [
+          'primary.test',
+          'alternative.test',
+        ]);
+      },
+    );
   });
 }
 

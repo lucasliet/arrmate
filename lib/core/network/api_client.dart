@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'api_error.dart';
 import '../constants/api_constants.dart';
 import '../services/logger_service.dart';
+import '../utils/sensitive_data_redactor.dart';
 import 'request_diagnostics.dart';
 import 'secure_log_interceptor.dart';
 
@@ -24,6 +25,12 @@ class ApiClient {
 
   final List<String> _candidateBaseUrls;
 
+  /// The base URL currently considered active. Starts as [baseUrl] and is
+  /// promoted to a fallback only after that fallback returns a successful
+  /// response, so a fallback that answers with 401/404/500 never traps the
+  /// client on it.
+  String _activeBaseUrl;
+
   /// Creates a new [ApiClient] instance.
   ///
   /// [baseUrl] is the root URL for the API.
@@ -37,6 +44,7 @@ class ApiClient {
     String? diagnosticSource,
     Dio? dio,
   }) : _candidateBaseUrls = _uniqueUrls([baseUrl, ...fallbackBaseUrls]),
+       _activeBaseUrl = baseUrl,
        _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = baseUrl
@@ -63,8 +71,9 @@ class ApiClient {
     Duration? customTimeout,
   }) async {
     return _request<T>(
-      () => _dio.get(
-        path,
+      path,
+      (resolvedPath, baseUrl) => _dio.get(
+        resolvedPath,
         queryParameters: queryParameters,
         options: _optionsWithTimeout(customTimeout),
       ),
@@ -85,8 +94,9 @@ class ApiClient {
     Duration? customTimeout,
   }) async {
     return _request<T>(
-      () => _dio.post(
-        path,
+      path,
+      (resolvedPath, baseUrl) => _dio.post(
+        resolvedPath,
         data: data,
         queryParameters: queryParameters,
         options: _optionsWithTimeout(customTimeout),
@@ -107,8 +117,9 @@ class ApiClient {
     Duration? customTimeout,
   }) async {
     return _request<T>(
-      () => _dio.put(
-        path,
+      path,
+      (resolvedPath, baseUrl) => _dio.put(
+        resolvedPath,
         data: data,
         queryParameters: queryParameters,
         options: _optionsWithTimeout(customTimeout),
@@ -129,8 +140,9 @@ class ApiClient {
     Duration? customTimeout,
   }) async {
     return _request<T>(
-      () => _dio.delete(
-        path,
+      path,
+      (resolvedPath, baseUrl) => _dio.delete(
+        resolvedPath,
         data: data,
         queryParameters: queryParameters,
         options: _optionsWithTimeout(customTimeout),
@@ -144,17 +156,41 @@ class ApiClient {
     return Options(receiveTimeout: customTimeout, sendTimeout: customTimeout);
   }
 
+  /// Resolves [path] against [baseUrl]. When the candidate differs from the
+  /// shared Dio base URL, the absolute URL is returned so the request runs
+  /// against the fallback without mutating [_dio.options.baseUrl] — keeping
+  /// failover attempts isolated until a candidate is confirmed reachable.
+  String _resolvePath(String path, String baseUrl) {
+    if (baseUrl == _dio.options.baseUrl) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final separator = baseUrl.endsWith('/') || path.startsWith('/') ? '' : '/';
+    return '$baseUrl$separator$path';
+  }
+
   /// Wraps a Dio request with error handling to throw [ApiError]s.
+  ///
+  /// Each attempt runs against a request-local base URL. On a connection-level
+  /// failure the next candidate URL is tried; on a successful response the
+  /// active base URL is promoted to the one that answered. A fallback that
+  /// fails with a non-connection error (401/404/500) is never promoted, so the
+  /// client stays on the previously confirmed URL instead of getting stuck.
   Future<T> _request<T>(
-    Future<Response<dynamic>> Function() request, {
+    String path,
+    Future<Response<dynamic>> Function(String resolvedPath, String baseUrl)
+    request, {
     bool allowFailover = false,
   }) async {
     final attemptedBaseUrls = <String>{};
+    var currentBaseUrl = _activeBaseUrl;
 
     while (true) {
-      attemptedBaseUrls.add(_dio.options.baseUrl);
+      attemptedBaseUrls.add(currentBaseUrl);
       try {
-        final response = await request();
+        final resolvedPath = _resolvePath(path, currentBaseUrl);
+        final response = await request(resolvedPath, currentBaseUrl);
+        _activeBaseUrl = currentBaseUrl;
         return response.data as T;
       } on DioException catch (error) {
         final nextBaseUrl = _nextBaseUrl(attemptedBaseUrls);
@@ -164,7 +200,7 @@ class ApiClient {
         logger.warning(
           '[ApiClient] Connection failed, retrying with an alternative instance URL',
         );
-        _dio.options.baseUrl = nextBaseUrl;
+        currentBaseUrl = nextBaseUrl;
       }
     }
   }
@@ -194,7 +230,7 @@ class ApiClient {
       case DioExceptionType.cancel:
         return const UnknownApiError('Request cancelled');
       default:
-        return UnknownApiError(e.message);
+        return UnknownApiError(SensitiveDataRedactor.redactOptional(e.message));
     }
   }
 
@@ -221,14 +257,18 @@ class ApiClient {
     }
   }
 
-  /// Extracts a human-readable error message from the response data.
+  /// Extracts a human-readable error message from the response data, redacting
+  /// any hostnames, IP addresses or tokens so instance endpoints never leak
+  /// into user-facing errors or diagnostic reports.
   String? _extractErrorMessage(dynamic data) {
     if (data == null) return null;
-    if (data is String) return data;
-    if (data is Map) {
-      return data['message'] as String? ?? data['error'] as String?;
+    String? raw;
+    if (data is String) {
+      raw = data;
+    } else if (data is Map) {
+      raw = data['message'] as String? ?? data['error'] as String?;
     }
-    return null;
+    return SensitiveDataRedactor.redactOptional(raw);
   }
 
   static List<String> _uniqueUrls(List<String> urls) {
