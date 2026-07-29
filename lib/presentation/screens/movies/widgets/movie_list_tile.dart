@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../../core/utils/media_external_links.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
-import '../../../widgets/media/media_quick_actions_menu.dart';
 import '../../../widgets/queue_status_indicator.dart';
 
 /// A list tile widget for displaying movie details in a list view.
@@ -15,16 +13,12 @@ class MovieListTile extends StatelessWidget {
     required this.movie,
     this.onTap,
     this.onLongPress,
-    this.onAutomaticSearch,
-    this.onOpenExternal,
     this.isSelected = false,
   });
 
   final Movie movie;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final Future<void> Function()? onAutomaticSearch;
-  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   @override
@@ -213,22 +207,6 @@ class MovieListTile extends StatelessWidget {
             ),
         const SizedBox(width: 4),
         QueueStatusIndicator(movieId: movie.guid),
-        const Spacer(),
-        if (onAutomaticSearch != null && onOpenExternal != null)
-          SizedBox(
-            width: 40,
-            height: 32,
-            child: MediaQuickActionsMenu(
-              key: Key('movieListQuickActions-${movie.id}'),
-              links: MediaExternalLinks.movie(
-                title: movie.title,
-                imdbId: movie.imdbId,
-              ),
-              onAutomaticSearch: onAutomaticSearch!,
-              onOpenExternal: onOpenExternal!,
-              iconColor: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
       ],
     );
   }

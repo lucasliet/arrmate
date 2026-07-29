@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
-import '../../../widgets/media/media_quick_actions_menu.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import 'series_poster.dart';
 
@@ -12,8 +10,6 @@ class SeriesCard extends StatelessWidget {
   final Series series;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final Future<void> Function()? onAutomaticSearch;
-  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   const SeriesCard({
@@ -21,8 +17,6 @@ class SeriesCard extends StatelessWidget {
     required this.series,
     this.onTap,
     this.onLongPress,
-    this.onAutomaticSearch,
-    this.onOpenExternal,
     this.isSelected = false,
   });
 
@@ -108,7 +102,6 @@ class SeriesCard extends StatelessWidget {
       right: 6,
       child: Row(
         children: [
-          // Left: Monitored Status
           if (series.monitored)
             const Icon(Icons.bookmark, size: 20, color: Colors.white)
           else
@@ -129,22 +122,6 @@ class SeriesCard extends StatelessWidget {
             const SizedBox(),
           const SizedBox(width: 4),
           QueueStatusIndicator(seriesId: series.id),
-          if (onAutomaticSearch != null && onOpenExternal != null)
-            SizedBox(
-              width: 36,
-              height: 36,
-              child: MediaQuickActionsMenu(
-                key: Key('seriesQuickActions-${series.id}'),
-                links: MediaExternalLinks.series(
-                  title: series.title,
-                  tvdbId: series.tvdbId,
-                  imdbId: series.imdbId,
-                ),
-                onAutomaticSearch: onAutomaticSearch!,
-                onOpenExternal: onOpenExternal!,
-                iconColor: Colors.white,
-              ),
-            ),
         ],
       ),
     );

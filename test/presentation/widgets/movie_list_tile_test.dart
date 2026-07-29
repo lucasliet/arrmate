@@ -49,28 +49,10 @@ void main() {
     expect(longPressed, isTrue);
   });
 
-  testWidgets('MovieListTile should dispatch an external quick action', (
-    tester,
-  ) async {
-    // Given
-    Uri? openedUri;
-    await tester.pumpWidget(
-      wrap(
-        MovieListTile(
-          movie: movie,
-          onAutomaticSearch: () async {},
-          onOpenExternal: (uri) async => openedUri = uri,
-        ),
-      ),
-    );
+  testWidgets('MovieListTile should render title and year', (tester) async {
+    await tester.pumpWidget(wrap(MovieListTile(movie: movie)));
 
-    // When
-    await tester.tap(find.byKey(const Key('movieListQuickActions-7')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open in IMDb'));
-    await tester.pumpAndSettle();
-
-    // Then
-    expect(openedUri, Uri.parse('https://www.imdb.com/title/tt1234567/'));
+    expect(find.text('Test Movie'), findsOneWidget);
+    expect(find.text('2024'), findsOneWidget);
   });
 }

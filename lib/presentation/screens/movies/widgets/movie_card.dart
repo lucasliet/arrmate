@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
-import '../../../widgets/media/media_quick_actions_menu.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import 'movie_poster.dart';
 
@@ -13,8 +11,6 @@ class MovieCard extends ConsumerWidget {
   final Movie movie;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final Future<void> Function()? onAutomaticSearch;
-  final Future<void> Function(Uri uri)? onOpenExternal;
   final bool isSelected;
 
   const MovieCard({
@@ -22,8 +18,6 @@ class MovieCard extends ConsumerWidget {
     required this.movie,
     this.onTap,
     this.onLongPress,
-    this.onAutomaticSearch,
-    this.onOpenExternal,
     this.isSelected = false,
   });
 
@@ -129,21 +123,6 @@ class MovieCard extends ConsumerWidget {
             const SizedBox(),
           const SizedBox(width: 4),
           QueueStatusIndicator(movieId: movie.guid),
-          if (onAutomaticSearch != null && onOpenExternal != null)
-            SizedBox(
-              width: 36,
-              height: 36,
-              child: MediaQuickActionsMenu(
-                key: Key('movieQuickActions-${movie.id}'),
-                links: MediaExternalLinks.movie(
-                  title: movie.title,
-                  imdbId: movie.imdbId,
-                ),
-                onAutomaticSearch: onAutomaticSearch!,
-                onOpenExternal: onOpenExternal!,
-                iconColor: Colors.white,
-              ),
-            ),
         ],
       ),
     );

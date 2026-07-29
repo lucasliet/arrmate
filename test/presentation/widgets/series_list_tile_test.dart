@@ -47,29 +47,12 @@ void main() {
     expect(longPressed, isTrue);
   });
 
-  testWidgets('SeriesListTile should dispatch a TVDB quick action', (
+  testWidgets('SeriesListTile should render title and season count', (
     tester,
   ) async {
-    // Given
-    Uri? openedUri;
-    await tester.pumpWidget(
-      wrap(
-        SeriesListTile(
-          series: series,
-          onAutomaticSearch: () async {},
-          onOpenExternal: (uri) async => openedUri = uri,
-        ),
-      ),
-    );
+    await tester.pumpWidget(wrap(SeriesListTile(series: series)));
 
-    // When
-    await tester.tap(find.byKey(const Key('seriesListQuickActions-9')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open in TVDB'));
-    await tester.pumpAndSettle();
-
-    // Then
-    expect(openedUri?.host, 'www.thetvdb.com');
-    expect(openedUri?.queryParameters['id'], '371980');
+    expect(find.text('Test Series'), findsOneWidget);
+    expect(find.text('0 Seasons'), findsOneWidget);
   });
 }

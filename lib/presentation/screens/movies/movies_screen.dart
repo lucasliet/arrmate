@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
@@ -61,62 +60,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
 
   List<Movie> _resolveSelected(List<Movie> movies) {
     return movies.where((m) => _selectedIds.contains(m.id)).toList();
-  }
-
-  Future<void> _runAutomaticSearch(Movie movie) async {
-    try {
-      final instanceId = movie.instanceId;
-      if (instanceId == null) {
-        final repository = ref.read(movieRepositoryProvider);
-        if (repository == null) {
-          throw StateError('Radarr instance is unavailable');
-        }
-        await repository.searchMovies([movie.id]);
-      } else {
-        final instance = ref
-            .read(instancesByTypeProvider(InstanceType.radarr))
-            .where((candidate) => candidate.id == instanceId)
-            .firstOrNull;
-        if (instance == null) {
-          throw StateError('Movie instance is no longer configured');
-        }
-        await ref
-            .read(movieRepositoryForInstanceProvider(instance))
-            .searchMovies([movie.id]);
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Automatic search started for ${movie.title}')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to start automatic search: $error'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
-  }
-
-  Future<void> _openExternalUri(Uri uri) async {
-    try {
-      if (uri.scheme != 'https') {
-        throw const FormatException('Only HTTPS links are supported');
-      }
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        throw StateError('Unable to open link');
-      }
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
-    }
   }
 
   void _showSortSheet(BuildContext context, WidgetRef ref) {
@@ -286,12 +229,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               ? () => _toggleSelection(movie.id)
                               : () => context.go('/movies/${movie.id}'),
                           onLongPress: () => _toggleSelection(movie.id),
-                          onAutomaticSearch: _isSelecting
-                              ? null
-                              : () => _runAutomaticSearch(movie),
-                          onOpenExternal: _isSelecting
-                              ? null
-                              : _openExternalUri,
                         );
                       }, childCount: movies.length),
                     );
@@ -314,10 +251,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ? () => _toggleSelection(movie.id)
                             : () => context.go('/movies/${movie.id}'),
                         onLongPress: () => _toggleSelection(movie.id),
-                        onAutomaticSearch: _isSelecting
-                            ? null
-                            : () => _runAutomaticSearch(movie),
-                        onOpenExternal: _isSelecting ? null : _openExternalUri,
                       );
                     }, childCount: movies.length),
                   );

@@ -46,9 +46,9 @@ void main() {
     expect(longPressed, isTrue);
   });
 
-  testWidgets('SeriesCard should dispatch automatic search', (tester) async {
-    // Given
-    var searchCount = 0;
+  testWidgets('SeriesCard should render title and season metadata', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
@@ -56,24 +56,14 @@ void main() {
             body: SizedBox(
               width: 120,
               height: 180,
-              child: SeriesCard(
-                series: series,
-                onAutomaticSearch: () async => searchCount++,
-                onOpenExternal: (_) async {},
-              ),
+              child: SeriesCard(series: series),
             ),
           ),
         ),
       ),
     );
 
-    // When
-    await tester.tap(find.byKey(const Key('seriesQuickActions-9')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Automatic Search'));
-    await tester.pumpAndSettle();
-
-    // Then
-    expect(searchCount, 1);
+    expect(find.text('Test Series'), findsOneWidget);
+    expect(find.text('2024 • 0 Seasons'), findsOneWidget);
   });
 }

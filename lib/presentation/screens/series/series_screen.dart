@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
@@ -60,62 +59,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
 
   List<Series> _resolveSelected(List<Series> seriesList) {
     return seriesList.where((s) => _selectedIds.contains(s.id)).toList();
-  }
-
-  Future<void> _runAutomaticSearch(Series series) async {
-    try {
-      final instanceId = series.instanceId;
-      if (instanceId == null) {
-        final repository = ref.read(seriesRepositoryProvider);
-        if (repository == null) {
-          throw StateError('Sonarr instance is unavailable');
-        }
-        await repository.searchSeries(series.id);
-      } else {
-        final instance = ref
-            .read(instancesByTypeProvider(InstanceType.sonarr))
-            .where((candidate) => candidate.id == instanceId)
-            .firstOrNull;
-        if (instance == null) {
-          throw StateError('Series instance is no longer configured');
-        }
-        await ref
-            .read(seriesRepositoryForInstanceProvider(instance))
-            .searchSeries(series.id);
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Automatic search started for ${series.title}')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to start automatic search: $error'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
-  }
-
-  Future<void> _openExternalUri(Uri uri) async {
-    try {
-      if (uri.scheme != 'https') {
-        throw const FormatException('Only HTTPS links are supported');
-      }
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        throw StateError('Unable to open link');
-      }
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
-    }
   }
 
   void _showSortSheet(BuildContext context, WidgetRef ref) {
@@ -285,12 +228,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                               ? () => _toggleSelection(series.id)
                               : () => context.go('/series/${series.id}'),
                           onLongPress: () => _toggleSelection(series.id),
-                          onAutomaticSearch: _isSelecting
-                              ? null
-                              : () => _runAutomaticSearch(series),
-                          onOpenExternal: _isSelecting
-                              ? null
-                              : _openExternalUri,
                         );
                       }, childCount: seriesList.length),
                     );
@@ -313,10 +250,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             ? () => _toggleSelection(series.id)
                             : () => context.go('/series/${series.id}'),
                         onLongPress: () => _toggleSelection(series.id),
-                        onAutomaticSearch: _isSelecting
-                            ? null
-                            : () => _runAutomaticSearch(series),
-                        onOpenExternal: _isSelecting ? null : _openExternalUri,
                       );
                     }, childCount: seriesList.length),
                   );
