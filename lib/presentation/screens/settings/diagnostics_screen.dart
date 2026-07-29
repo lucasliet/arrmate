@@ -214,6 +214,7 @@ class DiagnosticsScreen extends ConsumerWidget {
       final packageInfo = await ref.read(
         diagnosticsPackageInfoLoaderProvider,
       )();
+      if (!context.mounted) return;
 
       final builder = DiagnosticReportBuilder();
       final report = builder.build(
@@ -228,6 +229,7 @@ class DiagnosticsScreen extends ConsumerWidget {
       await ref.read(diagnosticReportExporterProvider)(report);
     } catch (error, stackTrace) {
       logger.error('[Diagnostics] Export failed', error, stackTrace);
+      if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Failed to export report: $error')),
       );

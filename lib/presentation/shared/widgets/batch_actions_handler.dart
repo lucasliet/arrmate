@@ -63,6 +63,7 @@ class BatchActionsHandler {
     var deleted = 0;
     try {
       for (final id in movieIds) {
+        if (!context.mounted) return null;
         await repository.deleteMovie(
           id,
           deleteFiles: deleteFiles,
@@ -119,6 +120,7 @@ class BatchActionsHandler {
     var filesDeleted = 0;
     try {
       for (final id in movieIds) {
+        if (!context.mounted) return null;
         filesDeleted += await repository.deleteMovieFiles(id);
       }
       if (!context.mounted) return null;
@@ -306,6 +308,7 @@ class BatchActionsHandler {
     var deleted = 0;
     try {
       for (final id in seriesIds) {
+        if (!context.mounted) return null;
         await repository.deleteSeries(
           id,
           deleteFiles: deleteFiles,
@@ -360,6 +363,7 @@ class BatchActionsHandler {
     var filesDeleted = 0;
     try {
       for (final id in seriesIds) {
+        if (!context.mounted) return null;
         filesDeleted += await repository.deleteSeriesFiles(id);
       }
       if (!context.mounted) return null;

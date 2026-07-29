@@ -98,6 +98,13 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
     if (_selectedSeries == null ||
         _qualityProfileId == null ||
         _rootFolderPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a series, quality profile, and root folder',
+          ),
+        ),
+      );
       return;
     }
 

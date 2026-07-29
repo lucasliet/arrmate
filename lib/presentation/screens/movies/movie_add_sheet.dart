@@ -94,6 +94,13 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
     if (_selectedMovie == null ||
         _qualityProfileId == null ||
         _rootFolderPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a movie, quality profile, and root folder',
+          ),
+        ),
+      );
       return;
     }
 
