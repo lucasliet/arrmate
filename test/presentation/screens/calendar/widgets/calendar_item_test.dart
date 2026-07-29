@@ -19,7 +19,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         queueMediaLookupProvider.overrideWithValue(
-          const AsyncValue.data(QueueMediaLookup()),
+          const AsyncValue.data(QueueMediaLookup.empty),
         ),
       ],
     );
@@ -75,7 +75,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           queueMediaLookupProvider.overrideWithValue(
-            const AsyncValue.data(QueueMediaLookup()),
+            const AsyncValue.data(QueueMediaLookup.empty),
           ),
         ],
       );

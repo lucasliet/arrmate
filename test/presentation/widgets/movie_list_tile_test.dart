@@ -26,7 +26,7 @@ void main() {
     return ProviderScope(
       overrides: [
         queueMediaLookupProvider.overrideWithValue(
-          const AsyncValue.data(QueueMediaLookup()),
+          const AsyncValue.data(QueueMediaLookup.empty),
         ),
       ],
       child: MaterialApp(home: Scaffold(body: child)),

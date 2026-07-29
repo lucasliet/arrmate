@@ -150,6 +150,8 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     final item = widget.item;
     final movieId = item.movieId ?? item.movie?.id;
     final seriesId = item.seriesId ?? item.series?.id;
+    final episodeId = item.episodeId ?? item.episode?.id;
+    final seasonNumber = item.seasonNumber ?? item.episode?.seasonNumber;
 
     if (movieId == null && seriesId == null) return;
 
@@ -168,7 +170,14 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     if (movieId != null) {
       context.go('/movies/$movieId');
     } else if (seriesId != null) {
-      context.go('/series/$seriesId');
+      if (episodeId != null &&
+          episodeId > 0 &&
+          seasonNumber != null &&
+          seasonNumber >= 0) {
+        context.go('/series/$seriesId/season/$seasonNumber/episode/$episodeId');
+      } else {
+        context.go('/series/$seriesId');
+      }
     }
   }
 

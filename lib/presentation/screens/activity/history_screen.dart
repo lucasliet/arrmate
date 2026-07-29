@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/models.dart';
 import '../../../core/utils/formatters.dart';
 import '../../providers/instances_provider.dart';
+import '../../widgets/instance_load_failure_banner.dart';
 import '../../widgets/instance_origin_badge.dart';
 import 'providers/history_provider.dart';
 
@@ -14,10 +15,16 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(filteredActivityHistoryProvider);
+    final failures = ref.watch(historyFailuresProvider);
 
     return Column(
       children: [
         const _HistoryFilterBar(),
+        if (failures.isNotEmpty)
+          InstanceLoadFailureBanner(
+            failures: failures,
+            onRetry: () => ref.read(activityHistoryProvider.notifier).refresh(),
+          ),
         Expanded(
           child: historyAsync.when(
             data: (events) {

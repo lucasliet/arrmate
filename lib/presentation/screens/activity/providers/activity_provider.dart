@@ -7,8 +7,16 @@ import '../../../../core/services/logger_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
 import '../../../providers/instances_provider.dart';
+import '../../../widgets/instance_load_failure_banner.dart';
 
 typedef _QueuePageLoader = Future<QueueItems> Function(int page, int pageSize);
+
+class _InstanceQueueResult {
+  final List<QueueItem> items;
+  final InstanceLoadFailure? failure;
+
+  const _InstanceQueueResult({required this.items, this.failure});
+}
 
 // Queue Provider
 /// Provider for fetching and managing the download queue, auto-refreshes every 5 seconds.
@@ -17,9 +25,25 @@ final queueProvider =
       QueueNotifier.new,
     );
 
+/// Exposes per-instance queue failures so the UI can surface partial data
+/// alongside a retry banner instead of treating it as an empty queue.
+final queueFailuresProvider = Provider.autoDispose<List<InstanceLoadFailure>>((
+  ref,
+) {
+  ref.watch(queueProvider);
+  return ref.watch(queueProvider.notifier).failures;
+});
+
 /// Notifier to manage the download queue state.
 class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Timer? _timer;
+  bool _isFetching = false;
+  bool _refreshPending = false;
+  List<InstanceLoadFailure> _failures = const [];
+
+  /// Returns the per-instance failures from the latest fetch, so the UI can
+  /// distinguish partial data from a genuinely empty queue.
+  List<InstanceLoadFailure> get failures => _failures;
 
   @override
   Future<List<QueueItem>> build() async {
@@ -37,7 +61,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     final sonarrInstances = ref.watch(
       instancesByTypeProvider(InstanceType.sonarr),
     );
-    final requests = <Future<List<QueueItem>>>[];
+    final requests = <Future<_InstanceQueueResult>>[];
 
     for (final instance in radarrInstances) {
       final repository = ref.watch(
@@ -65,9 +89,12 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       );
     }
 
-    final items = (await Future.wait(
-      requests,
-    )).expand((items) => items).toList();
+    final results = await Future.wait(requests);
+    final items = results.expand((result) => result.items).toList();
+    _failures = results
+        .map((result) => result.failure)
+        .whereType<InstanceLoadFailure>()
+        .toList();
 
     items.sort((a, b) {
       if (a.estimatedCompletionTime == null &&
@@ -86,7 +113,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     return items;
   }
 
-  Future<List<QueueItem>> _fetchInstanceQueue(
+  Future<_InstanceQueueResult> _fetchInstanceQueue(
     Instance instance,
     _QueuePageLoader loadPage,
   ) async {
@@ -105,7 +132,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
           ),
         );
         if (items.length >= queue.totalRecords || queue.records.isEmpty) {
-          return items;
+          return _InstanceQueueResult(items: items);
         }
         page++;
       }
@@ -115,20 +142,44 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
         error,
         stackTrace,
       );
-      return items;
+      return _InstanceQueueResult(
+        items: items,
+        failure: InstanceLoadFailure(
+          instanceId: instance.id,
+          instanceType: instance.type,
+          instanceLabel: instance.label,
+          message: 'Queue data could not be loaded.',
+        ),
+      );
     }
   }
 
   /// Manually refreshes the queue.
+  ///
+  /// Uses single-flight coalescing: if a fetch is already in flight, this
+  /// call marks a refresh as pending instead of starting a parallel fetch,
+  /// preventing a stale response from overwriting a newer one. The pending
+  /// refresh always runs after the current fetch completes, so a refresh
+  /// triggered right after a mutation (e.g. removing an item) is never lost.
   Future<void> refresh() async {
-    // Silent refresh if already loaded?
-    // Using ref.invalidateSelf() triggers loading state. W
-    // We might want to keep previous state while updating for polling.
-    // For now, standard invalidate.
-    if (state.isLoading) return;
+    if (_isFetching) {
+      _refreshPending = true;
+      return;
+    }
+    await _runFetch();
+    while (_refreshPending) {
+      _refreshPending = false;
+      await _runFetch();
+    }
+  }
 
-    // We can manually update state to new value to avoid loading flicker
-    state = await AsyncValue.guard(() => _fetchQueue());
+  Future<void> _runFetch() async {
+    _isFetching = true;
+    try {
+      state = await AsyncValue.guard(() => _fetchQueue());
+    } finally {
+      _isFetching = false;
+    }
   }
 
   /// Removes an item from the queue with optional parameters.
