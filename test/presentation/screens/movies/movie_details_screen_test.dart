@@ -5,6 +5,7 @@ import 'package:arrmate/presentation/screens/movies/movie_details_screen.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_details_provider.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_metadata_provider.dart';
 import 'package:arrmate/presentation/shared/providers/formatted_options_provider.dart';
+import 'package:arrmate/presentation/widgets/media/poster_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +20,15 @@ final mockInstance = Instance(
   type: InstanceType.radarr,
 );
 
-Movie createMockMovie({List<MediaImage> images = const []}) {
+Movie createMockMovie({
+  List<MediaImage> images = const [],
+  MovieRatings? ratings,
+  String? imdbId,
+  String? youTubeTrailerId,
+}) {
   return Movie(
     tmdbId: 123,
+    imdbId: imdbId,
     title: 'Test Movie',
     sortTitle: 'Test Movie',
     year: 2023,
@@ -32,7 +39,9 @@ Movie createMockMovie({List<MediaImage> images = const []}) {
     monitored: true,
     qualityProfileId: 1,
     added: DateTime.now(),
+    youTubeTrailerId: youTubeTrailerId,
     images: images,
+    ratings: ratings,
     genres: ['Action'],
     tags: [],
   );
@@ -156,4 +165,76 @@ void main() {
       expect(cachedImageInBackground, findsNothing);
     },
   );
+
+  testWidgets('MovieDetailsScreen should show ratings and external actions', (
+    tester,
+  ) async {
+    // Given
+    final movie = createMockMovie(
+      imdbId: 'tt1234567',
+      youTubeTrailerId: 'dQw4w9WgXcQ',
+      ratings: const MovieRatings(
+        imdb: MovieRating(votes: 10, value: 8.1),
+        tmdb: MovieRating(votes: 10, value: 7.4),
+        rottenTomatoes: MovieRating(votes: 0, value: 88),
+        metacritic: MovieRating(votes: 0, value: 80),
+        trakt: MovieRating(votes: 10, value: 7.6),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+          movieDetailsProvider(1).overrideWith((ref) => movie),
+          movieFilesProvider(1).overrideWith((ref) async => []),
+          movieExtraFilesProvider(1).overrideWith((ref) async => []),
+          movieHistoryProvider(1).overrideWith((ref) async => []),
+          movieQualityProfilesProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(home: MovieDetailsScreen(movieId: 1)),
+      ),
+    );
+    await tester.pump();
+
+    // When
+    final actionLabels = find.text('Letterboxd', skipOffstage: false);
+
+    // Then
+    expect(find.text('RT 88%'), findsOneWidget);
+    expect(find.text('IMDb 8.1'), findsOneWidget);
+    expect(find.text('TMDb 74%'), findsOneWidget);
+    expect(find.text('Metacritic 80'), findsOneWidget);
+    expect(find.text('Trakt 76%'), findsOneWidget);
+    expect(find.text('Trailer'), findsOneWidget);
+    expect(actionLabels, findsOneWidget);
+  });
+
+  testWidgets('MovieDetailsScreen should open the poster viewer', (
+    tester,
+  ) async {
+    // Given
+    final movie = createMockMovie();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+          movieDetailsProvider(1).overrideWith((ref) => movie),
+          movieFilesProvider(1).overrideWith((ref) async => []),
+          movieExtraFilesProvider(1).overrideWith((ref) async => []),
+          movieHistoryProvider(1).overrideWith((ref) async => []),
+          movieQualityProfilesProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(home: MovieDetailsScreen(movieId: 1)),
+      ),
+    );
+    await tester.pump();
+
+    // When
+    await tester.tap(find.byKey(const Key('viewMoviePoster')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.byType(PosterViewer), findsOneWidget);
+  });
 }

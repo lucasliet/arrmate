@@ -992,7 +992,7 @@ class PurgeService {
       metadata: {
         if (context != null) 'instanceType': context.type,
         if (context != null) 'instanceId': context.id,
-        if (season != null) 'seasonNumber': season,
+        'seasonNumber': ?season,
         'hash': t.hash,
         'size': t.size,
         'savePath': t.savePath,

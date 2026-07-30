@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
-import '../../providers/settings_provider.dart';
 import '../../tour/app_tour_keys.dart';
-import 'movie_add_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
@@ -67,6 +67,13 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       useSafeArea: true,
       builder: (context) {
         final currentSort = ref.read(movieSortProvider);
+        final rootFolders =
+            (ref.read(moviesProvider).valueOrNull ?? const <Movie>[])
+                .map((movie) => movie.rootFolderPath)
+                .whereType<String>()
+                .toSet()
+                .toList()
+              ..sort();
         return SortBottomSheet<MovieSortOption, MovieFilter>(
           title: 'Sort & Filter',
           currentSort: currentSort.option,
@@ -91,6 +98,61 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                 .read(movieSortProvider.notifier)
                 .update(currentSort.copyWith(filter: filter));
           },
+          additionalFilters: rootFolders.isEmpty
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ROOT FOLDER',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All folders'),
+                            selected: currentSort.rootFolderPath == null,
+                            onSelected: (selected) {
+                              if (!selected) return;
+                              ref
+                                  .read(movieSortProvider.notifier)
+                                  .update(
+                                    currentSort.copyWith(
+                                      clearRootFolderPath: true,
+                                    ),
+                                  );
+                              Navigator.pop(context);
+                            },
+                          ),
+                          for (final path in rootFolders)
+                            FilterChip(
+                              label: Text(path),
+                              selected: currentSort.rootFolderPath == path,
+                              onSelected: (selected) {
+                                if (!selected) return;
+                                ref
+                                    .read(movieSortProvider.notifier)
+                                    .update(
+                                      currentSort.copyWith(
+                                        rootFolderPath: path,
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
         );
       },
     );
@@ -102,7 +164,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   ) async {
     final handler = BatchActionsHandler(ref);
     final result = await action(handler);
-    if (result != null && context.mounted) {
+    if (!mounted || !context.mounted) return;
+    if (result != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result.message)));
@@ -282,13 +345,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       floatingActionButton: _isSelecting
           ? null
           : FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => const MovieAddSheet(),
-                );
-              },
+              onPressed: () => context.push('/discover?type=movie'),
               child: const Icon(Icons.add),
             ),
     );
@@ -301,6 +358,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       floating: false,
       title: const Text('Movies'),
       actions: [
+        const InstanceSelector(type: InstanceType.radarr),
         IconButton(
           key: tourKeys.moviesSearchKey,
           icon: const Icon(Icons.search),

@@ -190,10 +190,12 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                             return t.status == TorrentStatus.uploading ||
                                 t.status == TorrentStatus.stalledUP;
                           }
-                          if (_selectedFilter == 'paused')
+                          if (_selectedFilter == 'paused') {
                             return t.status.isPaused;
-                          if (_selectedFilter == 'error')
+                          }
+                          if (_selectedFilter == 'error') {
                             return t.status.hasError;
+                          }
                           return true;
                         })
                         .where((t) {

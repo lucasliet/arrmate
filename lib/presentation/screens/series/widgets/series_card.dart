@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
+import '../../../widgets/queue_status_indicator.dart';
 import 'series_poster.dart';
 
 /// A card widget displaying a series poster and status, utilized in grid view.
@@ -100,9 +101,7 @@ class SeriesCard extends StatelessWidget {
       left: 6,
       right: 6,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Monitored Status
           if (series.monitored)
             const Icon(Icons.bookmark, size: 20, color: Colors.white)
           else
@@ -111,8 +110,7 @@ class SeriesCard extends StatelessWidget {
               size: 20,
               color: Colors.white.withValues(alpha: 0.7),
             ),
-
-          // Right: Download Status
+          const Spacer(),
           if (series.isDownloaded)
             const Icon(Icons.check_circle, size: 20, color: Colors.white)
           else if (series.monitored)
@@ -122,6 +120,8 @@ class SeriesCard extends StatelessWidget {
               const Icon(Icons.cancel_outlined, size: 20, color: Colors.white)
           else
             const SizedBox(),
+          const SizedBox(width: 4),
+          QueueStatusIndicator(seriesId: series.id),
         ],
       ),
     );

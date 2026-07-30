@@ -187,7 +187,7 @@ class _TorrentImportTargetSheetState
             : Icon(Icons.movie_outlined, color: theme.colorScheme.primary),
         title: Text(movie.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          movie.year?.toString() ?? 'Unknown year',
+          movie.year.toString(),
           style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
         trailing: const Icon(Icons.chevron_right),
@@ -207,7 +207,7 @@ class _TorrentImportTargetSheetState
         leading: Icon(Icons.tv_outlined, color: theme.colorScheme.primary),
         title: Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          series.year?.toString() ?? 'Unknown year',
+          series.year.toString(),
           style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
         trailing: const Icon(Icons.chevron_right),

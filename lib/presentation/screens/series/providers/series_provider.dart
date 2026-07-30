@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'season_episodes_provider.dart';
 
 /// Provider that holds the list of series fetched from Sonarr.
 final seriesProvider = AsyncNotifierProvider<SeriesNotifier, List<Series>>(
@@ -54,7 +55,7 @@ final filteredSeriesProvider = Provider<AsyncValue<List<Series>>>((ref) {
       }).toList();
     }
 
-    filtered = filtered.where((s) => sort.filter.filter(s)).toList();
+    filtered = filtered.where(sort.matches).toList();
 
     filtered.sort((a, b) {
       final comparison = sort.option.compare(a, b);
@@ -162,6 +163,14 @@ class SeriesController {
     await repository.searchSeason(seriesId, seasonNumber);
   }
 
+  /// Updates monitoring for one episode and refreshes its season.
+  Future<void> setEpisodeMonitoring(Episode episode, bool monitored) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+    await repository.monitorEpisodes([episode.id], monitored);
+    ref.invalidate(seasonEpisodesProvider(seriesId, episode.seasonNumber));
+  }
+
   Future<void> rescan() async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
@@ -194,6 +203,32 @@ class SeriesController {
 
     final updatedSeries = series.copyWith(
       monitored: shouldMonitorSeries,
+      seasons: updatedSeasons,
+    );
+
+    await repository.updateSeries(updatedSeries);
+    ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesProvider);
+  }
+
+  /// Sets the monitoring state for the selected seasons in one series update.
+  Future<void> setSeasonsMonitored(
+    Series series,
+    Iterable<int> seasonNumbers, {
+    required bool monitored,
+  }) async {
+    final repository = ref.read(seriesRepositoryProvider);
+    if (repository == null) return;
+
+    final selectedSeasons = seasonNumbers.toSet();
+    if (selectedSeasons.isEmpty) return;
+
+    final updatedSeasons = series.seasons.map((season) {
+      if (!selectedSeasons.contains(season.seasonNumber)) return season;
+      return season.copyWith(monitored: monitored);
+    }).toList();
+    final updatedSeries = series.copyWith(
+      monitored: updatedSeasons.any((season) => season.monitored),
       seasons: updatedSeasons,
     );
 

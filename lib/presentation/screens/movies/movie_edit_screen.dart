@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instances_provider.dart';
+import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_details_provider.dart';
 
 /// Screen for editing an existing movie's configuration (monitor status, profile, path).
@@ -22,6 +24,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
   late int _qualityProfileId;
   late String _rootFolderPath;
   late MovieStatus _minimumAvailability;
+  late Set<int> _selectedTagIds;
 
   bool _isSaving = false;
   Future<(List<QualityProfile>, List<RootFolder>)>? _dataFuture;
@@ -34,6 +37,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
     _qualityProfileId = widget.movie.qualityProfileId;
     _rootFolderPath = widget.movie.rootFolderPath ?? widget.movie.path ?? '';
     _minimumAvailability = widget.movie.minimumAvailability;
+    _selectedTagIds = widget.movie.tags.toSet();
   }
 
   void _initDataFuture() {
@@ -110,6 +114,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
         qualityProfileId: _qualityProfileId,
         rootFolderPath: _rootFolderPath,
         minimumAvailability: _minimumAvailability,
+        tags: _selectedTagIds.toList(),
       );
 
       await ref
@@ -143,6 +148,8 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(movieRepositoryProvider);
+    final tags =
+        ref.watch(currentRadarrInstanceProvider)?.tags ?? const <Tag>[];
 
     if (repository != null) {
       _initDataFuture();
@@ -262,6 +269,20 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                           onChanged: (val) =>
                               setState(() => _rootFolderPath = val!),
                         ),
+                        if (tags.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Tags',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          TagList(
+                            tags: tags,
+                            selectedTagIds: _selectedTagIds,
+                            onSelectionChanged: (value) {
+                              setState(() => _selectedTagIds = value);
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),

@@ -11,8 +11,13 @@ class RadarrApi {
     : _client =
           client ??
           ApiClient(
-            baseUrl: '${instance.url}${ApiConstants.apiPath}',
+            baseUrl: '${instance.connectionUrls.first}${ApiConstants.apiPath}',
+            fallbackBaseUrls: instance.connectionUrls
+                .skip(1)
+                .map((url) => '$url${ApiConstants.apiPath}')
+                .toList(),
             headers: instance.authHeaders,
+            diagnosticSource: instance.id,
           );
 
   /// Retrieves all movies from the Radarr library.
@@ -42,12 +47,20 @@ class RadarrApi {
   ///
   /// [moveFiles] - If true, moves files to the new path if the path has changed.
   Future<Movie> updateMovie(Movie movie, {bool moveFiles = false}) async {
-    final response = await _client.put(
-      '/movie/${movie.id}',
-      data: movie.toJson(),
-      queryParameters: {'moveFiles': moveFiles},
+    await _client.put(
+      '/movie/editor',
+      data: {
+        'movieIds': [movie.id],
+        'monitored': movie.monitored,
+        'qualityProfileId': movie.qualityProfileId,
+        'minimumAvailability': movie.minimumAvailability.name,
+        'rootFolderPath': movie.rootFolderPath,
+        'tags': movie.tags,
+        'applyTags': 'replace',
+        if (moveFiles) 'moveFiles': true,
+      },
     );
-    return Movie.fromJson(response as Map<String, dynamic>);
+    return movie;
   }
 
   /// Deletes a movie from the library.
@@ -63,7 +76,7 @@ class RadarrApi {
       '/movie/$id',
       queryParameters: {
         'deleteFiles': deleteFiles,
-        'addExclusion': addExclusion,
+        'addImportExclusion': addExclusion,
       },
     );
   }
@@ -122,12 +135,18 @@ class RadarrApi {
   /// Retrieves upcoming movies from the calendar.
   ///
   /// [start] and [end] define the date range.
-  Future<List<Movie>> getCalendar({DateTime? start, DateTime? end}) async {
+  /// [unmonitored] includes movies that are not monitored when true.
+  Future<List<Movie>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  }) async {
     final response = await _client.get(
       '/calendar',
       queryParameters: {
         if (start != null) 'start': start.toIso8601String(),
         if (end != null) 'end': end.toIso8601String(),
+        'unmonitored': unmonitored,
       },
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
@@ -317,6 +336,14 @@ class RadarrApi {
   Future<InstanceStatus> getSystemStatus() async {
     final response = await _client.get('/system/status');
     return InstanceStatus.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Retrieves the storage locations available to Radarr.
+  Future<List<InstanceDiskSpace>> getDiskSpace() async {
+    final response = await _client.get('/diskspace');
+    return (response as List)
+        .map((item) => InstanceDiskSpace.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Retrieves available tags.

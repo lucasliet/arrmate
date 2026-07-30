@@ -6,22 +6,29 @@ class SeriesSort extends Equatable {
   final SeriesSortOption option;
   final bool isAscending;
   final SeriesFilter filter;
+  final String? rootFolderPath;
 
   const SeriesSort({
     this.option = SeriesSortOption.byAdded,
     this.isAscending = false,
     this.filter = SeriesFilter.all,
+    this.rootFolderPath,
   });
 
   SeriesSort copyWith({
     SeriesSortOption? option,
     bool? isAscending,
     SeriesFilter? filter,
+    String? rootFolderPath,
+    bool clearRootFolderPath = false,
   }) {
     return SeriesSort(
       option: option ?? this.option,
       isAscending: isAscending ?? this.isAscending,
       filter: filter ?? this.filter,
+      rootFolderPath: clearRootFolderPath
+          ? null
+          : rootFolderPath ?? this.rootFolderPath,
     );
   }
 
@@ -30,13 +37,17 @@ class SeriesSort extends Equatable {
       'option': option.name,
       'isAscending': isAscending,
       'filter': filter.name,
+      if (rootFolderPath != null) 'rootFolderPath': rootFolderPath,
     };
   }
 
   factory SeriesSort.fromJson(Map<String, dynamic> json) {
+    final optionName = json['option'] == 'byAiring'
+        ? SeriesSortOption.byNextAiring.name
+        : json['option'];
     return SeriesSort(
       option: SeriesSortOption.values.firstWhere(
-        (e) => e.name == json['option'],
+        (e) => e.name == optionName,
         orElse: () => SeriesSortOption.byAdded,
       ),
       isAscending: json['isAscending'] as bool? ?? false,
@@ -44,11 +55,25 @@ class SeriesSort extends Equatable {
         (e) => e.name == json['filter'],
         orElse: () => SeriesFilter.all,
       ),
+      rootFolderPath: _readRootFolderPath(json),
     );
   }
 
+  /// Returns whether [series] matches the selected filter and root folder.
+  bool matches(Series series) {
+    if (!_matchesRootFolder(series.rootFolderPath)) return false;
+    return filter.filter(series);
+  }
+
+  bool _matchesRootFolder(String? seriesRootFolderPath) {
+    if (rootFolderPath == null) return true;
+    if (seriesRootFolderPath == null) return false;
+    return _normalizePath(rootFolderPath!) ==
+        _normalizePath(seriesRootFolderPath);
+  }
+
   @override
-  List<Object?> get props => [option, isAscending, filter];
+  List<Object?> get props => [option, isAscending, filter, rootFolderPath];
 }
 
 /// Available options for sorting series.
@@ -57,7 +82,9 @@ enum SeriesSortOption {
   byYear,
   byAdded,
   byRating,
-  bySize;
+  bySize,
+  byNextAiring,
+  byPreviousAiring;
 
   String get label {
     switch (this) {
@@ -71,6 +98,10 @@ enum SeriesSortOption {
         return 'Rating';
       case SeriesSortOption.bySize:
         return 'Size';
+      case SeriesSortOption.byNextAiring:
+        return 'Next Airing';
+      case SeriesSortOption.byPreviousAiring:
+        return 'Previous Airing';
     }
   }
 
@@ -88,6 +119,10 @@ enum SeriesSortOption {
         return (a.statistics?.sizeOnDisk ?? 0).compareTo(
           b.statistics?.sizeOnDisk ?? 0,
         );
+      case SeriesSortOption.byNextAiring:
+        return _compareNullableDateTimeReversed(a.nextAiring, b.nextAiring);
+      case SeriesSortOption.byPreviousAiring:
+        return _compareNullableDateTime(a.previousAiring, b.previousAiring);
     }
   }
 }
@@ -98,7 +133,9 @@ enum SeriesFilter {
   monitored,
   unmonitored,
   ended,
-  continuing;
+  continuing,
+  missing,
+  dangling;
 
   String get label {
     switch (this) {
@@ -112,6 +149,10 @@ enum SeriesFilter {
         return 'Ended';
       case SeriesFilter.continuing:
         return 'Continuing';
+      case SeriesFilter.missing:
+        return 'Missing';
+      case SeriesFilter.dangling:
+        return 'Dangling';
     }
   }
 
@@ -127,6 +168,32 @@ enum SeriesFilter {
         return series.status == SeriesStatus.ended;
       case SeriesFilter.continuing:
         return series.status == SeriesStatus.continuing;
+      case SeriesFilter.missing:
+        return series.episodeCount > series.episodeFileCount;
+      case SeriesFilter.dangling:
+        return !series.monitored && series.episodeCount == 0;
     }
   }
+}
+
+String? _readRootFolderPath(Map<String, dynamic> json) {
+  final value = json['rootFolderPath'] ?? json['folder'];
+  if (value is! String || value.isEmpty || value == 'all') return null;
+  return value;
+}
+
+String _normalizePath(String path) {
+  return path.replaceFirst(RegExp(r'[/\\]+$'), '');
+}
+
+int _compareNullableDateTime(DateTime? a, DateTime? b) {
+  if (a == null) return b == null ? 0 : -1;
+  if (b == null) return 1;
+  return a.compareTo(b);
+}
+
+int _compareNullableDateTimeReversed(DateTime? a, DateTime? b) {
+  if (a == null) return b == null ? 0 : -1;
+  if (b == null) return 1;
+  return b.compareTo(a);
 }

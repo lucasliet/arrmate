@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
-import '../../providers/settings_provider.dart';
-import 'series_add_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
@@ -66,6 +66,13 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       useSafeArea: true,
       builder: (context) {
         final currentSort = ref.read(seriesSortProvider);
+        final rootFolders =
+            (ref.read(seriesProvider).valueOrNull ?? const <Series>[])
+                .map((series) => series.rootFolderPath)
+                .whereType<String>()
+                .toSet()
+                .toList()
+              ..sort();
         return SortBottomSheet<SeriesSortOption, SeriesFilter>(
           title: 'Sort & Filter',
           currentSort: currentSort.option,
@@ -90,6 +97,61 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                 .read(seriesSortProvider.notifier)
                 .update(currentSort.copyWith(filter: filter));
           },
+          additionalFilters: rootFolders.isEmpty
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ROOT FOLDER',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All folders'),
+                            selected: currentSort.rootFolderPath == null,
+                            onSelected: (selected) {
+                              if (!selected) return;
+                              ref
+                                  .read(seriesSortProvider.notifier)
+                                  .update(
+                                    currentSort.copyWith(
+                                      clearRootFolderPath: true,
+                                    ),
+                                  );
+                              Navigator.pop(context);
+                            },
+                          ),
+                          for (final path in rootFolders)
+                            FilterChip(
+                              label: Text(path),
+                              selected: currentSort.rootFolderPath == path,
+                              onSelected: (selected) {
+                                if (!selected) return;
+                                ref
+                                    .read(seriesSortProvider.notifier)
+                                    .update(
+                                      currentSort.copyWith(
+                                        rootFolderPath: path,
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
         );
       },
     );
@@ -101,7 +163,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   ) async {
     final handler = BatchActionsHandler(ref);
     final result = await action(handler);
-    if (result != null && context.mounted) {
+    if (!mounted || !context.mounted) return;
+    if (result != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result.message)));
@@ -282,13 +345,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       floatingActionButton: _isSelecting
           ? null
           : FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => const SeriesAddSheet(),
-                );
-              },
+              onPressed: () => context.push('/discover?type=series'),
               child: const Icon(Icons.add),
             ),
     );
@@ -300,6 +357,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       floating: false,
       title: const Text('Series'),
       actions: [
+        const InstanceSelector(type: InstanceType.sonarr),
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: () => setState(() => _isSearching = true),

@@ -39,10 +39,10 @@ class AddTorrentRequest extends Equatable {
 
   Map<String, String> toFormFields() {
     final fields = <String, String>{
-      if (urls != null) 'urls': urls!,
-      if (savepath != null) 'savepath': savepath!,
-      if (category != null) 'category': category!,
-      if (tags != null) 'tags': tags!,
+      'urls': ?urls,
+      'savepath': ?savepath,
+      'category': ?category,
+      'tags': ?tags,
       'paused': paused.toString(),
       'skip_checking': skipChecking.toString(),
     };

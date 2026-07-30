@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
 
+import '../../providers/cache_maintenance_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -353,9 +354,32 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.health_and_safety_outlined),
           title: const Text('Health'),
-          subtitle: const Text('System health and issues'),
+          subtitle: const Text('Server-reported Radarr and Sonarr alerts'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/health'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.network_check),
+          title: const Text('Connection Diagnostics'),
+          subtitle: const Text(
+            'Test endpoints, latency, request traces, and export a report',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/diagnostics'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.storage_outlined),
+          title: const Text('System Overview'),
+          subtitle: const Text('Storage, versions, and library sizes'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/system-overview'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.history_rounded),
+          title: const Text('Version History'),
+          subtitle: const Text('Changelog for every published release'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/version-history'),
         ),
         ListTile(
           leading: const Icon(Icons.high_quality_outlined),
@@ -387,7 +411,73 @@ class SettingsScreen extends ConsumerWidget {
             settings.minimumSeedingDays,
           ),
         ),
+        ListTile(
+          leading: const Icon(Icons.cleaning_services_outlined),
+          title: const Text('Clear image cache'),
+          subtitle: const Text('Free up cached poster and image storage'),
+          onTap: () => _clearImageCache(context, ref),
+        ),
+        ListTile(
+          leading: Icon(
+            Icons.restart_alt,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: Text(
+            'Reset app settings',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          subtitle: const Text(
+            'Restore appearance, view, and notification defaults',
+          ),
+          onTap: () => _confirmResetSettings(context, ref),
+        ),
       ],
+    );
+  }
+
+  Future<void> _clearImageCache(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final cacheService = ref.read(cacheMaintenanceProvider);
+    await cacheService.clearImageCache();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Image cache cleared')),
+    );
+  }
+
+  Future<void> _confirmResetSettings(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset app settings?'),
+        content: const Text(
+          'This restores appearance, view mode, and notification preferences '
+          'to their defaults. Configured instances are preserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await ref.read(settingsProvider.notifier).resetSettings();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('App settings reset to defaults')),
     );
   }
 

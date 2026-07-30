@@ -118,6 +118,12 @@ class Instance extends Equatable {
   /// Base URL of the instance.
   final String url;
 
+  /// Optional URL used when the primary [url] is unavailable.
+  final String? alternativeUrl;
+
+  /// Reachable URL selected for the current network.
+  final String? activeUrl;
+
   /// API Key for authentication.
   final String apiKey;
 
@@ -135,6 +141,8 @@ class Instance extends Equatable {
     this.mode = InstanceMode.normal,
     this.label = '',
     this.url = '',
+    this.alternativeUrl,
+    this.activeUrl,
     this.apiKey = '',
     this.headers = const [],
     this.rootFolders = const [],
@@ -157,6 +165,7 @@ class Instance extends Equatable {
       ),
       label: json['label'] as String,
       url: json['url'] as String,
+      alternativeUrl: json['alternativeUrl'] as String?,
       apiKey: json['apiKey'] as String,
       headers:
           (json['headers'] as List<dynamic>?)
@@ -190,6 +199,7 @@ class Instance extends Equatable {
       'mode': mode.name,
       'label': label,
       'url': url,
+      if (alternativeUrl != null) 'alternativeUrl': alternativeUrl,
       'apiKey': apiKey,
       'headers': headers.map((e) => e.toJson()).toList(),
       'rootFolders': rootFolders.map((e) => e.toJson()).toList(),
@@ -211,7 +221,24 @@ class Instance extends Equatable {
     return map;
   }
 
-  Uri get baseUri => Uri.parse(url);
+  /// URL selected for API and media requests.
+  String get effectiveUrl => activeUrl ?? url;
+
+  /// Ordered unique URLs that can serve requests for this instance.
+  List<String> get connectionUrls {
+    final urls = <String>[];
+    for (final candidate in [effectiveUrl, url, alternativeUrl]) {
+      final normalized = candidate?.trim().replaceFirst(RegExp(r'/+$'), '');
+      if (normalized != null &&
+          normalized.isNotEmpty &&
+          !urls.contains(normalized)) {
+        urls.add(normalized);
+      }
+    }
+    return urls.isEmpty ? [url.trim()] : urls;
+  }
+
+  Uri get baseUri => Uri.parse(effectiveUrl);
 
   /// Determines the appropriate timeout duration for a given operation.
   ///
@@ -235,6 +262,8 @@ class Instance extends Equatable {
     InstanceMode? mode,
     String? label,
     String? url,
+    String? alternativeUrl,
+    String? activeUrl,
     String? apiKey,
     List<InstanceHeader>? headers,
     List<RootFolder>? rootFolders,
@@ -249,6 +278,8 @@ class Instance extends Equatable {
       mode: mode ?? this.mode,
       label: label ?? this.label,
       url: url ?? this.url,
+      alternativeUrl: alternativeUrl ?? this.alternativeUrl,
+      activeUrl: activeUrl ?? this.activeUrl,
       apiKey: apiKey ?? this.apiKey,
       headers: headers ?? this.headers,
       rootFolders: rootFolders ?? this.rootFolders,
@@ -266,6 +297,8 @@ class Instance extends Equatable {
     mode,
     label,
     url,
+    alternativeUrl,
+    activeUrl,
     apiKey,
     headers,
     rootFolders,

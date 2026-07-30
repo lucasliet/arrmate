@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../domain/models/models.dart';
+import '../../../widgets/queue_status_indicator.dart';
 
 /// A list tile widget for displaying series details in a list view.
 class SeriesListTile extends StatelessWidget {
@@ -196,6 +197,8 @@ class SeriesListTile extends StatelessWidget {
             ),
         const SizedBox(width: 8),
         _buildStatusChip(context),
+        const SizedBox(width: 4),
+        QueueStatusIndicator(seriesId: series.id),
       ],
     );
   }

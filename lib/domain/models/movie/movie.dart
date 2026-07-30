@@ -50,12 +50,14 @@ class MovieRatings extends Equatable {
   final MovieRating? tmdb;
   final MovieRating? metacritic;
   final MovieRating? rottenTomatoes;
+  final MovieRating? trakt;
 
   const MovieRatings({
     this.imdb,
     this.tmdb,
     this.metacritic,
     this.rottenTomatoes,
+    this.trakt,
   });
 
   factory MovieRatings.fromJson(Map<String, dynamic> json) {
@@ -72,11 +74,14 @@ class MovieRatings extends Equatable {
       rottenTomatoes: json['rottenTomatoes'] != null
           ? MovieRating.fromJson(json['rottenTomatoes'] as Map<String, dynamic>)
           : null,
+      trakt: json['trakt'] != null
+          ? MovieRating.fromJson(json['trakt'] as Map<String, dynamic>)
+          : null,
     );
   }
 
   @override
-  List<Object?> get props => [imdb, tmdb, metacritic, rottenTomatoes];
+  List<Object?> get props => [imdb, tmdb, metacritic, rottenTomatoes, trakt];
 }
 
 /// Represents a Movie entity in Radarr.
@@ -123,6 +128,7 @@ class Movie extends Equatable {
   final List<int> tags;
   final List<MediaImage> images;
   final MediaFile? movieFile;
+  final MovieAddOptions? addOptions;
 
   const Movie({
     this.guid,
@@ -160,6 +166,7 @@ class Movie extends Equatable {
     this.tags = const [],
     this.images = const [],
     this.movieFile,
+    this.addOptions,
   });
 
   /// Returns the internal ID, using [guid] or falling back to [tmdbId].
@@ -290,6 +297,9 @@ class Movie extends Equatable {
       movieFile: json['movieFile'] != null
           ? MediaFile.fromJson(json['movieFile'] as Map<String, dynamic>)
           : null,
+      addOptions: json['addOptions'] != null
+          ? MovieAddOptions.fromJson(json['addOptions'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -329,6 +339,7 @@ class Movie extends Equatable {
       'tags': tags,
       'images': images.map((e) => e.toJson()).toList(),
       if (movieFile != null) 'movieFile': movieFile!.toJson(),
+      if (addOptions != null) 'addOptions': addOptions!.toJson(),
     };
   }
 
@@ -368,6 +379,7 @@ class Movie extends Equatable {
     List<int>? tags,
     List<MediaImage>? images,
     MediaFile? movieFile,
+    MovieAddOptions? addOptions,
   }) {
     return Movie(
       guid: guid ?? this.guid,
@@ -405,6 +417,7 @@ class Movie extends Equatable {
       tags: tags ?? this.tags,
       images: images ?? this.images,
       movieFile: movieFile ?? this.movieFile,
+      addOptions: addOptions ?? this.addOptions,
     );
   }
 
@@ -445,5 +458,47 @@ class Movie extends Equatable {
     tags,
     images,
     movieFile,
+    addOptions,
   ];
+}
+
+/// Options used when adding a new movie.
+class MovieAddOptions extends Equatable {
+  final MovieMonitorType monitor;
+
+  const MovieAddOptions({required this.monitor});
+
+  factory MovieAddOptions.fromJson(Map<String, dynamic> json) {
+    return MovieAddOptions(
+      monitor: MovieMonitorType.values.firstWhere(
+        (value) => value.name == json['monitor'],
+        orElse: () => MovieMonitorType.movieOnly,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'monitor': monitor.name};
+  }
+
+  @override
+  List<Object?> get props => [monitor];
+}
+
+/// Defines what Radarr should monitor when adding a movie.
+enum MovieMonitorType {
+  movieOnly,
+  movieAndCollection,
+  none;
+
+  String get label {
+    switch (this) {
+      case MovieMonitorType.movieOnly:
+        return 'Movie';
+      case MovieMonitorType.movieAndCollection:
+        return 'Movie + Collection';
+      case MovieMonitorType.none:
+        return 'None';
+    }
+  }
 }

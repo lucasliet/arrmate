@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../providers/instances_provider.dart';
+import '../../../widgets/instance_origin_badge.dart';
+import '../../../widgets/queue_status_indicator.dart';
 import '../providers/calendar_provider.dart';
 
 /// A card widget displaying a single calendar event with poster and details.
-class CalendarItem extends StatelessWidget {
+class CalendarItem extends ConsumerWidget {
   /// The calendar event to display.
   final CalendarEvent event;
 
   const CalendarItem({super.key, required this.event});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isMovie = event.isMovie;
     final color = event.type.getColor(context);
+    final posterUrl = event.movie?.remotePoster ?? event.series?.remotePoster;
 
     return Card(
       elevation: 0,
@@ -28,23 +32,16 @@ class CalendarItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(radiusMd),
       ),
       child: InkWell(
-        onTap: () {
-          if (isMovie && event.movie != null) {
-            context.go('/movies/${event.movie!.id}');
-          } else if (!isMovie && event.episode?.seriesId != null) {
-            // Ideally go to episode details, but series details for now
-            context.go('/series/${event.episode!.seriesId}');
-          }
-        },
+        onTap: () => _openDetails(context, ref),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: 70,
               height: 100,
-              child: event.movie?.remotePoster != null
+              child: posterUrl != null
                   ? CachedNetworkImage(
-                      imageUrl: event.movie!.remotePoster!,
+                      imageUrl: posterUrl,
                       fit: BoxFit.cover,
                       errorWidget: (context, url, error) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
@@ -91,30 +88,48 @@ class CalendarItem extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: color.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(event.type.icon, size: 12, color: color),
-                          const SizedBox(width: 4),
-                          Text(
-                            event.type.label,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: color,
-                              fontWeight: FontWeight.bold,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.3),
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(event.type.icon, size: 12, color: color),
+                              const SizedBox(width: 4),
+                              Text(
+                                event.type.label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        InstanceOriginBadge(
+                          instanceId: event.instanceId,
+                          instanceType: event.instanceType,
+                        ),
+                        QueueStatusIndicator(
+                          instanceType: event.instanceType,
+                          instanceId: event.instanceId,
+                          movieId: event.movie?.guid,
+                          seriesId: event.series?.id,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -134,5 +149,44 @@ class CalendarItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openDetails(BuildContext context, WidgetRef ref) async {
+    try {
+      final instanceId = event.instanceId;
+      final instanceType = event.instanceType;
+      if (instanceId != null && instanceType != null) {
+        await ref
+            .read(instancesProvider.notifier)
+            .selectInstance(instanceType, instanceId);
+      }
+      if (!context.mounted) {
+        return;
+      }
+      if (event.isMovie && event.movie != null) {
+        context.go('/movies/${event.movie!.id}');
+      } else if (event.isEpisode && event.episode?.seriesId != null) {
+        final seriesId = event.episode!.seriesId;
+        final episode = event.episode;
+        if (episode != null &&
+            episode.seasonNumber >= 0 &&
+            episode.episodeNumber > 0) {
+          context.go(
+            '/series/$seriesId/season/${episode.seasonNumber}/episode/${episode.id}',
+          );
+        } else if (episode?.seasonNumber != null) {
+          context.go('/series/$seriesId/season/${episode!.seasonNumber}');
+        } else {
+          context.go('/series/$seriesId');
+        }
+      }
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open item: $error')));
+    }
   }
 }

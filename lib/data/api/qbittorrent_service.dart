@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
+import '../../core/network/request_diagnostics.dart';
+import '../../core/network/secure_log_interceptor.dart';
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 
@@ -27,13 +29,16 @@ class QBittorrentService {
   QBittorrentService(this.instance)
     : _dio = Dio(
         BaseOptions(
-          baseUrl: instance.url,
+          baseUrl: instance.effectiveUrl,
           connectTimeout: instance.timeout(InstanceTimeout.normal),
           receiveTimeout: instance.timeout(InstanceTimeout.normal),
           validateStatus: (status) => status != null && status < 500,
           headers: {for (final h in instance.headers) h.name: h.value},
         ),
-      );
+      ) {
+    _dio.interceptors.add(SecureLogInterceptor());
+    _dio.interceptors.add(RequestDiagnosticsInterceptor(source: instance.id));
+  }
 
   /// Authenticates with the qBittorrent API.
   ///

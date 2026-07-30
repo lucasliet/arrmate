@@ -68,6 +68,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
                   episodeCode: 'Season ${season.seasonNumber}',
                   seriesId: series.id,
                   seasonNumber: season.seasonNumber,
+                  originalLanguage: series.originalLanguage?.name,
                 ),
               );
             },
@@ -399,6 +400,15 @@ class _EpisodeTile extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
+            icon: Icon(
+              episode.monitored ? Icons.bookmark : Icons.bookmark_border,
+            ),
+            tooltip: episode.monitored
+                ? 'Unmonitor episode'
+                : 'Monitor episode',
+            onPressed: () => _handleMonitoring(context, ref),
+          ),
+          IconButton(
             icon: const Icon(Icons.travel_explore),
             tooltip: 'Automatic Search',
             onPressed: () => _handleAutomaticSearch(context, ref),
@@ -415,6 +425,7 @@ class _EpisodeTile extends ConsumerWidget {
                   isMovie: false,
                   title: '${series.title} - ${episode.episodeLabel}',
                   episodeCode: episode.episodeLabel,
+                  originalLanguage: series.originalLanguage?.name,
                 ),
               );
             },
@@ -429,6 +440,32 @@ class _EpisodeTile extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleMonitoring(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(seriesControllerProvider(series.id))
+          .setEpisodeMonitoring(episode, !episode.monitored);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              episode.monitored ? 'Episode unmonitored' : 'Episode monitored',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update episode: $error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleAutomaticSearch(

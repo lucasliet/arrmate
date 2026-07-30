@@ -67,7 +67,7 @@ class TorrentFileItem extends ConsumerWidget {
                           : TextDecoration.lineThrough,
                       color: isDownloading
                           ? colorScheme.onSurface
-                          : colorScheme.onSurface.withOpacity(0.5),
+                          : colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -107,13 +107,13 @@ class TorrentFileItem extends ConsumerWidget {
                             color: _getPriorityColor(
                               file.priority,
                               isDark,
-                            ).withOpacity(0.1),
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: _getPriorityColor(
                                 file.priority,
                                 isDark,
-                              ).withOpacity(0.2),
+                              ).withValues(alpha: 0.2),
                             ),
                           ),
                           child: Row(

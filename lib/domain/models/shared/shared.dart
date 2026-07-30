@@ -12,3 +12,4 @@ export 'extra_file.dart';
 export 'system_log.dart';
 export 'health_check.dart';
 export 'history.dart';
+export 'release_query.dart';

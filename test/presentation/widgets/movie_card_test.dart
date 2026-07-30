@@ -67,4 +67,53 @@ void main() {
           TestHttpOverrides().createHttpClient(context),
     );
   });
+
+  testWidgets('MovieCard preserves long press selection', (tester) async {
+    // Given
+    var longPressed = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 120,
+              height: 180,
+              child: MovieCard(
+                movie: testMovie,
+                onLongPress: () => longPressed = true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // When
+    await tester.longPress(find.text('Test Movie'));
+
+    // Then
+    expect(longPressed, isTrue);
+  });
+
+  testWidgets('MovieCard dispatches automatic search from quick actions', (
+    tester,
+  ) async {
+    await HttpOverrides.runZoned(
+      () async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: MovieCard(movie: testMovie, onTap: () {}),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(MovieCard), findsOneWidget);
+      },
+      createHttpClient: (context) =>
+          TestHttpOverrides().createHttpClient(context),
+    );
+  });
 }

@@ -6,22 +6,29 @@ class MovieSort extends Equatable {
   final MovieSortOption option;
   final bool isAscending;
   final MovieFilter filter;
+  final String? rootFolderPath;
 
   const MovieSort({
     this.option = MovieSortOption.byAdded,
     this.isAscending = false,
     this.filter = MovieFilter.all,
+    this.rootFolderPath,
   });
 
   MovieSort copyWith({
     MovieSortOption? option,
     bool? isAscending,
     MovieFilter? filter,
+    String? rootFolderPath,
+    bool clearRootFolderPath = false,
   }) {
     return MovieSort(
       option: option ?? this.option,
       isAscending: isAscending ?? this.isAscending,
       filter: filter ?? this.filter,
+      rootFolderPath: clearRootFolderPath
+          ? null
+          : rootFolderPath ?? this.rootFolderPath,
     );
   }
 
@@ -30,6 +37,7 @@ class MovieSort extends Equatable {
       'option': option.name,
       'isAscending': isAscending,
       'filter': filter.name,
+      if (rootFolderPath != null) 'rootFolderPath': rootFolderPath,
     };
   }
 
@@ -44,11 +52,25 @@ class MovieSort extends Equatable {
         (e) => e.name == json['filter'],
         orElse: () => MovieFilter.all,
       ),
+      rootFolderPath: _readRootFolderPath(json),
     );
   }
 
+  /// Returns whether [movie] matches the selected filter and root folder.
+  bool matches(Movie movie) {
+    if (!_matchesRootFolder(movie.rootFolderPath)) return false;
+    return filter.filter(movie);
+  }
+
+  bool _matchesRootFolder(String? movieRootFolderPath) {
+    if (rootFolderPath == null) return true;
+    if (movieRootFolderPath == null) return false;
+    return _normalizePath(rootFolderPath!) ==
+        _normalizePath(movieRootFolderPath);
+  }
+
   @override
-  List<Object?> get props => [option, isAscending, filter];
+  List<Object?> get props => [option, isAscending, filter, rootFolderPath];
 }
 
 /// Available options for sorting movies.
@@ -58,7 +80,9 @@ enum MovieSortOption {
   byAdded,
   byRating,
   bySize,
-  byRuntime;
+  byRuntime,
+  byGrabbed,
+  byRelease;
 
   String get label {
     switch (this) {
@@ -74,6 +98,10 @@ enum MovieSortOption {
         return 'Size';
       case MovieSortOption.byRuntime:
         return 'Runtime';
+      case MovieSortOption.byGrabbed:
+        return 'Grabbed';
+      case MovieSortOption.byRelease:
+        return 'Digital Release';
     }
   }
 
@@ -91,6 +119,13 @@ enum MovieSortOption {
         return (a.sizeOnDisk ?? 0).compareTo(b.sizeOnDisk ?? 0);
       case MovieSortOption.byRuntime:
         return a.runtime.compareTo(b.runtime);
+      case MovieSortOption.byGrabbed:
+        return _compareNullableDateTime(
+          a.movieFile?.dateAdded,
+          b.movieFile?.dateAdded,
+        );
+      case MovieSortOption.byRelease:
+        return _compareNullableDateTime(a.digitalRelease, b.digitalRelease);
     }
   }
 }
@@ -101,7 +136,9 @@ enum MovieFilter {
   monitored,
   unmonitored,
   missing,
-  downloaded;
+  downloaded,
+  wanted,
+  dangling;
 
   String get label {
     switch (this) {
@@ -115,6 +152,10 @@ enum MovieFilter {
         return 'Missing';
       case MovieFilter.downloaded:
         return 'Downloaded';
+      case MovieFilter.wanted:
+        return 'Wanted';
+      case MovieFilter.dangling:
+        return 'Dangling';
     }
   }
 
@@ -130,6 +171,26 @@ enum MovieFilter {
         return movie.monitored && !movie.isDownloaded && movie.isAvailable;
       case MovieFilter.downloaded:
         return movie.isDownloaded;
+      case MovieFilter.wanted:
+        return movie.monitored && !movie.isDownloaded;
+      case MovieFilter.dangling:
+        return !movie.monitored && !movie.isDownloaded;
     }
   }
+}
+
+String? _readRootFolderPath(Map<String, dynamic> json) {
+  final value = json['rootFolderPath'] ?? json['folder'];
+  if (value is! String || value.isEmpty || value == 'all') return null;
+  return value;
+}
+
+String _normalizePath(String path) {
+  return path.replaceFirst(RegExp(r'[/\\]+$'), '');
+}
+
+int _compareNullableDateTime(DateTime? a, DateTime? b) {
+  if (a == null) return b == null ? 0 : -1;
+  if (b == null) return 1;
+  return a.compareTo(b);
 }

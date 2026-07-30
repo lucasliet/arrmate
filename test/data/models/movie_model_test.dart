@@ -85,5 +85,29 @@ void main() {
       expect(movie.studio, null);
       expect(movie.runtime, 0);
     });
+
+    test('should preserve movie monitor add options', () {
+      // Given
+      final json = {
+        'tmdbId': 67890,
+        'title': 'Lookup Movie',
+        'year': 2024,
+        'monitored': true,
+        'isAvailable': false,
+        'status': 'announced',
+        'added': '0001-01-01T00:00:00Z',
+        'qualityProfileId': 0,
+        'images': <dynamic>[],
+        'addOptions': {'monitor': 'movieAndCollection'},
+      };
+
+      // When
+      final movie = Movie.fromJson(json);
+
+      // Then
+      expect(movie.exists, isFalse);
+      expect(movie.addOptions?.monitor, MovieMonitorType.movieAndCollection);
+      expect(movie.toJson()['addOptions'], {'monitor': 'movieAndCollection'});
+    });
   });
 }

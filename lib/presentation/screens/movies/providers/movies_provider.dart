@@ -56,7 +56,7 @@ final filteredMoviesProvider = Provider<AsyncValue<List<Movie>>>((ref) {
       }).toList();
     }
 
-    filtered = filtered.where((m) => sort.filter.filter(m)).toList();
+    filtered = filtered.where(sort.matches).toList();
 
     filtered.sort((a, b) {
       final comparison = sort.option.compare(a, b);

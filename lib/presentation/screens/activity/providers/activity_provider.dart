@@ -2,8 +2,28 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import '../../../providers/instances_provider.dart';
+import '../../../widgets/instance_load_failure_banner.dart';
+
+typedef _QueuePageLoader = Future<QueueItems> Function(int page, int pageSize);
+
+class _InstanceQueueResult {
+  final List<QueueItem> items;
+  final InstanceLoadFailure? failure;
+
+  const _InstanceQueueResult({required this.items, this.failure});
+}
+
+class _QueueFetchResult {
+  final List<QueueItem> items;
+  final List<InstanceLoadFailure> failures;
+
+  const _QueueFetchResult({required this.items, required this.failures});
+}
 
 // Queue Provider
 /// Provider for fetching and managing the download queue, auto-refreshes every 5 seconds.
@@ -12,48 +32,120 @@ final queueProvider =
       QueueNotifier.new,
     );
 
+/// Exposes per-instance queue failures so the UI can surface partial data
+/// alongside a retry banner instead of treating it as an empty queue.
+final queueFailuresProvider = Provider.autoDispose<List<InstanceLoadFailure>>((
+  ref,
+) {
+  ref.watch(queueProvider);
+  return ref.watch(queueProvider.notifier).failures;
+});
+
 /// Notifier to manage the download queue state.
 class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   Timer? _timer;
+  bool _isFetching = false;
+  bool _refreshPending = false;
+  Completer<void>? _activeFetchCycle;
+  List<InstanceLoadFailure> _failures = const [];
+  int _generation = 0;
+
+  /// Returns the per-instance failures from the latest fetch, so the UI can
+  /// distinguish partial data from a genuinely empty queue.
+  List<InstanceLoadFailure> get failures => _failures;
 
   @override
   Future<List<QueueItem>> build() async {
-    // Poll every 5 seconds
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => refresh());
+    final generation = ++_generation;
+    _refreshPending = false;
+    _failures = const [];
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_isFetching) return;
+      unawaited(refresh());
+    });
     ref.onDispose(() => _timer?.cancel());
 
-    return _fetchQueue();
+    final result = await _fetchUntilCurrent(generation);
+    if (generation == _generation) {
+      _failures = result.failures;
+    }
+    return result.items;
   }
 
-  Future<List<QueueItem>> _fetchQueue() async {
-    final movieRepo = ref.watch(movieRepositoryProvider);
-    final seriesRepo = ref.watch(seriesRepositoryProvider);
-
-    final items = <QueueItem>[];
-
-    if (movieRepo != null) {
-      try {
-        final queue = await movieRepo.getQueue();
-        items.addAll(queue.records);
-      } catch (e) {
-        /*ignore*/
+  Future<_QueueFetchResult> _fetchUntilCurrent(int generation) async {
+    final cycle = Completer<void>();
+    final previousCycle = _activeFetchCycle;
+    _activeFetchCycle = cycle;
+    if (previousCycle != null && !previousCycle.isCompleted) {
+      previousCycle.complete();
+    }
+    _isFetching = true;
+    try {
+      while (true) {
+        final result = await _fetchQueue();
+        if (generation != _generation) {
+          return result;
+        }
+        if (!_refreshPending) {
+          return result;
+        }
+        _refreshPending = false;
+      }
+    } finally {
+      if (generation == _generation) {
+        _isFetching = false;
+      }
+      if (identical(_activeFetchCycle, cycle)) {
+        _activeFetchCycle = null;
+      }
+      if (!cycle.isCompleted) {
+        cycle.complete();
       }
     }
+  }
 
-    if (seriesRepo != null) {
-      try {
-        final queue = await seriesRepo.getQueue();
-        items.addAll(queue.records);
-      } catch (e) {
-        /*ignore*/
-      }
+  Future<_QueueFetchResult> _fetchQueue() async {
+    final radarrInstances = ref.watch(
+      instancesByTypeProvider(InstanceType.radarr),
+    );
+    final sonarrInstances = ref.watch(
+      instancesByTypeProvider(InstanceType.sonarr),
+    );
+    final requests = <Future<_InstanceQueueResult>>[];
+
+    for (final instance in radarrInstances) {
+      final repository = ref.watch(
+        movieRepositoryForInstanceProvider(instance),
+      );
+      requests.add(
+        _fetchInstanceQueue(
+          instance,
+          (page, pageSize) =>
+              repository.getQueue(page: page, pageSize: pageSize),
+        ),
+      );
     }
 
-    // Sort by timeleft? or added?
-    // Usually users want to see what's finishing soonest first, or what's stalling.
-    // Let's sort by timeleft (estimatedCompletionTime).
-    // Note: timeleft is a String in some models or calculated?
-    // QueueItem has `timeleft` string usually, but `estimatedCompletionTime` DateTime.
+    for (final instance in sonarrInstances) {
+      final repository = ref.watch(
+        seriesRepositoryForInstanceProvider(instance),
+      );
+      requests.add(
+        _fetchInstanceQueue(
+          instance,
+          (page, pageSize) =>
+              repository.getQueue(page: page, pageSize: pageSize),
+        ),
+      );
+    }
+
+    final results = await Future.wait(requests);
+    final items = results.expand((result) => result.items).toList();
+    final failures = results
+        .map((result) => result.failure)
+        .whereType<InstanceLoadFailure>()
+        .toList();
 
     items.sort((a, b) {
       if (a.estimatedCompletionTime == null &&
@@ -69,83 +161,124 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       return a.estimatedCompletionTime!.compareTo(b.estimatedCompletionTime!);
     });
 
-    return items;
+    return _QueueFetchResult(items: items, failures: failures);
+  }
+
+  Future<_InstanceQueueResult> _fetchInstanceQueue(
+    Instance instance,
+    _QueuePageLoader loadPage,
+  ) async {
+    final itemsById = <int, QueueItem>{};
+    var fetchedRecordCount = 0;
+    var page = 1;
+
+    try {
+      while (true) {
+        final queue = await loadPage(page, ApiConstants.queuePageSize);
+        fetchedRecordCount += queue.records.length;
+        for (final item in queue.records) {
+          itemsById[item.id] = item.copyWith(
+            instanceId: instance.id,
+            instanceType: instance.type,
+          );
+        }
+        if (fetchedRecordCount >= queue.totalRecords || queue.records.isEmpty) {
+          return _InstanceQueueResult(items: itemsById.values.toList());
+        }
+        page++;
+      }
+    } catch (error, stackTrace) {
+      logger.error(
+        '[QueueProvider] Failed to fetch queue for instance ${instance.id}',
+        error,
+        stackTrace,
+      );
+      return _InstanceQueueResult(
+        items: itemsById.values.toList(),
+        failure: InstanceLoadFailure(
+          instanceId: instance.id,
+          instanceType: instance.type,
+          instanceLabel: instance.label,
+          message: 'Queue data could not be loaded.',
+        ),
+      );
+    }
   }
 
   /// Manually refreshes the queue.
+  ///
+  /// Uses single-flight coalescing: if a fetch is already in flight, this
+  /// call marks a refresh as pending instead of starting a parallel fetch,
+  /// preventing a stale response from overwriting a newer one. The pending
+  /// refresh always runs after the current fetch completes, so a refresh
+  /// triggered right after a mutation (e.g. removing an item) is never lost.
   Future<void> refresh() async {
-    // Silent refresh if already loaded?
-    // Using ref.invalidateSelf() triggers loading state. W
-    // We might want to keep previous state while updating for polling.
-    // For now, standard invalidate.
-    if (state.isLoading) return;
-
-    // We can manually update state to new value to avoid loading flicker
-    state = await AsyncValue.guard(() => _fetchQueue());
+    if (_isFetching) {
+      _refreshPending = true;
+      while (_isFetching) {
+        final cycle = _activeFetchCycle;
+        if (cycle == null) return;
+        await cycle.future;
+      }
+      return;
+    }
+    final generation = ++_generation;
+    try {
+      final result = await _fetchUntilCurrent(generation);
+      if (generation != _generation) return;
+      _failures = result.failures;
+      state = AsyncValue.data(result.items);
+    } catch (error, stackTrace) {
+      if (generation != _generation) return;
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   /// Removes an item from the queue with optional parameters.
   Future<bool> removeQueueItem(
-    int id, {
+    QueueItem item, {
     bool removeFromClient = true,
     bool blocklist = false,
     bool skipRedownload = false,
   }) async {
-    final movieRepo = ref.read(movieRepositoryProvider);
-    final seriesRepo = ref.read(seriesRepositoryProvider);
-
-    bool success = false;
-    Object? lastError;
-
-    try {
-      if (movieRepo != null) {
-        await movieRepo.deleteQueueItem(
-          id,
-          removeFromClient: removeFromClient,
-          blocklist: blocklist,
-          skipRedownload: skipRedownload,
-        );
-        success = true;
-      }
-    } catch (e) {
-      lastError = e;
+    final instanceId = item.instanceId;
+    final instanceType = item.instanceType;
+    if (instanceId == null || instanceType == null) {
+      throw StateError('Queue item origin is missing');
     }
 
-    if (!success && seriesRepo != null) {
-      try {
-        await seriesRepo.deleteQueueItem(
-          id,
-          removeFromClient: removeFromClient,
-          blocklist: blocklist,
-          skipRedownload: skipRedownload,
-        );
-        success = true;
-      } catch (e) {
-        lastError = e;
-      }
+    final instance = ref
+        .read(instancesByTypeProvider(instanceType))
+        .where((candidate) => candidate.id == instanceId)
+        .firstOrNull;
+    if (instance == null) {
+      throw StateError('Queue item instance is no longer configured');
     }
 
-    if (success) {
-      await refresh();
-      return true;
-    } else {
-      if (lastError != null) {
-        throw lastError;
-      }
-      return false;
+    switch (instance.type) {
+      case InstanceType.radarr:
+        await ref
+            .read(movieRepositoryForInstanceProvider(instance))
+            .deleteQueueItem(
+              item.id,
+              removeFromClient: removeFromClient,
+              blocklist: blocklist,
+              skipRedownload: skipRedownload,
+            );
+      case InstanceType.sonarr:
+        await ref
+            .read(seriesRepositoryForInstanceProvider(instance))
+            .deleteQueueItem(
+              item.id,
+              removeFromClient: removeFromClient,
+              blocklist: blocklist,
+              skipRedownload: skipRedownload,
+            );
+      case InstanceType.qbittorrent:
+        throw StateError('qBittorrent items are not part of the Arr queue');
     }
+
+    await refresh();
+    return true;
   }
-}
-
-// History Provider (Placeholder for now, usually paginated)
-final historyProvider = FutureProvider.autoDispose<List<HistoryItem>>((
-  ref,
-) async {
-  // History API is usually /history
-  // Not yet fully implemented in repositories?
-  return [];
-});
-
-class HistoryItem {
-  // Skeleton
 }

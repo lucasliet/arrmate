@@ -58,8 +58,11 @@ class MovieRepositoryImpl implements MovieRepository {
   }
 
   @override
-  Future<List<Movie>> getCalendar({DateTime? start, DateTime? end}) =>
-      _api.getCalendar(start: start, end: end);
+  Future<List<Movie>> getCalendar({
+    DateTime? start,
+    DateTime? end,
+    bool unmonitored = true,
+  }) => _api.getCalendar(start: start, end: end, unmonitored: unmonitored);
 
   @override
   Future<QueueItems> getQueue({

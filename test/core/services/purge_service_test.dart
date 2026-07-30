@@ -50,13 +50,13 @@ HistoryEvent _historyEvent({
     'eventType': eventType,
     'date': now,
     'movieId': movieId,
-    if (seriesId != null) 'seriesId': seriesId,
-    if (episodeId != null) 'episodeId': episodeId,
-    if (downloadId != null) 'downloadId': downloadId,
+    'seriesId': ?seriesId,
+    'episodeId': ?episodeId,
+    'downloadId': ?downloadId,
     'quality': {
       'quality': {'id': 1, 'name': 'HD'},
     },
-    if (data != null) 'data': data,
+    'data': ?data,
   });
 }
 
@@ -69,13 +69,13 @@ QueueItem _queueItem({
 }) {
   return QueueItem.fromJson({
     'id': id,
-    if (movieId != null) 'movieId': movieId,
-    if (seriesId != null) 'seriesId': seriesId,
+    'movieId': ?movieId,
+    'seriesId': ?seriesId,
     'title': 'Test Item',
     'protocol': 'torrent',
     'sizeleft': 0,
     'status': 'queued',
-    if (downloadId != null) 'downloadId': downloadId,
+    'downloadId': ?downloadId,
   });
 }
 

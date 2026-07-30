@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/models/models.dart';
 import '../../../core/utils/formatters.dart';
+import '../../providers/instances_provider.dart';
+import '../../widgets/instance_load_failure_banner.dart';
+import '../../widgets/instance_origin_badge.dart';
 import 'providers/history_provider.dart';
 
 /// Displays a list of recent history events (grabs, imports, failures).
@@ -11,58 +14,212 @@ class HistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(activityHistoryProvider);
+    final historyAsync = ref.watch(filteredActivityHistoryProvider);
+    final failures = ref.watch(historyFailuresProvider);
 
-    return historyAsync.when(
-      data: (events) {
-        if (events.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.history, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('No history events'),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () => ref.read(activityHistoryProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: events.length + 1,
-            itemBuilder: (context, index) {
-              if (index == events.length) {
-                return _LoadMoreButton(
-                  hasMore: ref.watch(activityHistoryProvider.notifier).hasMore,
-                  onPressed: () =>
-                      ref.read(activityHistoryProvider.notifier).loadMore(),
-                );
+    return Column(
+      children: [
+        const _HistoryFilterBar(),
+        if (failures.isNotEmpty)
+          InstanceLoadFailureBanner(
+            failures: failures,
+            onRetry: () => ref.read(activityHistoryProvider.notifier).refresh(),
+          ),
+        Expanded(
+          child: historyAsync.when(
+            data: (events) {
+              if (events.isEmpty) {
+                return const _HistoryEmptyState();
               }
 
-              return _HistoryEventCard(event: events[index]);
+              return RefreshIndicator(
+                onRefresh: () =>
+                    ref.read(activityHistoryProvider.notifier).refresh(),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: events.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == events.length) {
+                      return _LoadMoreButton(
+                        hasMore: ref
+                            .watch(activityHistoryProvider.notifier)
+                            .hasMore,
+                        onPressed: () => ref
+                            .read(activityHistoryProvider.notifier)
+                            .loadMore(),
+                      );
+                    }
+
+                    return _HistoryEventCard(event: events[index]);
+                  },
+                ),
+              );
             },
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('Error: $error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(activityHistoryProvider),
-              child: const Text('Retry'),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $error'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(activityHistoryProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistoryEmptyState extends StatelessWidget {
+  const _HistoryEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.history, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text('No history events'),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryFilterBar extends ConsumerWidget {
+  const _HistoryFilterBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedInstance = ref.watch(historyInstanceFilterProvider);
+    final selectedEventType = ref.watch(historyEventTypeFilterProvider);
+    final instances = [
+      ...ref.watch(instancesByTypeProvider(InstanceType.radarr)),
+      ...ref.watch(instancesByTypeProvider(InstanceType.sonarr)),
+    ];
+    final hasActiveFilters =
+        selectedInstance != null || selectedEventType != null;
+
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _InstanceFilterChip(
+              instances: instances,
+              selectedInstance: selectedInstance,
+            ),
+            _EventTypeFilterChip(selectedEventType: selectedEventType),
+            if (hasActiveFilters)
+              ActionChip(
+                label: const Text('Clear'),
+                avatar: const Icon(Icons.clear, size: 18),
+                onPressed: () {
+                  ref.read(historyInstanceFilterProvider.notifier).state = null;
+                  ref.read(historyEventTypeFilterProvider.notifier).state =
+                      null;
+                },
+              ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InstanceFilterChip extends ConsumerWidget {
+  final List<Instance> instances;
+  final String? selectedInstance;
+
+  const _InstanceFilterChip({
+    required this.instances,
+    required this.selectedInstance,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final label = selectedInstance == null
+        ? 'All instances'
+        : instances
+                  .where((instance) => instance.id == selectedInstance)
+                  .firstOrNull
+                  ?.label ??
+              selectedInstance!;
+
+    return PopupMenuButton<String?>(
+      child: InputChip(
+        label: Text(label),
+        avatar: const Icon(Icons.dns_outlined, size: 18),
+        selected: selectedInstance != null,
+        onDeleted: selectedInstance == null
+            ? null
+            : () =>
+                  ref.read(historyInstanceFilterProvider.notifier).state = null,
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String?>(value: null, child: Text('All instances')),
+        ...instances.map(
+          (instance) => PopupMenuItem<String?>(
+            value: instance.id,
+            child: Text(instance.label),
+          ),
+        ),
+      ],
+      onSelected: (value) =>
+          ref.read(historyInstanceFilterProvider.notifier).state = value,
+    );
+  }
+}
+
+class _EventTypeFilterChip extends ConsumerWidget {
+  final HistoryEventType? selectedEventType;
+
+  const _EventTypeFilterChip({required this.selectedEventType});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<HistoryEventType?>(
+      child: InputChip(
+        label: Text(
+          selectedEventType == null ? 'All events' : selectedEventType!.title,
+        ),
+        avatar: const Icon(Icons.filter_list, size: 18),
+        selected: selectedEventType != null,
+        onDeleted: selectedEventType == null
+            ? null
+            : () => ref.read(historyEventTypeFilterProvider.notifier).state =
+                  null,
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<HistoryEventType?>(
+          value: null,
+          child: Text('All events'),
+        ),
+        ...HistoryEventType.values
+            .where((type) => type != HistoryEventType.unknown)
+            .map(
+              (type) => PopupMenuItem<HistoryEventType?>(
+                value: type,
+                child: Text(type.title),
+              ),
+            ),
+      ],
+      onSelected: (value) =>
+          ref.read(historyEventTypeFilterProvider.notifier).state = value,
     );
   }
 }
@@ -86,19 +243,20 @@ class _HistoryEventCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   _EventTypeBadge(eventType: event.eventType),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      event.sourceTitle ?? 'Unknown',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  InstanceOriginBadge(instanceId: event.instanceId),
                 ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                event.sourceTitle ?? 'Unknown',
+                style: Theme.of(context).textTheme.titleSmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
               Row(
@@ -243,6 +401,10 @@ class _HistoryEventSheet extends StatelessWidget {
                   ),
                 ],
               ),
+              if (event.instanceId != null) ...[
+                const SizedBox(height: 8),
+                InstanceOriginBadge(instanceId: event.instanceId),
+              ],
               const SizedBox(height: 16),
               Text(
                 event.sourceTitle ?? 'Unknown',

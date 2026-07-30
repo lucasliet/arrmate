@@ -1,0 +1,66 @@
+{
+  "guid": "https://indexer.example/download/movie-release",
+  "quality": {
+    "quality": {
+      "id": 22,
+      "name": "BR-DISK",
+      "source": "bluray",
+      "resolution": 1080,
+      "modifier": "brdisk"
+    },
+    "revision": {
+      "version": 1,
+      "real": 0,
+      "isRepack": false
+    }
+  },
+  "customFormats": [
+    {
+      "id": 1,
+      "name": "Foobar 3"
+    }
+  ],
+  "customFormatScore": 123,
+  "qualityWeight": 2401,
+  "age": 129,
+  "ageHours": 3098.3439388342777,
+  "ageMinutes": 185900.63633005833,
+  "size": 34158225408,
+  "indexerId": 2,
+  "indexer": "Example Indexer (Prowlarr)",
+  "releaseGroup": "PiR8",
+  "releaseHash": "",
+  "title": "Example.Movie.2020.BluRay.1080p.Multi.AVC-PiR8",
+  "sceneSource": false,
+  "movieTitles": [
+    "Example Movie"
+  ],
+  "languages": [
+    {
+      "id": 1,
+      "name": "English"
+    }
+  ],
+  "mappedMovieId": 145,
+  "approved": true,
+  "temporarilyRejected": false,
+  "rejected": false,
+  "tmdbId": 0,
+  "imdbId": 0,
+  "rejections": [],
+  "publishDate": "2023-09-26T02:33:36Z",
+  "commentUrl": "https://indexer.example/torrent/movie-release",
+  "downloadUrl": "https://indexer.example/download/movie-release",
+  "infoUrl": "https://indexer.example/torrent/movie-release",
+  "downloadAllowed": true,
+  "releaseWeight": 4,
+  "indexerFlags": [
+    "G_Freeleech"
+  ],
+  "edition": "",
+  "magnetUrl": "",
+  "infoHash": "",
+  "seeders": 4,
+  "leechers": 0,
+  "protocol": "torrent"
+}

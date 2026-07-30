@@ -22,6 +22,20 @@ class InstanceRepositoryImpl implements InstanceRepository {
   }
 
   @override
+  Future<List<InstanceDiskSpace>> getDiskSpace(Instance instance) async {
+    logger.debug(
+      '[InstanceRepository] Getting disk space for instance ${instance.id} (${instance.type.name})',
+    );
+    return switch (instance.type) {
+      InstanceType.radarr => RadarrApi(instance).getDiskSpace(),
+      InstanceType.sonarr => SonarrApi(instance).getDiskSpace(),
+      InstanceType.qbittorrent => throw UnsupportedError(
+        'Disk space is not available for qBittorrent instances',
+      ),
+    };
+  }
+
+  @override
   Future<List<Tag>> getTags(Instance instance) async {
     logger.debug(
       '[InstanceRepository] Getting tags for instance ${instance.id} (${instance.type.name})',

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../domain/models/models.dart';
+import '../../../widgets/queue_status_indicator.dart';
 
 /// A list tile widget for displaying movie details in a list view.
 class MovieListTile extends StatelessWidget {
@@ -204,6 +205,8 @@ class MovieListTile extends StatelessWidget {
               size: 18,
               color: theme.colorScheme.onSurfaceVariant,
             ),
+        const SizedBox(width: 4),
+        QueueStatusIndicator(movieId: movie.guid),
       ],
     );
   }

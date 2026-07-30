@@ -28,6 +28,7 @@ class BatchActionResult {
 /// `null` when the user cancels.
 class BatchActionsHandler {
   final WidgetRef _ref;
+  bool _isLoadingVisible = false;
 
   BatchActionsHandler(this._ref);
 
@@ -46,7 +47,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
-    final confirmed = await _confirm(
+    final options = await _confirmDeletion(
       context,
       title: 'Delete ${movieIds.length} movie${_plural(movieIds.length)}',
       content: deleteFiles
@@ -54,20 +55,23 @@ class BatchActionsHandler {
                 'files from disk.'
           : 'This removes the selected movies from Radarr. Files stay on disk.',
     );
-    if (confirmed != true) return null;
+    if (options == null) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
     var deleted = 0;
     try {
       for (final id in movieIds) {
+        if (!context.mounted) return null;
         await repository.deleteMovie(
           id,
           deleteFiles: deleteFiles,
-          addExclusion: false,
+          addExclusion: options.addExclusion,
         );
         deleted++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
@@ -77,6 +81,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -108,20 +113,24 @@ class BatchActionsHandler {
           'They stay in Radarr.',
     );
     if (confirmed != true) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
     var filesDeleted = 0;
     try {
       for (final id in movieIds) {
+        if (!context.mounted) return null;
         filesDeleted += await repository.deleteMovieFiles(id);
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to delete files: $e');
     }
@@ -208,6 +217,7 @@ class BatchActionsHandler {
         minimumSeedingSeconds: minimumSeedingDays * 86400,
         approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -220,6 +230,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to purge: $e');
     }
@@ -238,6 +249,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     var updated = 0;
@@ -246,6 +258,7 @@ class BatchActionsHandler {
         await repository.updateMovie(movie.copyWith(monitored: monitored));
         updated++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
@@ -255,6 +268,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -278,7 +292,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
-    final confirmed = await _confirm(
+    final options = await _confirmDeletion(
       context,
       title: 'Delete ${seriesIds.length} series${_plural(seriesIds.length)}',
       content: deleteFiles
@@ -286,20 +300,23 @@ class BatchActionsHandler {
                 'files from disk.'
           : 'This removes the selected series from Sonarr. Files stay on disk.',
     );
-    if (confirmed != true) return null;
+    if (options == null) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
     var deleted = 0;
     try {
       for (final id in seriesIds) {
+        if (!context.mounted) return null;
         await repository.deleteSeries(
           id,
           deleteFiles: deleteFiles,
-          addExclusion: false,
+          addExclusion: options.addExclusion,
         );
         deleted++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
@@ -309,6 +326,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -338,20 +356,24 @@ class BatchActionsHandler {
           'They stay in Sonarr.',
     );
     if (confirmed != true) return null;
+    if (!context.mounted) return null;
 
     _showLoading(navigator);
 
     var filesDeleted = 0;
     try {
       for (final id in seriesIds) {
+        if (!context.mounted) return null;
         filesDeleted += await repository.deleteSeriesFiles(id);
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to delete files: $e');
     }
@@ -438,6 +460,7 @@ class BatchActionsHandler {
         minimumSeedingSeconds: minimumSeedingDays * 86400,
         approvedCrossSeedHashes: approvedCrossSeedHashes,
       );
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
@@ -450,6 +473,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(message: 'Failed to purge: $e');
     }
@@ -469,6 +493,7 @@ class BatchActionsHandler {
     }
 
     final navigator = Navigator.of(context);
+    if (!context.mounted) return null;
     _showLoading(navigator);
 
     var updated = 0;
@@ -484,6 +509,7 @@ class BatchActionsHandler {
         );
         updated++;
       }
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
@@ -493,6 +519,7 @@ class BatchActionsHandler {
         refreshCatalog: true,
       );
     } catch (e) {
+      if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message:
@@ -550,7 +577,62 @@ class BatchActionsHandler {
     );
   }
 
+  Future<_BatchDeleteOptions?> _confirmDeletion(
+    BuildContext context, {
+    required String title,
+    required String content,
+  }) {
+    final theme = Theme.of(context);
+    var addExclusion = false;
+    return showDialog<_BatchDeleteOptions>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(content),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                value: addExclusion,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Add to import exclusion list'),
+                subtitle: const Text(
+                  'Prevent the item from being added again by an import list.',
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+                onChanged: (value) {
+                  setState(() => addExclusion = value ?? false);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                _BatchDeleteOptions(addExclusion: addExclusion),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showLoading(NavigatorState navigator) {
+    if (_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = true;
     showDialog(
       context: navigator.context,
       useRootNavigator: false,
@@ -559,10 +641,18 @@ class BatchActionsHandler {
         canPop: false,
         child: Center(child: CircularProgressIndicator()),
       ),
-    );
+    ).whenComplete(() => _isLoadingVisible = false);
   }
 
   void _hideLoading(NavigatorState navigator) {
+    if (!_isLoadingVisible || !navigator.mounted) return;
+    _isLoadingVisible = false;
     navigator.pop();
   }
+}
+
+class _BatchDeleteOptions {
+  final bool addExclusion;
+
+  const _BatchDeleteOptions({required this.addExclusion});
 }

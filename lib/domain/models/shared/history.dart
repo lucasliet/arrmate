@@ -177,6 +177,26 @@ class HistoryEvent extends Equatable {
     );
   }
 
+  /// Returns a copy associated with [instanceId].
+  HistoryEvent copyWith({String? instanceId}) {
+    return HistoryEvent(
+      id: id,
+      eventType: eventType,
+      date: date,
+      sourceTitle: sourceTitle,
+      instanceId: instanceId ?? this.instanceId,
+      movieId: movieId,
+      seriesId: seriesId,
+      episodeId: episodeId,
+      quality: quality,
+      languages: languages,
+      customFormats: customFormats,
+      customFormatScore: customFormatScore,
+      downloadId: downloadId,
+      data: data,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -302,6 +322,22 @@ enum HistoryEventType {
         return 7;
       default:
         return null;
+    }
+  }
+
+  /// Returns every remote Sonarr event-type id that maps to this category.
+  ///
+  /// Sonarr distinguishes `DownloadFolderImported` (type 2) from
+  /// `SeriesFolderImported` (type 3), but both collapse into the local
+  /// [HistoryEventType.imported] category. Filtering by a single id omits
+  /// one of them, so the query must request all equivalent ids at once.
+  List<int>? toSonarrEventTypes() {
+    switch (this) {
+      case HistoryEventType.imported:
+        return const [2, 3];
+      default:
+        final single = toSonarrEventType();
+        return single == null ? null : [single];
     }
   }
 }

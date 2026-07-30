@@ -35,6 +35,9 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
   /// Callback when filter option changes.
   final Function(F) onFilterChanged;
 
+  /// Optional controls rendered below the enum-based filters.
+  final Widget? additionalFilters;
+
   const SortBottomSheet({
     super.key,
     required this.title,
@@ -48,6 +51,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
     required this.onSortChanged,
     required this.onAscendingChanged,
     required this.onFilterChanged,
+    this.additionalFilters,
   });
 
   @override
@@ -159,6 +163,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                       }).toList(),
                     ),
                   ),
+                  ?additionalFilters,
                 ],
               ),
             ),

@@ -1,0 +1,53 @@
+{
+  "seriesId": 366,
+  "episodeId": 14199,
+  "seasonNumber": 1,
+  "languages": [
+    {
+      "id": 1,
+      "name": "English"
+    }
+  ],
+  "quality": {
+    "quality": {
+      "id": 1,
+      "name": "SDTV",
+      "source": "television",
+      "resolution": 480
+    },
+    "revision": {
+      "version": 1,
+      "real": 0,
+      "isRepack": false
+    }
+  },
+  "customFormats": [],
+  "customFormatScore": 0,
+  "size": 619259288,
+  "title": "Jamie.Cooks.Spring.S01E02.XviD-AFG[EZTVx.to]",
+  "sizeleft": 0,
+  "added": "2024-05-24T15:37:42Z",
+  "status": "completed",
+  "trackedDownloadStatus": "warning",
+  "trackedDownloadState": "importPending",
+  "statusMessages": [
+    {
+      "title": "One or more episodes expected in this release were not imported or missing from the release",
+      "messages": []
+    },
+    {
+      "title": "Jamie.Cooks.Spring.S01E02.XviD-AFG[EZTVx.to].avi",
+      "messages": [
+        "Not an upgrade for existing episode file(s). Existing quality: HDTV-1080p. New Quality SDTV."
+      ]
+    }
+  ],
+  "downloadId": "B7614F8F3E52276FEBEF99E45792CDB885B44B50",
+  "protocol": "torrent",
+  "downloadClient": "Transmission",
+  "downloadClientHasPostImportCategory": false,
+  "indexer": "EZTV (Prowlarr)",
+  "outputPath": "/mediathek/downloads/complete/Sonarr/Jamie.Cooks.Spring.S01E02.XviD-AFG[EZTVx.to].avi",
+  "episodeHasFile": true,
+  "id": 464955325
+}

@@ -10,17 +10,10 @@ import 'widgets/importable_file_item.dart';
 
 /// A modal sheet for manually importing files from a download.
 class ManualImportScreen extends ConsumerStatefulWidget {
-  /// The ID of the download to import files from.
-  final String downloadId;
+  /// Queue item whose files will be imported.
+  final QueueItem item;
 
-  /// The title of the import operation/download.
-  final String title;
-
-  const ManualImportScreen({
-    super.key,
-    required this.downloadId,
-    required this.title,
-  });
+  const ManualImportScreen({super.key, required this.item});
 
   @override
   ConsumerState<ManualImportScreen> createState() => _ManualImportScreenState();
@@ -32,7 +25,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filesState = ref.watch(manualImportFilesProvider(widget.downloadId));
+    final filesState = ref.watch(manualImportFilesProvider(widget.item));
     final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
@@ -107,7 +100,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                 error: (error, stack) => ErrorDisplay(
                   message: 'Failed to load importable files',
                   onRetry: () =>
-                      ref.refresh(manualImportFilesProvider(widget.downloadId)),
+                      ref.refresh(manualImportFilesProvider(widget.item)),
                 ),
               ),
             ),
@@ -125,7 +118,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.title,
+          widget.item.displayTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -171,7 +164,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
   Future<void> _handleImport() async {
     try {
       final filesState = await ref.read(
-        manualImportFilesProvider(widget.downloadId).future,
+        manualImportFilesProvider(widget.item).future,
       );
       final selectedFiles = filesState
           .where((f) => _selectedFileIds.contains(f.id))
@@ -186,9 +179,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
 
       setState(() => _isImporting = true);
 
-      final controller = ref.read(
-        manualImportControllerProvider(widget.downloadId),
-      );
+      final controller = ref.read(manualImportControllerProvider(widget.item));
       await controller.importFiles(selectedFiles);
 
       if (mounted) {
