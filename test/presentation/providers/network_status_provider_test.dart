@@ -135,7 +135,7 @@ void main() {
         // When
         final subscription = container.listen(
           networkAvailabilityProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(subscription.close);
         await container.read(networkAvailabilityProvider.future);

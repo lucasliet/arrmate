@@ -116,9 +116,9 @@ class SonarrApi {
     final response = await _client.get(
       '/release',
       queryParameters: {
-        if (episodeId != null) 'episodeId': episodeId,
-        if (seriesId != null) 'seriesId': seriesId,
-        if (seasonNumber != null) 'seasonNumber': seasonNumber,
+        'episodeId': ?episodeId,
+        'seriesId': ?seriesId,
+        'seasonNumber': ?seasonNumber,
       },
       customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
     );
@@ -260,7 +260,7 @@ class SonarrApi {
         'pageSize': pageSize,
         if (eventType != null && eventType.toSonarrEventTypes() != null)
           'eventType': eventType.toSonarrEventTypes(),
-        if (episodeId != null) 'episodeId': episodeId,
+        'episodeId': ?episodeId,
       },
     );
     return HistoryPage.fromJson(

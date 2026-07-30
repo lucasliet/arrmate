@@ -267,8 +267,7 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
         configuredSourceCount: overview.configuredSourceCount,
         serverChecks: overview.serverChecks,
         connectionFailures: [
-          for (final failure in runFailures)
-            if (failure != null) failure,
+          for (final failure in runFailures) ?failure,
           ...overview.connectionFailures,
         ],
       ),
