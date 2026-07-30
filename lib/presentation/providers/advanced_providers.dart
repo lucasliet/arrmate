@@ -3,31 +3,106 @@ import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
 import '../../core/services/logger_service.dart';
 import 'data_providers.dart';
+import 'instances_provider.dart';
 
-/// Provider for fetching and paginating system logs.
-final logsProvider = AsyncNotifierProvider<LogsNotifier, LogPage>(() {
-  return LogsNotifier();
+/// Loads one page of logs from a selected Arr instance.
+typedef LogPageLoader = Future<LogPage> Function({int page});
+
+/// Configured Radarr and Sonarr instances that can provide server logs.
+final arrLogInstancesProvider = Provider<List<Instance>>((ref) {
+  final instances = ref.watch(
+    instancesProvider.select((state) => state.instances),
+  );
+  return instances
+      .where(
+        (instance) =>
+            instance.type == InstanceType.radarr ||
+            instance.type == InstanceType.sonarr,
+      )
+      .toList(growable: false);
 });
+
+/// Explicit instance selected on the ARR Logs tab.
+final selectedArrLogInstanceIdProvider = StateProvider<String?>((ref) => null);
+
+/// Resolves the explicit log source, falling back to the active Arr instances.
+final selectedArrLogInstanceProvider = Provider<Instance?>((ref) {
+  final instances = ref.watch(arrLogInstancesProvider);
+  final selectedId = ref.watch(selectedArrLogInstanceIdProvider);
+
+  if (selectedId != null) {
+    for (final instance in instances) {
+      if (instance.id == selectedId) return instance;
+    }
+  }
+
+  final currentRadarr = ref.watch(currentRadarrInstanceProvider);
+  if (currentRadarr != null &&
+      instances.any((instance) => instance.id == currentRadarr.id)) {
+    return currentRadarr;
+  }
+
+  final currentSonarr = ref.watch(currentSonarrInstanceProvider);
+  if (currentSonarr != null &&
+      instances.any((instance) => instance.id == currentSonarr.id)) {
+    return currentSonarr;
+  }
+
+  return instances.isEmpty ? null : instances.first;
+});
+
+/// Log loader bound to the instance selected on the ARR Logs tab.
+final arrLogLoaderProvider = Provider<LogPageLoader?>((ref) {
+  final instance = ref.watch(selectedArrLogInstanceProvider);
+  if (instance != null) {
+    switch (instance.type) {
+      case InstanceType.radarr:
+        final repository = ref.watch(
+          movieRepositoryForInstanceProvider(instance),
+        );
+        return ({int page = 1}) => repository.getLogs(page: page);
+      case InstanceType.sonarr:
+        final repository = ref.watch(
+          seriesRepositoryForInstanceProvider(instance),
+        );
+        return ({int page = 1}) => repository.getLogs(page: page);
+      case InstanceType.qbittorrent:
+        return null;
+    }
+  }
+
+  // Preserves compatibility for isolated provider tests and transitional states
+  // while configured instances are still loading.
+  final movieRepository = ref.watch(movieRepositoryProvider);
+  if (movieRepository != null) {
+    return ({int page = 1}) => movieRepository.getLogs(page: page);
+  }
+  final seriesRepository = ref.watch(seriesRepositoryProvider);
+  if (seriesRepository != null) {
+    return ({int page = 1}) => seriesRepository.getLogs(page: page);
+  }
+  return null;
+});
+
+/// Provider for fetching and paginating logs from the selected Arr instance.
+final logsProvider = AsyncNotifierProvider<LogsNotifier, LogPage>(
+  LogsNotifier.new,
+);
 
 /// Manages the state and pagination of system logs.
 class LogsNotifier extends AsyncNotifier<LogPage> {
   @override
   Future<LogPage> build() async {
-    return _fetchLogs();
+    final loader = ref.watch(arrLogLoaderProvider);
+    return _fetchLogs(loader: loader);
   }
 
-  Future<LogPage> _fetchLogs({int page = 1}) async {
-    final movieRepo = ref.watch(movieRepositoryProvider);
-    final seriesRepo = ref.watch(seriesRepositoryProvider);
-
-    // Simplified: Fetches logs from the first available instance (Radarr or Sonarr).
-    if (movieRepo != null) {
-      return movieRepo.getLogs(page: page);
-    } else if (seriesRepo != null) {
-      return seriesRepo.getLogs(page: page);
+  Future<LogPage> _fetchLogs({int page = 1, LogPageLoader? loader}) async {
+    final selectedLoader = loader ?? ref.read(arrLogLoaderProvider);
+    if (selectedLoader == null) {
+      return const LogPage(page: 1, pageSize: 50, totalRecords: 0, records: []);
     }
-
-    return const LogPage(page: 1, pageSize: 50, totalRecords: 0, records: []);
+    return selectedLoader(page: page);
   }
 
   /// Fetches the next page of logs and appends it to the current list.

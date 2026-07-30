@@ -47,10 +47,7 @@ final networkAvailabilityProvider = StreamProvider<NetworkAvailability>((
         interfaces.any((result) => result != ConnectivityResult.none);
     if (isOnline) {
       lastOnlineAt = observedAt;
-      await preferences.setString(
-        lastOnlineKey,
-        observedAt.toIso8601String(),
-      );
+      await preferences.setString(lastOnlineKey, observedAt.toIso8601String());
     }
     return NetworkAvailability(
       interfaces: interfaces,

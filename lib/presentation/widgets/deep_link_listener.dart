@@ -175,6 +175,8 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
 
     final binding = WidgetsBinding.instance;
     binding.addPostFrameCallback((_) => _navigate(location));
+    // addPostFrameCallback does not request a new frame. A link can arrive
+    // between frames, so schedule one to guarantee the deferred navigation runs.
     binding.scheduleFrame();
   }
 

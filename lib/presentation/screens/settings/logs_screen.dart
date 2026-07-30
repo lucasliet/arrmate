@@ -25,14 +25,20 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onScroll() {
@@ -99,54 +105,121 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
   }
 
   Widget _buildArrLogs() {
+    final instances = ref.watch(arrLogInstancesProvider);
+    final selectedInstance = ref.watch(selectedArrLogInstanceProvider);
     final logsAsync = ref.watch(logsProvider);
 
-    return RefreshIndicator(
-      onRefresh: () => ref.refresh(logsProvider.future),
-      child: logsAsync.when(
-        data: (logPage) {
-          final records = _levelFilter == 'All'
-              ? logPage.records
-              : logPage.records
-                    .where(
-                      (e) =>
-                          e.level.toLowerCase() == _levelFilter.toLowerCase(),
-                    )
-                    .toList();
+    return Column(
+      children: [
+        if (instances.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: DropdownButtonFormField<String>(
+              key: const Key('arrLogsInstanceSelector'),
+              initialValue: selectedInstance?.id,
+              decoration: const InputDecoration(
+                labelText: 'Log source',
+                prefixIcon: Icon(Icons.dns_outlined),
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final instance in instances)
+                  DropdownMenuItem(
+                    value: instance.id,
+                    child: Text(_instanceLabel(instance)),
+                  ),
+              ],
+              onChanged: (instanceId) {
+                ref.read(selectedArrLogInstanceIdProvider.notifier).state =
+                    instanceId;
+                if (_scrollController.hasClients) {
+                  _scrollController.jumpTo(0);
+                }
+              },
+            ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => ref.refresh(logsProvider.future),
+            child: logsAsync.when(
+              data: (logPage) {
+                final records = _levelFilter == 'All'
+                    ? logPage.records
+                    : logPage.records
+                          .where(
+                            (entry) =>
+                                entry.level.toLowerCase() ==
+                                _levelFilter.toLowerCase(),
+                          )
+                          .toList();
 
-          if (records.isEmpty) {
-            return const Center(child: Text('No logs found matching filter'));
-          }
-
-          return ListView.builder(
-            controller: _scrollController,
-            itemCount: records.length + 1,
-            itemBuilder: (context, index) {
-              if (index == records.length) {
-                if (logsAsync.isLoading && logsAsync.hasValue) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32.0),
-                    child: Center(child: CircularProgressIndicator()),
+                if (instances.isEmpty) {
+                  return ListView(
+                    controller: _scrollController,
+                    children: const [
+                      SizedBox(height: 160),
+                      Center(
+                        child: Text('No Radarr or Sonarr instances configured'),
+                      ),
+                    ],
                   );
                 }
-                return const SizedBox.shrink();
-              }
 
-              final log = records[index];
-              return _LogTile(
-                message: log.message,
-                level: log.level,
-                time: log.time,
-                logger: log.logger,
-                exception: log.exception,
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
+                if (records.isEmpty) {
+                  return ListView(
+                    controller: _scrollController,
+                    children: const [
+                      SizedBox(height: 160),
+                      Center(child: Text('No logs found matching filter')),
+                    ],
+                  );
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: records.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == records.length) {
+                      if (logsAsync.isLoading && logsAsync.hasValue) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }
+
+                    final log = records[index];
+                    return _LogTile(
+                      message: log.message,
+                      level: log.level,
+                      time: log.time,
+                      logger: log.logger,
+                      exception: log.exception,
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error: $err')),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  String _instanceLabel(Instance instance) {
+    final configuredLabel = instance.label.trim();
+    final serverName = instance.name?.trim() ?? '';
+    final name = configuredLabel.isNotEmpty
+        ? configuredLabel
+        : serverName.isNotEmpty
+        ? serverName
+        : instance.type.label;
+    return name == instance.type.label
+        ? name
+        : '$name · ${instance.type.label}';
   }
 
   Widget _buildAppLogs() {
