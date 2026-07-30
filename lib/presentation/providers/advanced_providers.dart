@@ -36,9 +36,10 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
     if (currentStatus.value == null) return;
 
     final currentPage = currentStatus.value!.page;
+    final pageSize = currentStatus.value!.pageSize;
     final totalRecords = currentStatus.value!.totalRecords;
 
-    if (currentPage * 50 >= totalRecords) return;
+    if (currentPage * pageSize >= totalRecords) return;
 
     final previousState = state;
     state = AsyncLoading<LogPage>().copyWithPrevious(previousState);

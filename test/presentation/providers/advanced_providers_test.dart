@@ -135,6 +135,44 @@ void main() {
       // Then
       verifyNever(() => movieRepo.getLogs(page: 2));
     });
+
+    test(
+      'should honor a custom page size when deciding whether to paginate',
+      () async {
+        // Given
+        final movieRepo = MockMovieRepository();
+        when(() => movieRepo.getLogs(page: 1)).thenAnswer(
+          (_) async => _logPage(
+            page: 1,
+            pageSize: 25,
+            totalRecords: 40,
+            records: ['log-1'],
+          ),
+        );
+        when(() => movieRepo.getLogs(page: 2)).thenAnswer(
+          (_) async => _logPage(
+            page: 2,
+            pageSize: 25,
+            totalRecords: 40,
+            records: ['log-2'],
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [movieRepositoryProvider.overrideWithValue(movieRepo)],
+        );
+        addTearDown(container.dispose);
+        await container.read(logsProvider.future);
+
+        // When
+        await container.read(logsProvider.notifier).fetchNextPage();
+
+        // Then
+        final page = container.read(logsProvider).value!;
+        expect(page.records.map((e) => e.message), ['log-1', 'log-2']);
+        verify(() => movieRepo.getLogs(page: 2)).called(1);
+      },
+    );
   });
 
   group('Quality profile providers', () {
@@ -207,12 +245,13 @@ void main() {
 
 LogPage _logPage({
   required int page,
+  int pageSize = 50,
   int totalRecords = 0,
   List<String> records = const [],
 }) {
   return LogPage(
     page: page,
-    pageSize: 50,
+    pageSize: pageSize,
     totalRecords: totalRecords,
     records: [
       for (final message in records)
