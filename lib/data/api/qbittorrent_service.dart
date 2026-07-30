@@ -488,9 +488,7 @@ class QBittorrentService {
 
   /// Tests connection and returns app version info.
   Future<Map<String, dynamic>> testConnection() async {
-    await authenticate();
-
-    // Get version
+    // Get version — _request authenticates against the active candidate URL.
     final versionResp = await _request<String>('/api/v2/app/version');
     final apiVersionResp = await _request<String>('/api/v2/app/webapiVersion');
 
@@ -608,8 +606,8 @@ class QBittorrentService {
 
   /// Gets the system status including version information.
   Future<InstanceStatus> getSystemStatus() async {
-    await _ensureAuthenticated();
-
+    // _request authenticates against the active candidate URL, so this keeps
+    // working after a failover instead of hitting the dead primary.
     final versionResp = await _request<String>('/api/v2/app/version');
 
     return InstanceStatus(

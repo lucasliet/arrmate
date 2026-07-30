@@ -93,6 +93,30 @@ void main() {
       },
     );
 
+    test('should use the active candidate URL for getSystemStatus after a '
+        'failover (cookie mode)', () async {
+      final adapter = _RecordingAdapter(unavailableHosts: {'primary.test'});
+      final service = _serviceCookie(adapter);
+
+      // Force a failover so _activeUrl is promoted to the alternative and a
+      // session cookie is acquired against it.
+      await service.getTorrents();
+      adapter.requests.clear();
+      adapter.methods.clear();
+
+      final status = await service.getSystemStatus();
+
+      expect(status.version, isNotNull);
+      // After failover, getSystemStatus must read against the active
+      // alternative only — never falling back to the dead primary. The
+      // session cookie is reused, so no re-auth is needed.
+      expect(
+        adapter.requests.map((uri) => uri.host),
+        everyElement('alternative.test'),
+      );
+      expect(adapter.requests.map((uri) => uri.path), ['/api/v2/app/version']);
+    });
+
     test('should not promote a fallback that returns 401', () async {
       final adapter = _RecordingAdapter(
         unavailableHosts: {'primary.test'},
