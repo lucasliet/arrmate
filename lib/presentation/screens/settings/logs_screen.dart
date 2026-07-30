@@ -114,28 +114,33 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
         if (instances.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: DropdownButtonFormField<String>(
-              key: const Key('arrLogsInstanceSelector'),
-              initialValue: selectedInstance?.id,
+            child: InputDecorator(
               decoration: const InputDecoration(
                 labelText: 'Log source',
                 prefixIcon: Icon(Icons.dns_outlined),
                 border: OutlineInputBorder(),
               ),
-              items: [
-                for (final instance in instances)
-                  DropdownMenuItem(
-                    value: instance.id,
-                    child: Text(_instanceLabel(instance)),
-                  ),
-              ],
-              onChanged: (instanceId) {
-                ref.read(selectedArrLogInstanceIdProvider.notifier).state =
-                    instanceId;
-                if (_scrollController.hasClients) {
-                  _scrollController.jumpTo(0);
-                }
-              },
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  key: const Key('arrLogsInstanceSelector'),
+                  value: selectedInstance?.id,
+                  isExpanded: true,
+                  items: [
+                    for (final instance in instances)
+                      DropdownMenuItem(
+                        value: instance.id,
+                        child: Text(_instanceLabel(instance)),
+                      ),
+                  ],
+                  onChanged: (instanceId) {
+                    ref.read(selectedArrLogInstanceIdProvider.notifier).state =
+                        instanceId;
+                    if (_scrollController.hasClients) {
+                      _scrollController.jumpTo(0);
+                    }
+                  },
+                ),
+              ),
             ),
           ),
         Expanded(
