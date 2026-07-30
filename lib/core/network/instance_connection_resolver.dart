@@ -64,7 +64,7 @@ class InstanceConnectionResolver {
         connectivity.contains(ConnectivityResult.vpn);
     final hasRemoteNetwork =
         connectivity.contains(ConnectivityResult.mobile) ||
-        connectivity.contains(ConnectivityResult.satellite);
+        connectivity.contains(ConnectivityResult.other);
 
     return hasRemoteNetwork && !hasLocalNetwork
         ? [alternativeUrl, primaryUrl]

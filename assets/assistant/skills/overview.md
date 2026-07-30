@@ -11,11 +11,17 @@ Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes)
 
 Funcionalidades principais:
 - Biblioteca de filmes e séries: navegar, buscar, filtrar, ordenar, selecionar em lote, monitorar/desmonitorar e deletar.
+- **Discover (busca e adição unificada):** tela de descoberta acessível pelo FAB das abas Filmes/Séries — aceita título, ID TMDB/IMDb ou URL.
 - Adicionar novos filmes e séries via busca online no Radarr/Sonarr.
 - Busca manual de releases (grab interativo) com filtro e seleção.
-- Calendário de próximos lançamentos e episódios.
+- Calendário de próximos lançamentos e episódios, com **filtros** (instância, tipo, monitorados, estreias, ocultar especiais).
 - Monitoramento de fila de downloads e histórico de atividade.
 - Cliente qBittorrent integrado: listar, pausar, retomar, remover, adicionar torrents.
+- **Connection Diagnostics:** teste de endpoints, latência, traces de requisições e export de relatório sanitizado (Configurações → System Management → Diagnostics).
+- **System Overview:** armazenamento/disco, tamanho da biblioteca e versão por instância (Configurações → System Management → System Overview).
+- **Version History e What's New:** changelog do GitHub e popup pós-atualização.
+- **Deep links:** abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou tela de configurações via `arrmate://`.
+- **Banner offline:** indicador de offline com timestamp da última conexão online.
 - Notificações push via ntfy.sh com sincronização multi-dispositivo e central in-app (incluindo eventos de purge).
 - Onboarding guiado com tour inicial e replay em Settings → Getting Started.
 - Multi-instância: conectar vários servidores Radarr, Sonarr e qBittorrent ao mesmo tempo.

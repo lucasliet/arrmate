@@ -89,6 +89,13 @@ class AssistantKnowledgeService {
       assetPath: 'assets/assistant/skills/system.md',
     ),
     AssistantSkill(
+      id: 'diagnostics',
+      title: 'Diagnósticos',
+      description:
+          'Connection diagnostics endpoints latência traces export relatório, system overview armazenamento disco biblioteca, version history changelog, what\'s new pós-atualização, banner offline rede',
+      assetPath: 'assets/assistant/skills/diagnostics.md',
+    ),
+    AssistantSkill(
       id: 'assistant',
       title: 'Assistant',
       description: 'Sobre o assistente, modelos disponíveis, como funciona',

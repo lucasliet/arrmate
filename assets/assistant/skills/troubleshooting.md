@@ -22,7 +22,8 @@ description: Erros de conexão, autenticação API key, notificações, app desa
 | **4. Firewall/porta** | Porta está aberta no servidor? | Verificar firewall do servidor (Linux: `ufw`, Windows: Windows Defender, etc). Permitir porta. |
 | **5. API Key (Radarr/Sonarr)** | Credenciais estão corretas? | Configurações → Instances → tocar instância. Verificar campo "API Key". Se vazio ou errado, atualizar. |
 | **6. Timeout** | Servidor é lento ou remoto? | Ativar **Slow Mode** (Advanced Options → toggle "Slow Mode") para aumentar timeout de 30s → 90s. |
-| **7. Teste novamente** | Todos verificados? | Tocar "Test Connection" na edição de instância. Deve mostrar "✓ Connection successful!" em verde. |
+| **7. Connection Diagnostics** | Quer um diagnóstico completo? | Abrir Configurações → System Management → **Diagnostics**. A tela testa cada endpoint por reachability e latência, mostra traces de requisições recentes e permite **exportar um relatório sanitizado** (sem credenciais) para anexar a um bug report. |
+| **8. Teste novamente** | Todos verificados? | Tocar "Test Connection" na edição de instância. Deve mostrar "✓ Connection successful!" em verde. |
 
 **Ações corretivas:**
 

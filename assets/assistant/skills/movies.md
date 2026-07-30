@@ -1,6 +1,6 @@
 ---
 name: movies
-description: Adicionar/detalhes/editar/deletar filme, deletar arquivo, purge (remover filme + arquivos + torrents no qBittorrent), buscar release
+description: Adicionar/detalhes/editar/deletar filme, discover busca unificada ID URL TMDB IMDb, deletar arquivo, purge (remover filme + arquivos + torrents no qBittorrent), import exclusion, buscar release
 ---
 
 # Filmes
@@ -8,6 +8,8 @@ description: Adicionar/detalhes/editar/deletar filme, deletar arquivo, purge (re
 ## Adicionar filme — buscar e cadastrar no Radarr
 
 **Onde fica:** Aba Filmes → botão "+" (floating action button no canto inferior direito).
+
+> **Atalho:** o "+" abre a tela **Discover** (descoberta unificada de filmes e séries). Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
 
 **Passo a passo:**
 1. Abrir a aba Filmes (primeira aba da barra inferior).
@@ -37,6 +39,31 @@ description: Adicionar/detalhes/editar/deletar filme, deletar arquivo, purge (re
 - O filme é adicionado ao Radarr imediatamente. 
 - A busca automática de releases no Radarr depende da configuração do Radarr (pode ser imediata ou agendada).
 - Você pode voltar ao resultado anterior tocando no ícone de voltar/chevron (se houver).
+
+## Adicionar via Discover — busca unificada por título ID ou URL
+
+**Onde fica:** Aba Filmes (ou Séries) → botão "+" (FAB) → abre a tela **Discover**.
+
+A tela **Discover** é uma busca unificada para filmes e séries, com duas abas no topo (Movies / Series). Ela aceita não só o título, mas também identificadores e links.
+
+**Como buscar:**
+- **Por título:** digite o nome (ex: "Dune") — a busca tem debounce e roda automaticamente enquanto você digita.
+- **Por ID TMDB/IMDb:** cole o identificador (ex: `tt10366206`, o ID numérico do TMDB).
+- **Por URL:** cole um link do IMDb ou TMDB — o app extrai o ID embutido na URL e faz o lookup.
+
+**Resultados:**
+- Cada resultado mostra poster, título, ano e nota.
+- Resultados que já estão na sua biblioteca aparecem marcados como existentes.
+- Use o chip **"Hide in library"** para ocultar itens que você já tem.
+- Use o **dropdown de ordenação** para reordenar por relevância, data ou avaliação.
+
+**Adicionar:**
+- Toque em um resultado para abrir a tela de configuração (Monitored, Quality Profile, Root Folder, etc.) — mesma segunda etapa do fluxo padrão.
+- Em seguida, toque em "Add Movie" (ou "Add Series").
+
+**Observações:**
+- A aba ativa (Movies/Series) no Discover pode ser pré-selecionada, inclusive via deep link `arrmate:///discover` ou `arrmate:///search?q=<termo>&type=movie`.
+- A extração de ID funciona para os formatos de URL mais comuns do IMDb e TMDB.
 
 ## Detalhes do filme — sinopse arquivos histórico ações
 
@@ -158,14 +185,16 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 4. Um **diálogo de confirmação** aparece:
    - Título: "Delete Movie?"
    - **Checkbox** "Delete files from disk" (opcional) — se marcado, também remove os arquivos físicos do servidor.
+   - **Checkbox "Add import exclusion list"** (opcional) — se marcado, adiciona o filme à lista de exclusão do Radarr, impedindo que ele seja re-importado automaticamente por listas/import lists no futuro.
    - Botões: "Cancel" e "Delete" (em vermelho).
-5. Marcar ou deixar desmarcado o checkbox conforme desejado.
+5. Marcar ou deixar desmarcado os checkboxes conforme desejado.
 6. Tocar **"Delete"** para confirmar.
 7. Snackbar confirma "Movie deleted successfully" e a tela volta à lista de filmes.
 
 **Observações:**
 - O filme é removido do Radarr imediatamente.
 - Os arquivos em disco são removidos **somente se** o checkbox "Delete files from disk" estiver marcado.
+- **Import exclusion** é útil quando você não quer que o filme volte automaticamente via listas de importação — ele permanece na exclusion list do Radarr até você removê-lo de lá (pela web do Radarr).
 - Esta ação é destrutiva e não pode ser desfeita via app (você pode re-adicionar o filme manualmente).
 
 ## Purge filme — remover tudo (Radarr + qBittorrent)

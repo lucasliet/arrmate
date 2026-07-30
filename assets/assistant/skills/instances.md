@@ -230,3 +230,10 @@ O **Arrmate suporta múltiplas instâncias** de **cada tipo** simultaneamente.
 - Dados de uma instância **não afetam** outra (deletar filme em uma não afeta a outra).
 - **Preferência padrão:** primeira instância Radarr/Sonarr é usada ao adicionar novo filme/série, mas você pode mudar.
 - **Ícones visuais:** cada instância tem ícone colorido na lista para fácil identificação.
+
+## Validar conectividade e armazenamento por instância
+
+Para confirmar que uma instância está acessível e com espaço em disco saudável, use as ferramentas do **System Management** (documentadas em `diagnostics.md`):
+
+- **Connection Diagnostics** (`/settings/diagnostics`): testa cada endpoint (URL principal e alternativa) por reachability e latência, mostra qual está ativo e exibe traces das requisições recentes. É a forma mais rápida de isolar se o problema é de rede, autenticação ou endpoint.
+- **System Overview** (`/settings/system-overview`): mostra o espaço livre em cada disco/root folder da instância, o tamanho da biblioteca e a versão do servidor — útil para antecipar falta de espaço antes que downloads falhem.

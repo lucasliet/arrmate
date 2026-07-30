@@ -13,6 +13,7 @@ Este documento contém os padrões de design e componentes UI do Arrmate para ga
 - [Context Extensions](#context-extensions)
 - [Imagens](#imagens)
 - [Ícones e Status](#ícones-e-status)
+- [Estado de Sistema & Diagnóstico](#estado-de-sistema--diagnóstico)
 - [Boas Práticas](#boas-práticas)
 
 ---
@@ -679,6 +680,61 @@ Color getStatusColor(QueueStatus status) {
   }
 }
 ```
+
+---
+
+## Estado de Sistema & Diagnóstico
+
+Padrões de UI introduzidos nas telas de system management, diagnostics e status global.
+
+### Offline Status Banner
+
+Banner global exibido no topo do `AppShell` quando o dispositivo está sem rede.
+
+- **Cor de fundo:** `theme.colorScheme.errorContainer` (texto em `onErrorContainer`).
+- **Ícone:** `Icons.cloud_off_outlined`.
+- **Layout:** `Row` com ícone + `Column` (título "Offline" em `titleSmall` bold + subtítulo com last-online relativo e caveat de cache).
+- **Comportamento:** some automaticamente quando a rede volta; não bloqueia o uso do app.
+- **Referência:** `lib/presentation/widgets/offline_status_banner.dart`.
+
+### Diagnostics — Check Tiles
+
+Padrão de `_CheckTile` para exibir o resultado de uma checagem por endpoint.
+
+- **Leading:** `Icons.check_circle` (verde) no sucesso, `Icons.error` (`colorScheme.error`) na falha.
+- **Título:** `<label da instância> · <label do endpoint>`.
+- **Subtítulo:** `OK · <latência>ms · v<versão>` (sucesso) ou `Failed · <erro>` (falha).
+- **Progresso de refresh:** `LinearProgressIndicator` em `Semantics(liveRegion: true)` acima da lista.
+- **Referência:** `lib/presentation/screens/settings/diagnostics_screen.dart`.
+
+### System Overview — Disk & Library
+
+Card multi-seção por instância para storage e biblioteca.
+
+- **Disco:** `LinearProgressIndicator` (`minHeight: 6`) por root folder, com `ClipRRect(borderRadius: 2)` e label "Used X (NN%)" + "Y free of Z".
+- **Biblioteca:** `Wrap` de métricas (filmes/séries/episódios + tamanho) em `_Metric` chips (`surfaceContainerHighest`).
+- **Falhas parciais:** `Container` com fundo `errorContainer` + `Icons.warning_amber_rounded` listando mensagens.
+- **Versão:** badge em `secondaryContainer` no header.
+- **Referência:** `lib/presentation/screens/settings/system_overview_screen.dart`.
+
+### What's New Dialog
+
+Popup de changelog pós-atualização.
+
+- **Base:** `AlertDialog` com `Icons.new_releases_rounded`.
+- **barrierDismissible:** `false` (não fecha tocando fora).
+- **Actions:** `TextButton` "Dismiss" + `FilledButton` "View All Versions" (navega para `/settings/version-history`).
+- **Referência:** `lib/presentation/widgets/whats_new_dialog.dart`.
+
+### Calendar Filter Bar
+
+Barra horizontal rolável de filtros do calendário.
+
+- **Altura fixa:** `SizedBox(height: 56)` com `ListView(scrollDirection: Axis.horizontal)`.
+- **Instância/Tipo:** `PopupMenuButton` envolvendo um `Chip` (com `avatar`).
+- **Toggles:** `FilterChip` para Monitored, Premieres, Hide specials.
+- **Reset:** `ActionChip` com `Icons.filter_alt_off_outlined`, visível **apenas** quando há filtros ativos.
+- **Referência:** `lib/presentation/screens/calendar/widgets/calendar_filter_bar.dart`.
 
 ---
 
