@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
-import '../../providers/data_providers.dart';
-import '../../providers/instances_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
