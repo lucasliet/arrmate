@@ -42,6 +42,7 @@ class WhatsNewDialog extends ConsumerWidget {
     return AlertDialog(
       icon: const Icon(Icons.new_releases_rounded),
       title: Text('What\'s New in v${release.version}'),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       content: SizedBox(
         width: double.maxFinite,
         child: release.changelog.isEmpty

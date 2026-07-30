@@ -20,7 +20,7 @@ class UpdateDialog extends ConsumerWidget {
     final isInstalling = updateState.status == UpdateStatus.installing;
 
     return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Text(
         isDownloading
             ? 'Baixando Atualização'
