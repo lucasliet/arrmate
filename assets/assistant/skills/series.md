@@ -1,6 +1,6 @@
 ---
 name: series
-description: Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira, purge (remover série + arquivos + torrents no qBittorrent)
+description: Adicionar/detalhes/episódios/editar/deletar série, discover busca unificada ID URL TVDB IMDb, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira, purge (remover série + arquivos + torrents no qBittorrent), import exclusion
 ---
 
 # Séries
@@ -8,6 +8,8 @@ description: Adicionar/detalhes/episódios/editar/deletar série, deletar arquiv
 ## Adicionar série — buscar e cadastrar no Sonarr
 
 **Onde fica:** Aba Séries → botão "+" (floating action button no canto inferior direito).
+
+> **Atalho:** o "+" abre a tela **Discover** (descoberta unificada de filmes e séries). Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
 
 **Passo a passo:**
 1. Abrir a aba **Séries** (segunda aba da barra inferior).
@@ -38,6 +40,31 @@ description: Adicionar/detalhes/episódios/editar/deletar série, deletar arquiv
 - Série é adicionada ao Sonarr imediatamente.
 - O tipo de série afeta como o Sonarr renomeia e busca episódios.
 - "Season Folder" ON recomendado para organização clara no disco.
+
+## Adicionar via Discover — busca unificada por título ID ou URL
+
+**Onde fica:** Aba Séries (ou Filmes) → botão "+" (FAB) → abre a tela **Discover**.
+
+A tela **Discover** é uma busca unificada para filmes e séries, com duas abas no topo (Movies / Series). Ela aceita não só o título, mas também identificadores e links.
+
+**Como buscar:**
+- **Por título:** digite o nome (ex: "Severance") — a busca tem debounce e roda automaticamente enquanto você digita.
+- **Por ID TVDB/IMDb:** cole o identificador (ex: `tt11280740`, o ID do TVDB).
+- **Por URL:** cole um link do IMDb ou TVDB — o app extrai o ID embutido na URL e faz o lookup.
+
+**Resultados:**
+- Cada resultado mostra poster, título, ano e nota.
+- Resultados que já estão na sua biblioteca aparecem marcados como existentes.
+- Use o chip **"Hide in library"** para ocultar itens que você já tem.
+- Use o **dropdown de ordenação** para reordenar por relevância, data ou avaliação.
+
+**Adicionar:**
+- Toque em um resultado para abrir a tela de configuração (Monitored, Series Type, Quality Profile, Root Folder, Season Folder, etc.) — mesma segunda etapa do fluxo padrão.
+- Em seguida, toque em "Add Series".
+
+**Observações:**
+- A aba ativa (Movies/Series) no Discover pode ser pré-selecionada, inclusive via deep link `arrmate:///discover` ou `arrmate:///search?q=<termo>&type=series`.
+- A extração de ID funciona para os formatos de URL mais comuns do IMDb e TVDB.
 
 ## Detalhes da série — temporadas episódios histórico
 
@@ -212,8 +239,9 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 4. Um **diálogo de confirmação** aparece:
    - Mensagem: `Are you sure you want to delete "[Título da série]"?`
    - **Checkbox "Also delete files from disk"** (apagar também arquivos do disco) — desmarcado por padrão.
+   - **Checkbox "Add import exclusion list"** (opcional) — se marcado, adiciona a série à lista de exclusão do Sonarr (`addImportListExclusion`), impedindo que ela seja re-importada automaticamente por listas/import lists no futuro.
    - Botões: "Cancel" e "Delete" (botão vermelho).
-5. Marcar a checkbox **se também quiser apagar os arquivos** em disco.
+5. Marcar as checkboxes **se também quiser apagar os arquivos** em disco e/ou adicionar a exclusão.
 6. Tocar **"Delete"** para confirmar.
 7. Snackbar confirma:
    - "Series deleted" (se checkbox desmarcado), ou
@@ -223,6 +251,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 **Observações:**
 - A série é removida do Sonarr imediatamente.
 - Arquivos em disco só são apagados se a checkbox estiver marcada.
+- **Import exclusion** é útil quando você não quer que a série volte automaticamente via listas de importação — ela permanece na exclusion list do Sonarr até você removê-la de lá (pela web do Sonarr).
 - Não pode ser desfeito via app (re-adicionar manualmente se necessário).
 
 ## Purge série — remover tudo (Sonarr + qBittorrent)

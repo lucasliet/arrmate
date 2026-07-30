@@ -17,9 +17,14 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 
 - **Library Management**: Browse, search, filter, sort, batch select, and
   manage your movie and series libraries with a native mobile experience.
+- **Content Discovery**: Unified search/add screen (FAB on Movies/Series tabs)
+  that accepts a title, a TMDB/IMDb ID, or a URL, with debounced lookup, sort,
+  and a "Hide in library" filter.
 - **Media Management**: Delete, monitor/unmonitor in batch, and purge movies or
   series from your library, plus remove individual media files with
   confirmation dialogs.
+- **Import Exclusions**: When deleting a movie or series, optionally add it to
+  the import exclusion list so it is never re-imported automatically.
 - **Season Management (Sonarr)**: Run automatic and interactive season search,
   purge full seasons, and delete season files directly from season details.
 - **Safer Purge Flow**: Purge now detects cross-seed candidates and requires
@@ -40,8 +45,16 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   with filtering.
 - **Edit Media**: Update monitoring, quality profiles, root folders, and series
   types with optional file moving.
+- **Calendar Filters**: Filter the aggregated calendar by instance, media type,
+  monitored, premieres, and hide specials, with a one-tap reset.
+- **Connection Diagnostics**: Test every configured endpoint for reachability
+  and latency, inspect recent request traces, and export a sanitized report.
+- **System Overview**: View per-instance disk space and storage usage, library
+  sizes, and server versions.
 - **Slow Instance Mode**: Extended timeout support (90s) for remote or slow
   server connections.
+- **Offline Indicator**: An explicit offline banner with the last-online
+  timestamp so you know when data may be stale.
 - **Notifications**: Receive real-time push notifications via
   [ntfy.sh](https://ntfy.sh) integration with **unique multi-device
   synchronization**, **automatic configuration**, and **background polling**
@@ -49,6 +62,10 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   notifications for removed torrents.
 - **Guided Onboarding**: Built-in setup tour with coach marks on first launch,
   with replay available at Settings → Getting Started.
+- **Deep Linking**: Open the app straight to a movie, series, season, episode,
+  calendar, activity, search, or settings screen via the `arrmate://` scheme.
+- **What's New & Version History**: A changelog popup after each update, plus a
+  browsable version history pulled from GitHub Releases.
 - **Multi-Instance Support**: Manage multiple Radarr and Sonarr server instances
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
@@ -106,6 +123,28 @@ Arrmate supports real-time push notifications via [ntfy.sh](https://ntfy.sh):
 > [!TIP]
 > Once notifications are enabled, any new instance you add to Arrmate will be
 > **automatically configured** with the required webhooks.
+
+## 🔗 Deep Links
+
+Arrmate registers the `arrmate://` URI scheme (with a native Android
+`intent-filter`) so external apps, shortcuts, or `adb` can jump straight to a
+specific screen. Both the host form (`arrmate://movies/123`) and the
+authority-less form (`arrmate:///movies/123`) are supported.
+
+| Route | Example |
+| --- | --- |
+| Movie details | `arrmate:///movies/<id>` |
+| Series details | `arrmate:///series/<id>` |
+| Season details | `arrmate:///series/<id>/season/<n>` |
+| Episode details | `arrmate:///series/<id>/season/<n>/episode/<id>` |
+| Calendar | `arrmate:///calendar` |
+| Activity | `arrmate:///activity` |
+| Discover | `arrmate:///discover` |
+| Search | `arrmate:///search?q=<term>&type=movie` |
+| Settings (and sub-screens) | `arrmate:///settings`, `arrmate:///settings/diagnostics`, `arrmate:///settings/system-overview`, `arrmate:///settings/version-history`, … |
+| Instance editor | `arrmate:///settings/instance/<id>` |
+
+Unsupported links are rejected rather than navigating with a zeroed identifier.
 
 ## 🤝 Contributing
 

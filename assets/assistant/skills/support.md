@@ -56,10 +56,22 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Perfis de qualidade (visualizar disponíveis em cada instância).
 - Logs (ARR logs do servidor + APP logs internos) com filtros.
 - Health checks (diagnóstico de problemas do servidor).
+- **Connection Diagnostics** — teste de endpoints, latência, traces de requisições e export de relatório sanitizado (Configurações → System Management → Diagnostics).
+- **System Overview** — armazenamento/disco, tamanho da biblioteca e versão por instância.
+- **Version History & What's New** — histórico de releases do GitHub + popup de changelog pós-atualização.
+- **Banner offline** — indicador de offline com timestamp da última conexão online.
 - Tema (Light/Dark/System).
 - Cor de destaque (customização de color scheme).
 - Aba inicial (escolher qual aba abre ao iniciar).
 - Advanced: Slow Mode, Custom Headers para instâncias.
+
+**Busca & Conteúdo:**
+- **Discover** — tela unificada de busca/adicionar filmes e séries, aceita título, ID TMDB/IMDb/TVDB ou URL, com debounce, ordenação e filtro "Hide in library".
+- **Import exclusions** — opção, ao deletar filme/série, de impedir re-importação automática.
+- **Deep links** — abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou configurações via `arrmate://`.
+
+**Calendário:**
+- **Filtros do calendário** — refinar por instância, tipo de mídia, monitorados, estreias e ocultar especiais, com reset.
 
 **Atualização:**
 - Verificação automática de atualizações (via GitHub Releases).
@@ -98,14 +110,13 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Edição em massa de filmes/séries.
 - Importação de lista (Trakt, IMDb, etc).
 - Recomendações baseadas em histórico.
-- Modo offline (app precisa de internet para conectar ao servidor).
 
 ---
 
 ## FAQs — Perguntas frequentes
 
 **P: Preciso de acesso à internet para usar o Arrmate?**
-R: Sim e não. O Arrmate precisa de internet para **conectar ao seu servidor Radarr/Sonarr/qBittorrent remoto**. Porém, o **Assistant roda offline** (on-device) sem precisar de internet. Se servidores estão na LAN local (mesma rede Wi-Fi), o app funciona sem VPN/internet externa.
+R: Sim e não. O Arrmate precisa de internet para **conectar ao seu servidor Radarr/Sonarr/qBittorrent remoto**. Porém, o **Assistant roda offline** (on-device) sem precisar de internet. Se servidores estão na LAN local (mesma rede Wi-Fi), o app funciona sem VPN/internet externa. Quando o dispositivo fica sem rede, o app mostra um **banner offline** no topo com o horário da última conexão — as imagens em cache podem aparecer durante esse período.
 
 **P: Os dados são sincronizados com a nuvem?**
 R: Não. Tudo fica no dispositivo. Credenciais, configurações, cache de filmes — **nada sai do app**. O app apenas se conecta ao seu servidor pessoal.

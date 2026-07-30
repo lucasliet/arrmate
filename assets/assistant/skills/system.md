@@ -1,9 +1,11 @@
 ---
 name: system
-description: Logs, health, perfis de qualidade, sobre o app
+description: Logs, health, perfis de qualidade, sobre o app, diagnostics, system overview storage, version history, what's new, offline banner
 ---
 
 # Sistema
+
+> **Veja também:** a tela **System Management** também reúne **Connection Diagnostics**, **System Overview** e **Version History** — documentados em detalhe em `diagnostics.md`.
 
 ## Logs do app e logs do Radarr Sonarr
 
@@ -134,3 +136,13 @@ A seção About exibe **informações sobre o Arrmate**:
 **Observações:**
 - Verificar atualizações manualmente útil se você suspeitar que há nova versão.
 - App é open-source; você pode contribuir ou reportar issues no GitHub.
+
+## Outras telas do System Management
+
+A seção "System Management" das Configurações também reúne ferramentas de diagnóstico e sistema (documentadas em `diagnostics.md`):
+
+- **Connection Diagnostics** (`/settings/diagnostics`): teste de reachability/latência de cada endpoint, traces de requisições recentes e export de relatório sanitizado (sem credenciais). Útil para investigar erros de conexão.
+- **System Overview** (`/settings/system-overview`): armazenamento/disco por instância (com `LinearProgressIndicator`), tamanho da biblioteca (filmes/séries/episódios) e versão do servidor.
+- **Version History** (`/settings/version-history`): lista de todas as releases do GitHub, com a versão instalada marcada como "Installed".
+- **What's New**: popup automático com o changelog que aparece **uma vez** após cada atualização, com botão "View All Versions" para abrir o Version History.
+- **Offline banner**: banner no topo do app (cor `errorContainer`, ícone `cloud_off_outlined`) que indica explicitamente quando o dispositivo está offline, mostrando o timestamp da última conexão e o caveat de imagens em cache.

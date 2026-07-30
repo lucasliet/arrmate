@@ -104,18 +104,19 @@ O **Assistant** pode usar o OpenCode Zen online ou modelos locais no dispositivo
 
 **Sistema de skills (documentação):**
 
-O Assistant consulta automaticamente **14 skills temáticas**:
+O Assistant consulta automaticamente **15 skills temáticas**:
 - `overview.md` — navegação global, abas.
 - `library.md` — busca, filtros, sort.
-- `calendar.md` — calendário, lançamentos.
-- `movies.md` — adicionar, detalhes, editar filmes.
-- `series.md` — séries, temporadas, episódios.
+- `calendar.md` — calendário, lançamentos, filtros.
+- `movies.md` — adicionar, detalhes, editar filmes, discover.
+- `series.md` — séries, temporadas, episódios, discover.
 - `activity.md` — queue, history, importação manual.
 - `qbittorrent.md` — cliente torrent, downloads.
 - `instances.md` — configurar servidores, credenciais.
 - `notifications.md` — ntfy.sh, notificações, central.
 - `appearance.md` — tema, cor, aba inicial.
 - `system.md` — logs, health, quality profiles.
+- `diagnostics.md` — connection diagnostics, system overview storage, version history, what's new, offline banner.
 - `assistant.md` — este arquivo, sobre o próprio Assistant.
 - `troubleshooting.md` — erros comuns, soluções.
 - `support.md` — feedback, bugs, comunidade.

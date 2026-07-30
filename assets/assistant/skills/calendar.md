@@ -1,6 +1,6 @@
 ---
 name: calendar
-description: Calendário de próximos lançamentos e episódios
+description: Calendário de próximos lançamentos e episódios, filtros por instância tipo monitorados estreias especiais
 ---
 
 # Calendário
@@ -31,8 +31,29 @@ A aba Calendário mostra próximos lançamentos agrupados e ordenados por data:
 **Ações:**
 - **Toque em um item:** abre a tela de detalhes:
   - Se for filme: abre `MovieDetailsScreen` com all informações.
-  - Se for episódio: abre `SeriesDetailsScreen` da série correspondente (não existe tela de episódio isolado).
+  - Se for episódio: abre os **detalhes do episódio exato** (`EpisodeDetailsSheet` sobre a `SeasonDetailsScreen`), permitindo ver a sinopse, buscar release e interagir diretamente com aquele episódio.
 - **Pull-to-refresh** (arrastar para baixo): recarrega dados do Radarr/Sonarr.
+
+## Filtros do calendário — instância tipo monitorados estreias especiais
+
+**Onde fica:** Aba Calendário → barra horizontal de chips no topo (rolável horizontalmente).
+
+A barra de filtros permite refinar quais eventos aparecem. Cada filtro é um chip; o chip **"Reset"** aparece apenas quando há algum filtro ativo e limpa todos de uma vez.
+
+**Filtros disponíveis:**
+
+| Filtro | Tipo | Como funciona |
+|---|---|---|
+| **Instance** (ícone `dns_outlined`) | PopupMenuButton | Filtra por uma instância específica (Radarr/Sonarr) ou "Any instance" (padrão). |
+| **Tipo de mídia** (ícone `video_library_outlined`) | PopupMenuButton | Filtra por tipo: All, Movies, Series, etc. |
+| **Monitored** (ícone `bookmark_outline`) | FilterChip | Quando ativo, mostra apenas itens monitorados. |
+| **Premieres** (ícone `play_circle_outline`) | FilterChip | Quando ativo, mostra apenas estreias (season premieres). |
+| **Hide specials** (ícone `star_outline`) | FilterChip | Quando ativo, oculta episódios especiais (temporada 0). |
+| **Reset** (ícone `filter_alt_off_outlined`) | ActionChip | Só aparece com filtros ativos; limpa todos. |
+
+**Observações:**
+- Os filtros se combinam (ex: instância "Casa" + tipo "Series" + "Monitored").
+- O calendário agrega eventos de **todas** as instâncias Radarr/Sonarr por padrão; use o filtro de instância para isolar uma.
 
 **Estado vazio:** 
 - Título: "No upcoming events"
