@@ -36,7 +36,7 @@ class QBittorrentService {
 
   QBittorrentService(this.instance, {Dio? dio})
     : _candidateUrls = instance.connectionUrls,
-      _activeUrl = instance.effectiveUrl,
+      _activeUrl = instance.connectionUrls.first,
       _dio =
           dio ??
           Dio(
@@ -50,15 +50,22 @@ class QBittorrentService {
           ) {
     _dio.interceptors.add(SecureLogInterceptor());
     _dio.interceptors.add(RequestDiagnosticsInterceptor(source: instance.id));
+    // Normalise baseUrl to match the active candidate URL so the
+    // relative-path shortcut in [_resolvePath] works.
+    _dio.options.baseUrl = _activeUrl;
   }
 
   /// Authenticates with the qBittorrent API.
+  ///
+  /// When [baseUrl] is provided the login POST targets that URL (via
+  /// [_resolvePath]) instead of the default Dio base URL, which enables
+  /// cookie-mode auth to follow the active failover candidate.
   ///
   /// Selection of mode based on [Instance.apiKey]:
   /// - Empty → no managed auth; requests fall back to [Instance.headers] only.
   /// - No `:` → Bearer API key (qBittorrent ≥v5.2.0), no login request.
   /// - `username:password` → form-based login, stores returned SID cookie.
-  Future<void> authenticate() async {
+  Future<void> authenticate({String? baseUrl}) async {
     if (instance.apiKey.isEmpty) {
       _isApiKey = false;
       logger.debug(
@@ -80,8 +87,11 @@ class QBittorrentService {
     logger.debug('[QBittorrentService] Authenticating as $username...');
 
     try {
+      final loginPath = baseUrl != null
+          ? _resolvePath('/api/v2/auth/login', baseUrl)
+          : '/api/v2/auth/login';
       final response = await _dio.post(
-        '/api/v2/auth/login',
+        loginPath,
         data: FormData.fromMap({'username': username, 'password': password}),
         options: Options(
           contentType: Headers.formUrlEncodedContentType,
@@ -126,14 +136,16 @@ class QBittorrentService {
   ///
   /// Stateless modes (API key or custom-header-only) require no preparation —
   /// this is a no-op for them. Cookie mode acquires a session if none is held.
-  Future<void> _ensureAuthenticated() async {
+  /// [currentUrl] is forwarded to [authenticate] so the login POST reaches the
+  /// correct candidate when the service has failed over to an alternative URL.
+  Future<void> _ensureAuthenticated({String? currentUrl}) async {
     if (_isApiKey) return;
     if (instance.apiKey.isEmpty) return;
     if (_sessionCookie == null) {
       if (_reauthCompleter != null && !_reauthCompleter!.isCompleted) {
         await _reauthCompleter!.future;
       } else {
-        await authenticate();
+        await authenticate(baseUrl: currentUrl);
       }
     }
   }
@@ -164,8 +176,12 @@ class QBittorrentService {
           data: data,
           queryParameters: queryParameters,
           options: options,
+          currentUrl: currentUrl,
         );
-        _activeUrl = currentUrl;
+        final statusCode = response.statusCode;
+        if (statusCode != null && statusCode >= 200 && statusCode < 300) {
+          _activeUrl = currentUrl;
+        }
         return response;
       } on DioException catch (error) {
         final nextUrl = _nextCandidateUrl(attemptedUrls);
@@ -190,8 +206,9 @@ class QBittorrentService {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    String? currentUrl,
   }) async {
-    await _ensureAuthenticated();
+    await _ensureAuthenticated(currentUrl: currentUrl);
 
     options ??= Options();
     if (_isApiKey) {
@@ -238,7 +255,7 @@ class QBittorrentService {
             '[QBittorrentService] Session expired, re-authenticating...',
           );
           _sessionCookie = null;
-          await authenticate();
+          await authenticate(baseUrl: currentUrl);
           _reauthCompleter!.complete();
 
           // Retry
@@ -285,7 +302,7 @@ class QBittorrentService {
             '[QBittorrentService] Session expired (DioException), re-authenticating...',
           );
           _sessionCookie = null;
-          await authenticate();
+          await authenticate(baseUrl: currentUrl);
           _reauthCompleter!.complete();
 
           if (_sessionCookie != null) {
