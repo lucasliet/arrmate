@@ -256,6 +256,33 @@ void main() {
         expect(page.records.map((e) => e.message), isNot(contains('log-r2')));
       },
     );
+
+    test(
+      'should preserve previous records when the next page fails to load',
+      () async {
+        // Given
+        final movieRepo = MockMovieRepository();
+        when(() => movieRepo.getLogs(page: 1)).thenAnswer(
+          (_) async => _logPage(page: 1, totalRecords: 120, records: ['log-1']),
+        );
+        when(() => movieRepo.getLogs(page: 2)).thenThrow(Exception('boom'));
+
+        final container = ProviderContainer(
+          overrides: [movieRepositoryProvider.overrideWithValue(movieRepo)],
+        );
+        addTearDown(container.dispose);
+        await container.read(logsProvider.future);
+
+        // When
+        await container.read(logsProvider.notifier).fetchNextPage();
+
+        // Then
+        final status = container.read(logsProvider);
+        expect(status.hasError, isTrue);
+        expect(status.isLoading, isFalse);
+        expect(status.value?.records.map((e) => e.message), ['log-1']);
+      },
+    );
   });
 
   group('Quality profile providers', () {

@@ -114,7 +114,9 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
   ///
   /// Guards against instance switches and overlapping scroll-driven requests
   /// via a generation token plus a single-flight flag, so a delayed response
-  /// from a previous source can never overwrite freshly loaded logs.
+  /// from a previous source can never overwrite freshly loaded logs. When the
+  /// next page fails to load, the previous records are preserved and the state
+  /// transitions to [AsyncError] instead of remaining in [AsyncLoading].
   Future<void> fetchNextPage() async {
     if (_isLoadingNextPage) return;
     final currentStatus = state;
@@ -140,6 +142,17 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
           records: [...currentStatus.value!.records, ...nextPage.records],
         ),
       );
+    } catch (error, stackTrace) {
+      if (generation != _generation) return;
+      logger.warning(
+        '[LogsNotifier] Failed to load next log page',
+        error,
+        stackTrace,
+      );
+      state = AsyncError<LogPage>(
+        error,
+        stackTrace,
+      ).copyWithPrevious(currentStatus);
     } finally {
       if (generation == _generation) {
         _isLoadingNextPage = false;
