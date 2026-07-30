@@ -1,9 +1,11 @@
 ---
 name: qbittorrent
-description: Listar/pausar/retomar torrents, adicionar torrent, import torrent, filtros
+description: Listar/pausar/retomar torrents, adicionar torrent, import torrent, filtros, alternative URL failover local externa
 ---
 
 # qBittorrent
+
+> **URL local + externa:** assim como Radarr/Sonarr, o qBittorrent aceita uma **Alternative URL** (LAN + URL externa) com failover automático. Veja `instances.md` → seção "Alternative URL".
 
 ## qBittorrent — listar pausar retomar e remover torrents
 

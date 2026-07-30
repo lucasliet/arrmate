@@ -9,7 +9,7 @@ void main() {
       final probes = <Uri>[];
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.wifi],
-        ping: (uri) async {
+        ping: (instance, uri) async {
           probes.add(uri);
           return true;
         },
@@ -25,7 +25,7 @@ void main() {
       final probes = <Uri>[];
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.mobile],
-        ping: (uri) async {
+        ping: (instance, uri) async {
           probes.add(uri);
           return true;
         },
@@ -41,7 +41,7 @@ void main() {
       final probes = <Uri>[];
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.wifi],
-        ping: (uri) async {
+        ping: (instance, uri) async {
           probes.add(uri);
           return uri.host == 'radarr.example.com';
         },
@@ -61,7 +61,7 @@ void main() {
       () async {
         final resolver = InstanceConnectionResolver(
           loadConnectivity: () async => [ConnectivityResult.wifi],
-          ping: (_) async => false,
+          ping: (instance, uri) async => false,
         );
 
         final resolved = await resolver.resolve(_instance());
@@ -74,7 +74,7 @@ void main() {
       Uri? probedUri;
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.wifi],
-        ping: (uri) async {
+        ping: (instance, uri) async {
           probedUri = uri;
           return true;
         },
@@ -92,7 +92,7 @@ void main() {
       Uri? probedUri;
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.wifi],
-        ping: (uri) async {
+        ping: (instance, uri) async {
           probedUri = uri;
           return true;
         },
@@ -106,6 +106,26 @@ void main() {
       expect(probedUri?.userInfo, isEmpty);
       expect(probedUri?.host, 'local.example.com');
     });
+
+    test('should probe the qBittorrent version endpoint for a qBittorrent '
+        'instance', () async {
+      Uri? probedUri;
+      InstanceType? probedType;
+      final resolver = InstanceConnectionResolver(
+        loadConnectivity: () async => [ConnectivityResult.wifi],
+        ping: (instance, uri) async {
+          probedUri = uri;
+          probedType = instance.type;
+          return true;
+        },
+      );
+
+      final resolved = await resolver.resolve(_qbitInstance());
+
+      expect(resolved.effectiveUrl, 'http://192.168.1.10:8080');
+      expect(probedType, InstanceType.qbittorrent);
+      expect(probedUri?.path, '/api/v2/app/version');
+    });
   });
 }
 
@@ -117,5 +137,16 @@ Instance _instance() {
     url: 'http://192.168.1.10:7878',
     alternativeUrl: 'https://radarr.example.com',
     apiKey: 'key',
+  );
+}
+
+Instance _qbitInstance() {
+  return Instance(
+    id: 'qbit',
+    type: InstanceType.qbittorrent,
+    label: 'qBittorrent',
+    url: 'http://192.168.1.10:8080',
+    alternativeUrl: 'https://qbit.example.com',
+    apiKey: 'user:pass',
   );
 }

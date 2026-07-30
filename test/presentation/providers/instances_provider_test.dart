@@ -241,7 +241,7 @@ void main() {
       final repository = MockInstanceRepository();
       final resolver = InstanceConnectionResolver(
         loadConnectivity: () async => [ConnectivityResult.mobile],
-        ping: (_) async => true,
+        ping: (instance, uri) async => true,
         connectivityChanges: const Stream.empty(),
       );
       final container = ProviderContainer(
@@ -312,7 +312,7 @@ void main() {
             ? [ConnectivityResult.wifi]
             : [ConnectivityResult.mobile];
       },
-      ping: (_) {
+      ping: (instance, uri) {
         probeCalls++;
         return probeCalls == 1 ? firstProbe.future : secondProbe.future;
       },

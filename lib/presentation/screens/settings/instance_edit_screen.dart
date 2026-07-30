@@ -243,7 +243,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
   String? get _alternativeUrl {
     final value = _alternativeUrlController.text.trim();
-    if (_type == InstanceType.qbittorrent || value.isEmpty) {
+    if (value.isEmpty) {
       return null;
     }
     return value;
@@ -425,35 +425,33 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             ),
             const SizedBox(height: 16),
 
-            if (_type != InstanceType.qbittorrent) ...[
-              TextFormField(
-                controller: _alternativeUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Alternative URL',
-                  hintText: 'https://media.example.com',
-                  border: OutlineInputBorder(),
-                  helperText: 'Optional URL used outside your local network',
-                ),
-                keyboardType: TextInputType.url,
-                validator: (value) {
-                  final alternativeUrl = value?.trim() ?? '';
-                  if (alternativeUrl.isEmpty) {
-                    return null;
-                  }
-                  final uri = Uri.tryParse(alternativeUrl);
-                  if (uri == null ||
-                      uri.host.isEmpty ||
-                      (!uri.isScheme('http') && !uri.isScheme('https'))) {
-                    return 'Must be a valid HTTP or HTTPS URL';
-                  }
-                  if (alternativeUrl == _urlController.text.trim()) {
-                    return 'Must differ from the primary URL';
-                  }
-                  return null;
-                },
+            TextFormField(
+              controller: _alternativeUrlController,
+              decoration: const InputDecoration(
+                labelText: 'Alternative URL',
+                hintText: 'https://media.example.com',
+                border: OutlineInputBorder(),
+                helperText: 'Optional URL used outside your local network',
               ),
-              const SizedBox(height: 16),
-            ],
+              keyboardType: TextInputType.url,
+              validator: (value) {
+                final alternativeUrl = value?.trim() ?? '';
+                if (alternativeUrl.isEmpty) {
+                  return null;
+                }
+                final uri = Uri.tryParse(alternativeUrl);
+                if (uri == null ||
+                    uri.host.isEmpty ||
+                    (!uri.isScheme('http') && !uri.isScheme('https'))) {
+                  return 'Must be a valid HTTP or HTTPS URL';
+                }
+                if (alternativeUrl == _urlController.text.trim()) {
+                  return 'Must differ from the primary URL';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
 
             TextFormField(
               key: tourKeys.instanceApiKeyFieldKey,
