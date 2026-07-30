@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/movie_repository.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
@@ -171,6 +173,87 @@ void main() {
         final page = container.read(logsProvider).value!;
         expect(page.records.map((e) => e.message), ['log-1', 'log-2']);
         verify(() => movieRepo.getLogs(page: 2)).called(1);
+      },
+    );
+
+    test(
+      'should ignore overlapping scroll-driven pagination requests',
+      () async {
+        // Given
+        final movieRepo = MockMovieRepository();
+        when(() => movieRepo.getLogs(page: 1)).thenAnswer(
+          (_) async => _logPage(page: 1, totalRecords: 120, records: ['log-1']),
+        );
+        final pageTwoCompleter = Completer<LogPage>();
+        when(
+          () => movieRepo.getLogs(page: 2),
+        ).thenAnswer((_) => pageTwoCompleter.future);
+
+        final container = ProviderContainer(
+          overrides: [movieRepositoryProvider.overrideWithValue(movieRepo)],
+        );
+        addTearDown(container.dispose);
+        await container.read(logsProvider.future);
+
+        // When
+        final firstCall = container.read(logsProvider.notifier).fetchNextPage();
+        await container.read(logsProvider.notifier).fetchNextPage();
+        pageTwoCompleter.complete(
+          _logPage(page: 2, totalRecords: 120, records: ['log-2']),
+        );
+        await firstCall;
+
+        // Then
+        verify(() => movieRepo.getLogs(page: 2)).called(1);
+        final page = container.read(logsProvider).value!;
+        expect(page.records.map((e) => e.message), ['log-1', 'log-2']);
+      },
+    );
+
+    test(
+      'should discard a late page response after the log source switches',
+      () async {
+        // Given
+        final movieRepo = MockMovieRepository();
+        final seriesRepo = MockSeriesRepository();
+        when(() => movieRepo.getLogs(page: 1)).thenAnswer(
+          (_) async =>
+              _logPage(page: 1, totalRecords: 120, records: ['log-r1']),
+        );
+        final radarrPageTwo = Completer<LogPage>();
+        when(
+          () => movieRepo.getLogs(page: 2),
+        ).thenAnswer((_) => radarrPageTwo.future);
+        when(() => seriesRepo.getLogs(page: 1)).thenAnswer(
+          (_) async => _logPage(page: 1, totalRecords: 30, records: ['log-s1']),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            movieRepositoryProvider.overrideWithValue(movieRepo),
+            seriesRepositoryProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(logsProvider.future);
+
+        // When
+        final radarrFetch = container
+            .read(logsProvider.notifier)
+            .fetchNextPage();
+        container.updateOverrides([
+          movieRepositoryProvider.overrideWithValue(null),
+          seriesRepositoryProvider.overrideWithValue(seriesRepo),
+        ]);
+        await container.read(logsProvider.future);
+        radarrPageTwo.complete(
+          _logPage(page: 2, totalRecords: 120, records: ['log-r2']),
+        );
+        await radarrFetch;
+
+        // Then
+        final page = container.read(logsProvider).value!;
+        expect(page.records.map((e) => e.message), isNot(contains('log-r2')));
       },
     );
   });

@@ -91,8 +91,13 @@ final logsProvider = AsyncNotifierProvider<LogsNotifier, LogPage>(
 
 /// Manages the state and pagination of system logs.
 class LogsNotifier extends AsyncNotifier<LogPage> {
+  int _generation = 0;
+  bool _isLoadingNextPage = false;
+
   @override
   Future<LogPage> build() async {
+    _generation++;
+    _isLoadingNextPage = false;
     final loader = ref.watch(arrLogLoaderProvider);
     return _fetchLogs(loader: loader);
   }
@@ -106,7 +111,12 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
   }
 
   /// Fetches the next page of logs and appends it to the current list.
+  ///
+  /// Guards against instance switches and overlapping scroll-driven requests
+  /// via a generation token plus a single-flight flag, so a delayed response
+  /// from a previous source can never overwrite freshly loaded logs.
   Future<void> fetchNextPage() async {
+    if (_isLoadingNextPage) return;
     final currentStatus = state;
     if (currentStatus.value == null) return;
 
@@ -116,17 +126,25 @@ class LogsNotifier extends AsyncNotifier<LogPage> {
 
     if (currentPage * pageSize >= totalRecords) return;
 
-    final previousState = state;
-    state = AsyncLoading<LogPage>().copyWithPrevious(previousState);
-    state = await AsyncValue.guard(() async {
+    final generation = ++_generation;
+    _isLoadingNextPage = true;
+    try {
+      state = AsyncLoading<LogPage>().copyWithPrevious(currentStatus);
       final nextPage = await _fetchLogs(page: currentPage + 1);
-      return LogPage(
-        page: nextPage.page,
-        pageSize: nextPage.pageSize,
-        totalRecords: nextPage.totalRecords,
-        records: [...currentStatus.value!.records, ...nextPage.records],
+      if (generation != _generation) return;
+      state = AsyncData(
+        LogPage(
+          page: nextPage.page,
+          pageSize: nextPage.pageSize,
+          totalRecords: nextPage.totalRecords,
+          records: [...currentStatus.value!.records, ...nextPage.records],
+        ),
       );
-    });
+    } finally {
+      if (generation == _generation) {
+        _isLoadingNextPage = false;
+      }
+    }
   }
 }
 
