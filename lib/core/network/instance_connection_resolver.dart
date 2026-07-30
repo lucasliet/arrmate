@@ -7,14 +7,14 @@ import '../../domain/models/models.dart';
 class InstanceConnectionResolver {
   final Connectivity _connectivity;
   final Future<List<ConnectivityResult>> Function() _loadConnectivity;
-  final Future<bool> Function(Uri) _ping;
+  final Future<bool> Function(Instance, Uri) _ping;
   final Stream<List<ConnectivityResult>>? _connectivityChanges;
 
   /// Creates a resolver with injectable network and probe operations.
   InstanceConnectionResolver({
     Connectivity? connectivity,
     Future<List<ConnectivityResult>> Function()? loadConnectivity,
-    Future<bool> Function(Uri)? ping,
+    Future<bool> Function(Instance, Uri)? ping,
     Stream<List<ConnectivityResult>>? connectivityChanges,
     Dio? dio,
   }) : _connectivity = connectivity ?? Connectivity(),
@@ -45,7 +45,7 @@ class InstanceConnectionResolver {
     );
 
     for (final candidate in candidates) {
-      if (await _ping(_pingUri(candidate))) {
+      if (await _ping(instance, _pingUri(instance, candidate))) {
         return instance.copyWith(activeUrl: candidate);
       }
     }
@@ -71,14 +71,17 @@ class InstanceConnectionResolver {
         : [primaryUrl, alternativeUrl];
   }
 
-  Uri _pingUri(String baseUrl) {
+  Uri _pingUri(Instance instance, String baseUrl) {
     final baseUri = Uri.parse(baseUrl);
     final basePath = baseUri.path.endsWith('/')
         ? baseUri.path.substring(0, baseUri.path.length - 1)
         : baseUri.path;
+    final probePath = instance.type == InstanceType.qbittorrent
+        ? '$basePath/api/v2/app/version'
+        : '$basePath/ping';
     return baseUri.replace(
       userInfo: '',
-      path: '$basePath/ping',
+      path: probePath,
       queryParameters: null,
       fragment: null,
     );
@@ -89,24 +92,31 @@ class InstanceConnectionResolver {
     return dio;
   }
 
-  static Future<bool> Function(Uri) _createPing(Dio dio) {
-    return (uri) async {
+  static Future<bool> Function(Instance, Uri) _createPing(Dio dio) {
+    return (instance, uri) async {
       try {
         final response = await dio.getUri<dynamic>(
           uri,
           options: Options(
             followRedirects: false,
-            validateStatus: (status) =>
-                status != null && status >= 200 && status < 300,
+            validateStatus: (status) => status != null,
             sendTimeout: const Duration(seconds: 5),
             receiveTimeout: const Duration(seconds: 5),
           ),
         );
+        if (response.realUri.host != uri.host) {
+          return false;
+        }
+        // qBittorrent's WebUI rejects unauthenticated requests with 403/401,
+        // so any HTTP response proves the host is reachable. Radarr/Sonarr
+        // expose a public /ping that returns {"status": "OK"}.
+        if (instance.type == InstanceType.qbittorrent) {
+          return true;
+        }
         final status = response.data is Map
             ? (response.data as Map<dynamic, dynamic>)['status']?.toString()
             : null;
-        return response.realUri.host == uri.host &&
-            status?.toUpperCase() == 'OK';
+        return status?.toUpperCase() == 'OK';
       } on DioException {
         return false;
       }

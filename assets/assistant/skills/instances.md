@@ -206,6 +206,29 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
   - Não adicione headers desnecessários; pode quebrar requisições.
   - Valores sensíveis (tokens, senhas) são armazenados **localmente no device** (não sincronizados).
 
+## Alternative URL — URL local e externa com failover
+
+**Onde fica:** Tela de adicionar/editar instância → campo **"Alternative URL"** (abaixo do campo "URL", visível para Radarr, Sonarr e qBittorrent).
+
+A **Alternative URL** é uma segunda URL para a mesma instância, usada quando a URL principal não está alcançável. É ideal para quem acessa o servidor pela **LAN em casa** e por uma **URL externa** (VPN/reverse proxy) fora de casa.
+
+**Como funciona o failover:**
+- O app escolhe a ordem das URLs de acordo com a rede ativa: em rede local (Wi-Fi/Ethernet/VPN) prefere a URL principal; em rede móvel prefere a alternativa.
+- Antes de usar, o app confirma qual URL está alcançável com um probe:
+  - **Radarr/Sonarr:** endpoint público `/ping` (responde `{"status": "OK"}`).
+  - **qBittorrent:** endpoint `/api/v2/app/version` (qualquer resposta HTTP, incluindo 403, prova que o host está online).
+- Além disso, **leituras (GET)** fazem failover por requisição: se a URL ativa falhar com erro de conexão/timeout, o app tenta a outra URL automaticamente.
+
+**Quando usar:**
+- URL principal = `http://192.168.1.10:7878` (LAN) + Alternative URL = `https://radarr.minhodominio.com` (externa).
+- Servidor atrás de VPN/reverse proxy que só é alcançável fora de casa.
+
+**Observações:**
+- **Mutações (add/pause/delete) não fazem failover por requisição** — apenas as leituras. Isso evita, por exemplo, adicionar o mesmo torrent em dois servidores qBittorrent distintos.
+- A Alternative URL precisa ser HTTP/HTTPS válida, com host, e diferente da URL principal.
+- A tela **Connection Diagnostics** mostra o status de cada endpoint (principal e alternativo) separadamente.
+- Funciona para os três tipos de instância: **Radarr, Sonarr e qBittorrent**.
+
 ## Suporte a múltiplas instâncias simultâneas — agregação de dados
 
 O **Arrmate suporta múltiplas instâncias** de **cada tipo** simultaneamente.

@@ -26,16 +26,28 @@ class QBittorrentService {
 
   Completer<void>? _reauthCompleter;
 
-  QBittorrentService(this.instance)
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: instance.effectiveUrl,
-          connectTimeout: instance.timeout(InstanceTimeout.normal),
-          receiveTimeout: instance.timeout(InstanceTimeout.normal),
-          validateStatus: (status) => status != null && status < 500,
-          headers: {for (final h in instance.headers) h.name: h.value},
-        ),
-      ) {
+  /// Every candidate base URL that may be tried when the active one fails.
+  final List<String> _candidateUrls;
+
+  /// Base URL currently considered active. Promoted to a fallback only after
+  /// that fallback answers successfully, so a fallback returning 401/500 never
+  /// traps the client on it. Mirrors [ApiClient._activeBaseUrl].
+  String _activeUrl;
+
+  QBittorrentService(this.instance, {Dio? dio})
+    : _candidateUrls = instance.connectionUrls,
+      _activeUrl = instance.effectiveUrl,
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: instance.effectiveUrl,
+              connectTimeout: instance.timeout(InstanceTimeout.normal),
+              receiveTimeout: instance.timeout(InstanceTimeout.normal),
+              validateStatus: (status) => status != null && status < 500,
+              headers: {for (final h in instance.headers) h.name: h.value},
+            ),
+          ) {
     _dio.interceptors.add(SecureLogInterceptor());
     _dio.interceptors.add(RequestDiagnosticsInterceptor(source: instance.id));
   }
@@ -126,9 +138,54 @@ class QBittorrentService {
     }
   }
 
-  /// Helper to make authenticated requests with auto-retry on 401/403.
+  /// Makes an authenticated request with auto-retry on 401/403.
+  ///
+  /// Safe read requests (GET) additionally fail over to the next candidate URL
+  /// on a connection-level failure, mirroring [ApiClient]. Mutating requests
+  /// never fail over: an add/pause/delete retried against an alternative host
+  /// could duplicate side effects across distinct qBittorrent servers.
   Future<Response<T>> _request<T>(
     String path, {
+    String method = 'GET',
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    final allowFailover = method.toUpperCase() == 'GET';
+    final attemptedUrls = <String>{};
+    var currentUrl = _activeUrl;
+
+    while (true) {
+      attemptedUrls.add(currentUrl);
+      try {
+        final response = await _requestOnce<T>(
+          _resolvePath(path, currentUrl),
+          method: method,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        );
+        _activeUrl = currentUrl;
+        return response;
+      } on DioException catch (error) {
+        final nextUrl = _nextCandidateUrl(attemptedUrls);
+        if (!allowFailover || !_canFailOver(error) || nextUrl == null) {
+          rethrow;
+        }
+        logger.warning(
+          '[QBittorrentService] Connection failed, retrying with an '
+          'alternative instance URL',
+        );
+        currentUrl = nextUrl;
+      }
+    }
+  }
+
+  /// Runs a single authenticated attempt against a resolved path, handling the
+  /// 403 re-authentication flow. The cookie/API-key state is shared across
+  /// candidate URLs because each candidate points to the same logical server.
+  Future<Response<T>> _requestOnce<T>(
+    String resolvedPath, {
     String method = 'GET',
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -149,7 +206,7 @@ class QBittorrentService {
 
     try {
       final response = await _dio.request<T>(
-        path,
+        resolvedPath,
         data: data,
         queryParameters: queryParameters,
         options: options,
@@ -168,7 +225,7 @@ class QBittorrentService {
             options.headers?['Cookie'] = _sessionCookie;
           }
           return await _dio.request<T>(
-            path,
+            resolvedPath,
             data: data,
             queryParameters: queryParameters,
             options: options,
@@ -189,7 +246,7 @@ class QBittorrentService {
             options.headers?['Cookie'] = _sessionCookie;
           }
           return await _dio.request<T>(
-            path,
+            resolvedPath,
             data: data,
             queryParameters: queryParameters,
             options: options,
@@ -215,7 +272,7 @@ class QBittorrentService {
             options.headers?['Cookie'] = _sessionCookie;
           }
           return await _dio.request<T>(
-            path,
+            resolvedPath,
             data: data,
             queryParameters: queryParameters,
             options: options,
@@ -235,7 +292,7 @@ class QBittorrentService {
             options.headers?['Cookie'] = _sessionCookie;
           }
           return await _dio.request<T>(
-            path,
+            resolvedPath,
             data: data,
             queryParameters: queryParameters,
             options: options,
@@ -249,6 +306,31 @@ class QBittorrentService {
       }
       rethrow;
     }
+  }
+
+  /// Resolves [path] against [baseUrl]. When the candidate differs from the
+  /// shared Dio base URL, an absolute URL is returned so the request runs
+  /// against the fallback without mutating [_dio.options.baseUrl].
+  String _resolvePath(String path, String baseUrl) {
+    if (baseUrl == _dio.options.baseUrl) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final separator = baseUrl.endsWith('/') || path.startsWith('/') ? '' : '/';
+    return '$baseUrl$separator$path';
+  }
+
+  /// Returns the first candidate URL not yet attempted, if any.
+  String? _nextCandidateUrl(Set<String> attemptedUrls) {
+    return _candidateUrls
+        .where((candidate) => !attemptedUrls.contains(candidate))
+        .firstOrNull;
+  }
+
+  /// Whether a [DioException] justifies trying an alternative URL.
+  bool _canFailOver(DioException error) {
+    return error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.connectionTimeout;
   }
 
   /// Gets the list of torrents.
