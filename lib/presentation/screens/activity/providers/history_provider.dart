@@ -315,7 +315,6 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
 
   /// Refreshes the history list, resetting pagination.
   Future<void> refresh() async {
-    _generation++;
     ref.invalidateSelf();
     await future;
   }

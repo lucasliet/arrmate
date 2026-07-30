@@ -282,16 +282,3 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     return true;
   }
 }
-
-// History Provider (Placeholder for now, usually paginated)
-final historyProvider = FutureProvider.autoDispose<List<HistoryItem>>((
-  ref,
-) async {
-  // History API is usually /history
-  // Not yet fully implemented in repositories?
-  return [];
-});
-
-class HistoryItem {
-  // Skeleton
-}
