@@ -177,7 +177,6 @@ void main() {
             _mediaFile(id: 3),
           ],
         );
-        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -223,6 +222,7 @@ void main() {
           () =>
               movieRepo.deleteMovie(7, deleteFiles: true, addExclusion: false),
         ).called(1);
+        verifyNever(() => movieRepo.deleteMovieFile(any()));
         verify(() => qb.deleteTorrents(any(), deleteFiles: true)).called(1);
       },
     );
@@ -505,7 +505,6 @@ void main() {
       when(() => seriesRepo.getSeriesFiles(42)).thenAnswer(
         (_) async => [for (var i = 1; i <= 10; i++) _mediaFile(id: i)],
       );
-      when(() => seriesRepo.deleteSeriesFile(any())).thenAnswer((_) async {});
       when(
         () => seriesRepo.deleteSeries(
           any(),
@@ -545,6 +544,7 @@ void main() {
           'ep4pendinghash',
         ]),
       );
+      verifyNever(() => seriesRepo.deleteSeriesFile(any()));
     });
 
     test('purgeMovie dedupes the same hash appearing in history and queue '
@@ -797,8 +797,7 @@ void main() {
     });
 
     test(
-      'purgeMovie counts only media files actually deleted when some '
-      'deleteMovieFile calls fail (regression: snackbar reported 0)',
+      'purgeMovie lets Radarr delete media files with the catalog',
       () async {
         final movieRepo = MockMovieRepository();
         final qb = MockQBittorrentService();
@@ -845,10 +844,6 @@ void main() {
             _mediaFile(id: 3),
           ],
         );
-        when(() => movieRepo.deleteMovieFile(any())).thenAnswer((_) async {});
-        when(
-          () => movieRepo.deleteMovieFile(2),
-        ).thenThrow(Exception('file busy'));
         when(
           () => movieRepo.deleteMovie(
             any(),
@@ -870,11 +865,9 @@ void main() {
           qb: qb,
         ).purgeMovie(7);
 
-        expect(result.mediaFilesDeleted, 2);
+        expect(result.mediaFilesDeleted, 3);
         expect(result.catalogDeleted, 1);
-        verify(() => movieRepo.deleteMovieFile(1)).called(1);
-        verify(() => movieRepo.deleteMovieFile(2)).called(1);
-        verify(() => movieRepo.deleteMovieFile(3)).called(1);
+        verifyNever(() => movieRepo.deleteMovieFile(any()));
       },
     );
 
@@ -1366,5 +1359,146 @@ void main() {
         expect(result.torrentHashesDeleted, ['hashaaa111']);
       },
     );
+
+    group('catalog deletion failure', () {
+      test(
+        'purgeMovies leaves downloads untouched when Radarr catalog deletion fails',
+        () async {
+          final movieRepo = MockMovieRepository();
+          final qb = MockQBittorrentService();
+
+          when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+            (_) async => [
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: 7,
+                downloadId: 'MOVIEHASH01',
+              ),
+            ],
+          );
+          when(
+            () => movieRepo.getQueue(
+              page: any(named: 'page'),
+              pageSize: any(named: 'pageSize'),
+              sortKey: any(named: 'sortKey'),
+              sortDirection: any(named: 'sortDirection'),
+            ),
+          ).thenAnswer(
+            (_) async => QueueItems(
+              page: 1,
+              pageSize: 20,
+              sortKey: 'timeleft',
+              sortDirection: 'ascending',
+              totalRecords: 1,
+              records: [
+                _queueItem(id: 50, movieId: 7, downloadId: 'MOVIEHASH01'),
+              ],
+            ),
+          );
+          when(() => movieRepo.getMovieFiles(7)).thenAnswer((_) async => []);
+          when(
+            () => movieRepo.deleteMovie(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+              addExclusion: any(named: 'addExclusion'),
+            ),
+          ).thenThrow(StateError('Radarr catalog deletion failed'));
+
+          await expectLater(
+            _service(movieRepo: movieRepo, qb: qb).purgeMovies([7]),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => movieRepo.deleteQueueItem(
+              any(),
+              removeFromClient: any(named: 'removeFromClient'),
+              blocklist: any(named: 'blocklist'),
+              skipRedownload: any(named: 'skipRedownload'),
+            ),
+          );
+          verifyNever(() => movieRepo.deleteMovieFile(any()));
+          verifyNever(() => qb.getTorrents());
+          verifyNever(
+            () => qb.deleteTorrents(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'purgeSeriesList leaves downloads untouched when Sonarr catalog deletion fails',
+        () async {
+          final seriesRepo = MockSeriesRepository();
+          final qb = MockQBittorrentService();
+
+          when(() => seriesRepo.getSeriesHistory(42)).thenAnswer(
+            (_) async => [
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: 0,
+                seriesId: 42,
+                downloadId: 'SERIESHASH01',
+              ),
+            ],
+          );
+          when(
+            () => seriesRepo.getQueue(
+              page: any(named: 'page'),
+              pageSize: any(named: 'pageSize'),
+              sortKey: any(named: 'sortKey'),
+              sortDirection: any(named: 'sortDirection'),
+            ),
+          ).thenAnswer(
+            (_) async => QueueItems(
+              page: 1,
+              pageSize: 20,
+              sortKey: 'timeleft',
+              sortDirection: 'ascending',
+              totalRecords: 1,
+              records: [
+                _queueItem(id: 60, seriesId: 42, downloadId: 'SERIESHASH01'),
+              ],
+            ),
+          );
+          when(() => seriesRepo.getSeriesFiles(42)).thenAnswer((_) async => []);
+          when(
+            () => seriesRepo.deleteSeries(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+              addExclusion: any(named: 'addExclusion'),
+            ),
+          ).thenThrow(StateError('Sonarr catalog deletion failed'));
+
+          await expectLater(
+            _service(
+              movieRepo: MockMovieRepository(),
+              seriesRepo: seriesRepo,
+              qb: qb,
+            ).purgeSeriesList([42]),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => seriesRepo.deleteQueueItem(
+              any(),
+              removeFromClient: any(named: 'removeFromClient'),
+              blocklist: any(named: 'blocklist'),
+              skipRedownload: any(named: 'skipRedownload'),
+            ),
+          );
+          verifyNever(() => seriesRepo.deleteSeriesFile(any()));
+          verifyNever(() => qb.getTorrents());
+          verifyNever(
+            () => qb.deleteTorrents(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+            ),
+          );
+        },
+      );
+    });
   });
 }

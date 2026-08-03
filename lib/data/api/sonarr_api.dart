@@ -81,6 +81,7 @@ class SonarrApi {
         'deleteFiles': deleteFiles,
         'addImportListExclusion': addExclusion,
       },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }
 

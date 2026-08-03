@@ -78,6 +78,7 @@ class RadarrApi {
         'deleteFiles': deleteFiles,
         'addImportExclusion': addExclusion,
       },
+      customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }
 

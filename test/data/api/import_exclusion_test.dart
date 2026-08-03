@@ -14,7 +14,10 @@ void main() {
     test('should use addImportExclusion for Radarr movies', () async {
       // Given
       final adapter = _RecordingAdapter();
-      final api = RadarrApi(_instance(InstanceType.radarr), _client(adapter));
+      final api = RadarrApi(
+        _instance(InstanceType.radarr, mode: InstanceMode.slow),
+        _client(adapter),
+      );
 
       // When
       await api.deleteMovie(42, addExclusion: true);
@@ -25,12 +28,17 @@ void main() {
         'deleteFiles': 'false',
         'addImportExclusion': 'true',
       });
+      expect(adapter.options?.receiveTimeout, const Duration(seconds: 300));
+      expect(adapter.options?.sendTimeout, const Duration(seconds: 300));
     });
 
     test('should use addImportListExclusion for Sonarr series', () async {
       // Given
       final adapter = _RecordingAdapter();
-      final api = SonarrApi(_instance(InstanceType.sonarr), _client(adapter));
+      final api = SonarrApi(
+        _instance(InstanceType.sonarr, mode: InstanceMode.slow),
+        _client(adapter),
+      );
 
       // When
       await api.deleteSeries(42, addExclusion: true);
@@ -41,6 +49,8 @@ void main() {
         'deleteFiles': 'false',
         'addImportListExclusion': 'true',
       });
+      expect(adapter.options?.receiveTimeout, const Duration(seconds: 300));
+      expect(adapter.options?.sendTimeout, const Duration(seconds: 300));
     });
   });
 
@@ -163,10 +173,14 @@ void main() {
   });
 }
 
-Instance _instance(InstanceType type) {
+Instance _instance(
+  InstanceType type, {
+  InstanceMode mode = InstanceMode.normal,
+}) {
   return Instance(
     id: type.name,
     type: type,
+    mode: mode,
     label: type.label,
     url: 'https://${type.name}.example.com',
     apiKey: 'key',
@@ -184,6 +198,7 @@ ApiClient _client(_RecordingAdapter adapter) {
 
 class _RecordingAdapter implements HttpClientAdapter {
   Uri? request;
+  RequestOptions? options;
   dynamic data;
 
   @override
@@ -193,6 +208,7 @@ class _RecordingAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     request = options.uri;
+    this.options = options;
     data = options.data;
     return ResponseBody.fromString('', 204);
   }

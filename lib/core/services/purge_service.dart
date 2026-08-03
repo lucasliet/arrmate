@@ -109,7 +109,7 @@ class PurgeResult extends Equatable {
   /// `1` if the movie/series was deleted from the catalog, `0` otherwise.
   final int catalogDeleted;
 
-  /// Number of media files reported deleted by the *arr side.
+  /// Number of media files found before the *arr catalog deletion.
   final int mediaFilesDeleted;
 
   /// Hashes of source torrents deleted in qBittorrent.
@@ -207,16 +207,15 @@ class PurgeService {
     logger.info('[PurgeService] Purging movie $movieId');
 
     final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      queueIds,
-    );
-
-    final mediaFilesDeleted = await _deleteMovieFiles(repository, movieId);
+    final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
       deleteFiles: true,
       addExclusion: false,
+    );
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
     );
     logger.info(
       '[PurgeService] Movie $movieId deleted (files: $mediaFilesDeleted)',
@@ -251,16 +250,15 @@ class PurgeService {
     logger.info('[PurgeService] Purging series $seriesId');
 
     final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      queueIds,
-    );
-
-    final mediaFilesDeleted = await _deleteSeriesFiles(repository, seriesId);
+    final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
       deleteFiles: true,
       addExclusion: false,
+    );
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
     );
     logger.info(
       '[PurgeService] Series $seriesId deleted (files: $mediaFilesDeleted)',
@@ -474,15 +472,15 @@ class PurgeService {
     }
 
     final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      queueIds,
-    );
-    final mediaFilesDeleted = await _deleteMovieFiles(repository, movieId);
+    final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
       deleteFiles: true,
       addExclusion: false,
+    );
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
     );
 
     final resolved = await _resolveTorrents(hashes);
@@ -519,15 +517,15 @@ class PurgeService {
     }
 
     final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      queueIds,
-    );
-    final mediaFilesDeleted = await _deleteSeriesFiles(repository, seriesId);
+    final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
       deleteFiles: true,
       addExclusion: false,
+    );
+    final queueItemsRemoved = await _removeQueueItems(
+      repository.deleteQueueItem,
+      queueIds,
     );
 
     final resolved = await _resolveTorrents(hashes);
@@ -723,82 +721,41 @@ class PurgeService {
     return removed;
   }
 
-  /// Best-effort informational count of media files before deleting the movie.
-  ///
-  // We call deleteMovieFiles first to obtain a count, then pass
-  // deleteFiles:true to deleteMovie so any files missed in the race are still
-  // cleaned by Radarr. Radarr tolerates a no-op file deletion.
-  /// Deletes the movie's media files one by one and returns how many actually
-  /// got deleted.
-  ///
-  /// Each file is deleted via its own [MovieRepository.deleteMovieFile] call;
-  /// a failure on one file is logged and skipped so the remaining files are
-  /// still attempted. The count therefore reflects the real number of files
-  /// removed from disk, not a pre-deletion estimate. [deleteMovie] with
-  /// `deleteFiles: true` runs afterwards as a safety net for anything missed
-  /// here (e.g. files that appeared between the list and the delete).
-  Future<int> _deleteMovieFiles(MovieRepository repository, int movieId) async {
-    final List<MediaFile> files;
+  Future<int> _countMovieFiles(MovieRepository repository, int movieId) async {
     try {
-      files = await repository.getMovieFiles(movieId);
+      return (await repository.getMovieFiles(movieId)).length;
     } catch (e) {
       logger.warning('[PurgeService] getMovieFiles failed: $e');
       return 0;
     }
-
-    var deleted = 0;
-    for (final file in files) {
-      try {
-        await repository.deleteMovieFile(file.id);
-        deleted++;
-      } catch (e) {
-        logger.warning('[PurgeService] deleteMovieFile ${file.id} failed: $e');
-      }
-    }
-    return deleted;
   }
 
-  /// Deletes the series' episode files one by one and returns how many
-  /// actually got deleted.
-  ///
-  /// When [seasonNumber] is provided, only files of that season are removed;
-  /// otherwise all files of the series are removed. Mirrors [_deleteMovieFiles]
-  /// for the per-file resilience.
-  Future<int> _deleteSeriesFiles(
+  Future<int> _countSeriesFiles(
     SeriesRepository repository,
-    int seriesId, {
-    int? seasonNumber,
-  }) async {
-    if (seasonNumber != null) {
-      try {
-        return await repository.deleteSeriesFiles(
-          seriesId,
-          seasonNumber: seasonNumber,
-        );
-      } catch (e) {
-        logger.warning('[PurgeService] deleteSeriesFiles failed: $e');
-        return 0;
-      }
-    }
-
-    final List<MediaFile> files;
+    int seriesId,
+  ) async {
     try {
-      files = await repository.getSeriesFiles(seriesId);
+      return (await repository.getSeriesFiles(seriesId)).length;
     } catch (e) {
       logger.warning('[PurgeService] getSeriesFiles failed: $e');
       return 0;
     }
+  }
 
-    var deleted = 0;
-    for (final file in files) {
-      try {
-        await repository.deleteSeriesFile(file.id);
-        deleted++;
-      } catch (e) {
-        logger.warning('[PurgeService] deleteSeriesFile ${file.id} failed: $e');
-      }
+  Future<int> _deleteSeriesFiles(
+    SeriesRepository repository,
+    int seriesId, {
+    required int seasonNumber,
+  }) async {
+    try {
+      return await repository.deleteSeriesFiles(
+        seriesId,
+        seasonNumber: seasonNumber,
+      );
+    } catch (e) {
+      logger.warning('[PurgeService] deleteSeriesFiles failed: $e');
+      return 0;
     }
-    return deleted;
   }
 
   /// Resolves the torrents a purge would delete, without mutating anything.
