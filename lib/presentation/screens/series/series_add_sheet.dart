@@ -221,9 +221,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
               controller: _searchController,
               autocorrect: false,
               decoration: const InputDecoration(
+                labelText: 'Search',
                 hintText: 'Breaking Bad, tvdb:81189, imdb:tt0903747',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                isDense: true,
               ),
               onChanged: (value) {
                 ref.read(seriesLookupProvider.notifier).searchDebounced(value);

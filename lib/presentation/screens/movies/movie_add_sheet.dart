@@ -214,9 +214,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
               controller: _searchController,
               autocorrect: false,
               decoration: const InputDecoration(
+                labelText: 'Search',
                 hintText: 'Interstellar, tmdb:157336, imdb:tt0816692',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                isDense: true,
               ),
               onChanged: (value) {
                 ref.read(movieLookupProvider.notifier).searchDebounced(value);
