@@ -179,74 +179,83 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
 
   Widget _buildSearch() {
     final searchResult = ref.watch(seriesLookupProvider);
+    final sortSelector = DropdownButtonFormField<DiscoverySortOption>(
+      initialValue: _sort,
+      decoration: const InputDecoration(labelText: 'Sort', isDense: true),
+      items: DiscoverySortOption.values
+          .map(
+            (option) =>
+                DropdownMenuItem(value: option, child: Text(option.label)),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value != null) setState(() => _sort = value);
+      },
+    );
+    final hideExistingFilter = FilterChip(
+      selected: _hideExisting,
+      label: const Text('Hide already added'),
+      onSelected: (value) {
+        setState(() => _hideExisting = value);
+      },
+    );
 
     return _buildSurface(
       (scrollController) => Column(
         children: [
+          AppBar(
+            title: const Text('Add Series'),
+            automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                tooltip: 'Close',
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+            ],
+          ),
+          const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      hintText: 'Breaking Bad, tvdb:81189, imdb:tt0903747',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      ref
-                          .read(seriesLookupProvider.notifier)
-                          .searchDebounced(value);
-                    },
-                    onSubmitted: (value) {
-                      ref.read(seriesLookupProvider.notifier).search(value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  child: const Text('Cancel'),
-                ),
-              ],
+            child: TextField(
+              controller: _searchController,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                hintText: 'Breaking Bad, tvdb:81189, imdb:tt0903747',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                ref.read(seriesLookupProvider.notifier).searchDebounced(value);
+              },
+              onSubmitted: (value) {
+                ref.read(seriesLookupProvider.notifier).search(value);
+              },
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<DiscoverySortOption>(
-                    initialValue: _sort,
-                    decoration: const InputDecoration(
-                      labelText: 'Sort',
-                      isDense: true,
-                    ),
-                    items: DiscoverySortOption.values
-                        .map(
-                          (option) => DropdownMenuItem(
-                            value: option,
-                            child: Text(option.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) setState(() => _sort = value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                FilterChip(
-                  selected: _hideExisting,
-                  label: const Text('Hide in library'),
-                  onSelected: (value) {
-                    setState(() => _hideExisting = value);
-                  },
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 320) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      sortSelector,
+                      const SizedBox(height: 8),
+                      hideExistingFilter,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: sortSelector),
+                    const SizedBox(width: 12),
+                    hideExistingFilter,
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -268,6 +277,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                 }
                 return ListView.builder(
                   controller: scrollController,
+                  padding: const EdgeInsets.only(bottom: 24),
                   itemCount: results.length,
                   itemBuilder: (context, index) {
                     final series = results[index];
@@ -320,10 +330,11 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
             ),
             automaticallyImplyLeading: false,
           ),
+          const Divider(height: 1),
           Expanded(
             child: ListView(
               controller: scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 if (series.remotePoster != null)
                   Center(
@@ -415,10 +426,11 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
             ],
             automaticallyImplyLeading: false,
           ),
+          const Divider(height: 1),
           Expanded(
             child: ListView(
               controller: scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 DropdownButtonFormField<SeriesMonitorType>(
                   decoration: const InputDecoration(labelText: 'Monitor'),

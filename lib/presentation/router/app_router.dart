@@ -14,6 +14,7 @@ import '../screens/activity/activity_screen.dart';
 import '../screens/discovery/discovery_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/instance_edit_screen.dart';
+import '../screens/settings/system_management_screen.dart';
 import '../screens/settings/logs_screen.dart';
 import '../screens/settings/health_screen.dart';
 import '../screens/settings/system_overview_screen.dart';
@@ -144,6 +145,10 @@ void initializeRouter(String initialLocation) {
               GoRoute(
                 path: 'assistant',
                 builder: (context, state) => const AssistantScreen(),
+              ),
+              GoRoute(
+                path: 'system-management',
+                builder: (context, state) => const SystemManagementScreen(),
               ),
               GoRoute(
                 path: 'instance/:id',
