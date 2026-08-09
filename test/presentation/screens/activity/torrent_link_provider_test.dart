@@ -216,6 +216,83 @@ void main() {
       expect(index.resolve(torrent).status, TorrentLinkStatus.external);
     });
 
+    test('should ignore categories from non-qBittorrent clients', () async {
+      // Given a Usenet client sharing a generic category name
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      when(repository.getDownloadClients).thenAnswer(
+        (_) async => const [
+          DownloadClientInfo(
+            id: 1,
+            name: 'SAB',
+            implementation: 'Sabnzbd',
+            enable: true,
+            categories: ['movies'],
+          ),
+        ],
+      );
+      _stubMovieHistory(repository, {1: _historyPage(page: 1, records: [])});
+      _stubMovieQueue(repository);
+      final torrent = _torrent(hash: 'deadbeef', category: 'movies');
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [torrent],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      expect(index.managedCategories, isEmpty);
+      expect(index.resolve(torrent).status, TorrentLinkStatus.external);
+    });
+
+    test(
+      'should degrade to unknown when the history hits the page cap',
+      () async {
+        // Given a history that never stops offering newer pages
+        final radarr = _instance('radarr-home', InstanceType.radarr);
+        final repository = MockMovieRepository();
+        _stubDownloadClients(repository, categories: ['radarr']);
+        when(
+          () => repository.getHistory(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            eventType: any(named: 'eventType'),
+            includeMovie: any(named: 'includeMovie'),
+          ),
+        ).thenAnswer(
+          (invocation) async => _historyPage(
+            page: invocation.namedArguments[#page] as int,
+            totalRecords: 100000,
+            records: [
+              _movieEvent(
+                id: 1,
+                downloadId: 'unrelated',
+                movieId: 12,
+                title: 'Arrival',
+                hasFile: true,
+              ),
+            ],
+          ),
+        );
+        _stubMovieQueue(repository);
+        final torrent = _torrent(hash: 'aabb', category: 'radarr');
+
+        // When
+        final index = await _resolveIndex(
+          torrents: [torrent],
+          radarrInstances: [radarr],
+          movieRepositories: {radarr: repository},
+        );
+
+        // Then
+        expect(index.truncated, isTrue);
+        expect(index.canClassifyMisses, isFalse);
+        expect(index.resolve(torrent).status, TorrentLinkStatus.unknown);
+      },
+    );
+
     test('should fall back to categories of linked torrents', () async {
       // Given a Radarr that does not expose its download clients
       final radarr = _instance('radarr-home', InstanceType.radarr);

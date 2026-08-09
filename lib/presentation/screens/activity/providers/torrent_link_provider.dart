@@ -48,11 +48,16 @@ class TorrentLinkIndex {
   /// Whether at least one Radarr/Sonarr instance is configured.
   final bool hasInstances;
 
+  /// Whether some scan stopped at its page cap with hashes left unresolved,
+  /// meaning the absence of a match may only reflect how far the scan went.
+  final bool truncated;
+
   const TorrentLinkIndex({
     required this.linksByHash,
     required this.managedCategories,
     required this.failures,
     required this.hasInstances,
+    this.truncated = false,
   });
 
   /// An index that classifies nothing, used while no data is available.
@@ -65,10 +70,10 @@ class TorrentLinkIndex {
 
   /// Whether a missing hash can be classified.
   ///
-  /// With no instance configured, or with a partial failure, the absence of a
-  /// match proves nothing — reporting `orphan` in that situation would flag
-  /// healthy torrents as garbage.
-  bool get canClassifyMisses => hasInstances && failures.isEmpty;
+  /// With no instance configured, with a partial failure, or with a scan that
+  /// hit its page cap, the absence of a match proves nothing — reporting
+  /// `orphan` in that situation would flag healthy torrents as garbage.
+  bool get canClassifyMisses => hasInstances && failures.isEmpty && !truncated;
 
   /// Resolves how [torrent] relates to the media library.
   TorrentLink resolve(Torrent torrent) {
@@ -156,10 +161,12 @@ final torrentLinkIndexProvider = FutureProvider.autoDispose<TorrentLinkIndex>((
   final linksByHash = <String, TorrentLink>{};
   final managedCategories = <String>{};
   final failures = <InstanceLoadFailure>[];
+  var truncated = false;
   for (final result in results) {
     linksByHash.addAll(result.links);
     managedCategories.addAll(result.categories);
     if (result.failure != null) failures.add(result.failure!);
+    truncated = truncated || result.truncated;
   }
 
   // Fallback for instances that do not expose their download-client settings:
@@ -176,7 +183,7 @@ final torrentLinkIndexProvider = FutureProvider.autoDispose<TorrentLinkIndex>((
   logger.info(
     '[TorrentLinkIndex] Resolved ${linksByHash.length} link(s), '
     '${managedCategories.length} managed category(ies), '
-    '${failures.length} failure(s)',
+    '${failures.length} failure(s), truncated: $truncated',
   );
 
   return TorrentLinkIndex(
@@ -184,6 +191,7 @@ final torrentLinkIndexProvider = FutureProvider.autoDispose<TorrentLinkIndex>((
     managedCategories: managedCategories,
     failures: failures,
     hasInstances: true,
+    truncated: truncated,
   );
 });
 
@@ -193,10 +201,14 @@ class _InstanceLinkResult {
   final Set<String> categories;
   final InstanceLoadFailure? failure;
 
+  /// `true` when a scan stopped at its page cap with hashes still unresolved.
+  final bool truncated;
+
   const _InstanceLinkResult({
     required this.links,
     required this.categories,
     this.failure,
+    this.truncated = false,
   });
 }
 
@@ -299,6 +311,10 @@ Future<_InstanceLinkResult> _collectLinks({
   try {
     for (final client in await loadDownloadClients()) {
       if (!client.enable) continue;
+      // Only qBittorrent categories matter here. A Usenet client sharing a
+      // generic category name (say `movies`) would otherwise make an unrelated
+      // manual torrent in that category look like an orphan.
+      if (!client.isQBittorrent) continue;
       categories.addAll(client.categories);
     }
   } catch (error, stackTrace) {
@@ -309,20 +325,36 @@ Future<_InstanceLinkResult> _collectLinks({
     );
   }
 
+  final pending = {...torrentHashes};
   try {
-    final pending = {...torrentHashes};
-    await _scanHistory(
+    final historyCapped = await _scanHistory(
       loadHistory: loadHistory,
       buildFromEvent: buildFromEvent,
       pending: pending,
       links: links,
       oldestAddedOn: oldestAddedOn,
     );
-    await _scanQueue(
+    final queueCapped = await _scanQueue(
       loadQueue: loadQueue,
       buildFromQueueItem: buildFromQueueItem,
-      pendingHashes: pending,
+      pending: pending,
       links: links,
+    );
+
+    // Hitting a page cap with hashes still unresolved means "not found" only
+    // describes how far the scan went, so the caller must not read it as proof
+    // that no catalog entry exists.
+    final truncated = (historyCapped || queueCapped) && pending.isNotEmpty;
+    if (truncated) {
+      logger.warning(
+        '[TorrentLinkIndex] Scan for ${instance.id} hit the page cap with '
+        '${pending.length} hash(es) unresolved; they stay unknown',
+      );
+    }
+    return _InstanceLinkResult(
+      links: links,
+      categories: categories,
+      truncated: truncated,
     );
   } catch (error, stackTrace) {
     logger.error(
@@ -341,13 +373,14 @@ Future<_InstanceLinkResult> _collectLinks({
       ),
     );
   }
-
-  return _InstanceLinkResult(links: links, categories: categories);
 }
 
 /// Pages through `grabbed` history events collecting the hashes that belong to
 /// torrents still present in the client.
-Future<void> _scanHistory({
+///
+/// Returns `true` when the scan stopped because it reached
+/// [_maxHistoryPages] rather than because it ran out of relevant events.
+Future<bool> _scanHistory({
   required Future<HistoryPage> Function(int page) loadHistory,
   required TorrentLink? Function(HistoryEvent event) buildFromEvent,
   required Set<String> pending,
@@ -357,7 +390,7 @@ Future<void> _scanHistory({
   for (var page = 1; page <= _maxHistoryPages; page++) {
     final historyPage = await loadHistory(page);
     final records = historyPage.records;
-    if (records.isEmpty) return;
+    if (records.isEmpty) return false;
 
     for (final event in records) {
       final downloadId = event.downloadId?.toLowerCase();
@@ -383,10 +416,11 @@ Future<void> _scanHistory({
     pending.removeWhere(
       (hash) => links[hash]?.status == TorrentLinkStatus.linked,
     );
-    if (pending.isEmpty) return;
-    if (!historyPage.hasMore) return;
-    if (_isOlderThanTorrents(records, oldestAddedOn)) return;
+    if (pending.isEmpty) return false;
+    if (!historyPage.hasMore) return false;
+    if (_isOlderThanTorrents(records, oldestAddedOn)) return false;
   }
+  return true;
 }
 
 /// Whether the scan can stop because [records] already predate every torrent
@@ -406,30 +440,35 @@ bool _isOlderThanTorrents(List<HistoryEvent> records, DateTime? oldestAddedOn) {
 /// Pages through the activity queue to resolve downloads that the history scan
 /// left unmatched — typically grabs older than the paged window.
 ///
-/// [pendingHashes] carries only what history could not settle, so a queue entry
-/// never downgrades a link the history already established, and an instance
-/// whose history resolved everything is not paged at all.
-Future<void> _scanQueue({
+/// [pending] carries only what history could not settle, so a queue entry never
+/// downgrades a link the history already established, and an instance whose
+/// history resolved everything is not paged at all.
+///
+/// Returns `true` when the scan stopped because it reached [_maxQueuePages].
+Future<bool> _scanQueue({
   required Future<QueueItems> Function(int page) loadQueue,
   required TorrentLink? Function(QueueItem item) buildFromQueueItem,
-  required Set<String> pendingHashes,
+  required Set<String> pending,
   required Map<String, TorrentLink> links,
 }) async {
-  if (pendingHashes.isEmpty) return;
+  if (pending.isEmpty) return false;
 
   for (var page = 1; page <= _maxQueuePages; page++) {
     final queue = await loadQueue(page);
     for (final item in queue.records) {
       final downloadId = item.downloadId?.toLowerCase();
       if (downloadId == null || downloadId.isEmpty) continue;
-      if (!pendingHashes.contains(downloadId)) continue;
+      if (!pending.contains(downloadId)) continue;
       if (links.containsKey(downloadId)) continue;
       final link = buildFromQueueItem(item);
       if (link != null) links[downloadId] = link;
     }
-    if (queue.records.length < ApiConstants.queuePageSize) return;
-    if (queue.records.length >= queue.totalRecords) return;
+    pending.removeWhere(links.containsKey);
+    if (pending.isEmpty) return false;
+    if (queue.records.length < ApiConstants.queuePageSize) return false;
+    if (queue.records.length >= queue.totalRecords) return false;
   }
+  return true;
 }
 
 TorrentLink? _movieLinkFromEvent(Instance instance, HistoryEvent event) {
