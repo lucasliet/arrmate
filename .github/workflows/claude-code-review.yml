@@ -2,11 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
-
-concurrency:
-  group: claude-review-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+    types: [opened, synchronize, ready_for_review, reopened]
 
 jobs:
   claude-review:
@@ -16,10 +12,6 @@ jobs:
       pull-requests: write
       issues: read
       id-token: write
-
-    env:
-      ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
-      API_TIMEOUT_MS: "3000000"
 
     steps:
       - name: Checkout repository
@@ -34,7 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "claude[bot]") | .node_id')
-          
+
           echo "$COMMENTS" | while read NODE_ID; do
             echo "Minimizando comentário: $NODE_ID"
             gh api graphql -f query='
@@ -52,19 +44,22 @@ jobs:
         id: set-model
         run: |
           if [ "${{ steps.check-previous-review.outcome }}" == "success" ]; then
-            echo "AI_MODEL=glm-5-turbo" >> $GITHUB_OUTPUT
-            echo "Usando glm-5-turbo (review de acompanhamento)"
+            echo "AI_MODEL=claude-sonnet-4-6" >> $GITHUB_OUTPUT
+            echo "Usando claude-sonnet-4-6 (review de acompanhamento)"
           else
-            echo "AI_MODEL=glm-5.2" >> $GITHUB_OUTPUT
-            echo "Usando glm-5.2 (primeira review ou fallback)"
+            echo "AI_MODEL=claude-opus-5" >> $GITHUB_OUTPUT
+            echo "Usando claude-opus-5 (primeira review ou fallback)"
           fi
 
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ZAI_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
           prompt: |
+            /code-review:code-review
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
@@ -74,9 +69,9 @@ jobs:
             1. DO NOT repeat suggestions that were already made
             2. Check if previous suggestions were addressed in subsequent commits
             3. For each previously suggested item:
-               - If FIXED: briefly acknowledge it was resolved (✅)
-               - If NOT FIXED: remind about the pending suggestion
-               - If PARTIALLY FIXED: note what still needs attention
+                - If FIXED: briefly acknowledge it was resolved (✅)
+                - If NOT FIXED: remind about the pending suggestion
+                - If PARTIALLY FIXED: note what still needs attention
             4. focus your review only in the commits added since the last review, not the full PR
 
             For NEW changes (commits after the last review), provide feedback on:
@@ -104,7 +99,6 @@ jobs:
             answer the review in brazilian portuguese.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
-          
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
+          # or https://code.claude.com/docs/en/cli-reference for available options
           claude_args: '--model ${{ steps.set-model.outputs.AI_MODEL }} --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
