@@ -547,9 +547,12 @@ class TorrentDetailsSheet extends ConsumerWidget {
     }
     if (!context.mounted) return;
 
+    // Resolve the router before popping: afterwards this context belongs to a
+    // route that no longer exists.
+    final router = GoRouter.of(context);
     Navigator.of(context).pop();
     if (movieId != null) {
-      context.go('/movies/$movieId');
+      router.go('/movies/$movieId');
       return;
     }
 
@@ -559,9 +562,9 @@ class TorrentDetailsSheet extends ConsumerWidget {
         episodeId > 0 &&
         seasonNumber != null &&
         seasonNumber >= 0) {
-      context.go('/series/$seriesId/season/$seasonNumber/episode/$episodeId');
+      router.go('/series/$seriesId/season/$seasonNumber/episode/$episodeId');
     } else {
-      context.go('/series/$seriesId');
+      router.go('/series/$seriesId');
     }
   }
 

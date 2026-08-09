@@ -321,7 +321,7 @@ Future<_InstanceLinkResult> _collectLinks({
     await _scanQueue(
       loadQueue: loadQueue,
       buildFromQueueItem: buildFromQueueItem,
-      torrentHashes: torrentHashes,
+      pendingHashes: pending,
       links: links,
     );
   } catch (error, stackTrace) {
@@ -378,7 +378,11 @@ Future<void> _scanHistory({
       }
     }
 
-    pending.removeWhere(links.containsKey);
+    // Hashes still resolved as `fileMissing` stay pending: the remaining
+    // episodes of a season pack may live on a later page and promote them.
+    pending.removeWhere(
+      (hash) => links[hash]?.status == TorrentLinkStatus.linked,
+    );
     if (pending.isEmpty) return;
     if (!historyPage.hasMore) return;
     if (_isOlderThanTorrents(records, oldestAddedOn)) return;
@@ -399,20 +403,27 @@ bool _isOlderThanTorrents(List<HistoryEvent> records, DateTime? oldestAddedOn) {
   return records.last.date.isBefore(oldestAddedOn.subtract(_historyDateSlack));
 }
 
-/// Pages through the activity queue, which is authoritative for downloads that
-/// have not been imported yet.
+/// Pages through the activity queue to resolve downloads that the history scan
+/// left unmatched — typically grabs older than the paged window.
+///
+/// [pendingHashes] carries only what history could not settle, so a queue entry
+/// never downgrades a link the history already established, and an instance
+/// whose history resolved everything is not paged at all.
 Future<void> _scanQueue({
   required Future<QueueItems> Function(int page) loadQueue,
   required TorrentLink? Function(QueueItem item) buildFromQueueItem,
-  required Set<String> torrentHashes,
+  required Set<String> pendingHashes,
   required Map<String, TorrentLink> links,
 }) async {
+  if (pendingHashes.isEmpty) return;
+
   for (var page = 1; page <= _maxQueuePages; page++) {
     final queue = await loadQueue(page);
     for (final item in queue.records) {
       final downloadId = item.downloadId?.toLowerCase();
       if (downloadId == null || downloadId.isEmpty) continue;
-      if (!torrentHashes.contains(downloadId)) continue;
+      if (!pendingHashes.contains(downloadId)) continue;
+      if (links.containsKey(downloadId)) continue;
       final link = buildFromQueueItem(item);
       if (link != null) links[downloadId] = link;
     }

@@ -383,6 +383,147 @@ void main() {
       );
     });
 
+    test(
+      'should promote a season pack to linked across history pages',
+      () async {
+        // Given a season pack whose episodes are split over two pages
+        final sonarr = _instance('sonarr-home', InstanceType.sonarr);
+        final repository = MockSeriesRepository();
+        _stubDownloadClients(repository, categories: ['tv-sonarr']);
+        _stubSeriesHistory(repository, {
+          1: _historyPage(
+            page: 1,
+            totalRecords: 400,
+            records: [
+              _episodeEvent(
+                id: 1,
+                downloadId: 'ccdd',
+                seriesId: 3,
+                seriesTitle: 'Severance',
+                seasonNumber: 1,
+                episodeNumber: 5,
+                hasFile: false,
+              ),
+            ],
+          ),
+          2: _historyPage(
+            page: 2,
+            totalRecords: 400,
+            records: [
+              _episodeEvent(
+                id: 2,
+                downloadId: 'ccdd',
+                seriesId: 3,
+                seriesTitle: 'Severance',
+                seasonNumber: 1,
+                episodeNumber: 6,
+                hasFile: true,
+              ),
+            ],
+          ),
+        });
+        _stubSeriesQueue(repository);
+        final torrent = _torrent(hash: 'ccdd', category: 'tv-sonarr');
+
+        // When
+        final index = await _resolveIndex(
+          torrents: [torrent],
+          sonarrInstances: [sonarr],
+          seriesRepositories: {sonarr: repository},
+        );
+
+        // Then
+        expect(index.resolve(torrent).status, TorrentLinkStatus.linked);
+      },
+    );
+
+    test('should not let the queue override a history link', () async {
+      // Given a completed torrent whose movie lost its file but is queued again
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'aabb',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: false,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(
+        repository,
+        records: [
+          QueueItem(
+            id: 1,
+            movieId: 12,
+            title: 'Arrival.2016.1080p',
+            status: QueueStatus.downloading,
+            downloadId: 'aabb',
+            protocol: 'torrent',
+            sizeleft: 10,
+            languages: const [],
+            customFormats: const [],
+            statusMessages: const [],
+          ),
+        ],
+      );
+      final torrent = _torrent(hash: 'aabb', category: 'radarr');
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [torrent],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      expect(index.resolve(torrent).status, TorrentLinkStatus.fileMissing);
+    });
+
+    test('should skip the queue when history resolved every hash', () async {
+      // Given
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'aabb',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final torrent = _torrent(hash: 'aabb', category: 'radarr');
+
+      // When
+      await _resolveIndex(
+        torrents: [torrent],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      verifyNever(
+        () => repository.getQueue(
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+        ),
+      );
+    });
+
     test('should resolve an active download from the queue', () async {
       // Given a torrent that has no grabbed event but sits in the queue
       final radarr = _instance('radarr-home', InstanceType.radarr);

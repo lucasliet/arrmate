@@ -129,6 +129,9 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
         ref.watch(torrentLinkIndexProvider).valueOrNull ??
         TorrentLinkIndex.empty;
     final showsLinkFilters = linkIndex.hasInstances;
+    // The library filter only applies while its chips are on screen, otherwise
+    // a leftover selection would hide every torrent with no way to clear it.
+    final activeLinkFilter = showsLinkFilters ? _selectedLinkFilter : null;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -263,9 +266,9 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                           return true;
                         })
                         .where((t) {
-                          if (_selectedLinkFilter == null) return true;
+                          if (activeLinkFilter == null) return true;
                           return linkIndex.resolve(t).status ==
-                              _selectedLinkFilter;
+                              activeLinkFilter;
                         })
                         .where((t) {
                           if (_searchQuery.isEmpty) return true;
