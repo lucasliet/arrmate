@@ -200,10 +200,14 @@ class RadarrApi {
   }
 
   /// Retrieves history events.
+  ///
+  /// [includeMovie] asks Radarr to embed the related movie in each record, so
+  /// callers can resolve the media without a second request.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
+    bool includeMovie = false,
   }) async {
     final response = await _client.get(
       '/history',
@@ -212,6 +216,7 @@ class RadarrApi {
         'pageSize': pageSize,
         if (eventType != null && eventType.toRadarrEventType() != null)
           'eventType': eventType.toRadarrEventType(),
+        if (includeMovie) 'includeMovie': true,
       },
     );
     return HistoryPage.fromJson(
@@ -255,6 +260,14 @@ class RadarrApi {
     final response = await _client.get('/health');
     return (response as List)
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Retrieves the configured download clients.
+  Future<List<DownloadClientInfo>> getDownloadClients() async {
+    final response = await _client.get('/downloadclient');
+    return (response as List)
+        .map((e) => DownloadClientInfo.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

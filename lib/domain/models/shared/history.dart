@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../movie/movie.dart';
+import '../series/series.dart';
 import 'shared.dart';
 
 /// Represents a paginated list of history events.
@@ -63,6 +65,18 @@ class HistoryEvent extends Equatable {
   /// history resource (not inside [data]).
   final String? downloadId;
 
+  /// Movie carried inline by Radarr when the history is requested with
+  /// `includeMovie`. `null` when the flag was not used.
+  final Movie? movie;
+
+  /// Series carried inline by Sonarr when the history is requested with
+  /// `includeSeries`. `null` when the flag was not used.
+  final Series? series;
+
+  /// Episode carried inline by Sonarr when the history is requested with
+  /// `includeEpisode`. `null` when the flag was not used.
+  final Episode? episode;
+
   final Map<String, String?>? data;
 
   const HistoryEvent({
@@ -79,6 +93,9 @@ class HistoryEvent extends Equatable {
     this.customFormats,
     this.customFormatScore,
     this.downloadId,
+    this.movie,
+    this.series,
+    this.episode,
     this.data,
   });
 
@@ -173,6 +190,15 @@ class HistoryEvent extends Equatable {
           .toList(),
       customFormatScore: json['customFormatScore'] as int?,
       downloadId: downloadId,
+      movie: json['movie'] != null
+          ? Movie.fromJson(json['movie'] as Map<String, dynamic>)
+          : null,
+      series: json['series'] != null
+          ? Series.fromJson(json['series'] as Map<String, dynamic>)
+          : null,
+      episode: json['episode'] != null
+          ? Episode.fromJson(json['episode'] as Map<String, dynamic>)
+          : null,
       data: dataMap,
     );
   }
@@ -193,6 +219,9 @@ class HistoryEvent extends Equatable {
       customFormats: customFormats,
       customFormatScore: customFormatScore,
       downloadId: downloadId,
+      movie: movie,
+      series: series,
+      episode: episode,
       data: data,
     );
   }
@@ -212,6 +241,9 @@ class HistoryEvent extends Equatable {
     customFormats,
     customFormatScore,
     downloadId,
+    movie,
+    series,
+    episode,
     data,
   ];
 }

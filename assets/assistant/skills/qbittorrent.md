@@ -23,6 +23,12 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Paused** — torrents pausados (inclui downloads pausados e seeds pausadas).
   - **Error** — torrents com erro (falha de conexão, espaço insuficiente, etc).
 - Toque em um chip para filtrar instantaneamente; o chip ativo muda de cor para destacar.
+- **Chips de filtro por vínculo com a biblioteca** (após um divisor vertical, só aparecem se houver Radarr/Sonarr configurado):
+  - **Orphan** — o torrent foi baixado pelo Radarr/Sonarr, mas o item já saiu do catálogo; só sobrou o torrent.
+  - **File removed** — o item ainda está no catálogo, mas o arquivo de mídia foi apagado.
+  - **In library** — o torrent sustenta um filme/episódio que continua na biblioteca.
+  - **Not in library** — baixado por fora, sem relação com a biblioteca.
+- Tocar novamente no chip de vínculo ativo remove o filtro.
 
 **Lista de torrents:**
 - **Cada torrent (card/tile):**
@@ -30,6 +36,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Título/Nome** do torrent em bold.
   - **Barra de progresso linear** mostrando % de conclusão (ex: 45% completed).
   - **Status** em badge colorido (Downloading, Seeding, Paused, Error).
+  - **Badge de vínculo com a biblioteca** (quando há Radarr/Sonarr configurado): mostra o título do filme/episódio vinculado (ex: "Severance · S01E05"), ou "File removed", "Orphan", "Not in library". Torrents **órfãos** ganham borda e fundo em vermelho para destacar que só o torrent sobrou.
   - **Velocidades** (se ativo):
     - ⬇️ Download speed (ex: "2.5 MB/s").
     - ⬆️ Upload speed (ex: "1.2 MB/s").
@@ -51,6 +58,10 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - "Seeds", "Leechers" (peers conectados).
   - **Information section:**
     - "Added On", "Category", "Save Path", "Tags", "Hash".
+  - **Media Library section** (se o vínculo for conhecido):
+    - Faixa colorida com o status do vínculo e a explicação (órfão aparece em vermelho).
+    - "Media" e "Instance" quando o item é conhecido.
+    - Botão "Open in library" que troca para a instância de origem e abre o filme/episódio.
   - **Actions section:**
     - Se paused: botão azul "Resume".
     - Se ativo: botão laranja "Pause".

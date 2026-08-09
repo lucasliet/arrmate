@@ -5,17 +5,36 @@ import '../../../../domain/models/models.dart';
 
 class TorrentListItem extends StatelessWidget {
   final Torrent torrent;
+
+  /// Relation between this torrent and the media library, when known.
+  final TorrentLink? link;
+
   final VoidCallback? onTap;
 
-  const TorrentListItem({super.key, required this.torrent, this.onTap});
+  const TorrentListItem({
+    super.key,
+    required this.torrent,
+    this.link,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isCritical = link?.status.isCritical ?? false;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
       elevation: 0,
-      color: context.colorScheme.surfaceContainer,
+      color: isCritical
+          ? context.colorScheme.errorContainer.withValues(alpha: 0.35)
+          : context.colorScheme.surfaceContainer,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isCritical
+            ? BorderSide(color: context.colorScheme.error, width: 1.5)
+            : BorderSide.none,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
@@ -98,6 +117,10 @@ class TorrentListItem extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (_showsLinkBadge) ...[
+                          const SizedBox(height: 4),
+                          _buildLinkBadge(context),
+                        ],
                       ],
                     ),
                   ),
@@ -216,6 +239,45 @@ class TorrentListItem extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: torrent.status.color, size: 20),
+    );
+  }
+
+  /// Whether the library relation is known well enough to be worth showing.
+  bool get _showsLinkBadge =>
+      link != null && link!.status != TorrentLinkStatus.unknown;
+
+  /// Badge telling whether the torrent backs something in the media library.
+  Widget _buildLinkBadge(BuildContext context) {
+    final status = link!.status;
+    final color = status.color(context.colorScheme);
+
+    return Container(
+      key: const ValueKey('torrent-link-badge'),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(status.icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              link!.displayLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

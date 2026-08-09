@@ -294,4 +294,94 @@ void main() {
       expect(page.hasMore, false); // 4*25 = 100, so no more pages
     });
   });
+
+  group('HistoryEvent com mídia embutida', () {
+    test('Faz parse do filme retornado com includeMovie', () {
+      // Given
+      final json = {
+        'id': 1,
+        'eventType': 'grabbed',
+        'date': '2026-01-01T10:00:00Z',
+        'movieId': 12,
+        'downloadId': 'AABB',
+        'quality': _quality,
+        'movie': {
+          'id': 12,
+          'tmdbId': 999,
+          'title': 'Arrival',
+          'sortTitle': 'arrival',
+          'hasFile': false,
+          'added': '2026-01-01T00:00:00Z',
+        },
+      };
+
+      // When
+      final event = HistoryEvent.fromJson(json);
+
+      // Then
+      expect(event.movie?.title, 'Arrival');
+      expect(event.movie?.hasFile, false);
+      expect(event.series, isNull);
+      expect(event.episode, isNull);
+    });
+
+    test('Faz parse da série e episódio retornados pelo Sonarr', () {
+      // Given
+      final json = {
+        'id': 2,
+        'eventType': 'grabbed',
+        'date': '2026-01-01T10:00:00Z',
+        'seriesId': 3,
+        'episodeId': 42,
+        'downloadId': 'CCDD',
+        'quality': _quality,
+        'series': {
+          'id': 3,
+          'tvdbId': 555,
+          'title': 'Severance',
+          'added': '2026-01-01T00:00:00Z',
+        },
+        'episode': {
+          'id': 42,
+          'seriesId': 3,
+          'seasonNumber': 1,
+          'episodeNumber': 5,
+          'title': 'Good News About Hell',
+          'hasFile': true,
+        },
+      };
+
+      // When
+      final event = HistoryEvent.fromJson(json);
+
+      // Then
+      expect(event.series?.title, 'Severance');
+      expect(event.episode?.episodeLabel, 'S01E05');
+      expect(event.episode?.hasFile, true);
+    });
+
+    test('Mantém a mídia nula quando o payload não a inclui', () {
+      // Given
+      final json = {
+        'id': 3,
+        'eventType': 'grabbed',
+        'date': '2026-01-01T10:00:00Z',
+        'movieId': 12,
+        'quality': _quality,
+      };
+
+      // When
+      final event = HistoryEvent.fromJson(json);
+
+      // Then
+      expect(event.movie, isNull);
+      expect(event.series, isNull);
+      expect(event.episode, isNull);
+    });
+  });
 }
+
+const _quality = {
+  'quality': {'id': 1, 'name': '1080p'},
+  'revision': {'version': 1, 'real': 0},
+};

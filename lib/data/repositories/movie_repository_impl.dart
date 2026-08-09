@@ -82,7 +82,13 @@ class MovieRepositoryImpl implements MovieRepository {
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
-  }) => _api.getHistory(page: page, pageSize: pageSize, eventType: eventType);
+    bool includeMovie = false,
+  }) => _api.getHistory(
+    page: page,
+    pageSize: pageSize,
+    eventType: eventType,
+    includeMovie: includeMovie,
+  );
 
   @override
   Future<void> deleteQueueItem(
@@ -105,6 +111,11 @@ class MovieRepositoryImpl implements MovieRepository {
   @override
   Future<List<HealthCheck>> getHealth() {
     return _api.getHealth();
+  }
+
+  @override
+  Future<List<DownloadClientInfo>> getDownloadClients() {
+    return _api.getDownloadClients();
   }
 
   @override

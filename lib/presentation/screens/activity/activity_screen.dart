@@ -11,6 +11,7 @@ import 'history_screen.dart';
 import 'providers/activity_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/qbittorrent_provider.dart';
+import 'providers/torrent_link_provider.dart';
 import 'qbittorrent_tab.dart';
 import 'widgets/queue_list_item.dart';
 import 'widgets/queue_options_sheet.dart';
@@ -46,6 +47,7 @@ class ActivityScreen extends ConsumerWidget {
                 ref.invalidate(activityHistoryProvider);
                 if (hasQBittorrent) {
                   ref.invalidate(qbittorrentTorrentsProvider);
+                  ref.invalidate(torrentLinkIndexProvider);
                 }
               },
             ),

@@ -41,10 +41,13 @@ abstract class MovieRepository {
   });
 
   /// Retrieves history events.
+  ///
+  /// [includeMovie] embeds the related movie in each record.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
+    bool includeMovie = false,
   });
 
   /// Deletes an item from the queue.
@@ -60,6 +63,9 @@ abstract class MovieRepository {
 
   /// Retrieves health checks.
   Future<List<HealthCheck>> getHealth();
+
+  /// Retrieves the configured download clients.
+  Future<List<DownloadClientInfo>> getDownloadClients();
 
   /// Retrieves available quality profiles.
   Future<List<QualityProfile>> getQualityProfiles();

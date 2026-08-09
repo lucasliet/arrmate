@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../providers/instances_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/seeding_warning_dialog.dart';
 import '../providers/qbittorrent_provider.dart';
@@ -14,7 +16,10 @@ import 'torrent_import_target_sheet.dart';
 class TorrentDetailsSheet extends ConsumerWidget {
   final Torrent torrent;
 
-  const TorrentDetailsSheet({super.key, required this.torrent});
+  /// Relation between this torrent and the media library, when known.
+  final TorrentLink? link;
+
+  const TorrentDetailsSheet({super.key, required this.torrent, this.link});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,6 +220,14 @@ class TorrentDetailsSheet extends ConsumerWidget {
                           : 'None',
                     ),
                     _buildInfoRow(context, 'Hash', torrent.hash),
+
+                    if (link != null &&
+                        link!.status != TorrentLinkStatus.unknown) ...[
+                      const SizedBox(height: 24),
+                      _buildSectionTitle(context, 'Media Library'),
+                      const SizedBox(height: 8),
+                      _buildLibrarySection(context, ref),
+                    ],
 
                     const SizedBox(height: 32),
 
@@ -447,6 +460,109 @@ class TorrentDetailsSheet extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  /// Describes how the torrent relates to the Radarr/Sonarr library and, when
+  /// the media is still in the catalog, offers a shortcut to it.
+  Widget _buildLibrarySection(BuildContext context, WidgetRef ref) {
+    final status = link!.status;
+    final color = status.color(context.colorScheme);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: status.isCritical
+                ? context.colorScheme.errorContainer
+                : color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(status.icon, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      status.label,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      status.description,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (link!.mediaTitle != null)
+          _buildInfoRow(context, 'Media', link!.displayLabel),
+        if (link!.instanceLabel != null)
+          _buildInfoRow(context, 'Instance', link!.instanceLabel!),
+        if (link!.hasMedia) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openInLibrary(context, ref),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open in library'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Navigates to the movie/series backed by this torrent, switching to the
+  /// originating instance first so the details screen queries the right server.
+  Future<void> _openInLibrary(BuildContext context, WidgetRef ref) async {
+    final movieId = link?.movieId;
+    final seriesId = link?.seriesId;
+    if (movieId == null && seriesId == null) return;
+
+    final instanceId = link?.instanceId;
+    final instanceType = link?.instanceType;
+    if (instanceId != null && instanceType != null) {
+      try {
+        await ref
+            .read(instancesProvider.notifier)
+            .selectInstance(instanceType, instanceId);
+      } catch (_) {
+        // Instance selection is best-effort; navigation should still proceed.
+      }
+    }
+    if (!context.mounted) return;
+
+    Navigator.of(context).pop();
+    if (movieId != null) {
+      context.go('/movies/$movieId');
+      return;
+    }
+
+    final episodeId = link?.episodeId;
+    final seasonNumber = link?.seasonNumber;
+    if (episodeId != null &&
+        episodeId > 0 &&
+        seasonNumber != null &&
+        seasonNumber >= 0) {
+      context.go('/series/$seriesId/season/$seasonNumber/episode/$episodeId');
+    } else {
+      context.go('/series/$seriesId');
+    }
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
