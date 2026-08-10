@@ -55,15 +55,23 @@ jobs:
             echo "Usando claude-opus-5 (primeira review ou fallback)"
           fi
 
+      # Baseline for the check below. Counting claude[bot] comments is enough:
+      # minimized ones are still returned by the API.
+      - name: Count review comments before the review
+        id: comments-before
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --paginate --jq '.[] | select(.user.login == "claude[bot]") | .id' | wc -l)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Comentários de review existentes: $COUNT"
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Without this, a run that reviewed nothing is indistinguishable from
-          # one that approved: the action exits 0 either way and the review text
-          # never reaches the log.
-          show_full_output: true
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: |
@@ -116,3 +124,20 @@ jobs:
           claude_args: >-
             --model ${{ steps.set-model.outputs.AI_MODEL }}
             --allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+
+      # The action exits 0 even when the agent gives up, so without this a run
+      # that reviewed nothing is indistinguishable from one that approved. This
+      # checks the outcome (a published comment) instead of dumping the agent's
+      # full output, which would leak file contents into public logs.
+      - name: Ensure the review was published
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --paginate --jq '.[] | select(.user.login == "claude[bot]") | .id' | wc -l)
+          BEFORE=${{ steps.comments-before.outputs.count }}
+          if [ "$COUNT" -le "$BEFORE" ]; then
+            echo "::error::O agente terminou sem publicar review (antes: $BEFORE, depois: $COUNT). Rode com ACTIONS_STEP_DEBUG=true para ver a saída completa."
+            exit 1
+          fi
+          echo "Review publicada (antes: $BEFORE, depois: $COUNT)."
