@@ -55,6 +55,23 @@ jobs:
             echo "Usando claude-opus-5 (primeira review ou fallback)"
           fi
 
+      # claude-code-action refuses to run when this file differs from the version
+      # on the default branch, so on a PR that edits it the review is skipped and
+      # there is nothing for the check below to verify.
+      - name: Detect changes to this workflow
+        id: workflow-diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHANGED=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[] | select(.filename == ".github/workflows/claude-code-review.yml") | .filename')
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Este PR altera o workflow de review; a action vai se auto-pular."
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       # Baseline for the check below. Counting claude[bot] comments is enough:
       # minimized ones are still returned by the API.
       - name: Count review comments before the review
@@ -130,6 +147,7 @@ jobs:
       # checks the outcome (a published comment) instead of dumping the agent's
       # full output, which would leak file contents into public logs.
       - name: Ensure the review was published
+        if: steps.workflow-diff.outputs.changed != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
