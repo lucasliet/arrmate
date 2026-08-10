@@ -5,7 +5,7 @@ import 'package:arrmate/core/services/system_diagnostics_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/settings/diagnostics_screen.dart';
-import 'package:arrmate/presentation/screens/settings/settings_screen.dart';
+import 'package:arrmate/presentation/screens/settings/system_management_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -369,7 +369,7 @@ void main() {
 
     // When
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: SettingsScreen())),
+      const ProviderScope(child: MaterialApp(home: SystemManagementScreen())),
     );
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(

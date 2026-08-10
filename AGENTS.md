@@ -23,6 +23,9 @@ and **qBittorrent** (for downloads).
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
       media library with file mapping and target selection (Movies/Series).
+    - **Library Link Status**: Per-torrent badge and filters showing whether the
+      torrent backs a library item, lost its media file, is an orphan left after
+      the catalog entry was removed, or was downloaded outside the library.
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including

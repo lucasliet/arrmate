@@ -6,7 +6,7 @@ part of 'series_lookup_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$seriesLookupHash() => r'3da3498ef1603f530a0ee2deff6d495a166ed048';
+String _$seriesLookupHash() => r'8fe5c48467e6f974df921b8cd401eca68f16b98c';
 
 /// Notifier for looking up series from an external provider (TVDB via Sonarr).
 ///

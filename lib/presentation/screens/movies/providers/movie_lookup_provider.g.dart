@@ -6,7 +6,7 @@ part of 'movie_lookup_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$movieLookupHash() => r'40ffe400e5d16cd8b9f71ed794a2da221be57f0b';
+String _$movieLookupHash() => r'2c8fa77dc1e93e36833a220f3e60b65af244e52b';
 
 /// Notifier for looking up movies from an external provider (TMDB via Radarr).
 ///

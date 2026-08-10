@@ -9,6 +9,7 @@ export 'media_alternate_title.dart';
 export 'media_file.dart';
 export 'media_custom_format.dart';
 export 'extra_file.dart';
+export 'download_client_info.dart';
 export 'system_log.dart';
 export 'health_check.dart';
 export 'history.dart';

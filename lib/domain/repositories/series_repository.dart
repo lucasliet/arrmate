@@ -56,10 +56,15 @@ abstract class SeriesRepository {
   });
 
   /// Retrieves history events.
+  ///
+  /// [includeSeries] and [includeEpisode] embed the related series/episode in
+  /// each record.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
+    bool includeSeries = false,
+    bool includeEpisode = false,
   });
 
   /// Deletes an item from the queue.
@@ -75,6 +80,9 @@ abstract class SeriesRepository {
 
   /// Retrieves health checks.
   Future<List<HealthCheck>> getHealth();
+
+  /// Retrieves the configured download clients.
+  Future<List<DownloadClientInfo>> getDownloadClients();
 
   /// Retrieves available quality profiles.
   Future<List<QualityProfile>> getQualityProfiles();

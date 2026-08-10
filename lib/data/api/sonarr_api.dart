@@ -248,11 +248,17 @@ class SonarrApi {
   }
 
   /// Retrieves history events.
+  ///
+  /// [includeSeries] and [includeEpisode] ask Sonarr to embed the related
+  /// series/episode in each record, so callers can resolve the media without a
+  /// second request.
   Future<HistoryPage> getHistory({
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
     int? episodeId,
+    bool includeSeries = false,
+    bool includeEpisode = false,
   }) async {
     final response = await _client.get(
       '/history',
@@ -262,6 +268,8 @@ class SonarrApi {
         if (eventType != null && eventType.toSonarrEventTypes() != null)
           'eventType': eventType.toSonarrEventTypes(),
         'episodeId': ?episodeId,
+        if (includeSeries) 'includeSeries': true,
+        if (includeEpisode) 'includeEpisode': true,
       },
     );
     return HistoryPage.fromJson(
@@ -305,6 +313,14 @@ class SonarrApi {
     final response = await _client.get('/health');
     return (response as List)
         .map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Retrieves the configured download clients.
+  Future<List<DownloadClientInfo>> getDownloadClients() async {
+    final response = await _client.get('/downloadclient');
+    return (response as List)
+        .map((e) => DownloadClientInfo.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

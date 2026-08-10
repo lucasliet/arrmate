@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart'; // Correct relative path
+import '../../widgets/instance_load_failure_banner.dart';
 import 'providers/qbittorrent_provider.dart';
+import 'providers/torrent_link_provider.dart';
 import 'widgets/add_torrent_sheet.dart';
 import 'widgets/torrent_details_sheet.dart';
 import 'widgets/torrent_list_item.dart';
@@ -17,6 +19,10 @@ class QBittorrentTab extends ConsumerStatefulWidget {
 
 class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
   String _selectedFilter = 'all';
+
+  /// Active media-library filter, or `null` when no library filter is applied.
+  TorrentLinkStatus? _selectedLinkFilter;
+
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -29,10 +35,24 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     'error',
   ];
 
+  /// Library relations offered as filters, in decreasing order of urgency.
+  static const List<TorrentLinkStatus> _linkFilters = [
+    TorrentLinkStatus.orphan,
+    TorrentLinkStatus.fileMissing,
+    TorrentLinkStatus.linked,
+    TorrentLinkStatus.external,
+  ];
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Reloads both the torrent list and the library link index.
+  Future<void> _refreshAll() async {
+    ref.invalidate(torrentLinkIndexProvider);
+    await ref.read(qbittorrentTorrentsProvider.notifier).refresh();
   }
 
   void _toggleSearch() {
@@ -59,18 +79,59 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     );
   }
 
-  void _showTorrentDetails(BuildContext context, Torrent torrent) {
+  void _showTorrentDetails(
+    BuildContext context,
+    Torrent torrent,
+    TorrentLink? link,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => TorrentDetailsSheet(torrent: torrent),
+      builder: (_) => TorrentDetailsSheet(torrent: torrent, link: link),
+    );
+  }
+
+  /// Builds a filter chip following the tab's existing chip styling.
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (_) => onSelected(),
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          color: isSelected ? context.colorScheme.onPrimary : null,
+        ),
+        backgroundColor: context.colorScheme.surfaceContainerHighest,
+        selectedColor: context.colorScheme.primary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isSelected
+                ? Colors.transparent
+                : context.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final torrentsState = ref.watch(qbittorrentTorrentsProvider);
+    final linkIndex =
+        ref.watch(torrentLinkIndexProvider).valueOrNull ??
+        TorrentLinkIndex.empty;
+    final showsLinkFilters = linkIndex.hasInstances;
+    // The library filter only applies while its chips are on screen, otherwise
+    // a leftover selection would hide every torrent with no way to clear it.
+    final activeLinkFilter = showsLinkFilters ? _selectedLinkFilter : null;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -116,41 +177,41 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                     child: Row(
                       children: [
                         ..._filters.map((filter) {
-                          final isSelected = _selectedFilter == filter;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(
+                          return _buildFilterChip(
+                            label:
                                 filter[0].toUpperCase() + filter.substring(1),
-                              ),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedFilter = filter;
-                                });
-                              },
-                              showCheckmark: false,
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? context.colorScheme.onPrimary
-                                    : null,
-                              ),
-                              backgroundColor:
-                                  context.colorScheme.surfaceContainerHighest,
-                              selectedColor: context.colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : context.colorScheme.outline.withValues(
-                                          alpha: 0.2,
-                                        ),
+                            isSelected: _selectedFilter == filter,
+                            onSelected: () =>
+                                setState(() => _selectedFilter = filter),
+                          );
+                        }),
+                        if (showsLinkFilters) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: SizedBox(
+                              height: 24,
+                              child: VerticalDivider(
+                                width: 1,
+                                thickness: 1,
+                                color: context.colorScheme.outline.withValues(
+                                  alpha: 0.3,
                                 ),
                               ),
                             ),
-                          );
-                        }),
+                          ),
+                          ..._linkFilters.map((status) {
+                            return _buildFilterChip(
+                              label: status.label,
+                              isSelected: _selectedLinkFilter == status,
+                              onSelected: () => setState(() {
+                                _selectedLinkFilter =
+                                    _selectedLinkFilter == status
+                                    ? null
+                                    : status;
+                              }),
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   ),
@@ -163,6 +224,12 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               ],
             ),
           ),
+
+          if (linkIndex.failures.isNotEmpty)
+            InstanceLoadFailureBanner(
+              failures: linkIndex.failures,
+              onRetry: () => ref.invalidate(torrentLinkIndexProvider),
+            ),
 
           Expanded(
             child: torrentsState.when(
@@ -199,6 +266,11 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                           return true;
                         })
                         .where((t) {
+                          if (activeLinkFilter == null) return true;
+                          return linkIndex.resolve(t).status ==
+                              activeLinkFilter;
+                        })
+                        .where((t) {
                           if (_searchQuery.isEmpty) return true;
                           return t.name.toLowerCase().contains(
                             _searchQuery.toLowerCase(),
@@ -228,16 +300,18 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                 }
 
                 return RefreshIndicator(
-                  onRefresh: () =>
-                      ref.read(qbittorrentTorrentsProvider.notifier).refresh(),
+                  onRefresh: _refreshAll,
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 80),
                     itemCount: filteredTorrents.length,
                     itemBuilder: (context, index) {
                       final torrent = filteredTorrents[index];
+                      final link = linkIndex.resolve(torrent);
                       return TorrentListItem(
                         torrent: torrent,
-                        onTap: () => _showTorrentDetails(context, torrent),
+                        link: link,
+                        onTap: () =>
+                            _showTorrentDetails(context, torrent, link),
                       );
                     },
                   ),
@@ -246,8 +320,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               error: (error, stack) => Center(
                 child: ErrorDisplay(
                   message: 'Failed to load torrents',
-                  onRetry: () =>
-                      ref.read(qbittorrentTorrentsProvider.notifier).refresh(),
+                  onRetry: _refreshAll,
                 ),
               ),
               loading: () => const Center(

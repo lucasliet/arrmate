@@ -109,7 +109,15 @@ class SeriesRepositoryImpl implements SeriesRepository {
     int page = 1,
     int pageSize = 25,
     HistoryEventType? eventType,
-  }) => _api.getHistory(page: page, pageSize: pageSize, eventType: eventType);
+    bool includeSeries = false,
+    bool includeEpisode = false,
+  }) => _api.getHistory(
+    page: page,
+    pageSize: pageSize,
+    eventType: eventType,
+    includeSeries: includeSeries,
+    includeEpisode: includeEpisode,
+  );
 
   @override
   Future<void> deleteQueueItem(
@@ -132,6 +140,11 @@ class SeriesRepositoryImpl implements SeriesRepository {
   @override
   Future<List<HealthCheck>> getHealth() {
     return _api.getHealth();
+  }
+
+  @override
+  Future<List<DownloadClientInfo>> getDownloadClients() {
+    return _api.getDownloadClients();
   }
 
   @override

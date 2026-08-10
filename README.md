@@ -33,6 +33,9 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   resume, and delete downloads, plus add new torrents via URL or file.
 - **Torrent Import**: Import completed torrent files directly to your
   Radarr/Sonarr media library with file mapping and target selection.
+- **Library Link Status**: See at a glance which torrents back an item in the
+  library, which were downloaded outside of it, and which are orphans left
+  behind after the movie/episode was removed — highlighted and filterable.
 - **Interactive Release Search**: Find and download specific torrents or NZBs
   directly from the app.
 - **Activity & Queue Monitoring**: Track active downloads and historical events
