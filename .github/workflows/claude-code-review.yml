@@ -60,6 +60,10 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Without this, a run that reviewed nothing is indistinguishable from
+          # one that approved: the action exits 0 either way and the review text
+          # never reaches the log.
+          show_full_output: true
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: |
@@ -105,4 +109,10 @@ jobs:
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
-          claude_args: '--model ${{ steps.set-model.outputs.AI_MODEL }} --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          # `--allowed-tools` REPLACES the default tool set, so every tool the
+          # review needs has to be listed here. Read/Grep/Glob are what let the
+          # reviewer open the files it is reviewing; without them the run burns
+          # ~20 permission denials and may end green without posting anything.
+          claude_args: >-
+            --model ${{ steps.set-model.outputs.AI_MODEL }}
+            --allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
