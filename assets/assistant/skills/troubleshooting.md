@@ -22,7 +22,7 @@ description: Erros de conexão, autenticação API key, notificações, app desa
 | **4. Firewall/porta** | Porta está aberta no servidor? | Verificar firewall do servidor (Linux: `ufw`, Windows: Windows Defender, etc). Permitir porta. |
 | **5. API Key (Radarr/Sonarr)** | Credenciais estão corretas? | Configurações → Instances → tocar instância. Verificar campo "API Key". Se vazio ou errado, atualizar. |
 | **6. Timeout** | Servidor é lento ou remoto? | Ativar **Slow Mode** (Advanced Options → toggle "Slow Mode") para aumentar timeout de 30s → 90s. |
-| **7. Connection Diagnostics** | Quer um diagnóstico completo? | Abrir Configurações → System Management → **Diagnostics**. A tela testa cada endpoint por reachability e latência, mostra traces de requisições recentes e permite **exportar um relatório sanitizado** (sem credenciais) para anexar a um bug report. |
+| **7. Connection Diagnostics** | Quer um diagnóstico completo? | Abrir Configurações → System → System Management → Server → **Connection Diagnostics**. A tela testa cada endpoint por reachability e latência, mostra traces de requisições recentes e permite **exportar um relatório sanitizado** (sem credenciais) para anexar a um bug report. |
 | **8. Teste novamente** | Todos verificados? | Tocar "Test Connection" na edição de instância. Deve mostrar "✓ Connection successful!" em verde. |
 
 **Ações corretivas:**
@@ -171,7 +171,7 @@ description: Erros de conexão, autenticação API key, notificações, app desa
 **Solução (em ordem):**
 
 1. **Verificar modelo compatível:**
-   - Configurações → System Management → Assistant.
+   - Configurações → seção "System" → Assistant.
    - Apenas **Gemma 4 E2B** e **Gemma 4 E4B** são suportados.
    - Se modelo diferente foi importado, **Delete** e **Download** um oficial.
 
@@ -181,7 +181,7 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - Modelos maiores (E4B) precisam de **6+ GB RAM** livre.
 
 3. **Trocar para modelo menor (se trava):**
-   - Configurações → Assistant → "Switch".
+   - Configurações → seção "System" → Assistant → "Switch".
    - Dialog → ícone lixeira ao lado do modelo travado → "Delete".
    - Download **Gemma 4 E2B** (menor, mais rápido).
    - "Switch" para E2B.
@@ -217,5 +217,5 @@ description: Erros de conexão, autenticação API key, notificações, app desa
 2. Os cards de exemplo somem na hora e a tela volta ao estado real (vazio, se nada estiver configurado).
 
 **Observações:**
-- Quem já concluiu ou pulou o onboarding não vê os mockups nas aberturas seguintes; eles só reaparecem se o tour for reiniciado em **Configurações → Getting Started**.
+- Quem já concluiu ou pulou o onboarding não vê os mockups nas aberturas seguintes; eles só reaparecem se o tour for reiniciado em **Configurações → About → Getting Started**.
 - Assim que uma instância real é adicionada, o serviço correspondente passa a mostrar os dados reais mesmo com o tour rodando (ex: com Radarr configurado, a aba Filmes mostra a biblioteca de verdade e só séries/torrents seguem com exemplos).

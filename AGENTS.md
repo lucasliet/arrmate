@@ -42,6 +42,14 @@ and **qBittorrent** (for downloads).
     instances, and background polling (every 30 min) with battery saver mode.
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
+  - **System Management**: Dedicated screen (`/settings/system-management`)
+    grouping server tools (logs, health, connection diagnostics, system
+    overview, quality profiles), the minimum-seeding-days guard, and app
+    maintenance (version history, image cache clearing, settings reset).
+  - **Purge**: Removes a movie/series (or season) from the catalog together
+    with its media files and source torrents — including cross-seed duplicates
+    approved one by one. Queue items and torrents are only touched after the
+    catalog deletion succeeds.
   - **Manual Import**: Match and import files manually from the queue.
   - **Movie & Series Files**: View detailed file metadata (quality, size,
     codecs) and extra files for both movies and series.
@@ -57,10 +65,10 @@ and **qBittorrent** (for downloads).
     remote server connections.
   - **System Status**: Enhanced instance status and version checks.
   - **Guided Onboarding**: First-run coach mark tour, replayable from Settings
-    → Getting Started. While it runs and a service has no instance yet, the
-    screens backed by that service paint inert sample cards so every step has a
-    visible target; the samples are never persisted and disappear when the tour
-    finishes or is skipped.
+    → About → Getting Started. While it runs and a service has no instance
+    yet, the screens backed by that service paint inert sample cards so every
+    step has a visible target; the samples are never persisted and disappear
+    when the tour finishes or is skipped.
   - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
@@ -73,12 +81,13 @@ and **qBittorrent** (for downloads).
   implementations (`/repositories`).
 - `lib/domain`: Domain layer including models (`/models`) and repository
   interfaces (`/repositories`).
-- `lib/presentation`: UI layer organized by feature (screens, widgets) and
-  router configuration.
-- `lib/presentation/tour`: Guided onboarding tour — coach mark targets, the
-  sample content shown while it runs, and the providers gating it.
-- `lib/providers`: State management using Riverpod.
+- `lib/presentation`: UI layer organized by feature (`/screens`, `/widgets`,
+  `/shared`, `/theme`, `/tour`), Riverpod state in `/providers`, and router
+  configuration in `/router`. `/tour` holds the guided onboarding — coach mark
+  targets, the sample content shown while it runs, and the providers gating it.
 - `assets/images`: Static image assets and icons.
+- `assets/assistant/skills`: Markdown skills consumed by the in-app AI
+  assistant — keep them in sync whenever a user-facing flow changes.
 
 ## Build, Test, and Development Commands
 

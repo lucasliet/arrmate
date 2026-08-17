@@ -1,6 +1,6 @@
 ---
 name: series
-description: Adicionar/detalhes/episódios/editar/deletar série, discover busca unificada ID URL TVDB IMDb, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira, purge (remover série + arquivos + torrents no qBittorrent), import exclusion
+description: Adicionar/detalhes/episódios/editar/deletar série, discover busca por título ID URL TVDB IMDb, deletar arquivo de episódio, deletar todos os arquivos da série ou de uma temporada inteira, purge (remover série + arquivos + torrents no qBittorrent), import exclusion
 ---
 
 # Séries
@@ -9,43 +9,51 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 
 **Onde fica:** Aba Séries → botão "+" (floating action button no canto inferior direito).
 
-> **Atalho:** o "+" abre a tela **Discover** (descoberta unificada de filmes e séries). Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
+> **Atalho:** o "+" abre a tela **Discover** já em modo série. Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TVDB/IMDb ou URL.
 
 **Passo a passo:**
 1. Abrir a aba **Séries** (segunda aba da barra inferior).
 2. Tocar no botão **"+"** no canto inferior direito (FAB redondo).
-3. Um sheet (painel deslizável) abre com título "Add Series".
-4. Na barra de busca, digite o título da série (ex: "Breaking Bad", "Game of Thrones").
-5. Tocar "Search" ou pressionar Enter no teclado.
+3. Abre a tela **Discover** com AppBar "Add Series" e ícone **X** ("Close") à direita para sair.
+4. No campo **"Search"**, digite o título da série (ex: "Breaking Bad", "Game of Thrones").
+5. A busca roda sozinha com debounce enquanto você digita; pressionar Enter dispara a busca imediatamente.
 6. **Resultados aparecem com:**
    - Poster thumbnail no lado esquerdo.
-   - Título em bold.
-   - Ano de lançamento.
-   - Nota (ex: 9.5/10).
-   - Se a série já estiver na sua biblioteca: badge **"In Library"**.
-7. Tocar no resultado desejado.
-8. O sheet transforma-se na **tela de configuração** (segunda etapa) com:
-   - **Monitored:** toggle (padrão ON) — se ON, o Sonarr busca episódios automaticamente.
+   - Título da série.
+   - Subtítulo com ano e nota (ex: "2008 · 9.5"), ou "No rating" quando não há nota.
+   - Séries que **já estão na biblioteca** mostram um ✅ **check verde** no lugar do chevron; tocar nelas **abre a série na biblioteca** em vez de adicionar.
+7. Tocar em um resultado ainda não adicionado.
+8. Abre a etapa **"Series Preview"** (AppBar com esse título e seta de voltar): poster grande, "Título (Ano)", linha com certificação · emissora · gêneros, sinopse e botão **"Configure Addition"**.
+9. Tocar em **"Configure Addition"** para abrir a etapa final (AppBar com o título da série, seta de voltar e botão **"Add"** à direita):
+   - **Monitor:** dropdown com All Episodes, Future Episodes, Missing Episodes, Existing Episodes, Recent Episodes, Pilot Episode, etc.
+   - **Monitor New Seasons:** switch — se ON, novas temporadas entram monitoradas.
    - **Series Type:** dropdown com opções:
      - **Standard** (padrão): episódios numerados por temporada e número (S01E01, S01E02).
      - **Anime**: usa numbering absoluto (1, 2, 3...) e geralmente com nomes customizados.
      - **Daily**: episódios numerados por data de exibição (AAAA-MM-DD).
+   - **Season Folder:** switch (padrão ON) — se ON, cria pastas por temporada (Season 01, Season 02, etc).
    - **Quality Profile:** dropdown listando perfis do Sonarr.
    - **Root Folder:** dropdown com pastas destino.
-   - **Season Folder:** toggle (padrão ON) — se ON, cria pastas por temporada (Season 01, Season 02, etc).
-9. Tocar **"Add Series"** (botão no rodapé).
-10. Snackbar confirma "Series added successfully" e a lista atualiza.
+   - **Tags:** chips das tags da instância (aparece só quando o Sonarr tem tags cadastradas).
+10. Tocar **"Add"** no canto superior direito (vira spinner enquanto envia).
+11. Snackbar confirma "Series added successfully" e a lista atualiza.
 
 **Observações:**
 - Série é adicionada ao Sonarr imediatamente.
 - O tipo de série afeta como o Sonarr renomeia e busca episódios.
 - "Season Folder" ON recomendado para organização clara no disco.
+- Se faltar quality profile ou root folder, o app avisa "Please select a series, quality profile, and root folder" e não envia.
 
-## Adicionar via Discover — busca unificada por título ID ou URL
+## Adicionar via Discover — busca por título ID ou URL
 
-**Onde fica:** Aba Séries (ou Filmes) → botão "+" (FAB) → abre a tela **Discover**.
+**Onde fica:** Aba Séries → botão "+" (FAB) → abre a tela **Discover** em modo série.
 
-A tela **Discover** é uma busca unificada para filmes e séries, com duas abas no topo (Movies / Series). Ela aceita não só o título, mas também identificadores e links.
+A tela **Discover** abre **direto no tipo de mídia da aba de origem** — o "+" da aba Séries busca séries, o "+" da aba Filmes busca filmes. Não há abas Movies/Series dentro da tela: para adicionar um filme, use o "+" da aba Filmes. A busca aceita não só o título, mas também identificadores e links.
+
+**Layout da tela:**
+- **AppBar** com título "Add Series" e ícone **X** ("Close").
+- Campo **"Search"** com exemplos no hint (`Breaking Bad, tvdb:81189, imdb:tt0903747`).
+- Dropdown **"Sort"** e chip **"Hide already added"** logo abaixo (empilhados em telas muito estreitas).
 
 **Como buscar:**
 - **Por título:** digite o nome (ex: "Severance") — a busca tem debounce e roda automaticamente enquanto você digita.
@@ -55,15 +63,15 @@ A tela **Discover** é uma busca unificada para filmes e séries, com duas abas 
 **Resultados:**
 - Cada resultado mostra poster, título, ano e nota.
 - Resultados que já estão na sua biblioteca aparecem marcados como existentes.
-- Use o chip **"Hide in library"** para ocultar itens que você já tem.
-- Use o **dropdown de ordenação** para reordenar por relevância, data ou avaliação.
+- Use o chip **"Hide already added"** para ocultar itens que você já tem.
+- Use o **dropdown "Sort"** para reordenar por relevância, data ou avaliação.
 
 **Adicionar:**
-- Toque em um resultado para abrir a tela de configuração (Monitored, Series Type, Quality Profile, Root Folder, Season Folder, etc.) — mesma segunda etapa do fluxo padrão.
-- Em seguida, toque em "Add Series".
+- Toque em um resultado para abrir o "Series Preview" e depois "Configure Addition" (Monitor, Monitor New Seasons, Series Type, Season Folder, Quality Profile, Root Folder, Tags) — mesmas etapas do fluxo padrão.
+- Em seguida, toque em **"Add"** no canto superior direito.
 
 **Observações:**
-- A aba ativa (Movies/Series) no Discover pode ser pré-selecionada, inclusive via deep link `arrmate:///discover` ou `arrmate:///search?q=<termo>&type=series`.
+- O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=series` ou `arrmate:///search?q=<termo>&type=series` (sem o parâmetro, o padrão é filme).
 - A extração de ID funciona para os formatos de URL mais comuns do IMDb e TVDB.
 
 ## Detalhes da série — temporadas episódios histórico
@@ -269,24 +277,27 @@ Use o **Purge** quando quiser remover completamente uma série **e** liberar o e
    - Mensagem: `This will permanently remove "[Título da série]" and all its episodes from Sonarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.`
    - Botões: "Cancel" e "Purge" (botão vermelho).
 5. Tocar **"Purge"** para confirmar.
-6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
-7. Snackbar confirma `Series purged.` seguido de um resumo multi-linha:
+6. Se algum torrent tiver semeado **menos** que os "Minimum seeding days" configurados, aparece o diálogo **"Torrents still seeding"** listando esses torrents, com as opções "Cancel" (aborta tudo), "Keep seeding" (remove a série e os arquivos, mas mantém esses torrents) e "Delete all" (apaga tudo). Ver `system.md` → "Proteção de torrents".
+7. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
+8. Snackbar confirma `Series purged.` seguido de um resumo multi-linha:
    - `Queue items: N` — itens removidos da fila do Sonarr.
-   - `Media files: N` — arquivos de mídia apagados.
+   - `Media files: N` — arquivos de mídia que a série tinha (contados antes da remoção no Sonarr).
    - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed aprovadas).
    - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Sonarr é afetado).
-8. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
-9. Volta automaticamente à lista de séries (que é recarregada).
+9. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
+10. Volta automaticamente à lista de séries (que é recarregada).
 
 **O que o Purge faz, por trás:**
 1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Sonarr.
-2. Remove os itens da fila no Sonarr (`removeFromClient: true`).
-3. Deleta os arquivos de mídia e a série do Sonarr (`deleteFiles: true`).
-4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
-5. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
-6. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+2. Conta os arquivos de mídia da série (valor apenas informativo, usado no resumo).
+3. Remove a série do Sonarr com `deleteFiles: true` — é o próprio Sonarr que apaga os arquivos em disco.
+4. **Só depois que essa remoção dá certo**, limpa os itens da fila do Sonarr (`removeFromClient: true`).
+5. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
+6. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
+7. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
 
 **Observações:**
+- **Downloads preservados em caso de falha:** a fila e os torrents só são tocados depois que a série sai do catálogo do Sonarr. Se a remoção falhar, o download em andamento continua intacto.
 - **Irreversível:** a série sai do Sonarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
 - **Sem blocklist:** como a série é removida do catálogo, ela deixa de ser monitorada e não é re-grabbed automaticamente.
 - **Aprovação manual por duplicata:** candidatos cross-seed só são deletados quando você aprova no diálogo; os não aprovados permanecem no qBittorrent.
@@ -308,7 +319,7 @@ Use esta opção quando quiser **liberar espaço em disco** mas continuar acompa
    - Mensagem: `Delete all files for "[Título da série]"? This removes every episode file from disk; the series stays in Sonarr.`
    - Botões: "Cancel" e "Delete" (botão vermelho).
 5. Tocar **"Delete"** para confirmar.
-6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o app apaga os arquivos um por um — não feche o app durante essa operação.
+6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o app apaga os arquivos — não feche o app durante essa operação.
 7. Snackbar confirma:
    - `Deleted N file(s)` (com a contagem real de arquivos apagados), ou
    - `No files to delete` (se não havia arquivos).
@@ -317,7 +328,7 @@ Use esta opção quando quiser **liberar espaço em disco** mas continuar acompa
 - A série **permanece** cadastrada no Sonarr — apenas os arquivos físicos são removidos.
 - Todos os episódios passam para status "Missing" (vermelho).
 - Se a série estiver monitorada, o Sonarr voltará a buscar releases automaticamente.
-- A operação pode demorar alguns segundos em séries com muitos episódios (cada arquivo é apagado em sequência).
+- A remoção é feita em **uma única chamada em lote** ao Sonarr (endpoint bulk de episode files), então costuma ser rápida mesmo em séries grandes.
 
 ## Purge de temporada — remover temporada + arquivos + torrents fonte
 
@@ -331,9 +342,10 @@ Use esta opção quando quiser remover completamente uma temporada específica, 
 3. Na AppBar da SeasonDetailsScreen, tocar no ícone **"Purge season"** (`delete_forever`).
 4. Um **diálogo de confirmação** aparece explicando que a operação remove episódios/arquivos da temporada e torrents fonte no qBittorrent.
 5. Tocar **"Purge"** para confirmar.
-6. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata.
-7. **Indicador de progresso** (spinner) aparece durante a execução completa.
-8. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
+6. Se algum torrent tiver semeado menos que os "Minimum seeding days", aparece o diálogo **"Torrents still seeding"** com as opções "Cancel", "Keep seeding" e "Delete all".
+7. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata.
+8. **Indicador de progresso** (spinner) aparece durante a execução completa.
+9. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
 
 **Observações:**
 - A operação atua apenas na temporada selecionada; o restante da série permanece no Sonarr.

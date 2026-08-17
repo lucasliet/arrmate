@@ -1,15 +1,20 @@
 ---
 name: system
-description: Logs, health, perfis de qualidade, sobre o app, diagnostics, system overview storage, version history, what's new, offline banner
+description: Logs, health, perfis de qualidade, sobre o app, diagnostics, system overview storage, version history, what's new, offline banner, tela System Management, dias mínimos de seeding, limpar cache de imagens, resetar configurações do app
 ---
 
 # Sistema
 
-> **Veja também:** a tela **System Management** também reúne **Connection Diagnostics**, **System Overview** e **Version History** — documentados em detalhe em `diagnostics.md`.
+> **Onde tudo fica:** as ferramentas de sistema ficam em uma tela própria, a **System Management** (Configurações → seção "System" → "System Management", rota `/settings/system-management`). Ela é dividida em três seções:
+> - **Server:** Logs, Health, Connection Diagnostics, System Overview, Quality Profiles.
+> - **Torrent Protection:** Minimum seeding days.
+> - **App Maintenance:** Version History, Clear image cache, Reset app settings.
+>
+> **Connection Diagnostics**, **System Overview** e **Version History** estão documentados em detalhe em `diagnostics.md`. O **Assistant** não fica nesta tela: ele está direto em Configurações → seção "System" → "Assistant".
 
 ## Logs do app e logs do Radarr Sonarr
 
-**Onde fica:** Configurações → seção "System Management" → "Logs".
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "Server" → "Logs".
 
 A tela de Logs tem **duas abas** (TabBar no topo):
 
@@ -49,7 +54,7 @@ A tela de Logs tem **duas abas** (TabBar no topo):
 
 ## Saúde (health) — checagens e avisos do sistema
 
-**Onde fica:** Configurações → seção "System Management" → "Health".
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "Server" → "Health".
 
 A tela de Health exibe **resultados de health checks** dos servidores Radarr/Sonarr:
 
@@ -87,7 +92,7 @@ A tela de Health exibe **resultados de health checks** dos servidores Radarr/Son
 
 ## Perfis de qualidade disponíveis nas instâncias
 
-**Onde fica:** Configurações → seção "System Management" → "Quality Profiles".
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "Server" → "Quality Profiles".
 
 A tela de Quality Profiles lista **todos os perfis de qualidade** configurados nas instâncias:
 
@@ -137,9 +142,39 @@ A seção About exibe **informações sobre o Arrmate**:
 - Verificar atualizações manualmente útil se você suspeitar que há nova versão.
 - App é open-source; você pode contribuir ou reportar issues no GitHub.
 
+## Proteção de torrents — dias mínimos de seeding
+
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "Torrent Protection" → "Minimum seeding days".
+
+Define um limite de segurança antes de apagar torrents que ainda estão cumprindo tempo de seed no tracker:
+
+- O tile mostra o valor atual à direita (ex: `3d`) e um resumo do que está configurado.
+- Tocar abre o diálogo **"Minimum seeding days"** com um campo numérico "Days" (helper: "0 disables the warning") e botões "Cancel" e "Save".
+- **0 desativa o aviso** (nenhuma confirmação extra é pedida).
+
+**O que acontece quando um torrent está abaixo do limite:**
+- Em um **Purge**, antes de apagar qualquer coisa aparece o diálogo **"Torrents still seeding"** listando os torrents que semearam menos que o mínimo, com três botões:
+  - **Cancel** — aborta o purge inteiro (nada é apagado).
+  - **Keep seeding** — remove o título e os arquivos, mas **mantém** no qBittorrent os torrents abaixo do limite.
+  - **Delete all** (vermelho) — apaga todos os torrents mesmo assim.
+- O diálogo avisa que o título sai da biblioteca e os arquivos são apagados **nos dois casos**; a escolha só governa os torrents no qBittorrent.
+- Ao remover **um torrent avulso** (Aba Atividade → Torrents → tocar no torrent → "Remove Torrent"), aparece a versão simples do aviso ("Torrent still seeding") com confirmar/cancelar.
+
+**Observações:**
+- Só aceita números inteiros ≥ 0; valores inválidos mostram "Enter a valid number (0 or more)".
+- Útil para não perder ratio em trackers privados ao usar Purge ou remover torrents.
+
+## Manutenção do app — limpar cache de imagens e resetar configurações
+
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "App Maintenance".
+
+- **Clear image cache**: libera o armazenamento usado por posters e imagens em cache. Um snackbar confirma "Image cache cleared". As imagens voltam a ser baixadas conforme você navega pelo app.
+- **Reset app settings** (texto em vermelho): abre o diálogo "Reset app settings?" avisando que aparência, modo de visualização e preferências de notificação voltam ao padrão — **as instâncias configuradas são preservadas**. Botões "Cancel" e "Reset" (vermelho). Ao confirmar, snackbar mostra "App settings reset to defaults".
+- **Version History**: também fica nesta seção (detalhado em `diagnostics.md`).
+
 ## Outras telas do System Management
 
-A seção "System Management" das Configurações também reúne ferramentas de diagnóstico e sistema (documentadas em `diagnostics.md`):
+A tela **System Management** também reúne ferramentas de diagnóstico e sistema (documentadas em `diagnostics.md`):
 
 - **Connection Diagnostics** (`/settings/diagnostics`): teste de reachability/latência de cada endpoint, traces de requisições recentes e export de relatório sanitizado (sem credenciais). Útil para investigar erros de conexão.
 - **System Overview** (`/settings/system-overview`): armazenamento/disco por instância (com `LinearProgressIndicator`), tamanho da biblioteca (filmes/séries/episódios) e versão do servidor.

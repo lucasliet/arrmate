@@ -7,7 +7,7 @@ description: Diagnósticos de conexão, latência, traces de requisições, expo
 
 ## Connection Diagnostics — testar endpoints e exportar relatório
 
-**Onde fica:** Configurações (quinta aba da barra inferior) → seção "System Management" → "Diagnostics".
+**Onde fica:** Configurações (quinta aba da barra inferior) → seção "System" → "System Management" → seção "Server" → "Connection Diagnostics".
 
 A tela de **Connection Diagnostics** testa a conectividade de cada instância configurada e ajuda a investigar problemas de rede.
 
@@ -48,7 +48,7 @@ A tela de **Connection Diagnostics** testa a conectividade de cada instância co
 
 ## System Overview — armazenamento disco e tamanho da biblioteca
 
-**Onde fica:** Configurações → seção "System Management" → "System Overview".
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "Server" → "System Overview".
 
 A tela de **System Overview** exibe informações de armazenamento e biblioteca para cada instância Radarr/Sonarr.
 
@@ -80,7 +80,7 @@ A tela de **System Overview** exibe informações de armazenamento e biblioteca 
 
 ## Version History — histórico de versões e changelog
 
-**Onde fica:** Configurações → seção "System Management" → "Version History".
+**Onde fica:** Configurações → seção "System" → "System Management" → seção "App Maintenance" → "Version History".
 
 A tela de **Version History** lista todas as releases publicadas no GitHub.
 
@@ -118,7 +118,7 @@ O diálogo **What's New** mostra as notas de versão da versão recém-instalada
 
 **Ações (botões):**
 - **"Dismiss":** fecha o diálogo.
-- **"View All Versions":** fecha e navega para Configurações → Version History.
+- **"View All Versions":** fecha e navega para a tela Version History (Configurações → System → System Management → App Maintenance → Version History).
 
 ## Offline — banner de status offline
 
