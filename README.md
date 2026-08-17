@@ -43,6 +43,11 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 - **Library Link Status**: See at a glance which torrents back an item in the
   library, which were downloaded outside of it, and which are orphans left
   behind after the movie/episode was removed — highlighted and filterable.
+  Cross-seed copies inherit the link of the torrent Radarr/Sonarr grabbed
+  instead of being flagged as orphans, and say so with a `Cross-seed` badge.
+- **Media Torrents**: Movie, series and episode details list the torrents
+  backing the item — cross-seed duplicates included — and open the torrent
+  details from there, the reverse of jumping from a torrent to its library item.
 - **Interactive Release Search**: Find and download specific torrents or NZBs
   directly from the app.
 - **Activity & Queue Monitoring**: Track active downloads and historical events

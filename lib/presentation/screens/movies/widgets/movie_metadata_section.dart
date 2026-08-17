@@ -8,6 +8,8 @@ import 'package:arrmate/presentation/widgets/media/extra_file_card.dart';
 import 'package:arrmate/presentation/widgets/media/history_event_card.dart';
 import 'package:arrmate/presentation/widgets/media/media_file_details_sheet.dart';
 import 'package:arrmate/presentation/widgets/media/history_event_details_sheet.dart';
+import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
+import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart';
 import '../providers/movie_metadata_provider.dart';
 
 /// A section widget displaying related files and history for a movie.
@@ -22,6 +24,8 @@ class MovieMetadataSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFilesSection(context, ref),
+        const SizedBox(height: 24),
+        MediaTorrentsSection(provider: movieTorrentsProvider(movieId)),
         const SizedBox(height: 24),
         _buildHistorySection(context, ref),
         const SizedBox(height: 32),

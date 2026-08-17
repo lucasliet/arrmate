@@ -13,7 +13,9 @@ import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
+import '../../shared/providers/media_torrents_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
+import '../../shared/widgets/media_torrents_section.dart';
 import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
@@ -424,6 +426,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 _SeasonsSection(series: series),
+                const SizedBox(height: 24),
+                MediaTorrentsSection(
+                  provider: seriesTorrentsProvider(seriesId),
+                ),
                 const SizedBox(height: 32),
               ],
             ),

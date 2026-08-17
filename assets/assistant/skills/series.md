@@ -127,12 +127,19 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
     - **Botão de ícone** (bookmark) ao lado — toque para monitorar/desmonitorar aquela temporada individualmente.
   - Toque em uma temporada para **abrir a tela completa SeasonDetailsScreen** (tela cheia com seta de voltar para retornar aos detalhes da série).
 
-**3. Files & Metadata:**
+**3. Torrents:**
+- Só aparece quando há uma instância qBittorrent configurada.
+- Lista os torrents do cliente que sustentam a série, resolvidos pelo histórico da própria série (eventos **Grabbed** e **Imported**) casado com os infohashes do qBittorrent — season packs incluídos.
+- Inclui as cópias **cross-seed** do mesmo release (mesmo nome, infohash diferente), marcadas com o badge "Cross-seed".
+- Tocar em um card abre a ficha de detalhes do torrent (pausar, retomar, rechecar, arquivos, peers). O botão "Open in library" não aparece — você já está na tela da série.
+- Se nada for encontrado: "No torrents in the download client".
+
+**4. Files & Metadata:**
 - Semelhante a Filmes: lista de arquivos baixados com codec, resolução, tamanho, áudio.
 - Ícone de lixeira para deletar arquivos individuais.
 - Se houver "extra files" (legendas, etc), listados também.
 
-**4. History:**
+**5. History:**
 - Lista de eventos específicos da série (grab, import, falhas, etc).
 - Timestamp relativo para cada evento.
 - Tipos coloridos (Grabbed, Imported, Failed, Deleted).
@@ -185,7 +192,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
    - Tocar em **Interactive Search** na AppBar para abrir o sheet de releases da temporada com ordenação por score/seeders/idade/tamanho/indexador.
    - Tocar no toggle para monitorar/desmonitorar episódio individual.
    - Tocar no ícone de busca (lupa) para abrir sheet de releases de um episódio específico.
-   - Tocar em qualquer lugar do tile para ver **detalhes completos do episódio** (nome, sinopse, elenco, etc).
+   - Tocar em qualquer lugar do tile para ver **detalhes completos do episódio** (nome, sinopse, elenco, etc). A ficha do episódio traz, entre o arquivo e o histórico, uma seção **Torrents** com os torrents do cliente que sustentam aquele episódio — um season pack aparece em todos os episódios que ele cobre, e cópias cross-seed vêm marcadas com o badge "Cross-seed". Tocar em um card abre a ficha do torrent.
 
 6. Se tocou em uma release na busca:
    - Diálogo: "Are you sure you want to grab [título da release]?"

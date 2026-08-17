@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../domain/models/notification/app_notification.dart';
 import '../../core/services/in_app_notification_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/utils/cross_seed_matcher.dart';
 import '../../data/api/qbittorrent_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
@@ -763,9 +764,7 @@ class PurgeService {
   /// Returns source torrents (matched by hash) and cross-seed duplicates
   /// separately so callers can inspect seeding time before committing via
   /// [_deleteTorrents] and the outcome keeps the source/cross-seed split.
-  Future<({List<Torrent> source, List<Torrent> crossSeed})> _resolveTorrents(
-    Set<String> sourceHashes,
-  ) async {
+  Future<CrossSeedPartition> _resolveTorrents(Set<String> sourceHashes) async {
     if (sourceHashes.isEmpty) {
       logger.info('[PurgeService] No source hashes to resolve');
       return (source: <Torrent>[], crossSeed: <Torrent>[]);
@@ -778,35 +777,13 @@ class PurgeService {
     }
 
     final torrents = await service.getTorrents();
-    final sourceFoundHashes = <String>{};
-    for (final t in torrents) {
-      if (sourceHashes.contains(t.hash.toLowerCase())) {
-        sourceFoundHashes.add(t.hash.toLowerCase());
-      }
-    }
-
-    final source = <Torrent>[];
-    final sourceNames = <String>{};
-    for (final t in torrents) {
-      if (sourceFoundHashes.contains(t.hash.toLowerCase())) {
-        source.add(t);
-        sourceNames.add(_normalizeName(t.name));
-      }
-    }
-    final crossSeed = <Torrent>[];
-    for (final t in torrents) {
-      final h = t.hash.toLowerCase();
-      if (sourceFoundHashes.contains(h)) continue; // already source
-      if (sourceNames.contains(_normalizeName(t.name))) {
-        crossSeed.add(t);
-      }
-    }
+    final resolved = partitionCrossSeed(torrents, sourceHashes);
 
     logger.info(
-      '[PurgeService] Resolved ${source.length} source + '
-      '${crossSeed.length} cross-seed torrent(s) to delete',
+      '[PurgeService] Resolved ${resolved.source.length} source + '
+      '${resolved.crossSeed.length} cross-seed torrent(s) to delete',
     );
-    return (source: source, crossSeed: crossSeed);
+    return resolved;
   }
 
   /// Deletes the resolved torrents in qBittorrent, honoring [action].
@@ -967,7 +944,4 @@ class PurgeService {
       );
     }
   }
-
-  /// Lowercases and trims a torrent name for case-insensitive comparison.
-  static String _normalizeName(String name) => name.toLowerCase().trim();
 }
