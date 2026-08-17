@@ -1,6 +1,6 @@
 ---
 name: troubleshooting
-description: Erros de conexão, autenticação API key, notificações, app desatualizado, modelo Assistant
+description: Erros de conexão, autenticação API key, notificações, app desatualizado, modelo Assistant, itens de exemplo do tour inicial
 ---
 
 # Solução de Problemas
@@ -196,3 +196,26 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - Se trava constantemente, upgrade dispositivo não é viável; use Assistant em dispositivo mais potente.
 
 **Dica:** Para melhor experiência, use **Gemma 4 E2B** em qualquer dispositivo (mais rápido, mesma qualidade razoável).
+
+## Aparecem filmes, séries, downloads ou torrents que eu não adicionei
+
+**Sintomas:**
+- Logo na primeira abertura, a biblioteca, o calendário, a fila ou a aba Torrents mostram itens (ex: "Northern Lights", "Blue Harbor") mesmo sem nenhuma instância configurada.
+- A aba "Torrents" aparece sem qBittorrent configurado.
+- No topo da lista há um aviso: **"Sample content shown during the tour"**.
+
+**Causa:** esses itens são **mockups do tour inicial**. Enquanto o onboarding guiado está rodando e um serviço ainda não tem instância configurada, o app preenche a tela com cards de exemplo para o tour ter um alvo visível em cada passo.
+
+**O que eles NÃO são:**
+- Não são filmes/séries no seu Radarr/Sonarr.
+- Não são downloads ou torrents reais em nenhum cliente.
+- Não criam instância, mídia ou qualquer dado salvo no dispositivo ou no servidor.
+- Não abrem detalhes ao serem tocados (são apenas visuais).
+
+**Como remover:**
+1. Tocar em **Skip** no tour, ou avançar até o último passo para concluí-lo.
+2. Os cards de exemplo somem na hora e a tela volta ao estado real (vazio, se nada estiver configurado).
+
+**Observações:**
+- Quem já concluiu ou pulou o onboarding não vê os mockups nas aberturas seguintes; eles só reaparecem se o tour for reiniciado em **Configurações → Getting Started**.
+- Assim que uma instância real é adicionada, o serviço correspondente passa a mostrar os dados reais mesmo com o tour rodando (ex: com Radarr configurado, a aba Filmes mostra a biblioteca de verdade e só séries/torrents seguem com exemplos).

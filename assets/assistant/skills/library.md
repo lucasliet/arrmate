@@ -97,6 +97,12 @@ Funciona exatamente como Filmes:
 
 **Observações:** A escolha é salva localmente entre sessões. Você volta a encontrar a mesma visualização na próxima vez que abrir o app.
 
+**Estado vazio:**
+- Filmes: "No movies found — Add movies to your Radarr library to see them here".
+- Séries: "No series found — Add series to your Sonarr library to see them here".
+- Com busca ou filtro ativo: "No results found — Try clearing or adjusting your search query or filters".
+- **Exceção durante o tour inicial:** se o tour estiver rodando e não houver Radarr (filmes) ou Sonarr (séries) configurado, a biblioteca mostra **cards de exemplo** sob o aviso "Sample content shown during the tour". Eles não abrem detalhes, não são itens reais e somem assim que o tour é concluído ou pulado, voltando ao estado vazio acima.
+
 ## Buscar filme ou série na biblioteca local
 
 **Onde fica:** Aba Filmes ou Séries → AppBar no topo (primeiro ícone da direita).

@@ -42,6 +42,7 @@ A aba Queue mostra itens **atualmente sendo baixados** no Radarr/Sonarr:
 **Estado vazio:**
 - Ícone de check verde grande.
 - "Queue is empty — No active downloads at the moment".
+- **Exceção durante o tour inicial:** se o tour estiver rodando e não houver nenhum Radarr/Sonarr configurado, no lugar do estado vazio aparecem **cards de exemplo** sob o aviso "Sample content shown during the tour". Eles não abrem detalhes, não representam downloads reais e somem assim que o tour é concluído ou pulado.
 
 **Observações:**
 - Reflete o estado dos clientes de download **configurados no Radarr/Sonarr** (não mostra downloads diretos do qBittorrent).

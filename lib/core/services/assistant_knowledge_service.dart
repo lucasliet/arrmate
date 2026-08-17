@@ -19,7 +19,8 @@ class AssistantKnowledgeService {
     AssistantSkill(
       id: 'overview',
       title: 'Visão Geral',
-      description: 'Sobre o Arrmate, navegação principal (5 abas), aba inicial',
+      description:
+          'Sobre o Arrmate, navegação principal (5 abas), aba inicial, tour de onboarding',
       assetPath: 'assets/assistant/skills/overview.md',
     ),
     AssistantSkill(
@@ -105,7 +106,7 @@ class AssistantKnowledgeService {
       id: 'troubleshooting',
       title: 'Solução de Problemas',
       description:
-          'Erros de conexão, autenticação, notificações, app desatualizado, modelo não carrega',
+          'Erros de conexão, autenticação, notificações, app desatualizado, modelo não carrega, itens de exemplo mostrados durante o tour inicial',
       assetPath: 'assets/assistant/skills/troubleshooting.md',
     ),
     AssistantSkill(

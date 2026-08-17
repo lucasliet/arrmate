@@ -1,6 +1,6 @@
 ---
 name: overview
-description: Sobre o Arrmate, navegação principal (5 abas), aba inicial
+description: Sobre o Arrmate, navegação principal (5 abas), aba inicial, tour de onboarding
 ---
 
 # Visão geral do Arrmate
@@ -23,7 +23,7 @@ Funcionalidades principais:
 - **Deep links:** abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou tela de configurações via `arrmate://`.
 - **Banner offline:** indicador de offline com timestamp da última conexão online.
 - Notificações push via ntfy.sh com sincronização multi-dispositivo e central in-app (incluindo eventos de purge).
-- Onboarding guiado com tour inicial e replay em Settings → Getting Started.
+- Onboarding guiado com tour inicial e replay em Settings → Getting Started. Enquanto o tour roda sem instância configurada, as telas de biblioteca, calendário, fila e torrents mostram **cards de exemplo** para o tour ter o que apontar; eles são apenas visuais e somem ao concluir ou pular o tour.
 - Multi-instância: conectar vários servidores Radarr, Sonarr e qBittorrent ao mesmo tempo.
 - Assistente de IA on-device para dúvidas sobre o próprio app.
 - Atualização automática do app via GitHub Releases.

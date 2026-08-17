@@ -64,6 +64,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Cor de destaque (customização de color scheme).
 - Aba inicial (escolher qual aba abre ao iniciar).
 - Advanced: Slow Mode, Custom Headers para instâncias.
+- **Onboarding guiado** — tour de coach marks na primeira abertura, com replay em Configurações → Getting Started; enquanto roda sem instância configurada, exibe cards de exemplo (apenas visuais) para cada passo ter um alvo.
 
 **Busca & Conteúdo:**
 - **Discover** — tela unificada de busca/adicionar filmes e séries, aceita título, ID TMDB/IMDb/TVDB ou URL, com debounce, ordenação e filtro "Hide in library".
