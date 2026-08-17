@@ -723,8 +723,19 @@ Popup de changelog pós-atualização.
 
 - **Base:** `AlertDialog` com `Icons.new_releases_rounded`.
 - **barrierDismissible:** `false` (não fecha tocando fora).
+- **insetPadding:** `EdgeInsets.symmetric(horizontal: 16, vertical: 24)` — mesma largura de conteúdo dos cards do Version History (`ListView` com padding 16). O `UpdateDialog` usa o mesmo valor para os dois modais de changelog ficarem alinhados.
 - **Actions:** `TextButton` "Dismiss" + `FilledButton` "View All Versions" (navega para `/settings/version-history`).
-- **Referência:** `lib/presentation/widgets/whats_new_dialog.dart`.
+- **Referência:** `lib/presentation/widgets/whats_new_dialog.dart`, `lib/presentation/widgets/update_dialog.dart`.
+
+### Settings — List Sections
+
+Telas de configuração usam `ListView` de `ListTile` agrupados por cabeçalho de seção.
+
+- **Cabeçalho:** `Padding(EdgeInsets.fromLTRB(16, 16, 16, 8))` com `textTheme.titleMedium` em `colorScheme.primary` e `FontWeight.bold`.
+- **Separação entre grupos:** `Divider()` entre seções na `SystemManagementScreen` (Server / Torrent Protection / App Maintenance).
+- **Navegação:** `ListTile` com `leading` (ícone outlined), `title`, `subtitle` descritivo e `trailing: Icon(Icons.chevron_right)`.
+- **Ações destrutivas:** ícone e título em `colorScheme.error` (ex.: "Reset app settings") + diálogo de confirmação com `FilledButton` em `error`/`onError`.
+- **Referência:** `lib/presentation/screens/settings/settings_screen.dart`, `lib/presentation/screens/settings/system_management_screen.dart`.
 
 ### Calendar Filter Bar
 

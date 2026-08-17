@@ -9,7 +9,7 @@ description: Listar/pausar/retomar torrents, adicionar torrent, import torrent, 
 
 ## qBittorrent — listar pausar retomar e remover torrents
 
-**Onde fica:** Aba Atividade → aba "Torrents" (terceira aba; só aparece se um qBittorrent estiver configurado em Configurações → Instances).
+**Onde fica:** Aba Atividade → aba "Torrents" (terceira aba; só aparece se um qBittorrent estiver configurado em Configurações → Instances — ou enquanto o tour inicial estiver rodando, para o tour poder explicar a aba).
 
 A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 
@@ -45,6 +45,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 **Estado vazio:**
 - Se "All" filter: "No Torrents — Add a new torrent to start downloading" com botão "Add Torrent".
 - Se outro filtro: "No torrents found with this filter".
+- **Exceção durante o tour inicial:** se o tour estiver rodando sem qBittorrent configurado, a aba mostra **torrents de exemplo** sob o aviso "Sample content shown during the tour". Eles não abrem detalhes, não representam downloads reais e somem — junto com a própria aba — assim que o tour é concluído ou pulado.
 
 **Ações:**
 - **Tocar em um torrent:** abre um **sheet (TorrentDetailsSheet)** com:

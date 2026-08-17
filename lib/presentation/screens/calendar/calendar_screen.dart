@@ -7,6 +7,9 @@ import '../../providers/instances_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../tour/app_tour_keys.dart';
+import '../../tour/tour_mock_data.dart';
+import '../../tour/tour_mockup_provider.dart';
+import '../../tour/widgets/tour_mockup_banner.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_filter_bar.dart';
 import 'widgets/calendar_item.dart';
@@ -86,8 +89,22 @@ class CalendarScreen extends ConsumerWidget {
     CalendarLoadStatus loadStatus,
     bool hasInstances,
   ) {
-    final grouped = _groupByDate(events);
+    // While the tour runs with no Radarr/Sonarr instance the calendar has
+    // nothing to show, so it paints inert sample releases the tour can point
+    // at. They disappear with the tour, restoring the real empty state.
+    final showsTourMockup =
+        events.isEmpty &&
+        !filters.isActive &&
+        ref.watch(tourMediaMockupProvider);
+    final visibleEvents = showsTourMockup
+        ? TourMockData.calendarEvents()
+        : events;
+    final tourKeys = ref.watch(appTourKeysProvider);
+    final grouped = _groupByDate(visibleEvents);
     final sortedDates = grouped.keys.toList()..sort();
+    final firstEvent = sortedDates.isEmpty
+        ? null
+        : grouped[sortedDates.first]!.first;
 
     return RefreshIndicator(
       onRefresh: () => ref.read(calendarProvider.notifier).refresh(),
@@ -95,7 +112,12 @@ class CalendarScreen extends ConsumerWidget {
         key: const ValueKey('calendar-events-list'),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          if (events.isEmpty)
+          if (showsTourMockup)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: TourMockupBanner(),
+            ),
+          if (visibleEvents.isEmpty)
             SizedBox(
               height: 320,
               child: EmptyState(
@@ -115,7 +137,15 @@ class CalendarScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDateHeader(context, date),
-                  ...dateEvents.map((event) => CalendarItem(event: event)),
+                  ...dateEvents.map((event) {
+                    final item = CalendarItem(
+                      key: identical(event, firstEvent)
+                          ? tourKeys.calendarListKey
+                          : null,
+                      event: event,
+                    );
+                    return showsTourMockup ? TourMockup(child: item) : item;
+                  }),
                   const SizedBox(height: 8),
                 ],
               );

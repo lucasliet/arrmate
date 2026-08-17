@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../tour/app_tour_keys.dart';
+import '../../tour/tour_mock_data.dart';
+import '../../tour/tour_mockup_provider.dart';
+import '../../tour/widgets/tour_mockup_banner.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/instance_load_failure_banner.dart';
 import '../../widgets/notification_icon_button.dart';
@@ -25,9 +28,14 @@ class ActivityScreen extends ConsumerWidget {
     final qbittorrentInstance = ref.watch(currentQBittorrentInstanceProvider);
     final hasQBittorrent = qbittorrentInstance != null;
     final tourKeys = ref.watch(appTourKeysProvider);
+    // The tour explains torrents, so the tab is also shown while it runs
+    // without a qBittorrent instance, backed by sample torrents.
+    final showsTorrents =
+        hasQBittorrent ||
+        ref.watch(tourMockupProvider(InstanceType.qbittorrent));
 
     return DefaultTabController(
-      length: hasQBittorrent ? 3 : 2,
+      length: showsTorrents ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Activity'),
@@ -36,7 +44,8 @@ class ActivityScreen extends ConsumerWidget {
             tabs: [
               const Tab(text: 'Queue'),
               const Tab(text: 'History'),
-              if (hasQBittorrent) const Tab(text: 'Torrents'),
+              if (showsTorrents)
+                Tab(key: tourKeys.activityTorrentsTabKey, text: 'Torrents'),
             ],
           ),
           actions: [
@@ -58,7 +67,7 @@ class ActivityScreen extends ConsumerWidget {
           children: [
             const _QueueTab(),
             const HistoryScreen(),
-            if (hasQBittorrent) const QBittorrentTab(),
+            if (showsTorrents) const QBittorrentTab(),
           ],
         ),
       ),
@@ -80,6 +89,8 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
   Widget build(BuildContext context) {
     final queueState = ref.watch(queueProvider);
     final failures = ref.watch(queueFailuresProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
+    final showsTourMockup = ref.watch(tourMediaMockupProvider);
 
     return Column(
       children: [
@@ -92,6 +103,8 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
           child: queueState.when(
             data: (items) {
               if (items.isEmpty) {
+                if (showsTourMockup) return _buildTourMockup(tourKeys);
+
                 return RefreshIndicator(
                   onRefresh: () async => ref.refresh(queueProvider),
                   child: SingleChildScrollView(
@@ -138,7 +151,10 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
                         ),
                       );
                     }
-                    return QueueListItem(item: view.items[index - 1]);
+                    return QueueListItem(
+                      key: index == 1 ? tourKeys.activityQueueKey : null,
+                      item: view.items[index - 1],
+                    );
                   },
                 ),
               );
@@ -150,6 +166,32 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
             loading: () => const LoadingIndicator(message: 'Loading queue...'),
           ),
         ),
+      ],
+    );
+  }
+
+  /// Builds the sample queue shown while the guided tour runs without a
+  /// Radarr or Sonarr instance, so the download steps have visible cards.
+  ///
+  /// The cards are inert and never persisted: they vanish as soon as the tour
+  /// is finished or skipped, restoring the real empty state.
+  Widget _buildTourMockup(AppTourKeys tourKeys) {
+    final items = TourMockData.queueItems();
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 16, bottom: 16),
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: TourMockupBanner(),
+        ),
+        for (var index = 0; index < items.length; index++)
+          TourMockup(
+            child: QueueListItem(
+              key: index == 0 ? tourKeys.activityQueueKey : null,
+              item: items[index],
+            ),
+          ),
       ],
     );
   }

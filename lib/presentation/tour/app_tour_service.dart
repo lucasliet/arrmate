@@ -10,6 +10,19 @@ import '../../core/services/logger_service.dart';
 import '../providers/onboarding_provider.dart';
 import '../router/app_router.dart';
 import 'app_tour_keys.dart';
+import 'tour_mockup_provider.dart';
+
+/// Shows the tour overlay over [targets], reporting the user walking to the
+/// end through [onFinish] and the Skip button through [onSkip].
+///
+/// Injected into [AppTourService] so tests can drive the segment chain without
+/// mounting a real coach mark over the root navigator.
+typedef TourOverlayPresenter =
+    void Function({
+      required List<TargetFocus> targets,
+      required VoidCallback onFinish,
+      required VoidCallback onSkip,
+    });
 
 /// Orchestrates the guided tour across multiple screens using
 /// [TutorialCoachMark].
@@ -17,17 +30,36 @@ import 'app_tour_keys.dart';
 /// The tour is split into segments that run on different routes. Each segment
 /// finishes into the next via [onFinish], and any segment can be aborted via
 /// the global Skip button which cancels the whole chain.
+///
+/// While the tour runs, screens that depend on Radarr, Sonarr or qBittorrent
+/// data paint sample content (see [tourActiveProvider]), so every step points
+/// at a visible element even on a fresh install with no instance configured.
 class AppTourService {
   final Ref _ref;
   final AppTourKeys _keys;
+
+  /// How long a segment waits for its anchor widget to be laid out before
+  /// giving up and moving on.
+  final Duration _keyTimeout;
+
+  late final TourOverlayPresenter _presenter;
+
   bool _cancelled = false;
 
-  AppTourService(this._ref, this._keys);
+  AppTourService(
+    this._ref,
+    this._keys, {
+    TourOverlayPresenter? presenter,
+    Duration keyTimeout = const Duration(seconds: 3),
+  }) : _keyTimeout = keyTimeout {
+    _presenter = presenter ?? _showCoachMark;
+  }
 
   /// Starts the full guided tour from the beginning.
   void startFull() {
     logger.info('[AppTourService] Starting full tour');
     _cancelled = false;
+    _ref.read(tourActiveProvider.notifier).start();
     _runInstanceSegment();
   }
 
@@ -133,6 +165,15 @@ class AppTourService {
     _present(
       targets: [
         _target(
+          key: _keys.moviesLibraryKey,
+          identify: 'movies_library',
+          title: 'Your movie library',
+          body:
+              'Every movie Radarr manages shows up here with its monitoring '
+              'and download status.',
+          align: ContentAlign.bottom,
+        ),
+        _target(
           key: _keys.moviesSearchKey,
           identify: 'movies_search',
           title: 'Search',
@@ -144,6 +185,27 @@ class AppTourService {
           identify: 'movies_sort',
           title: 'Sort & Filter',
           body: 'Reorder and filter your library to browse faster.',
+          align: ContentAlign.bottom,
+        ),
+      ],
+      onFinish: _runSeriesSegment,
+    );
+  }
+
+  Future<void> _runSeriesSegment() async {
+    if (_cancelled) return;
+    await _navigateTo('/series');
+    await _waitForKey(_keys.seriesLibraryKey);
+
+    _present(
+      targets: [
+        _target(
+          key: _keys.seriesLibraryKey,
+          identify: 'series_library',
+          title: 'Your series library',
+          body:
+              'Your Sonarr series live here, with season counts and how much '
+              'of each show is already downloaded.',
           align: ContentAlign.bottom,
         ),
       ],
@@ -163,6 +225,15 @@ class AppTourService {
           identify: 'calendar',
           title: 'Calendar',
           body: 'Track upcoming movie releases and series episodes.',
+          align: ContentAlign.bottom,
+        ),
+        _target(
+          key: _keys.calendarListKey,
+          identify: 'calendar_events',
+          title: 'Upcoming releases',
+          body:
+              'Each card shows what airs or releases next, grouped by day and '
+              'colour-coded by release type.',
           align: ContentAlign.bottom,
         ),
       ],
@@ -187,6 +258,47 @@ class AppTourService {
           align: ContentAlign.bottom,
         ),
         _target(
+          key: _keys.activityQueueKey,
+          identify: 'activity_queue',
+          title: 'Download queue',
+          body:
+              'Active downloads report progress, size left, and estimated '
+              'completion. Tap one for details and actions.',
+          align: ContentAlign.bottom,
+        ),
+      ],
+      onFinish: _runTorrentsStep,
+    );
+  }
+
+  Future<void> _runTorrentsStep() async {
+    if (_cancelled) return;
+    await _selectTorrentsTab();
+    await _waitForKey(_keys.activityTorrentKey);
+
+    _present(
+      targets: [
+        _target(
+          key: _keys.activityTorrentKey,
+          identify: 'activity_torrents',
+          title: 'Torrents',
+          body:
+              'Torrents from qBittorrent report live speed, ratio, and peers, '
+              'with pause, resume, and import actions.',
+          align: ContentAlign.bottom,
+        ),
+      ],
+      onFinish: _runNavigationStep,
+    );
+  }
+
+  Future<void> _runNavigationStep() async {
+    if (_cancelled) return;
+    await _waitForKey(_keys.navBarKey);
+
+    _present(
+      targets: [
+        _target(
           key: _keys.navBarKey,
           identify: 'nav_bar',
           title: 'Navigation',
@@ -209,11 +321,30 @@ class AppTourService {
 
   void _finishTour() {
     logger.info('[AppTourService] Tour finished');
+    _ref.read(tourActiveProvider.notifier).stop();
     _ref.read(onboardingProvider.notifier).markComplete();
     final context = rootNavigatorKey.currentContext;
     if (context != null) {
       GoRouter.of(context).go('/movies');
     }
+  }
+
+  /// Moves the activity screen to its torrents tab, when that tab exists.
+  ///
+  /// The tab bar lives under the screen's [DefaultTabController], so its key
+  /// gives access to the controller without the tour reaching into the screen
+  /// state. The torrents tab is always the last one, and is only built when a
+  /// qBittorrent instance is configured or the tour is mocking it.
+  Future<void> _selectTorrentsTab() async {
+    if (!AppTourKeys.isReady(_keys.activityTorrentsTabKey)) return;
+    final context = _keys.activityTabBarKey.currentContext;
+    if (context == null) return;
+    final controller = DefaultTabController.maybeOf(context);
+    if (controller == null) return;
+    controller.animateTo(controller.length - 1);
+    // Let the tab transition settle, otherwise the coach mark would measure
+    // the torrent card while it is still sliding into place.
+    await Future<void>.delayed(kTabScrollDuration);
   }
 
   /// Navigates to [route] using the root navigator, waiting one frame so the
@@ -226,12 +357,9 @@ class AppTourService {
   }
 
   /// Waits until the widget referenced by [key] is mounted and laid out,
-  /// timing out after [timeout] to avoid hanging the tour.
-  Future<void> _waitForKey(
-    GlobalKey key, {
-    Duration timeout = const Duration(seconds: 3),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
+  /// timing out after [_keyTimeout] to avoid hanging the tour.
+  Future<void> _waitForKey(GlobalKey key) async {
+    final deadline = DateTime.now().add(_keyTimeout);
     while (DateTime.now().isBefore(deadline)) {
       if (AppTourKeys.isReady(key)) return;
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -239,12 +367,33 @@ class AppTourService {
     logger.warning('[AppTourService] Timed out waiting for key $key');
   }
 
-  /// Builds and shows a [TutorialCoachMark] overlay with the shared visual
-  /// configuration. The Skip button is always visible and aborts the whole
-  /// tour via [_skipAll].
+  /// Hands the segment's [targets] to the overlay presenter.
+  ///
+  /// Targets whose widget is not on screen are dropped, so a step never
+  /// highlights an empty region; when nothing is left, the segment hands over
+  /// to the next one instead of showing an empty overlay.
   void _present({
     required List<TargetFocus> targets,
     required VoidCallback onFinish,
+  }) {
+    final visibleTargets = targets.where(_isVisible).toList();
+    if (visibleTargets.isEmpty) {
+      logger.warning(
+        '[AppTourService] Skipping segment: no visible targets on screen',
+      );
+      onFinish();
+      return;
+    }
+
+    _presenter(targets: visibleTargets, onFinish: onFinish, onSkip: _skipAll);
+  }
+
+  /// Default presenter: a [TutorialCoachMark] over the root navigator, with the
+  /// shared visual configuration and an always visible Skip button.
+  void _showCoachMark({
+    required List<TargetFocus> targets,
+    required VoidCallback onFinish,
+    required VoidCallback onSkip,
   }) {
     TutorialCoachMark(
       targets: targets,
@@ -257,13 +406,19 @@ class AppTourService {
       alignSkip: Alignment.bottomRight,
       onFinish: onFinish,
       onSkip: () {
-        _skipAll();
+        onSkip();
         return true;
       },
     ).showWithNavigatorStateKey(
       navigatorKey: rootNavigatorKey,
       rootOverlay: true,
     );
+  }
+
+  /// Whether [target] points at a widget currently mounted and laid out.
+  bool _isVisible(TargetFocus target) {
+    final key = target.keyTarget;
+    return key != null && AppTourKeys.isReady(key);
   }
 
   TargetFocus _target({

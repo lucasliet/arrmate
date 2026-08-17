@@ -1,6 +1,6 @@
 ---
 name: movies
-description: Adicionar/detalhes/editar/deletar filme, discover busca unificada ID URL TMDB IMDb, deletar arquivo, purge (remover filme + arquivos + torrents no qBittorrent), import exclusion, buscar release
+description: Adicionar/detalhes/editar/deletar filme, discover busca por título ID URL TMDB IMDb, deletar arquivo, purge (remover filme + arquivos + torrents no qBittorrent), import exclusion, buscar release
 ---
 
 # Filmes
@@ -9,42 +9,49 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca unificada I
 
 **Onde fica:** Aba Filmes → botão "+" (floating action button no canto inferior direito).
 
-> **Atalho:** o "+" abre a tela **Discover** (descoberta unificada de filmes e séries). Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
+> **Atalho:** o "+" abre a tela **Discover** já em modo filme. Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
 
 **Passo a passo:**
 1. Abrir a aba Filmes (primeira aba da barra inferior).
 2. Tocar no botão **"+"** no canto inferior direito (FAB redondo).
-3. Um sheet (painel deslizável) abre com título "Add Movie".
-4. Na barra de busca, digite o título do filme (ex: "Inception", "The Matrix").
-5. Tocar "Search" ou pressionar Enter no teclado.
+3. Abre a tela **Discover** com AppBar "Add Movie" e ícone **X** ("Close") à direita para sair.
+4. No campo **"Search"**, digite o título do filme (ex: "Inception", "The Matrix").
+5. A busca roda sozinha com debounce enquanto você digita; pressionar Enter dispara a busca imediatamente.
 6. **Resultados aparecem com:**
    - Poster thumbnail no lado esquerdo.
-   - Título em bold.
-   - Ano de lançamento.
-   - Nota TMDB (ex: 8.5/10).
-   - Se o filme já estiver na sua biblioteca: badge **"In Library"** aparece no topo-direito do item.
-7. Tocar no resultado desejado.
-8. O sheet transforma-se na **tela de configuração** (segunda etapa) com:
-   - **Monitored:** toggle (padrão ON) — se ON, o Radarr busca ativamente releases.
+   - Título do filme.
+   - Subtítulo com ano e nota TMDB (ex: "2010 · 8.4"), ou "No rating" quando não há nota.
+   - Filmes que **já estão na biblioteca** mostram um ✅ **check verde** no lugar do chevron; tocar neles **abre o filme na biblioteca** em vez de adicionar.
+7. Tocar em um resultado ainda não adicionado.
+8. Abre a etapa **"Movie Preview"** (AppBar com esse título e seta de voltar): poster grande, "Título (Ano)", linha com certificação · duração · gêneros, sinopse e botão **"Configure Addition"**.
+9. Tocar em **"Configure Addition"** para abrir a etapa final (AppBar com o título do filme, seta de voltar e botão **"Add"** à direita):
+   - **Monitor:** dropdown com "Movie", "Movie + Collection" ou "None" (escolher "None" adiciona o filme sem monitorar).
    - **Minimum Availability:** dropdown com opções:
      - Announced (filme anunciado mas ainda não lançado).
      - In Cinemas (lançado em cinemas).
      - Released (lançado em qualquer formato).
    - **Quality Profile:** dropdown listando perfis de qualidade do Radarr (ex: "1080p", "4K").
    - **Root Folder:** dropdown com pastas destino do Radarr (ex: "/movies", "/media/movies").
-9. Tocar **"Add Movie"** (botão no rodapé).
-10. Snackbar confirma "Movie added successfully" e a lista volta a atualizar automaticamente.
+   - **Tags:** chips das tags da instância (aparece só quando o Radarr tem tags cadastradas).
+10. Tocar **"Add"** no canto superior direito (vira spinner enquanto envia).
+11. Snackbar confirma "Movie added successfully" e a lista volta a atualizar automaticamente.
 
 **Observações:**
-- O filme é adicionado ao Radarr imediatamente. 
+- O filme é adicionado ao Radarr imediatamente.
 - A busca automática de releases no Radarr depende da configuração do Radarr (pode ser imediata ou agendada).
-- Você pode voltar ao resultado anterior tocando no ícone de voltar/chevron (se houver).
+- Se faltar quality profile ou root folder, o app avisa "Please select a movie, quality profile, and root folder" e não envia.
+- Use a **seta de voltar** de cada etapa para revisar a escolha anterior.
 
-## Adicionar via Discover — busca unificada por título ID ou URL
+## Adicionar via Discover — busca por título ID ou URL
 
-**Onde fica:** Aba Filmes (ou Séries) → botão "+" (FAB) → abre a tela **Discover**.
+**Onde fica:** Aba Filmes → botão "+" (FAB) → abre a tela **Discover** em modo filme.
 
-A tela **Discover** é uma busca unificada para filmes e séries, com duas abas no topo (Movies / Series). Ela aceita não só o título, mas também identificadores e links.
+A tela **Discover** abre **direto no tipo de mídia da aba de origem** — o "+" da aba Filmes busca filmes, o "+" da aba Séries busca séries. Não há abas Movies/Series dentro da tela: para adicionar uma série, use o "+" da aba Séries. A busca aceita não só o título, mas também identificadores e links.
+
+**Layout da tela:**
+- **AppBar** com título "Add Movie" e ícone **X** ("Close").
+- Campo **"Search"** com exemplos no hint (`Interstellar, tmdb:157336, imdb:tt0816692`).
+- Dropdown **"Sort"** e chip **"Hide already added"** logo abaixo (empilhados em telas muito estreitas).
 
 **Como buscar:**
 - **Por título:** digite o nome (ex: "Dune") — a busca tem debounce e roda automaticamente enquanto você digita.
@@ -54,15 +61,15 @@ A tela **Discover** é uma busca unificada para filmes e séries, com duas abas 
 **Resultados:**
 - Cada resultado mostra poster, título, ano e nota.
 - Resultados que já estão na sua biblioteca aparecem marcados como existentes.
-- Use o chip **"Hide in library"** para ocultar itens que você já tem.
-- Use o **dropdown de ordenação** para reordenar por relevância, data ou avaliação.
+- Use o chip **"Hide already added"** para ocultar itens que você já tem.
+- Use o **dropdown "Sort"** para reordenar por relevância, data ou avaliação.
 
 **Adicionar:**
-- Toque em um resultado para abrir a tela de configuração (Monitored, Quality Profile, Root Folder, etc.) — mesma segunda etapa do fluxo padrão.
-- Em seguida, toque em "Add Movie" (ou "Add Series").
+- Toque em um resultado para abrir o "Movie Preview" e depois "Configure Addition" (Monitor, Minimum Availability, Quality Profile, Root Folder, Tags) — mesmas etapas do fluxo padrão.
+- Em seguida, toque em **"Add"** no canto superior direito.
 
 **Observações:**
-- A aba ativa (Movies/Series) no Discover pode ser pré-selecionada, inclusive via deep link `arrmate:///discover` ou `arrmate:///search?q=<termo>&type=movie`.
+- O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=movie` ou `arrmate:///search?q=<termo>&type=movie` (o padrão é `movie` quando o parâmetro é omitido).
 - A extração de ID funciona para os formatos de URL mais comuns do IMDb e TMDB.
 
 ## Detalhes do filme — sinopse arquivos histórico ações
@@ -212,24 +219,27 @@ Use o **Purge** quando quiser remover completamente um filme **e** liberar o esp
    - Mensagem: `This will permanently remove "[Título do filme]" from Radarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.`
    - Botões: "Cancel" e "Purge" (botão vermelho).
 5. Tocar **"Purge"** para confirmar.
-6. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
-7. Snackbar confirma `Movie purged.` seguido de um resumo multi-linha:
+6. Se algum torrent tiver semeado **menos** que os "Minimum seeding days" configurados, aparece o diálogo **"Torrents still seeding"** listando esses torrents, com as opções "Cancel" (aborta tudo), "Keep seeding" (remove o filme e os arquivos, mas mantém esses torrents) e "Delete all" (apaga tudo). Ver `system.md` → "Proteção de torrents".
+7. Um **indicador de progresso** (spinner circular) aparece centralizado enquanto o fluxo completo roda — não feche o app durante a operação.
+8. Snackbar confirma `Movie purged.` seguido de um resumo multi-linha:
    - `Queue items: N` — itens removidos da fila do Radarr.
-   - `Media files: N` — arquivos de mídia apagados.
+   - `Media files: N` — arquivos de mídia que o filme tinha (contados antes da remoção no Radarr).
    - `Torrents: N (+M cross-seed)` — torrents deletados no qBittorrent (+ duplicatas cross-seed aprovadas).
    - Ou `qBittorrent skipped — configure a qBittorrent instance.` se nenhuma instância do qBittorrent estiver configurada (nesse caso só o lado Radarr é afetado).
-8. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
-9. Volta automaticamente à lista de filmes (que é recarregada).
+9. A central de notificações também recebe registros locais do tipo purge para cada torrent removido.
+10. Volta automaticamente à lista de filmes (que é recarregada).
 
 **O que o Purge faz, por trás:**
 1. Coleta os hashes dos torrents fonte a partir do histórico (eventos grabbed/imported) e da fila do Radarr.
-2. Remove os itens da fila no Radarr (`removeFromClient: true`).
-3. Deleta os arquivos de mídia e o filme do Radarr (`deleteFiles: true`).
-4. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
-5. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
-6. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
+2. Conta os arquivos de mídia do filme (valor apenas informativo, usado no resumo).
+3. Remove o filme do Radarr com `deleteFiles: true` — é o próprio Radarr que apaga os arquivos em disco.
+4. **Só depois que essa remoção dá certo**, limpa os itens da fila do Radarr (`removeFromClient: true`).
+5. Lista os torrents no qBittorrent e deleta os que batem pelo hash, **mais** candidatos a duplicata cross-seed detectados por **nome normalizado**.
+6. Para cada candidato cross-seed, o app abre um diálogo com detalhes (nome, hash, tamanho, save path e tags) e você escolhe **Delete** ou **Keep** individualmente.
+7. Deleta os torrents aprovados com `deleteFiles: true`. Com hardlinks, o espaço só é liberado quando **todos** os hardlinks dos mesmos dados são removidos — por isso o Purge atua nos dois lados.
 
 **Observações:**
+- **Downloads preservados em caso de falha:** a fila e os torrents só são tocados depois que o filme sai do catálogo do Radarr. Se a remoção falhar, o download em andamento continua intacto.
 - **Irreversível:** o filme sai do Radarr e os torrents saem do qBittorrent; re-adicionar exige busca manual.
 - **Sem blocklist:** como o filme é removido do catálogo, ele deixa de ser monitorado e não é re-grabbed automaticamente.
 - **Aprovação manual por duplicata:** candidatos cross-seed só são deletados quando você aprova no diálogo; os não aprovados permanecem no qBittorrent.

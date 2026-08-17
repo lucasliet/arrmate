@@ -7,7 +7,7 @@ description: Modelos disponíveis, download, import, switch, delete, how it work
 
 ## Sobre o Assistant — modelos disponíveis baixar importar trocar deletar
 
-**Onde fica:** Configurações (quinta aba da barra inferior) → seção "System Management" → "Assistant".
+**Onde fica:** Configurações (quinta aba da barra inferior) → seção "System" → "Assistant".
 
 O **Assistant** é uma funcionalidade de IA para responder dúvidas sobre o Arrmate. Por padrão ele usa o modelo online gratuito do **OpenCode Zen** sem API key; também é possível usar modelos locais on-device com LiteRT-LM.
 

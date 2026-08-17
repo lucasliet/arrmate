@@ -19,7 +19,8 @@ class AssistantKnowledgeService {
     AssistantSkill(
       id: 'overview',
       title: 'Visão Geral',
-      description: 'Sobre o Arrmate, navegação principal (5 abas), aba inicial',
+      description:
+          'Sobre o Arrmate, navegação principal (5 abas), aba inicial, tour de onboarding',
       assetPath: 'assets/assistant/skills/overview.md',
     ),
     AssistantSkill(
@@ -33,14 +34,14 @@ class AssistantKnowledgeService {
       id: 'movies',
       title: 'Filmes',
       description:
-          'Adicionar/detalhes/editar/deletar filme, deletar arquivo, buscar release',
+          'Adicionar/detalhes/editar/deletar filme, deletar arquivo, buscar release, Discover',
       assetPath: 'assets/assistant/skills/movies.md',
     ),
     AssistantSkill(
       id: 'series',
       title: 'Séries',
       description:
-          'Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo',
+          'Adicionar/detalhes/episódios/editar/deletar série, deletar arquivo, Discover',
       assetPath: 'assets/assistant/skills/series.md',
     ),
     AssistantSkill(
@@ -85,7 +86,8 @@ class AssistantKnowledgeService {
     AssistantSkill(
       id: 'system',
       title: 'Sistema',
-      description: 'Logs, health, perfis de qualidade, sobre o app',
+      description:
+          'Logs, health, perfis de qualidade, sobre o app, System Management, dias mínimos de seeding, limpar cache de imagens, resetar configurações',
       assetPath: 'assets/assistant/skills/system.md',
     ),
     AssistantSkill(
@@ -105,7 +107,7 @@ class AssistantKnowledgeService {
       id: 'troubleshooting',
       title: 'Solução de Problemas',
       description:
-          'Erros de conexão, autenticação, notificações, app desatualizado, modelo não carrega',
+          'Erros de conexão, autenticação, notificações, app desatualizado, modelo não carrega, itens de exemplo mostrados durante o tour inicial',
       assetPath: 'assets/assistant/skills/troubleshooting.md',
     ),
     AssistantSkill(

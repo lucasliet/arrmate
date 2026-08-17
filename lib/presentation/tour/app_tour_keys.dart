@@ -18,8 +18,27 @@ class AppTourKeys {
   final GlobalKey instanceSaveKey = GlobalKey();
   final GlobalKey moviesSearchKey = GlobalKey();
   final GlobalKey moviesSortKey = GlobalKey();
+
+  /// First entry of the movie library, real or mocked by the tour.
+  final GlobalKey moviesLibraryKey = GlobalKey();
+
+  /// First entry of the series library, real or mocked by the tour.
+  final GlobalKey seriesLibraryKey = GlobalKey();
   final GlobalKey calendarTitleKey = GlobalKey();
+
+  /// First calendar event card, real or mocked by the tour.
+  final GlobalKey calendarListKey = GlobalKey();
   final GlobalKey activityTabBarKey = GlobalKey();
+
+  /// First download queue card, real or mocked by the tour.
+  final GlobalKey activityQueueKey = GlobalKey();
+
+  /// Torrents tab of the activity screen, shown by the tour even when no
+  /// qBittorrent instance exists yet.
+  final GlobalKey activityTorrentsTabKey = GlobalKey();
+
+  /// First torrent card, real or mocked by the tour.
+  final GlobalKey activityTorrentKey = GlobalKey();
   final GlobalKey navBarKey = GlobalKey();
 
   /// Returns `true` when [key]'s widget is currently mounted and renderable,

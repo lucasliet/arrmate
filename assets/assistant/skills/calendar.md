@@ -58,6 +58,7 @@ A barra de filtros permite refinar quais eventos aparecem. Cada filtro é um chi
 **Estado vazio:** 
 - Título: "No upcoming events"
 - Subtitle: "Check back later or add content to your libraries"
+- **Exceção durante o tour inicial:** se o tour estiver rodando e não houver nenhum Radarr/Sonarr configurado, no lugar do estado vazio aparecem **eventos de exemplo** sob o aviso "Sample content shown during the tour". Eles não abrem detalhes, não representam lançamentos reais e somem assim que o tour é concluído ou pulado.
 
 **Observações:**
 - Os dados vêm dos Radarr e Sonarr configurados em Configurações → Instances.
