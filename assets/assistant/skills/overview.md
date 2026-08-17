@@ -11,19 +11,20 @@ Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes)
 
 Funcionalidades principais:
 - Biblioteca de filmes e séries: navegar, buscar, filtrar, ordenar, selecionar em lote, monitorar/desmonitorar e deletar.
-- **Discover (busca e adição unificada):** tela de descoberta acessível pelo FAB das abas Filmes/Séries — aceita título, ID TMDB/IMDb ou URL.
+- **Discover (busca e adição):** tela de descoberta acessível pelo FAB das abas Filmes/Séries — abre já no tipo da aba de origem e aceita título, ID TMDB/IMDb/TVDB ou URL.
 - Adicionar novos filmes e séries via busca online no Radarr/Sonarr.
 - Busca manual de releases (grab interativo) com filtro e seleção.
 - Calendário de próximos lançamentos e episódios, com **filtros** (instância, tipo, monitorados, estreias, ocultar especiais).
 - Monitoramento de fila de downloads e histórico de atividade.
 - Cliente qBittorrent integrado: listar, pausar, retomar, remover, adicionar torrents.
-- **Connection Diagnostics:** teste de endpoints, latência, traces de requisições e export de relatório sanitizado (Configurações → System Management → Diagnostics).
-- **System Overview:** armazenamento/disco, tamanho da biblioteca e versão por instância (Configurações → System Management → System Overview).
+- **System Management:** tela única (Configurações → System → System Management) que reúne Logs, Health, Connection Diagnostics, System Overview, Quality Profiles, dias mínimos de seeding, Version History, limpar cache de imagens e resetar configurações.
+- **Connection Diagnostics:** teste de endpoints, latência, traces de requisições e export de relatório sanitizado (System Management → Server → Connection Diagnostics).
+- **System Overview:** armazenamento/disco, tamanho da biblioteca e versão por instância (System Management → Server → System Overview).
 - **Version History e What's New:** changelog do GitHub e popup pós-atualização.
 - **Deep links:** abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou tela de configurações via `arrmate://`.
 - **Banner offline:** indicador de offline com timestamp da última conexão online.
 - Notificações push via ntfy.sh com sincronização multi-dispositivo e central in-app (incluindo eventos de purge).
-- Onboarding guiado com tour inicial e replay em Settings → Getting Started.
+- Onboarding guiado com tour inicial e replay em Configurações → seção "About" → "Getting Started".
 - Multi-instância: conectar vários servidores Radarr, Sonarr e qBittorrent ao mesmo tempo.
 - Assistente de IA on-device para dúvidas sobre o próprio app.
 - Atualização automática do app via GitHub Releases.
@@ -38,7 +39,7 @@ O Arrmate usa uma barra de navegação inferior com 5 abas:
 2. **Séries** — Biblioteca de séries do Sonarr.
 3. **Calendário** — Próximos lançamentos e episódios organizados por data.
 4. **Atividade** — Fila de downloads, histórico e torrents do qBittorrent.
-5. **Configurações** — Instâncias, aparência, notificações, sistema e assistente.
+5. **Configurações** — seções Instances, Appearance, System (System Management + Assistant), Notifications e About.
 
 A aba ativa é destacada com ícone preenchido e cor de destaque. Tocar em qualquer aba navega diretamente.
 

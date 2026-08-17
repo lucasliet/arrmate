@@ -42,6 +42,14 @@ and **qBittorrent** (for downloads).
     instances, and background polling (every 30 min) with battery saver mode.
   - **Advanced Management**: View Quality Profiles, System Logs, and Health
     Checks.
+  - **System Management**: Dedicated screen (`/settings/system-management`)
+    grouping server tools (logs, health, connection diagnostics, system
+    overview, quality profiles), the minimum-seeding-days guard, and app
+    maintenance (version history, image cache clearing, settings reset).
+  - **Purge**: Removes a movie/series (or season) from the catalog together
+    with its media files and source torrents — including cross-seed duplicates
+    approved one by one. Queue items and torrents are only touched after the
+    catalog deletion succeeds.
   - **Manual Import**: Match and import files manually from the queue.
   - **Movie & Series Files**: View detailed file metadata (quality, size,
     codecs) and extra files for both movies and series.
@@ -68,10 +76,12 @@ and **qBittorrent** (for downloads).
   implementations (`/repositories`).
 - `lib/domain`: Domain layer including models (`/models`) and repository
   interfaces (`/repositories`).
-- `lib/presentation`: UI layer organized by feature (screens, widgets) and
-  router configuration.
-- `lib/providers`: State management using Riverpod.
+- `lib/presentation`: UI layer organized by feature (`/screens`, `/widgets`,
+  `/shared`, `/theme`, `/tour`), Riverpod state in `/providers`, and router
+  configuration in `/router`.
 - `assets/images`: Static image assets and icons.
+- `assets/assistant/skills`: Markdown skills consumed by the in-app AI
+  assistant — keep them in sync whenever a user-facing flow changes.
 
 ## Build, Test, and Development Commands
 

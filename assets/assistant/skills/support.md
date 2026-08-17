@@ -56,7 +56,8 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Perfis de qualidade (visualizar disponíveis em cada instância).
 - Logs (ARR logs do servidor + APP logs internos) com filtros.
 - Health checks (diagnóstico de problemas do servidor).
-- **Connection Diagnostics** — teste de endpoints, latência, traces de requisições e export de relatório sanitizado (Configurações → System Management → Diagnostics).
+- **System Management** — tela única (Configurações → System → System Management) com Logs, Health, Connection Diagnostics, System Overview, Quality Profiles, dias mínimos de seeding, Version History, limpar cache de imagens e resetar configurações.
+- **Connection Diagnostics** — teste de endpoints, latência, traces de requisições e export de relatório sanitizado (System Management → Server → Connection Diagnostics).
 - **System Overview** — armazenamento/disco, tamanho da biblioteca e versão por instância.
 - **Version History & What's New** — histórico de releases do GitHub + popup de changelog pós-atualização.
 - **Banner offline** — indicador de offline com timestamp da última conexão online.
@@ -66,7 +67,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Advanced: Slow Mode, Custom Headers para instâncias.
 
 **Busca & Conteúdo:**
-- **Discover** — tela unificada de busca/adicionar filmes e séries, aceita título, ID TMDB/IMDb/TVDB ou URL, com debounce, ordenação e filtro "Hide in library".
+- **Discover** — tela de busca/adição aberta pelo FAB das abas Filmes/Séries (já no tipo da aba de origem), aceita título, ID TMDB/IMDb/TVDB ou URL, com debounce, ordenação ("Sort") e filtro "Hide already added".
 - **Import exclusions** — opção, ao deletar filme/série, de impedir re-importação automática.
 - **Deep links** — abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou configurações via `arrmate://`.
 
@@ -158,7 +159,7 @@ R: Não há função de backup nativa. Instância configuradas são salvas local
 3. **Preencher informações:**
    - Título claro: ex: "App crashes when importing torrent".
    - Descrição: passos para reproduzir, versão do app, modelo do dispositivo.
-   - Logs: se possível, incluir logs do app (Configurações → System Management → Logs → "Copy all").
+   - Logs: se possível, incluir logs do app (Configurações → System → System Management → Server → Logs → "Copy all").
 
 4. **Enviar issue:**
    - Tocar "Submit new issue".

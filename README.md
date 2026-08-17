@@ -17,9 +17,10 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
 
 - **Library Management**: Browse, search, filter, sort, batch select, and
   manage your movie and series libraries with a native mobile experience.
-- **Content Discovery**: Unified search/add screen (FAB on Movies/Series tabs)
-  that accepts a title, a TMDB/IMDb ID, or a URL, with debounced lookup, sort,
-  and a "Hide in library" filter.
+- **Content Discovery**: Search/add screen opened by the FAB on the Movies and
+  Series tabs — it opens straight into that tab's media type and accepts a
+  title, a TMDB/IMDb/TVDB ID, or a URL, with debounced lookup, sort, and a
+  "Hide already added" filter.
 - **Media Management**: Delete, monitor/unmonitor in batch, and purge movies or
   series from your library, plus remove individual media files with
   confirmation dialogs.
@@ -27,8 +28,14 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   the import exclusion list so it is never re-imported automatically.
 - **Season Management (Sonarr)**: Run automatic and interactive season search,
   purge full seasons, and delete season files directly from season details.
-- **Safer Purge Flow**: Purge now detects cross-seed candidates and requires
-  explicit per-torrent approval before deleting duplicates in qBittorrent.
+- **Safer Purge Flow**: Purge detects cross-seed candidates and requires
+  explicit per-torrent approval before deleting duplicates in qBittorrent, and
+  it only clears the queue and torrents after the catalog deletion succeeds, so
+  a failed purge leaves in-flight downloads untouched.
+- **System Management**: A single screen (Settings → System → System Management)
+  grouping server tools (logs, health, diagnostics, storage overview, quality
+  profiles), the minimum-seeding-days guard, and app maintenance (version
+  history, image-cache clearing, settings reset).
 - **Download Client Integration**: Full qBittorrent support to view, pause,
   resume, and delete downloads, plus add new torrents via URL or file.
 - **Torrent Import**: Import completed torrent files directly to your
@@ -142,9 +149,9 @@ authority-less form (`arrmate:///movies/123`) are supported.
 | Episode details | `arrmate:///series/<id>/season/<n>/episode/<id>` |
 | Calendar | `arrmate:///calendar` |
 | Activity | `arrmate:///activity` |
-| Discover | `arrmate:///discover` |
+| Discover | `arrmate:///discover?type=movie` (or `type=series`; defaults to `movie`) |
 | Search | `arrmate:///search?q=<term>&type=movie` |
-| Settings (and sub-screens) | `arrmate:///settings`, `arrmate:///settings/diagnostics`, `arrmate:///settings/system-overview`, `arrmate:///settings/version-history`, … |
+| Settings (and sub-screens) | `arrmate:///settings`, `arrmate:///settings/system-management`, `arrmate:///settings/diagnostics`, `arrmate:///settings/system-overview`, `arrmate:///settings/version-history`, … |
 | Instance editor | `arrmate:///settings/instance/<id>` |
 
 Unsupported links are rejected rather than navigating with a zeroed identifier.
