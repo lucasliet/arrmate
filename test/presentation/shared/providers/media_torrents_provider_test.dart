@@ -208,6 +208,41 @@ void main() {
       expect(linked.link.episodeId, isNull);
     });
 
+    test('should merge the episodes of same-named source torrents', () async {
+      // Given two grabs sharing a release name but covering different episodes
+      final repository = MockSeriesRepository();
+      when(() => repository.getSeriesHistory(3)).thenAnswer(
+        (_) async => [
+          _episodeEvent(downloadId: 'AABB', episodeId: 42),
+          _episodeEvent(downloadId: 'EEFF', episodeId: 43),
+        ],
+      );
+      final service = MockQBittorrentService();
+      when(service.getTorrents).thenAnswer(
+        (_) async => [
+          _torrent(hash: 'aabb', name: 'Severance.S01.1080p'),
+          _torrent(hash: 'eeff', name: 'Severance.S01.1080p'),
+          _torrent(hash: 'ccdd', name: 'severance.s01.1080p'),
+        ],
+      );
+      final container = _container(
+        qbittorrent: service,
+        seriesRepository: repository,
+        series: _series(id: 3, title: 'Severance'),
+      );
+
+      // When
+      final result = await container.read(seriesTorrentsProvider(3).future);
+
+      // Then the cross-seed belongs to both, not just the last source seen
+      final crossSeed = result.torrents.last;
+      expect(crossSeed.torrent.hash, 'ccdd');
+      expect(crossSeed.episodeIds, {42, 43});
+      // Each source keeps only the episodes its own grab covered.
+      expect(result.torrents[0].episodeIds, {42});
+      expect(result.torrents[1].episodeIds, {43});
+    });
+
     test('should give a cross-seed the episodes of its source', () async {
       // Given
       final repository = MockSeriesRepository();

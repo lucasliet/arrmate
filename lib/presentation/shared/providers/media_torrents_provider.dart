@@ -202,7 +202,11 @@ final seriesTorrentsProvider = FutureProvider.autoDispose
       for (final torrent in resolved.source) {
         final episodeIds =
             episodesByHash[torrent.hash.toLowerCase()] ?? const <int>{};
-        sourceEpisodesByName[normalizeTorrentName(torrent.name)] = episodeIds;
+        // Accumulated, not replaced: two grabs sharing a release name may cover
+        // different episodes, and a cross-seed copy belongs to all of them.
+        sourceEpisodesByName
+            .putIfAbsent(normalizeTorrentName(torrent.name), () => <int>{})
+            .addAll(episodeIds);
         torrents.add(build(torrent, episodeIds, false));
       }
       for (final torrent in resolved.crossSeed) {

@@ -134,15 +134,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - Tocar em um card abre a ficha de detalhes do torrent (pausar, retomar, rechecar, arquivos, peers). O botão "Open in library" não aparece — você já está na tela da série.
 - Se nada for encontrado: "No torrents in the download client".
 
-**4. Files & Metadata:**
-- Semelhante a Filmes: lista de arquivos baixados com codec, resolução, tamanho, áudio.
-- Ícone de lixeira para deletar arquivos individuais.
-- Se houver "extra files" (legendas, etc), listados também.
-
-**5. History:**
-- Lista de eventos específicos da série (grab, import, falhas, etc).
-- Timestamp relativo para cada evento.
-- Tipos coloridos (Grabbed, Imported, Failed, Deleted).
+**Arquivos e histórico:** diferente de Filmes, a tela da série **não** tem seções "Files & Metadata" nem "History" no nível da série. Os arquivos e o histórico ficam por episódio: Seasons → temporada → tocar no episódio abre a ficha com o arquivo, os torrents e o histórico daquele episódio.
 
 **Botões de ação (AppBar — 4 ícones no canto superior direito):**
 1. **Refresh & Scan** (ícone `manage_search`): dispara rescan de arquivos no Sonarr.
