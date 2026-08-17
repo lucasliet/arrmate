@@ -17,6 +17,57 @@ jobs:
       issues: read
       id-token: write
 
+    # Prompt and tool list are shared by the primary run (Anthropic) and the
+    # fallback run (z.ai) so the two providers can never drift apart.
+    # `--allowed-tools` REPLACES the default tool set, so every tool the review
+    # needs has to be listed here. Read/Grep/Glob are what let the reviewer open
+    # the files it is reviewing; without them the run burns ~20 permission
+    # denials and may end green without posting anything.
+    env:
+      ZAI_MODEL: glm-5.3
+      REVIEW_TOOLS: 'Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)'
+      REVIEW_PROMPT: |
+        /code-review:code-review
+        REPO: ${{ github.repository }}
+        PR NUMBER: ${{ github.event.pull_request.number }}
+
+        IMPORTANT - Before reviewing, check the PR comments thread for previous code reviews.
+
+        If previous reviews exist:
+        1. DO NOT repeat suggestions that were already made
+        2. Check if previous suggestions were addressed in subsequent commits
+        3. For each previously suggested item:
+            - If FIXED: briefly acknowledge it was resolved (✅)
+            - If NOT FIXED: remind about the pending suggestion
+            - If PARTIALLY FIXED: note what still needs attention
+        4. focus your review only in the commits added since the last review, not the full PR
+
+        For NEW changes (commits after the last review), provide feedback on:
+        - Code quality and best practices
+        - Potential bugs or issues
+        - Performance considerations
+        - Security concerns
+        - Test coverage
+
+        Do not nitpick, focus your review in major issues that cannot be merged.
+        address your suggestions to the class and line you are referring to.
+
+        Structure your review as:
+        ## Previous Suggestions Status (if applicable, if not, just ignore section, don't write anything)
+        [Status of each previous suggestion]
+
+        ## New Findings (if that is the first review, don't add this title)
+        [New issues found in recent commits]
+
+        ## Veredict [commit-hash]
+        [Your final verdict, and if you approve the PR or not]
+
+        Use the repository's AGENTS.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+
+        answer the review in brazilian portuguese.
+
+        Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -72,7 +123,7 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # Baseline for the check below. Counting claude[bot] comments is enough:
+      # Baseline for the checks below. Counting claude[bot] comments is enough:
       # minimized ones are still returned by the API.
       - name: Count review comments before the review
         id: comments-before
@@ -84,68 +135,67 @@ jobs:
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           echo "Comentários de review existentes: $COUNT"
 
+      # Primary provider. It never fails the job on its own: quota errors and
+      # every other failure are handled by the z.ai fallback below.
       - name: Run Claude Code Review
         id: claude-review
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          prompt: |
-            /code-review:code-review
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-
-            IMPORTANT - Before reviewing, check the PR comments thread for previous code reviews.
-
-            If previous reviews exist:
-            1. DO NOT repeat suggestions that were already made
-            2. Check if previous suggestions were addressed in subsequent commits
-            3. For each previously suggested item:
-                - If FIXED: briefly acknowledge it was resolved (✅)
-                - If NOT FIXED: remind about the pending suggestion
-                - If PARTIALLY FIXED: note what still needs attention
-            4. focus your review only in the commits added since the last review, not the full PR
-
-            For NEW changes (commits after the last review), provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-
-            Do not nitpick, focus your review in major issues that cannot be merged.
-            address your suggestions to the class and line you are referring to.
-
-            Structure your review as:
-            ## Previous Suggestions Status (if applicable, if not, just ignore section, don't write anything)
-            [Status of each previous suggestion]
-
-            ## New Findings (if that is the first review, don't add this title)
-            [New issues found in recent commits]
-
-            ## Veredict [commit-hash]
-            [Your final verdict, and if you approve the PR or not]
-
-            Use the repository's AGENTS.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-
-            answer the review in brazilian portuguese.
-
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+          prompt: ${{ env.REVIEW_PROMPT }}
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
-          # `--allowed-tools` REPLACES the default tool set, so every tool the
-          # review needs has to be listed here. Read/Grep/Glob are what let the
-          # reviewer open the files it is reviewing; without them the run burns
-          # ~20 permission denials and may end green without posting anything.
           claude_args: >-
             --model ${{ steps.set-model.outputs.AI_MODEL }}
-            --allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+            --allowed-tools "${{ env.REVIEW_TOOLS }}"
 
-      # The action exits 0 even when the agent gives up, so without this a run
-      # that reviewed nothing is indistinguishable from one that approved. This
-      # checks the outcome (a published comment) instead of dumping the agent's
-      # full output, which would leak file contents into public logs.
+      # The action exits 0 even when the agent gives up, so the step outcome
+      # alone cannot tell a real review from a silent no-op. A published comment
+      # is the only reliable signal, and it is what decides the fallback.
+      - name: Check whether the Anthropic review was published
+        id: claude-result
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --paginate --jq '.[] | select(.user.login == "claude[bot]") | .id' | wc -l)
+          BEFORE=${{ steps.comments-before.outputs.count }}
+          if [ "$COUNT" -gt "$BEFORE" ]; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            echo "Review publicada pelo provider Anthropic (antes: $BEFORE, depois: $COUNT)."
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "Provider Anthropic não publicou review (step: ${{ steps.claude-review.outcome }})."
+          fi
+
+      # Fallback: same prompt and tools, served by z.ai (GLM). Runs only when the
+      # Anthropic attempt produced no review — quota, API error or silent give-up.
+      - name: Run Code Review with z.ai fallback
+        id: zai-review
+        if: >-
+          steps.workflow-diff.outputs.changed != 'true' &&
+          steps.claude-result.outputs.published != 'true'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+          API_TIMEOUT_MS: "3000000"
+        with:
+          anthropic_api_key: ${{ secrets.ZAI_API_KEY }}
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
+          prompt: ${{ env.REVIEW_PROMPT }}
+          claude_args: >-
+            --model ${{ env.ZAI_MODEL }}
+            --allowed-tools "${{ env.REVIEW_TOOLS }}"
+
+      # Without this, a run where both providers reviewed nothing would be
+      # indistinguishable from one that approved. This checks the outcome (a
+      # published comment) instead of dumping the agent's full output, which
+      # would leak file contents into public logs.
       - name: Ensure the review was published
         if: steps.workflow-diff.outputs.changed != 'true'
         env:
@@ -155,7 +205,11 @@ jobs:
             --paginate --jq '.[] | select(.user.login == "claude[bot]") | .id' | wc -l)
           BEFORE=${{ steps.comments-before.outputs.count }}
           if [ "$COUNT" -le "$BEFORE" ]; then
-            echo "::error::O agente terminou sem publicar review (antes: $BEFORE, depois: $COUNT). Rode com ACTIONS_STEP_DEBUG=true para ver a saída completa."
+            echo "::error::Nenhum provider publicou review (antes: $BEFORE, depois: $COUNT). Anthropic: ${{ steps.claude-review.outcome }}, z.ai: ${{ steps.zai-review.outcome }}. Rode com ACTIONS_STEP_DEBUG=true para ver a saída completa."
             exit 1
           fi
-          echo "Review publicada (antes: $BEFORE, depois: $COUNT)."
+          if [ "${{ steps.claude-result.outputs.published }}" == "true" ]; then
+            echo "Review publicada pelo provider Anthropic (antes: $BEFORE, depois: $COUNT)."
+          else
+            echo "Review publicada pelo fallback z.ai / ${{ env.ZAI_MODEL }} (antes: $BEFORE, depois: $COUNT)."
+          fi
