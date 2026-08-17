@@ -12,6 +12,18 @@ import '../router/app_router.dart';
 import 'app_tour_keys.dart';
 import 'tour_mockup_provider.dart';
 
+/// Shows the tour overlay over [targets], reporting the user walking to the
+/// end through [onFinish] and the Skip button through [onSkip].
+///
+/// Injected into [AppTourService] so tests can drive the segment chain without
+/// mounting a real coach mark over the root navigator.
+typedef TourOverlayPresenter =
+    void Function({
+      required List<TargetFocus> targets,
+      required VoidCallback onFinish,
+      required VoidCallback onSkip,
+    });
+
 /// Orchestrates the guided tour across multiple screens using
 /// [TutorialCoachMark].
 ///
@@ -25,9 +37,23 @@ import 'tour_mockup_provider.dart';
 class AppTourService {
   final Ref _ref;
   final AppTourKeys _keys;
+
+  /// How long a segment waits for its anchor widget to be laid out before
+  /// giving up and moving on.
+  final Duration _keyTimeout;
+
+  late final TourOverlayPresenter _presenter;
+
   bool _cancelled = false;
 
-  AppTourService(this._ref, this._keys);
+  AppTourService(
+    this._ref,
+    this._keys, {
+    TourOverlayPresenter? presenter,
+    Duration keyTimeout = const Duration(seconds: 3),
+  }) : _keyTimeout = keyTimeout {
+    _presenter = presenter ?? _showCoachMark;
+  }
 
   /// Starts the full guided tour from the beginning.
   void startFull() {
@@ -331,12 +357,9 @@ class AppTourService {
   }
 
   /// Waits until the widget referenced by [key] is mounted and laid out,
-  /// timing out after [timeout] to avoid hanging the tour.
-  Future<void> _waitForKey(
-    GlobalKey key, {
-    Duration timeout = const Duration(seconds: 3),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
+  /// timing out after [_keyTimeout] to avoid hanging the tour.
+  Future<void> _waitForKey(GlobalKey key) async {
+    final deadline = DateTime.now().add(_keyTimeout);
     while (DateTime.now().isBefore(deadline)) {
       if (AppTourKeys.isReady(key)) return;
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -344,9 +367,7 @@ class AppTourService {
     logger.warning('[AppTourService] Timed out waiting for key $key');
   }
 
-  /// Builds and shows a [TutorialCoachMark] overlay with the shared visual
-  /// configuration. The Skip button is always visible and aborts the whole
-  /// tour via [_skipAll].
+  /// Hands the segment's [targets] to the overlay presenter.
   ///
   /// Targets whose widget is not on screen are dropped, so a step never
   /// highlights an empty region; when nothing is left, the segment hands over
@@ -364,8 +385,18 @@ class AppTourService {
       return;
     }
 
+    _presenter(targets: visibleTargets, onFinish: onFinish, onSkip: _skipAll);
+  }
+
+  /// Default presenter: a [TutorialCoachMark] over the root navigator, with the
+  /// shared visual configuration and an always visible Skip button.
+  void _showCoachMark({
+    required List<TargetFocus> targets,
+    required VoidCallback onFinish,
+    required VoidCallback onSkip,
+  }) {
     TutorialCoachMark(
-      targets: visibleTargets,
+      targets: targets,
       colorShadow: Colors.black,
       opacityShadow: 0.85,
       imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
@@ -375,7 +406,7 @@ class AppTourService {
       alignSkip: Alignment.bottomRight,
       onFinish: onFinish,
       onSkip: () {
-        _skipAll();
+        onSkip();
         return true;
       },
     ).showWithNavigatorStateKey(
