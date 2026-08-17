@@ -64,7 +64,10 @@ from the [releases page](https://github.com/lucasliet/arrmate/releases).
   (every 30 min) with optional Battery Saver mode, plus in-app purge event
   notifications for removed torrents.
 - **Guided Onboarding**: Built-in setup tour with coach marks on first launch,
-  with replay available at Settings → Getting Started.
+  with replay available at Settings → Getting Started. While no instance is
+  configured the tour fills the library, calendar, and download screens with
+  sample cards so every step has a visible target; the samples are purely
+  visual and disappear as soon as the tour is finished or skipped.
 - **Deep Linking**: Open the app straight to a movie, series, season, episode,
   calendar, activity, search, or settings screen via the `arrmate://` scheme.
 - **What's New & Version History**: A changelog popup after each update, plus a

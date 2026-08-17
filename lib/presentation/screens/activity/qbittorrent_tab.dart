@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
+import '../../tour/app_tour_keys.dart';
+import '../../tour/tour_mock_data.dart';
+import '../../tour/tour_mockup_provider.dart';
+import '../../tour/widgets/tour_mockup_banner.dart';
 import '../../widgets/common_widgets.dart'; // Correct relative path
 import '../../widgets/instance_load_failure_banner.dart';
 import 'providers/qbittorrent_provider.dart';
@@ -92,6 +96,33 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     );
   }
 
+  /// Builds the sample torrent list shown while the guided tour runs without a
+  /// qBittorrent instance, so the torrent step has a visible card.
+  ///
+  /// The cards are inert and never persisted: they vanish as soon as the tour
+  /// is finished or skipped, together with the whole tab.
+  Widget _buildTourMockup() {
+    final torrents = TourMockData.torrents();
+    final tourKeys = ref.watch(appTourKeysProvider);
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: TourMockupBanner(),
+        ),
+        for (var index = 0; index < torrents.length; index++)
+          TourMockup(
+            child: TorrentListItem(
+              key: index == 0 ? tourKeys.activityTorrentKey : null,
+              torrent: torrents[index],
+            ),
+          ),
+      ],
+    );
+  }
+
   /// Builds a filter chip following the tab's existing chip styling.
   Widget _buildFilterChip({
     required String label,
@@ -124,11 +155,20 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final torrentsState = ref.watch(qbittorrentTorrentsProvider);
-    final linkIndex =
-        ref.watch(torrentLinkIndexProvider).valueOrNull ??
-        TorrentLinkIndex.empty;
+    // Without a qBittorrent instance the tour still walks through this tab, so
+    // sample torrents stand in for the real list and no polling is started.
+    final showsTourMockup = ref.watch(
+      tourMockupProvider(InstanceType.qbittorrent),
+    );
+    final torrentsState = showsTourMockup
+        ? const AsyncValue<List<Torrent>>.data(<Torrent>[])
+        : ref.watch(qbittorrentTorrentsProvider);
+    final linkIndex = showsTourMockup
+        ? TorrentLinkIndex.empty
+        : (ref.watch(torrentLinkIndexProvider).valueOrNull ??
+              TorrentLinkIndex.empty);
     final showsLinkFilters = linkIndex.hasInstances;
+    final tourKeys = ref.watch(appTourKeysProvider);
     // The library filter only applies while its chips are on screen, otherwise
     // a leftover selection would hide every torrent with no way to clear it.
     final activeLinkFilter = showsLinkFilters ? _selectedLinkFilter : null;
@@ -234,6 +274,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
           Expanded(
             child: torrentsState.when(
               data: (torrents) {
+                if (showsTourMockup) return _buildTourMockup();
+
                 if (torrents.isEmpty && _selectedFilter == 'all') {
                   return EmptyState(
                     icon: Icons.cloud_download_outlined,
@@ -308,6 +350,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                       final torrent = filteredTorrents[index];
                       final link = linkIndex.resolve(torrent);
                       return TorrentListItem(
+                        key: index == 0 ? tourKeys.activityTorrentKey : null,
                         torrent: torrent,
                         link: link,
                         onTap: () =>

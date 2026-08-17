@@ -10,6 +10,10 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
+import '../../tour/app_tour_keys.dart';
+import '../../tour/tour_mock_data.dart';
+import '../../tour/tour_mockup_provider.dart';
+import '../../tour/widgets/tour_mockup_banner.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
@@ -176,6 +180,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   Widget build(BuildContext context) {
     final seriesAsync = ref.watch(filteredSeriesProvider);
     final settings = ref.watch(settingsProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
+    final showsTourMockup = ref.watch(tourMockupProvider(InstanceType.sonarr));
 
     return Scaffold(
       body: RefreshIndicator(
@@ -200,6 +206,10 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         ref.read(seriesSearchProvider).isNotEmpty ||
                         ref.read(seriesSortProvider).filter != SeriesFilter.all;
 
+                    if (showsTourMockup && !isFiltered) {
+                      return _buildTourMockup(settings, tourKeys);
+                    }
+
                     return SliverFillRemaining(
                       child: EmptyState(
                         icon: isFiltered
@@ -220,6 +230,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final series = seriesList[index];
                         return SeriesListTile(
+                          key: index == 0 ? tourKeys.seriesLibraryKey : null,
                           series: series,
                           isSelected: _selectedIds.contains(series.id),
                           onTap: _isSelecting
@@ -232,16 +243,11 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                   }
 
                   return SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 120,
-                          childAspectRatio: 2 / 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                    gridDelegate: _libraryGridDelegate,
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final series = seriesList[index];
                       return SeriesCard(
+                        key: index == 0 ? tourKeys.seriesLibraryKey : null,
                         series: series,
                         isSelected: _selectedIds.contains(series.id),
                         onTap: _isSelecting
@@ -348,6 +354,53 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
               onPressed: () => context.push('/discover?type=series'),
               child: const Icon(Icons.add),
             ),
+    );
+  }
+
+  /// Grid layout shared by the real library and the guided tour mockup.
+  static const SliverGridDelegateWithMaxCrossAxisExtent _libraryGridDelegate =
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 120,
+        childAspectRatio: 2 / 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      );
+
+  /// Builds the sample library shown while the guided tour runs without a
+  /// Sonarr instance, so every series step has a visible card to highlight.
+  ///
+  /// The cards are inert and never persisted: they vanish as soon as the tour
+  /// is finished or skipped, restoring the real empty state.
+  Widget _buildTourMockup(SettingsState settings, AppTourKeys tourKeys) {
+    final seriesList = TourMockData.series();
+
+    return SliverMainAxisGroup(
+      slivers: [
+        const SliverToBoxAdapter(child: TourMockupBanner()),
+        if (settings.viewMode == ViewMode.list)
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return TourMockup(
+                child: SeriesListTile(
+                  key: index == 0 ? tourKeys.seriesLibraryKey : null,
+                  series: seriesList[index],
+                ),
+              );
+            }, childCount: seriesList.length),
+          )
+        else
+          SliverGrid(
+            gridDelegate: _libraryGridDelegate,
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return TourMockup(
+                child: SeriesCard(
+                  key: index == 0 ? tourKeys.seriesLibraryKey : null,
+                  series: seriesList[index],
+                ),
+              );
+            }, childCount: seriesList.length),
+          ),
+      ],
     );
   }
 

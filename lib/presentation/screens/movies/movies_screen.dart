@@ -11,6 +11,9 @@ import '../../widgets/instance_selector.dart';
 import '../../widgets/notification_icon_button.dart';
 import '../../widgets/sort_bottom_sheet.dart';
 import '../../tour/app_tour_keys.dart';
+import '../../tour/tour_mock_data.dart';
+import '../../tour/tour_mockup_provider.dart';
+import '../../tour/widgets/tour_mockup_banner.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
@@ -177,6 +180,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(filteredMoviesProvider);
     final settings = ref.watch(settingsProvider);
+    final tourKeys = ref.watch(appTourKeysProvider);
+    final showsTourMockup = ref.watch(tourMockupProvider(InstanceType.radarr));
 
     return Scaffold(
       body: RefreshIndicator(
@@ -201,6 +206,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         ref.read(movieSearchProvider).isNotEmpty ||
                         ref.read(movieSortProvider).filter != MovieFilter.all;
 
+                    if (showsTourMockup && !isFiltered) {
+                      return _buildTourMockup(settings, tourKeys);
+                    }
+
                     return SliverFillRemaining(
                       child: EmptyState(
                         icon: isFiltered
@@ -221,6 +230,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final movie = movies[index];
                         return MovieListTile(
+                          key: index == 0 ? tourKeys.moviesLibraryKey : null,
                           movie: movie,
                           isSelected: _selectedIds.contains(movie.id),
                           onTap: _isSelecting
@@ -233,16 +243,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   }
 
                   return SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 120,
-                          childAspectRatio: 2 / 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                    gridDelegate: _libraryGridDelegate,
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final movie = movies[index];
                       return MovieCard(
+                        key: index == 0 ? tourKeys.moviesLibraryKey : null,
                         movie: movie,
                         isSelected: _selectedIds.contains(movie.id),
                         onTap: _isSelecting
@@ -348,6 +353,53 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
               onPressed: () => context.push('/discover?type=movie'),
               child: const Icon(Icons.add),
             ),
+    );
+  }
+
+  /// Grid layout shared by the real library and the guided tour mockup.
+  static const SliverGridDelegateWithMaxCrossAxisExtent _libraryGridDelegate =
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 120,
+        childAspectRatio: 2 / 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      );
+
+  /// Builds the sample library shown while the guided tour runs without a
+  /// Radarr instance, so every movie step has a visible card to highlight.
+  ///
+  /// The cards are inert and never persisted: they vanish as soon as the tour
+  /// is finished or skipped, restoring the real empty state.
+  Widget _buildTourMockup(SettingsState settings, AppTourKeys tourKeys) {
+    final movies = TourMockData.movies();
+
+    return SliverMainAxisGroup(
+      slivers: [
+        const SliverToBoxAdapter(child: TourMockupBanner()),
+        if (settings.viewMode == ViewMode.list)
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return TourMockup(
+                child: MovieListTile(
+                  key: index == 0 ? tourKeys.moviesLibraryKey : null,
+                  movie: movies[index],
+                ),
+              );
+            }, childCount: movies.length),
+          )
+        else
+          SliverGrid(
+            gridDelegate: _libraryGridDelegate,
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return TourMockup(
+                child: MovieCard(
+                  key: index == 0 ? tourKeys.moviesLibraryKey : null,
+                  movie: movies[index],
+                ),
+              );
+            }, childCount: movies.length),
+          ),
+      ],
     );
   }
 
