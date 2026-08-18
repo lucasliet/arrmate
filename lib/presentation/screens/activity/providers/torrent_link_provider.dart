@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/services/logger_service.dart';
+import '../../../../core/utils/cross_seed_matcher.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../domain/repositories/movie_repository.dart';
 import '../../../../domain/repositories/series_repository.dart';
@@ -38,6 +39,14 @@ class TorrentLinkIndex {
   /// Links resolved from history and queue data, keyed by lowercased infohash.
   final Map<String, TorrentLink> linksByHash;
 
+  /// Links reachable by normalized torrent name, keyed by
+  /// [normalizeTorrentName].
+  ///
+  /// Cross-seeded copies of a release carry a different infohash, so
+  /// Radarr/Sonarr only ever reference one of them. This map lets the others
+  /// inherit that relation instead of looking unrelated to the library.
+  final Map<String, TorrentLink> linksByName;
+
   /// Download-client categories that Radarr/Sonarr assign to their own
   /// downloads. A torrent sitting in one of these without a link is an orphan.
   final Set<String> managedCategories;
@@ -57,6 +66,7 @@ class TorrentLinkIndex {
     required this.managedCategories,
     required this.failures,
     required this.hasInstances,
+    this.linksByName = const {},
     this.truncated = false,
   });
 
@@ -78,13 +88,16 @@ class TorrentLinkIndex {
   /// Resolves how [torrent] relates to the media library.
   TorrentLink resolve(Torrent torrent) {
     final link = linksByHash[torrent.hash.toLowerCase()];
-    if (link != null) {
-      // A torrent that has not finished yet simply has nothing to import; that
-      // is not the same as a media file that was deleted.
-      if (link.status == TorrentLinkStatus.fileMissing && !torrent.isComplete) {
-        return link.copyWithStatus(TorrentLinkStatus.linked);
-      }
-      return link;
+    if (link != null) return _adjustForProgress(link, torrent);
+
+    // A cross-seed of the release Radarr/Sonarr grabbed carries a different
+    // infohash, so the hash lookup misses even though the content is the very
+    // same. The name match is positive evidence — a sibling that really did
+    // resolve — so it is not gated on [canClassifyMisses], which only exists to
+    // stop the *absence* of a match from being read as `orphan`.
+    final sibling = linksByName[normalizeTorrentName(torrent.name)];
+    if (sibling != null) {
+      return _adjustForProgress(sibling.asCrossSeed(), torrent);
     }
 
     if (!canClassifyMisses) return TorrentLink.unknown;
@@ -96,6 +109,16 @@ class TorrentLinkIndex {
       return const TorrentLink(status: TorrentLinkStatus.orphan);
     }
     return const TorrentLink(status: TorrentLinkStatus.external);
+  }
+
+  /// Downgrades a `fileMissing` link to `linked` while [torrent] is still
+  /// downloading: a torrent that has not finished simply has nothing to import
+  /// yet, which is not the same as a media file that was deleted.
+  TorrentLink _adjustForProgress(TorrentLink link, Torrent torrent) {
+    if (link.status == TorrentLinkStatus.fileMissing && !torrent.isComplete) {
+      return link.copyWithStatus(TorrentLinkStatus.linked);
+    }
+    return link;
   }
 }
 
@@ -180,20 +203,51 @@ final torrentLinkIndexProvider = FutureProvider.autoDispose<TorrentLinkIndex>((
     }
   }
 
+  final linksByName = _indexLinksByName(torrents, linksByHash);
+
   logger.info(
     '[TorrentLinkIndex] Resolved ${linksByHash.length} link(s), '
+    '${linksByName.length} cross-seed name(s), '
     '${managedCategories.length} managed category(ies), '
     '${failures.length} failure(s), truncated: $truncated',
   );
 
   return TorrentLinkIndex(
     linksByHash: linksByHash,
+    linksByName: linksByName,
     managedCategories: managedCategories,
     failures: failures,
     hasInstances: true,
     truncated: truncated,
   );
 });
+
+/// Maps the normalized name of every hash-linked torrent to its relation, so
+/// cross-seed copies sitting in the client can inherit it.
+///
+/// Only links that point at a catalog item are propagated: inheriting a
+/// contentless relation would tell the user nothing while hiding the torrent
+/// from the orphan/external classification.
+Map<String, TorrentLink> _indexLinksByName(
+  List<Torrent> torrents,
+  Map<String, TorrentLink> linksByHash,
+) {
+  final linksByName = <String, TorrentLink>{};
+  for (final torrent in torrents) {
+    final link = linksByHash[torrent.hash.toLowerCase()];
+    if (link == null || !link.hasMedia) continue;
+    final name = normalizeTorrentName(torrent.name);
+    final existing = linksByName[name];
+    // Same rule as the season-pack promotion in [_scanHistory]: a name only
+    // counts as "file removed" when no sibling of it is on disk anymore.
+    if (existing == null ||
+        (existing.status == TorrentLinkStatus.fileMissing &&
+            link.status == TorrentLinkStatus.linked)) {
+      linksByName[name] = link;
+    }
+  }
+  return linksByName;
+}
 
 /// Outcome of indexing a single Radarr/Sonarr instance.
 class _InstanceLinkResult {

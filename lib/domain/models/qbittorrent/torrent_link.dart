@@ -133,6 +133,13 @@ class TorrentLink extends Equatable {
   /// Release title recorded by Radarr/Sonarr, used as a fallback label.
   final String? sourceTitle;
 
+  /// Whether this relation was inherited from a same-named sibling torrent
+  /// instead of being matched by infohash.
+  ///
+  /// A cross-seeded release keeps its name but gets a new infohash on every
+  /// tracker, so Radarr/Sonarr only ever reference one of the copies.
+  final bool isCrossSeed;
+
   const TorrentLink({
     required this.status,
     this.instanceId,
@@ -145,6 +152,7 @@ class TorrentLink extends Equatable {
     this.episodeNumber,
     this.mediaTitle,
     this.sourceTitle,
+    this.isCrossSeed = false,
   });
 
   /// A link whose relation could not be determined.
@@ -189,6 +197,26 @@ class TorrentLink extends Equatable {
       episodeNumber: episodeNumber,
       mediaTitle: mediaTitle,
       sourceTitle: sourceTitle,
+      isCrossSeed: isCrossSeed,
+    );
+  }
+
+  /// Returns a copy of this link flagged as inherited by a cross-seed sibling.
+  TorrentLink asCrossSeed() {
+    if (isCrossSeed) return this;
+    return TorrentLink(
+      status: status,
+      instanceId: instanceId,
+      instanceLabel: instanceLabel,
+      instanceType: instanceType,
+      movieId: movieId,
+      seriesId: seriesId,
+      episodeId: episodeId,
+      seasonNumber: seasonNumber,
+      episodeNumber: episodeNumber,
+      mediaTitle: mediaTitle,
+      sourceTitle: sourceTitle,
+      isCrossSeed: true,
     );
   }
 
@@ -205,5 +233,6 @@ class TorrentLink extends Equatable {
     episodeNumber,
     mediaTitle,
     sourceTitle,
+    isCrossSeed,
   ];
 }

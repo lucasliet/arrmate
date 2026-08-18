@@ -11,11 +11,18 @@ class TorrentListItem extends StatelessWidget {
 
   final VoidCallback? onTap;
 
+  /// Outer spacing of the card.
+  ///
+  /// Defaults to the activity list inset; screens that already pad their content
+  /// horizontally pass a vertical-only margin so the insets do not stack.
+  final EdgeInsetsGeometry margin;
+
   const TorrentListItem({
     super.key,
     required this.torrent,
     this.link,
     this.onTap,
+    this.margin = const EdgeInsets.only(bottom: 12, left: 16, right: 16),
   });
 
   @override
@@ -23,7 +30,7 @@ class TorrentListItem extends StatelessWidget {
     final isCritical = link?.status.isCritical ?? false;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+      margin: margin,
       elevation: 0,
       color: isCritical
           ? context.colorScheme.errorContainer.withValues(alpha: 0.35)
@@ -247,12 +254,46 @@ class TorrentListItem extends StatelessWidget {
       link != null && link!.status != TorrentLinkStatus.unknown;
 
   /// Badge telling whether the torrent backs something in the media library.
+  ///
+  /// A relation inherited from a cross-seed sibling gets a second badge, so the
+  /// user can tell why a torrent Radarr/Sonarr never referenced is still linked.
   Widget _buildLinkBadge(BuildContext context) {
     final status = link!.status;
     final color = status.color(context.colorScheme);
 
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        _buildBadgeChip(
+          context,
+          key: const ValueKey('torrent-link-badge'),
+          icon: status.icon,
+          label: link!.displayLabel,
+          color: color,
+        ),
+        if (link!.isCrossSeed)
+          _buildBadgeChip(
+            context,
+            key: const ValueKey('torrent-cross-seed-badge'),
+            icon: Icons.content_copy,
+            label: 'Cross-seed',
+            color: color,
+          ),
+      ],
+    );
+  }
+
+  /// Compact icon + label chip shared by the library badges.
+  Widget _buildBadgeChip(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
     return Container(
-      key: const ValueKey('torrent-link-badge'),
+      key: key,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
@@ -262,11 +303,11 @@ class TorrentListItem extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(status.icon, size: 12, color: color),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
-              link!.displayLabel,
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.textTheme.labelSmall?.copyWith(

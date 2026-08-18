@@ -29,6 +29,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **In library** — o torrent sustenta um filme/episódio que continua na biblioteca.
   - **Not in library** — baixado por fora, sem relação com a biblioteca.
 - Tocar novamente no chip de vínculo ativo remove o filtro.
+- **Cross-seed:** cópias cross-seed do mesmo release têm infohash diferente, então o Radarr/Sonarr só conhece uma delas. As outras herdam o mesmo vínculo (aparecem em **In library** ou **File removed**, não mais como **Orphan**) por comparação do nome do release. O casamento é só pelo nome normalizado (minúsculas, sem espaços nas pontas): pasta de download, tamanho e tracker são ignorados.
 
 **Lista de torrents:**
 - **Cada torrent (card/tile):**
@@ -37,6 +38,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Barra de progresso linear** mostrando % de conclusão (ex: 45% completed).
   - **Status** em badge colorido (Downloading, Seeding, Paused, Error).
   - **Badge de vínculo com a biblioteca** (quando há Radarr/Sonarr configurado): mostra o título do filme/episódio vinculado (ex: "Severance · S01E05"), ou "File removed", "Orphan", "Not in library". Torrents **órfãos** ganham borda e fundo em vermelho para destacar que só o torrent sobrou.
+  - **Badge "Cross-seed"** ao lado do badge de vínculo quando a relação foi herdada de um torrent irmão com o mesmo nome de release.
   - **Velocidades** (se ativo):
     - ⬇️ Download speed (ex: "2.5 MB/s").
     - ⬆️ Upload speed (ex: "1.2 MB/s").
@@ -61,8 +63,9 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - "Added On", "Category", "Save Path", "Tags", "Hash".
   - **Media Library section** (se o vínculo for conhecido):
     - Faixa colorida com o status do vínculo e a explicação (órfão aparece em vermelho).
+    - Nota em itálico quando o vínculo veio de um cross-seed (mesmo nome de release, infohash diferente).
     - "Media" e "Instance" quando o item é conhecido.
-    - Botão "Open in library" que troca para a instância de origem e abre o filme/episódio.
+    - Botão "Open in library" que troca para a instância de origem e abre o filme/episódio. O botão não aparece quando a ficha foi aberta a partir da própria tela da biblioteca.
   - **Actions section:**
     - Se paused: botão azul "Resume".
     - Se ativo: botão laranja "Pause".

@@ -8,6 +8,8 @@ import 'package:arrmate/presentation/widgets/media/media_file_card.dart';
 import 'package:arrmate/presentation/widgets/media/media_file_details_sheet.dart';
 import 'package:arrmate/presentation/widgets/media/history_event_card.dart';
 import 'package:arrmate/presentation/widgets/media/history_event_details_sheet.dart';
+import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
+import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart';
 import 'package:intl/intl.dart';
 import '../providers/episode_providers.dart';
 import '../providers/series_metadata_provider.dart';
@@ -73,6 +75,11 @@ class EpisodeDetailsSheet extends ConsumerWidget {
                     const SizedBox(height: 24),
                   ],
                   _buildFileSection(context, ref),
+                  const SizedBox(height: 24),
+                  MediaTorrentsSection(
+                    provider: seriesTorrentsProvider(episode.seriesId),
+                    episodeId: episode.id,
+                  ),
                   const SizedBox(height: 24),
                   _buildHistorySection(context, ref),
                 ],

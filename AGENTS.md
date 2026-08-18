@@ -26,6 +26,10 @@ and **qBittorrent** (for downloads).
     - **Library Link Status**: Per-torrent badge and filters showing whether the
       torrent backs a library item, lost its media file, is an orphan left after
       the catalog entry was removed, or was downloaded outside the library.
+      Cross-seed copies inherit the relation of the torrent Radarr/Sonarr
+      actually grabbed — matched by normalized release name, since a cross-seed
+      carries a different infohash — and carry a `Cross-seed` badge so the
+      inherited link is distinguishable from a direct one.
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including
@@ -53,6 +57,10 @@ and **qBittorrent** (for downloads).
   - **Manual Import**: Match and import files manually from the queue.
   - **Movie & Series Files**: View detailed file metadata (quality, size,
     codecs) and extra files for both movies and series.
+  - **Media Torrents**: Movie, series and episode details screens list the
+    download-client torrents backing the item — cross-seed duplicates included —
+    and open the torrent details sheet for each. The reverse of the
+    "Open in library" shortcut offered from the torrent side.
   - **Media History**: View movie-specific and series-specific historical
     events.
   - **Metadata Management**: Delete individual media files with confirmation

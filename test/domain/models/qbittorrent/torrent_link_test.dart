@@ -97,5 +97,60 @@ void main() {
       expect(relinked.mediaTitle, 'Arrival');
       expect(relinked.instanceId, 'radarr-home');
     });
+
+    test('should not be a cross-seed by default', () {
+      expect(
+        const TorrentLink(status: TorrentLinkStatus.linked).isCrossSeed,
+        isFalse,
+      );
+    });
+
+    test('should keep the media data when flagged as a cross-seed', () {
+      // Given
+      const link = TorrentLink(
+        status: TorrentLinkStatus.linked,
+        instanceId: 'sonarr-home',
+        seriesId: 3,
+        episodeId: 42,
+        seasonNumber: 1,
+        episodeNumber: 5,
+        mediaTitle: 'Severance',
+      );
+
+      // When
+      final inherited = link.asCrossSeed();
+
+      // Then
+      expect(inherited.isCrossSeed, isTrue);
+      expect(inherited.status, TorrentLinkStatus.linked);
+      expect(inherited.seriesId, 3);
+      expect(inherited.episodeId, 42);
+      expect(inherited.displayLabel, 'Severance · S01E05');
+      expect(inherited.instanceId, 'sonarr-home');
+    });
+
+    test('should keep the cross-seed flag when the status is replaced', () {
+      // Given
+      final link = const TorrentLink(
+        status: TorrentLinkStatus.fileMissing,
+        movieId: 7,
+      ).asCrossSeed();
+
+      // When
+      final relinked = link.copyWithStatus(TorrentLinkStatus.linked);
+
+      // Then
+      expect(relinked.isCrossSeed, isTrue);
+      expect(relinked.status, TorrentLinkStatus.linked);
+    });
+
+    test('should separate a cross-seed link from a direct one', () {
+      // Given
+      const direct = TorrentLink(status: TorrentLinkStatus.linked, movieId: 7);
+
+      // Then the flag participates in equality
+      expect(direct.asCrossSeed(), isNot(direct));
+      expect(direct.asCrossSeed().asCrossSeed(), direct.asCrossSeed());
+    });
   });
 }

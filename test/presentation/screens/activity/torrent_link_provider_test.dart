@@ -651,6 +651,287 @@ void main() {
       expect(index.resolve(torrent).status, TorrentLinkStatus.unknown);
     });
   });
+
+  group('torrentLinkIndexProvider cross-seed', () {
+    test('should inherit the link of a same-named source torrent', () async {
+      // Given a grabbed torrent and a cross-seed copy of it under another hash
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'AABB',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final source = _torrent(
+        hash: 'aabb',
+        category: 'radarr',
+        name: 'Arrival.2016.1080p.BluRay.mkv',
+      );
+      // Cross-seed: same release name in another case, different hash.
+      final crossSeed = _torrent(
+        hash: 'ccdd',
+        category: 'radarr',
+        name: 'arrival.2016.1080p.bluray.mkv ',
+      );
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [source, crossSeed],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then the copy is linked to the same movie instead of looking orphaned
+      final link = index.resolve(crossSeed);
+      expect(link.status, TorrentLinkStatus.linked);
+      expect(link.movieId, 12);
+      expect(link.mediaTitle, 'Arrival');
+      expect(link.instanceId, 'radarr-home');
+      expect(link.isCrossSeed, isTrue);
+      // The torrent *arr actually grabbed is not marked as a cross-seed.
+      expect(index.resolve(source).isCrossSeed, isFalse);
+    });
+
+    test(
+      'should inherit a fileMissing link on a complete cross-seed',
+      () async {
+        // Given a grabbed movie whose file was deleted
+        final radarr = _instance('radarr-home', InstanceType.radarr);
+        final repository = MockMovieRepository();
+        _stubDownloadClients(repository, categories: ['radarr']);
+        _stubMovieHistory(repository, {
+          1: _historyPage(
+            page: 1,
+            records: [
+              _movieEvent(
+                id: 1,
+                downloadId: 'AABB',
+                movieId: 12,
+                title: 'Arrival',
+                hasFile: false,
+              ),
+            ],
+          ),
+        });
+        _stubMovieQueue(repository);
+        final source = _torrent(
+          hash: 'aabb',
+          name: 'Arrival.2016',
+          category: 'radarr',
+        );
+        final crossSeed = _torrent(
+          hash: 'ccdd',
+          name: 'Arrival.2016',
+          category: 'radarr',
+        );
+
+        // When
+        final index = await _resolveIndex(
+          torrents: [source, crossSeed],
+          radarrInstances: [radarr],
+          movieRepositories: {radarr: repository},
+        );
+
+        // Then
+        final link = index.resolve(crossSeed);
+        expect(link.status, TorrentLinkStatus.fileMissing);
+        expect(link.isCrossSeed, isTrue);
+      },
+    );
+
+    test('should report an incomplete cross-seed as linked', () async {
+      // Given a deleted movie file and a cross-seed still downloading
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'AABB',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: false,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final source = _torrent(
+        hash: 'aabb',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+      final crossSeed = _torrent(
+        hash: 'ccdd',
+        name: 'Arrival.2016',
+        category: 'radarr',
+        progress: 0.4,
+      );
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [source, crossSeed],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then an unfinished download has nothing to import yet
+      final link = index.resolve(crossSeed);
+      expect(link.status, TorrentLinkStatus.linked);
+      expect(link.isCrossSeed, isTrue);
+    });
+
+    test('should keep classifying unrelated torrents as orphan', () async {
+      // Given a grabbed torrent and an unrelated one in the managed category
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'AABB',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final source = _torrent(
+        hash: 'aabb',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+      final unrelated = _torrent(
+        hash: 'ccdd',
+        name: 'Dune.2021',
+        category: 'radarr',
+      );
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [source, unrelated],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then the name match must not swallow the orphan detection
+      expect(index.resolve(unrelated).status, TorrentLinkStatus.orphan);
+      expect(index.resolve(unrelated).isCrossSeed, isFalse);
+    });
+
+    test('should prefer a linked sibling over a fileMissing one', () async {
+      // Given two grabs of the same release, one of which still has its file
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistory(repository, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'AABB',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: false,
+            ),
+            _movieEvent(
+              id: 2,
+              downloadId: 'EEFF',
+              movieId: 13,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final missing = _torrent(
+        hash: 'aabb',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+      final present = _torrent(
+        hash: 'eeff',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+      final crossSeed = _torrent(
+        hash: 'ccdd',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [missing, present, crossSeed],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      final link = index.resolve(crossSeed);
+      expect(link.status, TorrentLinkStatus.linked);
+      expect(link.movieId, 13);
+      expect(link.isCrossSeed, isTrue);
+    });
+
+    test('should not inherit a link that points at no media', () async {
+      // Given an instance that failed, so nothing resolved at all
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      when(
+        () => repository.getHistory(
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          eventType: any(named: 'eventType'),
+          includeMovie: any(named: 'includeMovie'),
+        ),
+      ).thenThrow(Exception('boom'));
+      _stubMovieQueue(repository);
+      final first = _torrent(
+        hash: 'aabb',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+      final second = _torrent(
+        hash: 'ccdd',
+        name: 'Arrival.2016',
+        category: 'radarr',
+      );
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [first, second],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then the name index stays empty and both stay unknown
+      expect(index.linksByName, isEmpty);
+      expect(index.resolve(second).status, TorrentLinkStatus.unknown);
+    });
+  });
 }
 
 /// Builds the index for [torrents] against the given instances.
@@ -799,12 +1080,13 @@ Instance _instance(String id, InstanceType type) {
 Torrent _torrent({
   required String hash,
   String? category,
+  String? name,
   double progress = 1.0,
   int addedOn = 1700000000,
 }) {
   return Torrent(
     hash: hash,
-    name: 'Torrent $hash',
+    name: name ?? 'Torrent $hash',
     size: 1000,
     progress: progress,
     dlspeed: 0,

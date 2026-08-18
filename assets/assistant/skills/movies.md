@@ -123,7 +123,15 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
   - Ícone de **lixeira** ao lado de cada arquivo para deletar (requer confirmação).
 - Se não houver arquivo: exibe "No files" ou similar.
 
-**3. History:**
+**3. Torrents:**
+- Só aparece quando há uma instância qBittorrent configurada.
+- Lista os torrents do cliente que sustentam este filme, resolvidos pelo histórico do próprio filme (eventos **Grabbed** e **Imported**) casado com os infohashes do qBittorrent.
+- Inclui as cópias **cross-seed** do mesmo release (mesmo nome, infohash diferente), marcadas com o badge "Cross-seed".
+- Cada card é igual ao da aba Atividade → Torrents (nome, progresso, status, velocidades). Tocar abre a ficha de detalhes do torrent, onde é possível pausar, retomar, rechecar, ver arquivos e peers.
+- Nessa ficha o botão "Open in library" não aparece — você já está na tela do filme.
+- Se nada for encontrado: "No torrents in the download client".
+
+**4. History:**
 - Lista de eventos específicos do filme (filtro por tipo, se houver):
   - **Grabbed** (amarelo): release foi capturada e enviada ao cliente de download.
   - **Imported** (verde): arquivo foi importado com sucesso à biblioteca.

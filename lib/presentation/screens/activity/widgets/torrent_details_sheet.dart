@@ -19,7 +19,18 @@ class TorrentDetailsSheet extends ConsumerWidget {
   /// Relation between this torrent and the media library, when known.
   final TorrentLink? link;
 
-  const TorrentDetailsSheet({super.key, required this.torrent, this.link});
+  /// Whether the shortcut to the linked movie/series is offered.
+  ///
+  /// Set to `false` when the sheet is opened from a library details screen: the
+  /// user is already on the media the button would navigate to.
+  final bool showOpenInLibrary;
+
+  const TorrentDetailsSheet({
+    super.key,
+    required this.torrent,
+    this.link,
+    this.showOpenInLibrary = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -502,6 +513,31 @@ class TorrentDetailsSheet extends ConsumerWidget {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (link!.isCrossSeed) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.content_copy,
+                            size: 14,
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Matched as a cross-seed: same release name as '
+                              'the torrent Radarr/Sonarr grabbed, different '
+                              'infohash.',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -512,7 +548,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
           _buildInfoRow(context, 'Media', link!.displayLabel),
         if (link!.instanceLabel != null)
           _buildInfoRow(context, 'Instance', link!.instanceLabel!),
-        if (link!.hasMedia) ...[
+        if (link!.hasMedia && showOpenInLibrary) ...[
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,

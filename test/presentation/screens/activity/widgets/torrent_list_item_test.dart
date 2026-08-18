@@ -181,6 +181,67 @@ void main() {
       // Then
       expect(find.byKey(const ValueKey('torrent-link-badge')), findsNothing);
     });
+
+    testWidgets('should badge a link inherited from a cross-seed sibling', (
+      tester,
+    ) async {
+      // Given
+      final torrent = _torrent();
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TorrentListItem(
+              torrent: torrent,
+              link: const TorrentLink(
+                status: TorrentLinkStatus.linked,
+                movieId: 7,
+                mediaTitle: 'Arrival',
+              ).asCrossSeed(),
+            ),
+          ),
+        ),
+      );
+
+      // Then
+      expect(find.byKey(const ValueKey('torrent-link-badge')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('torrent-cross-seed-badge')),
+        findsOneWidget,
+      );
+      expect(find.text('Cross-seed'), findsOneWidget);
+      expect(find.text('Arrival'), findsOneWidget);
+    });
+
+    testWidgets('should not badge a cross-seed on a direct link', (
+      tester,
+    ) async {
+      // Given
+      final torrent = _torrent();
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TorrentListItem(
+              torrent: torrent,
+              link: const TorrentLink(
+                status: TorrentLinkStatus.linked,
+                movieId: 7,
+                mediaTitle: 'Arrival',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Then
+      expect(
+        find.byKey(const ValueKey('torrent-cross-seed-badge')),
+        findsNothing,
+      );
+    });
   });
 }
 
