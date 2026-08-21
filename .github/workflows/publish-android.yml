@@ -24,12 +24,7 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Generate Release Notes with Claude
-        continue-on-error: true
-        env:
-          ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
-          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
-          AI_MODEL: glm-4.5-air
+      - name: Build Release Notes Prompt
         run: |
           # Get previous tag or root
           PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
@@ -39,6 +34,7 @@ jobs:
           # special characters in commit messages (quotes, backticks, $).
           # Quoted heredocs ('EOF') disable shell expansion entirely; the git
           # log is appended verbatim so its content is never interpreted.
+          # The file is shared by both generation steps below.
           cat > prompt.txt <<'EOF'
           REPO: ${{ github.repository }}
           VERSION: ${{ github.ref_name }}
@@ -64,9 +60,26 @@ jobs:
           Output ONLY the markdown content.
           EOF
 
+      - name: Generate Release Notes with Claude Haiku
+        id: haiku-release-notes
+        continue-on-error: true
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
           # Feed the prompt via stdin; --output-format text prints only the
           # final message to stdout, which we redirect to RELEASE_BODY.md.
-          claude -p --model "$AI_MODEL" --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+          claude -p --model claude-haiku-4-5 --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+          # An exit 0 with empty output still means no usable notes, so fail
+          # explicitly to let the Z.AI fallback step below take over.
+          [ -s RELEASE_BODY.md ]
+
+      - name: Generate Release Notes with Z.AI (fallback)
+        if: steps.haiku-release-notes.outcome == 'failure'
+        continue-on-error: true
+        env:
+          ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
+        run: claude -p --model glm-4.5-air --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
 
       - name: Fallback on empty output
         run: |
