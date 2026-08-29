@@ -39,6 +39,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Status** em badge colorido (Downloading, Seeding, Paused, Error).
   - **Badge de vínculo com a biblioteca** (quando há Radarr/Sonarr configurado): mostra o título do filme/episódio vinculado (ex: "Severance · S01E05"), ou "File removed", "Orphan", "Not in library". Torrents **órfãos** ganham borda e fundo em vermelho para destacar que só o torrent sobrou.
   - **Badge "Cross-seed"** ao lado do badge de vínculo quando a relação foi herdada de um torrent irmão com o mesmo nome de release.
+  - **Seed time** (⏱, quando o torrent já semeou): há quanto tempo está semeando (ex: "2d 5h").
   - **Velocidades** (se ativo):
     - ⬇️ Download speed (ex: "2.5 MB/s").
     - ⬆️ Upload speed (ex: "1.2 MB/s").
@@ -59,6 +60,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - "Total Size", "Downloaded", "Uploaded", "Ratio".
     - Se ativo: "DL Speed", "UL Speed".
     - "Seeds", "Leechers" (peers conectados).
+    - "Seed Time" (quando o torrent já semeou): tempo acumulado de seeding (ex: "3d 4h"), útil para conferir a regra de dias mínimos de seeding antes de remover.
   - **Information section:**
     - "Added On", "Category", "Save Path", "Tags", "Hash".
   - **Media Library section** (se o vínculo for conhecido):

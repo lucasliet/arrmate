@@ -149,56 +149,97 @@ class TorrentListItem extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // Details (Speed / ETA / Progress)
+              // Details (Speed / ETA / Seed time / Progress)
+              //
+              // Every entry is flexible: the row holds up to three of them and
+              // must survive narrow screens and large text scales.
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  _buildDetail(
+                    context,
                     '${formatPercentage(torrent.progress * 100)} done',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
                   ),
+                  if (torrent.hasSeedingTime) _buildSeedTime(context),
                   if (torrent.status.isActive) ...[
                     if (torrent.status == TorrentStatus.downloading)
-                      Text(
+                      _buildDetail(
+                        context,
                         '↓ ${formatBytes(torrent.dlspeed)}/s',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        color: Colors.blue,
+                        bold: true,
                       ),
                     if (torrent.status == TorrentStatus.uploading)
-                      Text(
+                      _buildDetail(
+                        context,
                         '↑ ${formatBytes(torrent.upspeed)}/s',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        color: Colors.green,
+                        bold: true,
                       ),
                     if (torrent.eta > 0 &&
                         torrent.eta < 8640000) // Avoid huge numbers
-                      Text(
-                        formatRuntime(
-                          torrent.eta ~/ 60,
-                        ), // Runtime format assumes minutes usually
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
+                      _buildDetail(
+                        context,
+                        // Runtime format assumes minutes usually
+                        formatRuntime(torrent.eta ~/ 60),
                       ),
                   ] else ...[
-                    Text(
-                      torrent.status.label,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    _buildDetail(context, torrent.status.label),
                   ],
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// One entry of the details row, ellipsized instead of overflowing.
+  Widget _buildDetail(
+    BuildContext context,
+    String text, {
+    Color? color,
+    bool bold = false,
+  }) {
+    return Flexible(
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.textTheme.bodySmall?.copyWith(
+          color: color ?? context.colorScheme.onSurfaceVariant,
+          fontWeight: bold ? FontWeight.bold : null,
+        ),
+      ),
+    );
+  }
+
+  /// Elapsed seeding time, so the card shows how long the torrent has been
+  /// giving back before the user considers removing it.
+  Widget _buildSeedTime(BuildContext context) {
+    return Flexible(
+      child: Row(
+        key: const ValueKey('torrent-seed-time'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_outlined,
+            size: 12,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              formatDurationSeconds(torrent.seedingTime),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

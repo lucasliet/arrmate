@@ -96,6 +96,12 @@ class Torrent extends Equatable {
   /// Time the torrent has spent in a seeding state.
   Duration get seedingDuration => Duration(seconds: seedingTime);
 
+  /// Whether the torrent has already spent time seeding.
+  ///
+  /// Guards the seed time display: a torrent that never seeded would only show
+  /// a meaningless "0m".
+  bool get hasSeedingTime => seedingTime > 0;
+
   @override
   List<Object?> get props => [
     hash,

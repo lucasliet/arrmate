@@ -59,5 +59,29 @@ void main() {
 
       expect(torrent.tags, isEmpty);
     });
+
+    test('should expose the seeding time reported by qBittorrent', () {
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'uploading',
+        'seeding_time': 93600,
+      });
+
+      expect(torrent.seedingTime, 93600);
+      expect(torrent.seedingDuration, const Duration(hours: 26));
+      expect(torrent.hasSeedingTime, true);
+    });
+
+    test('should report no seeding time when the torrent never seeded', () {
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'downloading',
+      });
+
+      expect(torrent.seedingTime, 0);
+      expect(torrent.hasSeedingTime, false);
+    });
   });
 }

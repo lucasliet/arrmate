@@ -214,6 +214,41 @@ void main() {
       expect(find.text('Arrival'), findsOneWidget);
     });
 
+    testWidgets('should show how long a seeding torrent has been seeding', (
+      tester,
+    ) async {
+      // Given a torrent seeding for 1 day and 2 hours
+      final torrent = _torrent(seedingTime: 93600);
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TorrentListItem(torrent: torrent)),
+        ),
+      );
+
+      // Then
+      expect(find.byKey(const ValueKey('torrent-seed-time')), findsOneWidget);
+      expect(find.text('1d 2h'), findsOneWidget);
+    });
+
+    testWidgets('should omit the seed time when the torrent never seeded', (
+      tester,
+    ) async {
+      // Given
+      final torrent = _torrent();
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TorrentListItem(torrent: torrent)),
+        ),
+      );
+
+      // Then
+      expect(find.byKey(const ValueKey('torrent-seed-time')), findsNothing);
+    });
+
     testWidgets('should not badge a cross-seed on a direct link', (
       tester,
     ) async {
@@ -245,7 +280,7 @@ void main() {
   });
 }
 
-Torrent _torrent() {
+Torrent _torrent({int seedingTime = 0}) {
   return Torrent(
     hash: 'hash',
     name: 'Test Torrent',
@@ -266,5 +301,6 @@ Torrent _torrent() {
     amountLeft: 0,
     addedOn: 1234567890,
     priority: 0,
+    seedingTime: seedingTime,
   );
 }

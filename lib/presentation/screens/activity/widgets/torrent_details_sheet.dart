@@ -200,6 +200,14 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               width: width,
                               onTap: () => _showPeersSheet(context),
                             ),
+                            if (torrent.hasSeedingTime)
+                              _buildStatItem(
+                                context,
+                                'Seed Time',
+                                formatDurationSeconds(torrent.seedingTime),
+                                width: width,
+                                key: const ValueKey('torrent-seed-time-stat'),
+                              ),
                           ],
                         );
                       },
@@ -621,6 +629,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
     required double width,
     Color? color,
     VoidCallback? onTap,
+    Key? key,
   }) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,10 +652,11 @@ class TorrentDetailsSheet extends ConsumerWidget {
     );
 
     if (onTap == null) {
-      return SizedBox(width: width, child: content);
+      return SizedBox(key: key, width: width, child: content);
     }
 
     return SizedBox(
+      key: key,
       width: width,
       child: InkWell(
         onTap: onTap,
