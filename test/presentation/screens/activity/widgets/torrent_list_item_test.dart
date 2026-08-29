@@ -282,6 +282,65 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('should omit a sub-minute seed time instead of showing 0m', (
+      tester,
+    ) async {
+      // Given a torrent that started seeding 30 seconds ago
+      final torrent = _torrent(seedingTime: 30);
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TorrentListItem(torrent: torrent)),
+        ),
+      );
+
+      // Then
+      expect(find.byKey(const ValueKey('torrent-seed-time')), findsNothing);
+      expect(find.text('0m'), findsNothing);
+    });
+
+    testWidgets('should keep every detail at full width at large text scales', (
+      tester,
+    ) async {
+      // Given the four-entry row on a narrow screen with scaled-up text
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final torrent = _torrent(
+        status: TorrentStatus.downloading,
+        state: 'downloading',
+        progress: 0.45,
+        dlspeed: 2621440,
+        eta: 5400,
+        seedingTime: 93600,
+      );
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
+            child: Scaffold(body: TorrentListItem(torrent: torrent)),
+          ),
+        ),
+      );
+
+      // Then every entry keeps its natural width: the line reflows rather than
+      // capping each entry at its share and ellipsizing the longest
+      for (final label in ['45% done', '1d 2h', '↓ 2.5 MB/s', '1h 30m']) {
+        final finder = find.text(label);
+        expect(finder, findsOneWidget, reason: label);
+        expect(
+          tester.getSize(finder).width,
+          _naturalWidth(tester, finder, 1.3),
+          reason: '$label was clipped',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('should not badge a cross-seed on a direct link', (
       tester,
     ) async {
@@ -311,6 +370,20 @@ void main() {
       );
     });
   });
+}
+
+/// Width [finder]'s text would take unconstrained, to detect clipping.
+double _naturalWidth(WidgetTester tester, Finder finder, double scale) {
+  final text = tester.widget<Text>(finder);
+  final style = DefaultTextStyle.of(
+    tester.element(finder),
+  ).style.merge(text.style);
+  final painter = TextPainter(
+    text: TextSpan(text: text.data, style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: TextScaler.linear(scale),
+  )..layout();
+  return painter.width;
 }
 
 Torrent _torrent({

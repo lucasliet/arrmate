@@ -151,11 +151,17 @@ class TorrentListItem extends StatelessWidget {
 
               // Details (Speed / ETA / Seed time / Progress)
               //
-              // Every entry is flexible: a torrent that seeded before going
-              // back to downloading carries all four at once, and the row must
-              // survive that on narrow screens and at large text scales.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // A torrent that seeded before going back to downloading carries
+              // all four entries at once. Wrap, not Row: every entry keeps its
+              // natural width and the line reflows when they stop fitting, so
+              // nothing is clipped while space is still free. A Row would cap
+              // each entry at its equal share of the width and ellipsize the
+              // longest one even with room to spare.
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _buildDetail(
                     context,
@@ -196,22 +202,22 @@ class TorrentListItem extends StatelessWidget {
     );
   }
 
-  /// One entry of the details row, ellipsized instead of overflowing.
+  /// One entry of the details line.
+  ///
+  /// Every value it renders is short and bounded, so it takes its natural
+  /// width; the enclosing [Wrap] reflows the line when they stop fitting.
   Widget _buildDetail(
     BuildContext context,
     String text, {
     Color? color,
     bool bold = false,
   }) {
-    return Flexible(
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: color ?? context.colorScheme.onSurfaceVariant,
-          fontWeight: bold ? FontWeight.bold : null,
-        ),
+    return Text(
+      text,
+      maxLines: 1,
+      style: context.textTheme.bodySmall?.copyWith(
+        color: color ?? context.colorScheme.onSurfaceVariant,
+        fontWeight: bold ? FontWeight.bold : null,
       ),
     );
   }
@@ -219,29 +225,24 @@ class TorrentListItem extends StatelessWidget {
   /// Elapsed seeding time, so the card shows how long the torrent has been
   /// giving back before the user considers removing it.
   Widget _buildSeedTime(BuildContext context) {
-    return Flexible(
-      child: Row(
-        key: const ValueKey('torrent-seed-time'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.timer_outlined,
-            size: 12,
+    return Row(
+      key: const ValueKey('torrent-seed-time'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.timer_outlined,
+          size: 12,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          formatDurationSeconds(torrent.seedingTime),
+          maxLines: 1,
+          style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              formatDurationSeconds(torrent.seedingTime),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

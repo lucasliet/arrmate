@@ -73,6 +73,30 @@ void main() {
       expect(torrent.hasSeedingTime, true);
     });
 
+    test('should not count a sub-minute seeding time as displayable', () {
+      // formatDurationSeconds renders anything under a minute as "0m"
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'uploading',
+        'seeding_time': 59,
+      });
+
+      expect(torrent.seedingTime, 59);
+      expect(torrent.hasSeedingTime, false);
+    });
+
+    test('should count a full minute of seeding as displayable', () {
+      final torrent = Torrent.fromJson({
+        'hash': 'hash',
+        'name': 'release.mkv',
+        'state': 'uploading',
+        'seeding_time': 60,
+      });
+
+      expect(torrent.hasSeedingTime, true);
+    });
+
     test('should report no seeding time when the torrent never seeded', () {
       final torrent = Torrent.fromJson({
         'hash': 'hash',
