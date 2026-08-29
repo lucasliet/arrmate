@@ -151,8 +151,9 @@ class TorrentListItem extends StatelessWidget {
 
               // Details (Speed / ETA / Seed time / Progress)
               //
-              // Every entry is flexible: the row holds up to three of them and
-              // must survive narrow screens and large text scales.
+              // Every entry is flexible: a torrent that seeded before going
+              // back to downloading carries all four at once, and the row must
+              // survive that on narrow screens and at large text scales.
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

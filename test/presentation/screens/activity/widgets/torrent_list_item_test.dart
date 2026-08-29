@@ -249,6 +249,39 @@ void main() {
       expect(find.byKey(const ValueKey('torrent-seed-time')), findsNothing);
     });
 
+    testWidgets('should fit progress, seed time, speed and ETA in one row', (
+      tester,
+    ) async {
+      // Given a torrent seeding before it went back to downloading: the details
+      // row carries all four entries at once, on a narrow screen
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final torrent = _torrent(
+        status: TorrentStatus.downloading,
+        state: 'downloading',
+        progress: 0.45,
+        dlspeed: 2621440,
+        eta: 5400,
+        seedingTime: 93600,
+      );
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TorrentListItem(torrent: torrent)),
+        ),
+      );
+
+      // Then all four are rendered and the row absorbs them without overflowing
+      expect(find.text('45% done'), findsOneWidget);
+      expect(find.text('1d 2h'), findsOneWidget);
+      expect(find.text('↓ 2.5 MB/s'), findsOneWidget);
+      expect(find.text('1h 30m'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('should not badge a cross-seed on a direct link', (
       tester,
     ) async {
@@ -280,18 +313,25 @@ void main() {
   });
 }
 
-Torrent _torrent({int seedingTime = 0}) {
+Torrent _torrent({
+  int seedingTime = 0,
+  TorrentStatus status = TorrentStatus.uploading,
+  String state = 'seeding',
+  double progress = 1.0,
+  int dlspeed = 0,
+  int eta = 0,
+}) {
   return Torrent(
     hash: 'hash',
     name: 'Test Torrent',
     size: 1000,
-    progress: 1.0,
-    dlspeed: 0,
+    progress: progress,
+    dlspeed: dlspeed,
     upspeed: 0,
-    eta: 0,
+    eta: eta,
     ratio: 1.0,
-    status: TorrentStatus.uploading,
-    state: 'seeding',
+    status: status,
+    state: state,
     tags: [],
     savePath: '/path',
     numSeeds: 1,
