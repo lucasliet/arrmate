@@ -157,43 +157,50 @@ class TorrentListItem extends StatelessWidget {
               // nothing is clipped while space is still free. A Row would cap
               // each entry at its equal share of the width and ellipsize the
               // longest one even with room to spare.
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _buildDetail(
-                    context,
-                    '${formatPercentage(torrent.progress * 100)} done',
-                  ),
-                  if (torrent.hasSeedingTime) _buildSeedTime(context),
-                  if (torrent.status.isActive) ...[
-                    if (torrent.status == TorrentStatus.downloading)
-                      _buildDetail(
-                        context,
-                        '↓ ${formatBytes(torrent.dlspeed)}/s',
-                        color: Colors.blue,
-                        bold: true,
-                      ),
-                    if (torrent.status == TorrentStatus.uploading)
-                      _buildDetail(
-                        context,
-                        '↑ ${formatBytes(torrent.upspeed)}/s',
-                        color: Colors.green,
-                        bold: true,
-                      ),
-                    if (torrent.eta > 0 &&
-                        torrent.eta < 8640000) // Avoid huge numbers
-                      _buildDetail(
-                        context,
-                        // Runtime format assumes minutes usually
-                        formatRuntime(torrent.eta ~/ 60),
-                      ),
-                  ] else ...[
-                    _buildDetail(context, torrent.status.label),
+              //
+              // The SizedBox is load-bearing: Column passes loose constraints,
+              // so a bare Wrap shrink-wraps its content, leaving spaceBetween
+              // no free space to distribute.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _buildDetail(
+                      context,
+                      '${formatPercentage(torrent.progress * 100)} done',
+                    ),
+                    if (torrent.hasSeedingTime) _buildSeedTime(context),
+                    if (torrent.status.isActive) ...[
+                      if (torrent.status == TorrentStatus.downloading)
+                        _buildDetail(
+                          context,
+                          '↓ ${formatBytes(torrent.dlspeed)}/s',
+                          color: Colors.blue,
+                          bold: true,
+                        ),
+                      if (torrent.status == TorrentStatus.uploading)
+                        _buildDetail(
+                          context,
+                          '↑ ${formatBytes(torrent.upspeed)}/s',
+                          color: Colors.green,
+                          bold: true,
+                        ),
+                      if (torrent.eta > 0 &&
+                          torrent.eta < 8640000) // Avoid huge numbers
+                        _buildDetail(
+                          context,
+                          // Runtime format assumes minutes usually
+                          formatRuntime(torrent.eta ~/ 60),
+                        ),
+                    ] else ...[
+                      _buildDetail(context, torrent.status.label),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ),

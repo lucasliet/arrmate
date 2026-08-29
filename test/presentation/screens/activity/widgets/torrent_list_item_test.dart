@@ -341,6 +341,31 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('should spread the details line edge to edge', (tester) async {
+      // Given a card wide enough to hold every detail on a single line
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final torrent = _torrent(upspeed: 1048576, seedingTime: 93600);
+
+      // When
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TorrentListItem(torrent: torrent)),
+        ),
+      );
+
+      // Then the line fills the card instead of shrink-wrapping its content,
+      // so the entries are distributed rather than clustered on the left
+      final line = tester.getRect(find.byType(Wrap));
+      final content = tester.getRect(find.byType(LinearProgressIndicator));
+      expect(line.left, content.left);
+      expect(line.right, content.right);
+      expect(tester.getRect(find.text('100% done')).left, line.left);
+      expect(tester.getRect(find.text('↑ 1.0 MB/s')).right, line.right);
+    });
+
     testWidgets('should not badge a cross-seed on a direct link', (
       tester,
     ) async {
@@ -392,6 +417,7 @@ Torrent _torrent({
   String state = 'seeding',
   double progress = 1.0,
   int dlspeed = 0,
+  int upspeed = 0,
   int eta = 0,
 }) {
   return Torrent(
@@ -400,7 +426,7 @@ Torrent _torrent({
     size: 1000,
     progress: progress,
     dlspeed: dlspeed,
-    upspeed: 0,
+    upspeed: upspeed,
     eta: eta,
     ratio: 1.0,
     status: status,
