@@ -149,57 +149,107 @@ class TorrentListItem extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // Details (Speed / ETA / Progress)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${formatPercentage(torrent.progress * 100)} done',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
+              // Details (Speed / ETA / Seed time / Progress)
+              //
+              // A torrent that seeded before going back to downloading carries
+              // all four entries at once. Wrap, not Row: every entry keeps its
+              // natural width and the line reflows when they stop fitting, so
+              // nothing is clipped while space is still free. A Row would cap
+              // each entry at its equal share of the width and ellipsize the
+              // longest one even with room to spare.
+              //
+              // The SizedBox is load-bearing: Column passes loose constraints,
+              // so a bare Wrap shrink-wraps its content, leaving spaceBetween
+              // no free space to distribute.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _buildDetail(
+                      context,
+                      '${formatPercentage(torrent.progress * 100)} done',
                     ),
-                  ),
-                  if (torrent.status.isActive) ...[
-                    if (torrent.status == TorrentStatus.downloading)
-                      Text(
-                        '↓ ${formatBytes(torrent.dlspeed)}/s',
-                        style: context.textTheme.bodySmall?.copyWith(
+                    if (torrent.hasSeedingTime) _buildSeedTime(context),
+                    if (torrent.status.isActive) ...[
+                      if (torrent.status == TorrentStatus.downloading)
+                        _buildDetail(
+                          context,
+                          '↓ ${formatBytes(torrent.dlspeed)}/s',
                           color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+                          bold: true,
                         ),
-                      ),
-                    if (torrent.status == TorrentStatus.uploading)
-                      Text(
-                        '↑ ${formatBytes(torrent.upspeed)}/s',
-                        style: context.textTheme.bodySmall?.copyWith(
+                      if (torrent.status == TorrentStatus.uploading)
+                        _buildDetail(
+                          context,
+                          '↑ ${formatBytes(torrent.upspeed)}/s',
                           color: Colors.green,
-                          fontWeight: FontWeight.bold,
+                          bold: true,
                         ),
-                      ),
-                    if (torrent.eta > 0 &&
-                        torrent.eta < 8640000) // Avoid huge numbers
-                      Text(
-                        formatRuntime(
-                          torrent.eta ~/ 60,
-                        ), // Runtime format assumes minutes usually
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
+                      if (torrent.eta > 0 &&
+                          torrent.eta < 8640000) // Avoid huge numbers
+                        _buildDetail(
+                          context,
+                          // Runtime format assumes minutes usually
+                          formatRuntime(torrent.eta ~/ 60),
                         ),
-                      ),
-                  ] else ...[
-                    Text(
-                      torrent.status.label,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    ] else ...[
+                      _buildDetail(context, torrent.status.label),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// One entry of the details line.
+  ///
+  /// Every value it renders is short and bounded, so it takes its natural
+  /// width; the enclosing [Wrap] reflows the line when they stop fitting.
+  Widget _buildDetail(
+    BuildContext context,
+    String text, {
+    Color? color,
+    bool bold = false,
+  }) {
+    return Text(
+      text,
+      maxLines: 1,
+      style: context.textTheme.bodySmall?.copyWith(
+        color: color ?? context.colorScheme.onSurfaceVariant,
+        fontWeight: bold ? FontWeight.bold : null,
+      ),
+    );
+  }
+
+  /// Elapsed seeding time, so the card shows how long the torrent has been
+  /// giving back before the user considers removing it.
+  Widget _buildSeedTime(BuildContext context) {
+    return Row(
+      key: const ValueKey('torrent-seed-time'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.timer_outlined,
+          size: 12,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          formatDurationSeconds(torrent.seedingTime),
+          maxLines: 1,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 

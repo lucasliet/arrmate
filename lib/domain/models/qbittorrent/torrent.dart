@@ -96,6 +96,13 @@ class Torrent extends Equatable {
   /// Time the torrent has spent in a seeding state.
   Duration get seedingDuration => Duration(seconds: seedingTime);
 
+  /// Whether the torrent has seeded long enough to show a real duration.
+  ///
+  /// Guards the seed time display. The threshold is a full minute because
+  /// `formatDurationSeconds` drops seconds: anything below it renders as a
+  /// meaningless "0m", which is what this guard exists to keep off screen.
+  bool get hasSeedingTime => seedingTime >= 60;
+
   @override
   List<Object?> get props => [
     hash,
