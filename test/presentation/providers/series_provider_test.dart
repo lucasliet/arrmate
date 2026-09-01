@@ -59,6 +59,53 @@ void main() {
       );
     });
 
+    group('toggleMonitor', () {
+      test('Deve alternar a série sem tocar nas temporadas', () async {
+        // Given
+        final series = Series(
+          guid: 100,
+          title: 'Test Series',
+          sortTitle: 'Test Series',
+          tvdbId: 12345,
+          status: SeriesStatus.continuing,
+          seriesType: SeriesType.standard,
+          year: 2024,
+          added: DateTime(2024, 1, 1),
+          monitored: true,
+          seasons: const [
+            Season(seasonNumber: 1, monitored: false),
+            Season(seasonNumber: 2, monitored: true),
+          ],
+        );
+        when(
+          () => mockRepository.updateSeries(
+            any(),
+            moveFiles: any(named: 'moveFiles'),
+          ),
+        ).thenAnswer((_) async => series);
+        final container = ProviderContainer(
+          overrides: [
+            seriesRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+        final controller = container.read(seriesControllerProvider(100));
+
+        // When
+        await controller.toggleMonitor(series);
+
+        // Then
+        // Sonarr gates a grab on the season flag too, so flattening it here
+        // would silently discard the selection the user made per season.
+        final captured = verify(
+          () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+        ).captured;
+        final updatedSeries = captured.single as Series;
+        expect(updatedSeries.monitored, isFalse);
+        expect(updatedSeries.seasons, series.seasons);
+      });
+    });
+
     group('toggleSeasonMonitor', () {
       test(
         'Deve inverter monitored da season e persistir o monitoramento',
