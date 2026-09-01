@@ -206,7 +206,7 @@ class SeriesController {
       seasons: updatedSeasons,
     );
 
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }
@@ -232,7 +232,7 @@ class SeriesController {
       seasons: updatedSeasons,
     );
 
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }
@@ -254,7 +254,7 @@ class SeriesController {
       monitored: series.monitored || monitored,
       seasons: updatedSeasons,
     );
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }

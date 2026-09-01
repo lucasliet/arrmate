@@ -60,54 +60,54 @@ void main() {
     });
 
     group('toggleSeasonMonitor', () {
-      test('Deve inverter monitored da season e chamar updateSeries', () async {
-        // Given
-        final series = Series(
-          guid: 100,
-          title: 'Test Series',
-          sortTitle: 'Test Series',
-          tvdbId: 12345,
-          status: SeriesStatus.continuing,
-          seriesType: SeriesType.standard,
-          year: 2024,
-          added: DateTime(2024, 1, 1),
-          monitored: true,
-          seasons: [
-            const Season(seasonNumber: 1, monitored: true),
-            const Season(seasonNumber: 2, monitored: false),
-          ],
-        );
+      test(
+        'Deve inverter monitored da season e persistir o monitoramento',
+        () async {
+          // Given
+          final series = Series(
+            guid: 100,
+            title: 'Test Series',
+            sortTitle: 'Test Series',
+            tvdbId: 12345,
+            status: SeriesStatus.continuing,
+            seriesType: SeriesType.standard,
+            year: 2024,
+            added: DateTime(2024, 1, 1),
+            monitored: true,
+            seasons: [
+              const Season(seasonNumber: 1, monitored: true),
+              const Season(seasonNumber: 2, monitored: false),
+            ],
+          );
 
-        when(
-          () => mockRepository.updateSeries(
-            any(),
-            moveFiles: any(named: 'moveFiles'),
-          ),
-        ).thenAnswer((_) async => series);
+          when(
+            () => mockRepository.updateSeriesMonitoring(any()),
+          ).thenAnswer((_) async => series);
 
-        final container = ProviderContainer(
-          overrides: [
-            seriesRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+          final container = ProviderContainer(
+            overrides: [
+              seriesRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+          );
+          addTearDown(container.dispose);
 
-        final controller = container.read(seriesControllerProvider(100));
+          final controller = container.read(seriesControllerProvider(100));
 
-        // When
-        await controller.toggleSeasonMonitor(series, 1);
+          // When
+          await controller.toggleSeasonMonitor(series, 1);
 
-        // Then
-        final captured = verify(
-          () => mockRepository.updateSeries(captureAny(), moveFiles: false),
-        ).captured;
+          // Then
+          final captured = verify(
+            () => mockRepository.updateSeriesMonitoring(captureAny()),
+          ).captured;
 
-        final updatedSeries = captured.first as Series;
-        final season1 = updatedSeries.seasons.firstWhere(
-          (s) => s.seasonNumber == 1,
-        );
-        expect(season1.monitored, isFalse);
-      });
+          final updatedSeries = captured.first as Series;
+          final season1 = updatedSeries.seasons.firstWhere(
+            (s) => s.seasonNumber == 1,
+          );
+          expect(season1.monitored, isFalse);
+        },
+      );
 
       test(
         'Deve inverter monitored de season não monitorada para true',
@@ -130,10 +130,7 @@ void main() {
           );
 
           when(
-            () => mockRepository.updateSeries(
-              any(),
-              moveFiles: any(named: 'moveFiles'),
-            ),
+            () => mockRepository.updateSeriesMonitoring(any()),
           ).thenAnswer((_) async => series);
 
           final container = ProviderContainer(
@@ -150,7 +147,7 @@ void main() {
 
           // Then
           final captured = verify(
-            () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+            () => mockRepository.updateSeriesMonitoring(captureAny()),
           ).captured;
 
           final updatedSeries = captured.first as Series;
@@ -183,10 +180,7 @@ void main() {
           );
 
           when(
-            () => mockRepository.updateSeries(
-              any(),
-              moveFiles: any(named: 'moveFiles'),
-            ),
+            () => mockRepository.updateSeriesMonitoring(any()),
           ).thenAnswer((_) async => series);
 
           final container = ProviderContainer(
@@ -203,7 +197,7 @@ void main() {
 
           // Then
           final captured = verify(
-            () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+            () => mockRepository.updateSeriesMonitoring(captureAny()),
           ).captured;
 
           final updatedSeries = captured.first as Series;
@@ -242,10 +236,7 @@ void main() {
             ],
           );
           when(
-            () => mockRepository.updateSeries(
-              any(),
-              moveFiles: any(named: 'moveFiles'),
-            ),
+            () => mockRepository.updateSeriesMonitoring(any()),
           ).thenAnswer((_) async => series);
           final container = ProviderContainer(
             overrides: [
@@ -263,7 +254,7 @@ void main() {
 
           // Then
           final captured = verify(
-            () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+            () => mockRepository.updateSeriesMonitoring(captureAny()),
           ).captured;
           final updatedSeries = captured.single as Series;
           expect(
@@ -305,10 +296,7 @@ void main() {
           );
 
           when(
-            () => mockRepository.updateSeries(
-              any(),
-              moveFiles: any(named: 'moveFiles'),
-            ),
+            () => mockRepository.updateSeriesMonitoring(any()),
           ).thenAnswer((_) async => series);
 
           final container = ProviderContainer(
@@ -325,7 +313,7 @@ void main() {
 
           // Then
           final captured = verify(
-            () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+            () => mockRepository.updateSeriesMonitoring(captureAny()),
           ).captured;
 
           final updatedSeries = captured.first as Series;
@@ -353,10 +341,7 @@ void main() {
         );
 
         when(
-          () => mockRepository.updateSeries(
-            any(),
-            moveFiles: any(named: 'moveFiles'),
-          ),
+          () => mockRepository.updateSeriesMonitoring(any()),
         ).thenAnswer((_) async => series);
 
         final container = ProviderContainer(
@@ -373,7 +358,7 @@ void main() {
 
         // Then
         final captured = verify(
-          () => mockRepository.updateSeries(captureAny(), moveFiles: false),
+          () => mockRepository.updateSeriesMonitoring(captureAny()),
         ).captured;
 
         final updatedSeries = captured.first as Series;

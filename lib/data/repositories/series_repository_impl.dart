@@ -33,6 +33,15 @@ class SeriesRepositoryImpl implements SeriesRepository {
   }
 
   @override
+  Future<Series> updateSeriesMonitoring(Series series) async {
+    logger.info(
+      '[SeriesRepository] Updating monitoring for series: ${series.title} '
+      '(id: ${series.id})',
+    );
+    return _api.updateSeriesMonitoring(series);
+  }
+
+  @override
   Future<void> deleteSeries(
     int id, {
     bool deleteFiles = false,
