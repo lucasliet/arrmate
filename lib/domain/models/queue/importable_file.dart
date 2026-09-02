@@ -11,11 +11,31 @@ class ImportableFile extends Equatable {
   final String? name;
   final String? path;
   final String? relativePath;
+
+  /// Folder the file was found in.
+  ///
+  /// The server parses release information out of it when the file name alone
+  /// does not carry it, so an import keeps whatever the folder revealed.
+  final String? folderName;
+
   final int size;
   final MediaQuality? quality;
   final List<MediaLanguage>? languages;
   final String? releaseGroup;
   final String? downloadId;
+
+  /// Flags the indexer reported for the release, as a bit field.
+  ///
+  /// They feed custom format scoring, so an import that drops them can land
+  /// with a different score than the release was graded with.
+  final int? indexerFlags;
+
+  /// File this import replaces, when it is an upgrade over an existing one.
+  final int? episodeFileId;
+
+  /// How the release was published, e.g. `singleEpisode` or `seasonPack`.
+  final String? releaseType;
+
   final List<ImportableFileRejection> rejections;
   final Movie? movie;
   final Series? series;
@@ -26,11 +46,15 @@ class ImportableFile extends Equatable {
     this.name,
     this.path,
     this.relativePath,
+    this.folderName,
     required this.size,
     this.quality,
     this.languages,
     this.releaseGroup,
     this.downloadId,
+    this.indexerFlags,
+    this.episodeFileId,
+    this.releaseType,
     this.rejections = const [],
     this.movie,
     this.series,
@@ -46,6 +70,7 @@ class ImportableFile extends Equatable {
       name: json['name'] as String?,
       path: json['path'] as String?,
       relativePath: json['relativePath'] as String?,
+      folderName: json['folderName'] as String?,
       size: json['size'] as int? ?? 0,
       quality: json['quality'] != null
           ? MediaQuality.fromJson(json['quality'] as Map<String, dynamic>)
@@ -55,6 +80,9 @@ class ImportableFile extends Equatable {
           .toList(),
       releaseGroup: json['releaseGroup'] as String?,
       downloadId: json['downloadId'] as String?,
+      indexerFlags: json['indexerFlags'] as int?,
+      episodeFileId: json['episodeFileId'] as int?,
+      releaseType: json['releaseType'] as String?,
       rejections:
           (json['rejections'] as List<dynamic>?)
               ?.map(
@@ -81,12 +109,16 @@ class ImportableFile extends Equatable {
       if (name != null) 'name': name,
       if (path != null) 'path': path,
       if (relativePath != null) 'relativePath': relativePath,
+      if (folderName != null) 'folderName': folderName,
       'size': size,
       if (quality != null) 'quality': quality!.toJson(),
       if (languages != null)
         'languages': languages!.map((e) => e.toJson()).toList(),
       if (releaseGroup != null) 'releaseGroup': releaseGroup,
       if (downloadId != null) 'downloadId': downloadId,
+      if (indexerFlags != null) 'indexerFlags': indexerFlags,
+      if (episodeFileId != null) 'episodeFileId': episodeFileId,
+      if (releaseType != null) 'releaseType': releaseType,
       'rejections': rejections.map((e) => e.toJson()).toList(),
       if (movie != null) 'movie': movie!.toJson(),
       if (series != null) 'series': series!.toJson(),
@@ -101,11 +133,15 @@ class ImportableFile extends Equatable {
     name,
     path,
     relativePath,
+    folderName,
     size,
     quality,
     languages,
     releaseGroup,
     downloadId,
+    indexerFlags,
+    episodeFileId,
+    releaseType,
     rejections,
     movie,
     series,

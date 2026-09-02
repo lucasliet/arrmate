@@ -334,16 +334,47 @@ class RadarrApi {
   }
 
   /// Manually imports the selected [files].
+  ///
+  /// The `ManualImport` command reads a file shape of its own instead of the
+  /// resource `/manualimport` returned: the movie comes from a flat `movieId`
+  /// and the nested `movie` object is ignored. Posting the resource as it
+  /// arrived left `movieId` at its default, so Radarr looked up movie 0 and
+  /// the command failed with `Movie with ID 0 does not exist`.
   Future<void> manualImport(List<ImportableFile> files) async {
     await _client.post(
       '/command',
       data: {
         'name': 'ManualImport',
-        'files': files.map((f) => f.toJson()).toList(),
+        'files': files.map(_toImportCommandFile).toList(),
         'importMode': 'auto',
       },
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
+  }
+
+  /// Maps [file] onto the entry the `ManualImport` command expects.
+  ///
+  /// Only the fields the command declares are sent; everything else the
+  /// resource carries is dropped rather than ignored server-side.
+  Map<String, dynamic> _toImportCommandFile(ImportableFile file) {
+    final movieId = file.movie?.guid;
+    if (movieId == null) {
+      throw StateError(
+        'No movie is linked to ${file.name ?? file.path ?? 'the file'}',
+      );
+    }
+
+    return {
+      if (file.path != null) 'path': file.path,
+      if (file.folderName != null) 'folderName': file.folderName,
+      'movieId': movieId,
+      if (file.quality != null) 'quality': file.quality!.toJson(),
+      if (file.languages != null)
+        'languages': file.languages!.map((e) => e.toJson()).toList(),
+      if (file.releaseGroup != null) 'releaseGroup': file.releaseGroup,
+      if (file.indexerFlags != null) 'indexerFlags': file.indexerFlags,
+      if (file.downloadId != null) 'downloadId': file.downloadId,
+    };
   }
 
   /// Retrieves the system status.

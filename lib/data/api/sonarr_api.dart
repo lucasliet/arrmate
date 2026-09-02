@@ -447,16 +447,52 @@ class SonarrApi {
   }
 
   /// Manually imports the selected [files].
+  ///
+  /// The `ManualImport` command reads a file shape of its own instead of the
+  /// resource `/manualimport` returned: series and episodes come from flat
+  /// `seriesId` and `episodeIds` fields, and the nested objects are ignored.
+  /// Posting the resource as it arrived left both at their defaults, so the
+  /// command had no media to import against.
   Future<void> manualImport(List<ImportableFile> files) async {
     await _client.post(
       '/command',
       data: {
         'name': 'ManualImport',
-        'files': files.map((f) => f.toJson()).toList(),
+        'files': files.map(_toImportCommandFile).toList(),
         'importMode': 'auto',
       },
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
+  }
+
+  /// Maps [file] onto the entry the `ManualImport` command expects.
+  ///
+  /// Only the fields the command declares are sent; everything else the
+  /// resource carries is dropped rather than ignored server-side.
+  Map<String, dynamic> _toImportCommandFile(ImportableFile file) {
+    final seriesId = file.series?.guid;
+    final episodeIds =
+        file.episodes?.map((e) => e.id).toList() ?? const <int>[];
+    if (seriesId == null || episodeIds.isEmpty) {
+      throw StateError(
+        'No episode is linked to ${file.name ?? file.path ?? 'the file'}',
+      );
+    }
+
+    return {
+      if (file.path != null) 'path': file.path,
+      if (file.folderName != null) 'folderName': file.folderName,
+      'seriesId': seriesId,
+      'episodeIds': episodeIds,
+      if (file.episodeFileId != null) 'episodeFileId': file.episodeFileId,
+      if (file.quality != null) 'quality': file.quality!.toJson(),
+      if (file.languages != null)
+        'languages': file.languages!.map((e) => e.toJson()).toList(),
+      if (file.releaseGroup != null) 'releaseGroup': file.releaseGroup,
+      if (file.indexerFlags != null) 'indexerFlags': file.indexerFlags,
+      if (file.releaseType != null) 'releaseType': file.releaseType,
+      if (file.downloadId != null) 'downloadId': file.downloadId,
+    };
   }
 
   /// Retrieves the system status.
