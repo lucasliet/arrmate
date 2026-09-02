@@ -66,6 +66,38 @@ class SonarrApi {
     return series;
   }
 
+  /// Persists the monitoring flags of [series], seasons included.
+  ///
+  /// [updateSeries] cannot do this: `/series/editor` is a bulk editor that
+  /// only accepts series-level fields, so a `seasons` entry sent to it is
+  /// silently dropped and the request still answers 200. Per-season
+  /// monitoring lives on the single-series endpoint instead.
+  ///
+  /// The body is the resource Sonarr itself returned, with only the
+  /// monitoring flags rewritten, so every field Arrmate does not model
+  /// round-trips untouched rather than being reset to a default.
+  Future<Series> updateSeriesMonitoring(Series series) async {
+    final current =
+        await _client.get('/series/${series.id}') as Map<String, dynamic>;
+
+    final monitoredBySeason = {
+      for (final season in series.seasons)
+        season.seasonNumber: season.monitored,
+    };
+    final seasons = ((current['seasons'] as List?) ?? const []).map((season) {
+      final json = Map<String, dynamic>.from(season as Map);
+      final monitored = monitoredBySeason[json['seasonNumber'] as int];
+      if (monitored != null) json['monitored'] = monitored;
+      return json;
+    }).toList();
+
+    final response = await _client.put(
+      '/series/${series.id}',
+      data: {...current, 'monitored': series.monitored, 'seasons': seasons},
+    );
+    return Series.fromJson(response as Map<String, dynamic>);
+  }
+
   /// Deletes a series from the library.
   ///
   /// [deleteFiles] - If true, also deletes the series files from disk.

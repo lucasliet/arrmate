@@ -14,6 +14,12 @@ abstract class SeriesRepository {
   /// Updates an existing series.
   Future<Series> updateSeries(Series series, {bool moveFiles = false});
 
+  /// Persists the monitoring flags of [series], seasons included.
+  ///
+  /// Season monitoring needs its own call: the bulk editor behind
+  /// [updateSeries] accepts only series-level fields.
+  Future<Series> updateSeriesMonitoring(Series series);
+
   /// Deletes a series.
   Future<void> deleteSeries(
     int id, {

@@ -107,18 +107,16 @@ class SeriesController {
 
   SeriesController(this.ref, this.seriesId);
 
+  /// Toggles monitoring of the series itself.
+  ///
+  /// Season flags are left as they are, the way Sonarr treats them: they still
+  /// gate every grab, so the selection the user made per season survives the
+  /// series being monitored again.
   Future<void> toggleMonitor(Series series) async {
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) return;
 
-    final willMonitor = !series.monitored;
-    var updatedSeries = series.copyWith(monitored: willMonitor);
-
-    final updatedSeasons = series.seasons.map((season) {
-      return season.copyWith(monitored: willMonitor);
-    }).toList();
-
-    updatedSeries = updatedSeries.copyWith(seasons: updatedSeasons);
+    final updatedSeries = series.copyWith(monitored: !series.monitored);
 
     await repository.updateSeries(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
@@ -206,7 +204,7 @@ class SeriesController {
       seasons: updatedSeasons,
     );
 
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }
@@ -232,7 +230,7 @@ class SeriesController {
       seasons: updatedSeasons,
     );
 
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }
@@ -254,7 +252,7 @@ class SeriesController {
       monitored: series.monitored || monitored,
       seasons: updatedSeasons,
     );
-    await repository.updateSeries(updatedSeries);
+    await repository.updateSeriesMonitoring(updatedSeries);
     ref.invalidate(seriesDetailsProvider(seriesId));
     ref.invalidate(seriesProvider);
   }

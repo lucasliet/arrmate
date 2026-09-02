@@ -479,9 +479,9 @@ class BatchActionsHandler {
     }
   }
 
-  /// Batch-sets the monitored flag of the selected series. Cascades the flag
-  /// to every season of each series, mirroring the unit toggle behaviour.
-  /// Non-destructive, so no confirmation dialog is shown.
+  /// Batch-sets the monitored flag of the selected series. Season flags are
+  /// left as they are, mirroring the unit toggle. Non-destructive, so no
+  /// confirmation dialog is shown.
   Future<BatchActionResult?> setSeriesMonitored(
     BuildContext context,
     List<Series> seriesList, {
@@ -499,14 +499,7 @@ class BatchActionsHandler {
     var updated = 0;
     try {
       for (final series in seriesList) {
-        await repository.updateSeries(
-          series.copyWith(
-            monitored: monitored,
-            seasons: series.seasons
-                .map((s) => s.copyWith(monitored: monitored))
-                .toList(),
-          ),
-        );
+        await repository.updateSeries(series.copyWith(monitored: monitored));
         updated++;
       }
       if (!context.mounted) return null;
