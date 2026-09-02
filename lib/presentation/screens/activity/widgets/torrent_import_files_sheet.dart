@@ -352,21 +352,7 @@ class _TorrentImportFilesSheetState
       } else {
         var mappedFile = file;
         if (widget.isMovie && widget.movie != null && file.movie == null) {
-          mappedFile = ImportableFile(
-            id: file.id,
-            name: file.name,
-            path: file.path,
-            relativePath: file.relativePath,
-            size: file.size,
-            quality: file.quality,
-            languages: file.languages,
-            releaseGroup: file.releaseGroup,
-            downloadId: file.downloadId,
-            rejections: file.rejections,
-            movie: widget.movie,
-            series: file.series,
-            episodes: file.episodes,
-          );
+          mappedFile = file.copyWith(movie: widget.movie);
         }
         _fileMappings[file.id] = mappedFile;
       }

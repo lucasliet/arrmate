@@ -103,6 +103,32 @@ class ImportableFile extends Equatable {
     );
   }
 
+  /// Returns a copy of this file with [movie] attached to it.
+  ///
+  /// Everything the server reported about the file is carried over, so mapping
+  /// a file by hand does not cost it the release information the import needs.
+  ImportableFile copyWith({Movie? movie}) {
+    return ImportableFile(
+      id: id,
+      name: name,
+      path: path,
+      relativePath: relativePath,
+      folderName: folderName,
+      size: size,
+      quality: quality,
+      languages: languages,
+      releaseGroup: releaseGroup,
+      downloadId: downloadId,
+      indexerFlags: indexerFlags,
+      episodeFileId: episodeFileId,
+      releaseType: releaseType,
+      rejections: rejections,
+      movie: movie ?? this.movie,
+      series: series,
+      episodes: episodes,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
