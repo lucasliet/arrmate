@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import 'torrent_link_provider.dart';
 
 /// Provider that fetches movies that are monitored for import selection.
 final moviesForImportProvider = FutureProvider.autoDispose<List<Movie>>((
@@ -98,6 +99,11 @@ class TorrentImportController {
       }
       await repository.manualImport(tracked, copyFiles: true);
     }
+
+    // The torrent keeps the same hash, so the index the badge reads is not
+    // rebuilt on its own: without this the torrent still looks unrelated to the
+    // library it was just imported into.
+    ref.invalidate(torrentLinkIndexProvider);
   }
 }
 
