@@ -1,4 +1,5 @@
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/constants/api_constants.dart';
 import 'package:arrmate/domain/models/models.dart';
 
@@ -341,29 +342,35 @@ class RadarrApi {
   /// arrived left `movieId` at its default, so Radarr looked up movie 0 and
   /// the command failed with `Movie with ID 0 does not exist`.
   Future<void> manualImport(List<ImportableFile> files) async {
+    final entries = <Map<String, dynamic>>[];
+    final unlinked = <String>[];
+
+    for (final file in files) {
+      final movieId = file.movie?.guid;
+      if (movieId == null) {
+        unlinked.add(file.displayName);
+        continue;
+      }
+      entries.add(_toImportCommandFile(file, movieId));
+    }
+
+    if (unlinked.isNotEmpty) {
+      throw MissingDataError('No movie is linked to ${unlinked.join(', ')}');
+    }
+
     await _client.post(
       '/command',
-      data: {
-        'name': 'ManualImport',
-        'files': files.map(_toImportCommandFile).toList(),
-        'importMode': 'auto',
-      },
+      data: {'name': 'ManualImport', 'files': entries, 'importMode': 'auto'},
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }
 
-  /// Maps [file] onto the entry the `ManualImport` command expects.
+  /// Maps [file] onto the entry the `ManualImport` command expects, importing
+  /// it into the movie [movieId].
   ///
   /// Only the fields the command declares are sent; everything else the
   /// resource carries is dropped rather than ignored server-side.
-  Map<String, dynamic> _toImportCommandFile(ImportableFile file) {
-    final movieId = file.movie?.guid;
-    if (movieId == null) {
-      throw StateError(
-        'No movie is linked to ${file.name ?? file.path ?? 'the file'}',
-      );
-    }
-
+  Map<String, dynamic> _toImportCommandFile(ImportableFile file, int movieId) {
     return {
       if (file.path != null) 'path': file.path,
       if (file.folderName != null) 'folderName': file.folderName,

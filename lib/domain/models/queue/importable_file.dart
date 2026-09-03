@@ -64,6 +64,9 @@ class ImportableFile extends Equatable {
   /// Checks if there are any reasons why this file cannot be imported automatically.
   bool get hasRejections => rejections.isNotEmpty;
 
+  /// How to name this file when addressing the user about it.
+  String get displayName => name ?? relativePath ?? path ?? 'an unnamed file';
+
   factory ImportableFile.fromJson(Map<String, dynamic> json) {
     return ImportableFile(
       id: json['id'] as int,

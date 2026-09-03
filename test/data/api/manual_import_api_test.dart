@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arrmate/core/network/api_client.dart';
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/data/api/radarr_api.dart';
 import 'package:arrmate/data/api/sonarr_api.dart';
 import 'package:arrmate/domain/models/models.dart';
@@ -81,7 +82,38 @@ void main() {
       // When / Then
       await expectLater(
         () => api.manualImport([ImportableFile.fromJson(resource)]),
-        throwsStateError,
+        throwsA(isA<MissingDataError>()),
+      );
+      expect(adapter.path, isNull);
+    });
+
+    test('should name every file that has no movie linked', () async {
+      // Given
+      // Naming only the first one costs the user a round of fix-and-retry for
+      // each remaining file, and nothing is imported meanwhile.
+      final adapter = _CommandAdapter();
+      final api = RadarrApi(_instance(InstanceType.radarr), _client(adapter));
+      final first = _movieResource()
+        ..['name'] = 'First.mkv'
+        ..remove('movie');
+      final second = _movieResource()
+        ..['name'] = 'Second.mkv'
+        ..remove('movie');
+
+      // When / Then
+      await expectLater(
+        () => api.manualImport([
+          ImportableFile.fromJson(first),
+          ImportableFile.fromJson(_movieResource()),
+          ImportableFile.fromJson(second),
+        ]),
+        throwsA(
+          isA<MissingDataError>().having(
+            (error) => error.message,
+            'message',
+            'No movie is linked to First.mkv, Second.mkv',
+          ),
+        ),
       );
       expect(adapter.path, isNull);
     });
@@ -142,7 +174,13 @@ void main() {
       // When / Then
       await expectLater(
         () => api.manualImport([ImportableFile.fromJson(resource)]),
-        throwsStateError,
+        throwsA(
+          isA<MissingDataError>().having(
+            (error) => error.message,
+            'message',
+            'No episode is linked to Series.S01E01E02.mkv',
+          ),
+        ),
       );
       expect(adapter.path, isNull);
     });

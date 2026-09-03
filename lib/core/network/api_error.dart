@@ -44,6 +44,15 @@ class ServerError extends ApiError {
     : super(message ?? 'Server error. Please try again later.');
 }
 
+/// Thrown when a request cannot be built because required data is missing.
+///
+/// Unlike the other cases, this one is raised before the request leaves the
+/// app, so the message describes what the user has to fix rather than what the
+/// server answered.
+class MissingDataError extends ApiError {
+  const MissingDataError(super.message);
+}
+
 /// Thrown when an unknown error occurs.
 class UnknownApiError extends ApiError {
   const UnknownApiError([String? message])
