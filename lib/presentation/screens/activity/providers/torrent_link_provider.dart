@@ -304,10 +304,10 @@ Future<_InstanceLinkResult> _collectMovieLinks(
     instance: instance,
     torrentHashes: torrentHashes,
     oldestAddedOn: oldestAddedOn,
-    loadHistory: (page) => repository.getHistory(
+    loadHistory: (page, eventType) => repository.getHistory(
       page: page,
       pageSize: _historyPageSize,
-      eventType: HistoryEventType.grabbed,
+      eventType: eventType,
       includeMovie: true,
     ),
     loadQueue: (page) =>
@@ -328,10 +328,10 @@ Future<_InstanceLinkResult> _collectSeriesLinks(
     instance: instance,
     torrentHashes: torrentHashes,
     oldestAddedOn: oldestAddedOn,
-    loadHistory: (page) => repository.getHistory(
+    loadHistory: (page, eventType) => repository.getHistory(
       page: page,
       pageSize: _historyPageSize,
-      eventType: HistoryEventType.grabbed,
+      eventType: eventType,
       includeSeries: true,
       includeEpisode: true,
     ),
@@ -351,7 +351,8 @@ Future<_InstanceLinkResult> _collectLinks({
   required Instance instance,
   required Set<String> torrentHashes,
   required DateTime? oldestAddedOn,
-  required Future<HistoryPage> Function(int page) loadHistory,
+  required Future<HistoryPage> Function(int page, HistoryEventType eventType)
+  loadHistory,
   required Future<QueueItems> Function(int page) loadQueue,
   required Future<List<DownloadClientInfo>> Function() loadDownloadClients,
   required TorrentLink? Function(HistoryEvent event) buildFromEvent,
@@ -381,8 +382,19 @@ Future<_InstanceLinkResult> _collectLinks({
 
   final pending = {...torrentHashes};
   try {
-    final historyCapped = await _scanHistory(
-      loadHistory: loadHistory,
+    final grabsCapped = await _scanHistory(
+      loadHistory: (page) => loadHistory(page, HistoryEventType.grabbed),
+      buildFromEvent: buildFromEvent,
+      pending: pending,
+      links: links,
+      oldestAddedOn: oldestAddedOn,
+    );
+    // A download Radarr/Sonarr never grabbed — added to the client by hand and
+    // picked up from its category, then imported — has no grab event to match.
+    // Its import event carries the same infohash, and it is the only trace left
+    // once the queue entry is gone, so the relation survives the import.
+    final importsCapped = await _scanHistory(
+      loadHistory: (page) => loadHistory(page, HistoryEventType.imported),
       buildFromEvent: buildFromEvent,
       pending: pending,
       links: links,
@@ -398,7 +410,8 @@ Future<_InstanceLinkResult> _collectLinks({
     // Hitting a page cap with hashes still unresolved means "not found" only
     // describes how far the scan went, so the caller must not read it as proof
     // that no catalog entry exists.
-    final truncated = (historyCapped || queueCapped) && pending.isNotEmpty;
+    final truncated =
+        (grabsCapped || importsCapped || queueCapped) && pending.isNotEmpty;
     if (truncated) {
       logger.warning(
         '[TorrentLinkIndex] Scan for ${instance.id} hit the page cap with '
@@ -429,8 +442,11 @@ Future<_InstanceLinkResult> _collectLinks({
   }
 }
 
-/// Pages through `grabbed` history events collecting the hashes that belong to
+/// Pages through one kind of history event collecting the hashes that belong to
 /// torrents still present in the client.
+///
+/// [pending] carries only what earlier sweeps could not settle, so a sweep whose
+/// hashes are all resolved costs no request at all.
 ///
 /// Returns `true` when the scan stopped because it reached
 /// [_maxHistoryPages] rather than because it ran out of relevant events.
@@ -441,6 +457,8 @@ Future<bool> _scanHistory({
   required Map<String, TorrentLink> links,
   required DateTime? oldestAddedOn,
 }) async {
+  if (pending.isEmpty) return false;
+
   for (var page = 1; page <= _maxHistoryPages; page++) {
     final historyPage = await loadHistory(page);
     final records = historyPage.records;
