@@ -931,6 +931,139 @@ void main() {
       expect(index.linksByName, isEmpty);
       expect(index.resolve(second).status, TorrentLinkStatus.unknown);
     });
+
+    test('should keep a movie linked once the download was imported', () async {
+      // Given a torrent Radarr never grabbed: it was added to the client by
+      // hand, tracked through its category, and manually imported. The queue
+      // entry is gone and no grab event was ever written, so the import event
+      // is the only trace of the relation left.
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistoryFor(repository, HistoryEventType.grabbed, {
+        1: _historyPage(page: 1, records: const []),
+      });
+      _stubMovieHistoryFor(repository, HistoryEventType.imported, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              eventType: 'downloadFolderImported',
+              downloadId: 'AABB',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieQueue(repository);
+      final torrent = _torrent(hash: 'aabb', category: 'radarr');
+
+      // When
+      final index = await _resolveIndex(
+        torrents: [torrent],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      final link = index.resolve(torrent);
+      expect(link.status, TorrentLinkStatus.linked);
+      expect(link.movieId, 12);
+      expect(link.mediaTitle, 'Arrival');
+    });
+
+    test(
+      'should keep an episode linked once the download was imported',
+      () async {
+        // Given
+        final sonarr = _instance('sonarr-home', InstanceType.sonarr);
+        final repository = MockSeriesRepository();
+        _stubDownloadClients(repository, categories: ['sonarr']);
+        _stubSeriesHistoryFor(repository, HistoryEventType.grabbed, {
+          1: _historyPage(page: 1, records: const []),
+        });
+        _stubSeriesHistoryFor(repository, HistoryEventType.imported, {
+          1: _historyPage(
+            page: 1,
+            records: [
+              _episodeEvent(
+                id: 1,
+                eventType: 'downloadFolderImported',
+                downloadId: 'ccdd',
+                seriesId: 5,
+                seriesTitle: 'Severance',
+                seasonNumber: 1,
+                episodeNumber: 5,
+                hasFile: true,
+              ),
+            ],
+          ),
+        });
+        _stubSeriesQueue(repository);
+        final torrent = _torrent(hash: 'CCDD', category: 'sonarr');
+
+        // When
+        final index = await _resolveIndex(
+          torrents: [torrent],
+          sonarrInstances: [sonarr],
+          seriesRepositories: {sonarr: repository},
+        );
+
+        // Then
+        final link = index.resolve(torrent);
+        expect(link.status, TorrentLinkStatus.linked);
+        expect(link.seriesId, 5);
+        expect(link.episodeLabel, 'S01E05');
+      },
+    );
+
+    test('should not read import events once the grabs resolved', () async {
+      // Given
+      // The extra sweep exists for what the grabs miss; asking for it when
+      // nothing is pending would double the history traffic of every refresh.
+      final radarr = _instance('radarr-home', InstanceType.radarr);
+      final repository = MockMovieRepository();
+      _stubDownloadClients(repository, categories: ['radarr']);
+      _stubMovieHistoryFor(repository, HistoryEventType.grabbed, {
+        1: _historyPage(
+          page: 1,
+          records: [
+            _movieEvent(
+              id: 1,
+              downloadId: 'aabb',
+              movieId: 12,
+              title: 'Arrival',
+              hasFile: true,
+            ),
+          ],
+        ),
+      });
+      _stubMovieHistoryFor(repository, HistoryEventType.imported, {
+        1: _historyPage(page: 1, records: const []),
+      });
+      _stubMovieQueue(repository);
+      final torrent = _torrent(hash: 'aabb', category: 'radarr');
+
+      // When
+      await _resolveIndex(
+        torrents: [torrent],
+        radarrInstances: [radarr],
+        movieRepositories: {radarr: repository},
+      );
+
+      // Then
+      verifyNever(
+        () => repository.getHistory(
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          eventType: HistoryEventType.imported,
+          includeMovie: any(named: 'includeMovie'),
+        ),
+      );
+    });
   });
 }
 
@@ -1012,6 +1145,41 @@ void _stubSeriesHistory(
         page: entry.key,
         pageSize: any(named: 'pageSize'),
         eventType: any(named: 'eventType'),
+        includeSeries: any(named: 'includeSeries'),
+        includeEpisode: any(named: 'includeEpisode'),
+      ),
+    ).thenAnswer((_) async => entry.value);
+  }
+}
+
+void _stubMovieHistoryFor(
+  MockMovieRepository repository,
+  HistoryEventType eventType,
+  Map<int, HistoryPage> pages,
+) {
+  for (final entry in pages.entries) {
+    when(
+      () => repository.getHistory(
+        page: entry.key,
+        pageSize: any(named: 'pageSize'),
+        eventType: eventType,
+        includeMovie: any(named: 'includeMovie'),
+      ),
+    ).thenAnswer((_) async => entry.value);
+  }
+}
+
+void _stubSeriesHistoryFor(
+  MockSeriesRepository repository,
+  HistoryEventType eventType,
+  Map<int, HistoryPage> pages,
+) {
+  for (final entry in pages.entries) {
+    when(
+      () => repository.getHistory(
+        page: entry.key,
+        pageSize: any(named: 'pageSize'),
+        eventType: eventType,
         includeSeries: any(named: 'includeSeries'),
         includeEpisode: any(named: 'includeEpisode'),
       ),
@@ -1115,10 +1283,11 @@ HistoryEvent _movieEvent({
   required String title,
   required bool hasFile,
   DateTime? date,
+  String eventType = 'grabbed',
 }) {
   return HistoryEvent.fromJson({
     'id': id,
-    'eventType': 'grabbed',
+    'eventType': eventType,
     'date': (date ?? DateTime.utc(2026, 1, 1)).toIso8601String(),
     'sourceTitle': '$title.2016.1080p',
     'movieId': movieId,
@@ -1145,10 +1314,11 @@ HistoryEvent _episodeEvent({
   required int episodeNumber,
   required bool hasFile,
   DateTime? date,
+  String eventType = 'grabbed',
 }) {
   return HistoryEvent.fromJson({
     'id': id,
-    'eventType': 'grabbed',
+    'eventType': eventType,
     'date': (date ?? DateTime.utc(2026, 1, 1)).toIso8601String(),
     'sourceTitle': '$seriesTitle.S01E05.1080p',
     'seriesId': seriesId,

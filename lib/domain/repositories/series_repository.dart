@@ -127,7 +127,13 @@ abstract class SeriesRepository {
   Future<List<ImportableFile>> getImportableFilesByFolder(String folderPath);
 
   /// Manually imports the selected [files].
-  Future<void> manualImport(List<ImportableFile> files);
+  ///
+  /// [copyFiles] keeps the source where it is instead of letting the server
+  /// decide, for files that back a torrent still seeding.
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  });
 
   /// Rescans the series folder and updates the library.
   Future<void> rescanSeries(int seriesId);

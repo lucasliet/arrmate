@@ -341,7 +341,15 @@ class RadarrApi {
   /// and the nested `movie` object is ignored. Posting the resource as it
   /// arrived left `movieId` at its default, so Radarr looked up movie 0 and
   /// the command failed with `Movie with ID 0 does not exist`.
-  Future<void> manualImport(List<ImportableFile> files) async {
+  ///
+  /// [copyFiles] forbids moving the source out of the download folder. Left to
+  /// `auto`, the server only copies when it recognises a download that cannot
+  /// be moved and moves the file otherwise, pulling the data out from under a
+  /// torrent that is still seeding.
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  }) async {
     final entries = <Map<String, dynamic>>[];
     final unlinked = <String>[];
 
@@ -360,7 +368,11 @@ class RadarrApi {
 
     await _client.post(
       '/command',
-      data: {'name': 'ManualImport', 'files': entries, 'importMode': 'auto'},
+      data: {
+        'name': 'ManualImport',
+        'files': entries,
+        'importMode': copyFiles ? 'copy' : 'auto',
+      },
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }

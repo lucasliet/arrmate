@@ -168,8 +168,10 @@ class MovieRepositoryImpl implements MovieRepository {
       _api.getImportableFilesByFolder(folderPath);
 
   @override
-  Future<void> manualImport(List<ImportableFile> files) =>
-      _api.manualImport(files);
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  }) => _api.manualImport(files, copyFiles: copyFiles);
 
   @override
   Future<void> rescanMovie(int movieId) async {

@@ -106,11 +106,11 @@ class ImportableFile extends Equatable {
     );
   }
 
-  /// Returns a copy of this file with [movie] attached to it.
+  /// Returns a copy of this file with [movie] or [downloadId] attached to it.
   ///
   /// Everything the server reported about the file is carried over, so mapping
   /// a file by hand does not cost it the release information the import needs.
-  ImportableFile copyWith({Movie? movie}) {
+  ImportableFile copyWith({Movie? movie, String? downloadId}) {
     return ImportableFile(
       id: id,
       name: name,
@@ -121,7 +121,7 @@ class ImportableFile extends Equatable {
       quality: quality,
       languages: languages,
       releaseGroup: releaseGroup,
-      downloadId: downloadId,
+      downloadId: downloadId ?? this.downloadId,
       indexerFlags: indexerFlags,
       episodeFileId: episodeFileId,
       releaseType: releaseType,

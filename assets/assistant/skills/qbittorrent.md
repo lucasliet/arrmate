@@ -30,6 +30,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Not in library** — baixado por fora, sem relação com a biblioteca.
 - Tocar novamente no chip de vínculo ativo remove o filtro.
 - **Cross-seed:** cópias cross-seed do mesmo release têm infohash diferente, então o Radarr/Sonarr só conhece uma delas. As outras herdam o mesmo vínculo (aparecem em **In library** ou **File removed**, não mais como **Orphan**) por comparação do nome do release. O casamento é só pelo nome normalizado (minúsculas, sem espaços nas pontas): pasta de download, tamanho e tracker são ignorados.
+- **Depois da importação:** o vínculo sobrevive à saída do item da fila. Ele é reconstruído pelo histórico do Radarr/Sonarr: pelo evento de *grab* e, quando não houve grab (torrent adicionado à mão no cliente e importado depois), pelo evento de importação — os dois carregam o mesmo infohash.
 
 **Lista de torrents:**
 - **Cada torrent (card/tile):**
@@ -162,6 +163,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 - Qualidade, tamanho e grupo de release são detectados automaticamente.
 - Você pode selecionar apenas alguns arquivos se o torrent contiver múltiplos itens.
 - Após import, o torrent permanece no qBittorrent; você pode deletá-lo manualmente depois.
+- A importação **copia** os arquivos (hardlink, quando o Radarr/Sonarr estão configurados para isso e a pasta de download está no mesmo filesystem da biblioteca) — nunca move. O torrent continua semeando os mesmos arquivos.
+- O infohash do torrent vai como download id, então o item importado continua vinculado ao torrent na lista (badge **In library**) depois da importação.
 
 ## Filtrar torrents por status — baixando seedando pausado erro
 

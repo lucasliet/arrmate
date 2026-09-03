@@ -64,6 +64,34 @@ void main() {
       });
     });
 
+    test('should let the server move the file by default', () async {
+      // Given
+      final adapter = _CommandAdapter();
+      final api = RadarrApi(_instance(InstanceType.radarr), _client(adapter));
+
+      // When
+      await api.manualImport([ImportableFile.fromJson(_movieResource())]);
+
+      // Then
+      expect(adapter.body?['importMode'], 'auto');
+    });
+
+    test('should copy the file when the source has to stay put', () async {
+      // Given
+      // `auto` moves the file whenever the server does not recognise a download
+      // that must keep it, which pulls the data out from under a live torrent.
+      final adapter = _CommandAdapter();
+      final api = RadarrApi(_instance(InstanceType.radarr), _client(adapter));
+
+      // When
+      await api.manualImport([
+        ImportableFile.fromJson(_movieResource()),
+      ], copyFiles: true);
+
+      // Then
+      expect(adapter.body?['importMode'], 'copy');
+    });
+
     test('should refuse a file whose movie is not in the library', () async {
       // Given
       // [Movie.id] falls back to an id derived from the TMDB one, and importing
