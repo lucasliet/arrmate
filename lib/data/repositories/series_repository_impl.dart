@@ -229,8 +229,10 @@ class SeriesRepositoryImpl implements SeriesRepository {
       _api.getImportableFilesByFolder(folderPath);
 
   @override
-  Future<void> manualImport(List<ImportableFile> files) =>
-      _api.manualImport(files);
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  }) => _api.manualImport(files, copyFiles: copyFiles);
 
   @override
   Future<void> rescanSeries(int seriesId) async {

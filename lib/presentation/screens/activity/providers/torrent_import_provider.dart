@@ -68,18 +68,35 @@ class TorrentImportController {
 
   TorrentImportController(this.ref, {required this.isMovie});
 
-  /// Imports selected files to the specified movie or series.
-  Future<void> importFiles(List<ImportableFile> files) async {
+  /// Imports the selected [files], which belong to the torrent [torrentHash].
+  ///
+  /// The hash travels as the download id, uppercased the way Radarr and Sonarr
+  /// record it for qBittorrent and look it up — case-sensitively. It ties the
+  /// import to the tracked download instead of leaving it to look like a loose
+  /// folder, so the torrent keeps its relation to the library once the queue
+  /// entry is gone.
+  ///
+  /// The files are copied rather than moved: the torrent is still seeding them,
+  /// and a move would take the data out from under it.
+  Future<void> importFiles(
+    List<ImportableFile> files, {
+    required String torrentHash,
+  }) async {
+    final downloadId = torrentHash.toUpperCase();
+    final tracked = [
+      for (final file in files) file.copyWith(downloadId: downloadId),
+    ];
+
     if (isMovie) {
       final repository = ref.read(movieRepositoryProvider);
       if (repository == null) throw Exception('Movie repository not available');
-      await repository.manualImport(files);
+      await repository.manualImport(tracked, copyFiles: true);
     } else {
       final repository = ref.read(seriesRepositoryProvider);
       if (repository == null) {
         throw Exception('Series repository not available');
       }
-      await repository.manualImport(files);
+      await repository.manualImport(tracked, copyFiles: true);
     }
   }
 }

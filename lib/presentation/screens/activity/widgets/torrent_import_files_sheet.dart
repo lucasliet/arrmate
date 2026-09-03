@@ -371,7 +371,10 @@ class _TorrentImportFilesSheetState
       final controller = ref.read(
         torrentImportControllerProvider(widget.isMovie),
       );
-      await controller.importFiles(_fileMappings.values.toList());
+      await controller.importFiles(
+        _fileMappings.values.toList(),
+        torrentHash: widget.torrent.hash,
+      );
 
       if (mounted) {
         Navigator.pop(context);

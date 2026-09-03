@@ -454,7 +454,15 @@ class SonarrApi {
   /// `seriesId` and `episodeIds` fields, and the nested objects are ignored.
   /// Posting the resource as it arrived left both at their defaults, so the
   /// command had no media to import against.
-  Future<void> manualImport(List<ImportableFile> files) async {
+  ///
+  /// [copyFiles] forbids moving the source out of the download folder. Left to
+  /// `auto`, the server only copies when it recognises a download that cannot
+  /// be moved and moves the file otherwise, pulling the data out from under a
+  /// torrent that is still seeding.
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  }) async {
     final entries = <Map<String, dynamic>>[];
     final unlinked = <String>[];
 
@@ -475,7 +483,11 @@ class SonarrApi {
 
     await _client.post(
       '/command',
-      data: {'name': 'ManualImport', 'files': entries, 'importMode': 'auto'},
+      data: {
+        'name': 'ManualImport',
+        'files': entries,
+        'importMode': copyFiles ? 'copy' : 'auto',
+      },
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
   }

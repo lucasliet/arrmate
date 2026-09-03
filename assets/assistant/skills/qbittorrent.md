@@ -163,6 +163,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 - Qualidade, tamanho e grupo de release são detectados automaticamente.
 - Você pode selecionar apenas alguns arquivos se o torrent contiver múltiplos itens.
 - Após import, o torrent permanece no qBittorrent; você pode deletá-lo manualmente depois.
+- A importação **copia** os arquivos (hardlink, quando o Radarr/Sonarr estão configurados para isso e a pasta de download está no mesmo filesystem da biblioteca) — nunca move. O torrent continua semeando os mesmos arquivos.
+- O infohash do torrent vai como download id, então o item importado continua vinculado ao torrent na lista (badge **In library**) depois da importação.
 
 ## Filtrar torrents por status — baixando seedando pausado erro
 
