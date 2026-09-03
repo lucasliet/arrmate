@@ -275,13 +275,29 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
       if (_tabController.index == 0) {
         final records = (logs as LogPage).records;
         text = records
-            .map((e) => '[${e.time}] ${e.level}: ${e.message}')
-            .join('\n');
+            .map(
+              (e) => _formatLogForClipboard(
+                time: e.time,
+                level: e.level,
+                logger: e.logger,
+                message: e.message,
+                exception: e.exception,
+              ),
+            )
+            .join('\n\n');
       } else {
         final records = logs as List<AppLogEntry>;
         text = records
-            .map((e) => '[${e.time}] ${e.level.name}: ${e.message}')
-            .join('\n');
+            .map(
+              (e) => _formatLogForClipboard(
+                time: e.time,
+                level: e.level.name,
+                logger: 'Internal',
+                message: e.message,
+                exception: e.error?.toString(),
+              ),
+            )
+            .join('\n\n');
       }
     });
 
@@ -332,11 +348,21 @@ class _LogTile extends StatelessWidget {
       trailing: IconButton(
         icon: const Icon(Icons.copy, size: 20),
         onPressed: () async {
-          await Clipboard.setData(ClipboardData(text: message));
+          await Clipboard.setData(
+            ClipboardData(
+              text: _formatLogForClipboard(
+                time: time,
+                level: level,
+                logger: logger,
+                message: message,
+                exception: exception,
+              ),
+            ),
+          );
           if (context.mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('Log message copied')));
+            ).showSnackBar(const SnackBar(content: Text('Log copied')));
           }
         },
       ),
@@ -426,4 +452,22 @@ class _LogTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Renders a log entry the way the clipboard should carry it.
+///
+/// The exception is the half of an entry worth pasting into a bug report, so
+/// it travels with the message instead of being left behind on the screen.
+String _formatLogForClipboard({
+  required DateTime time,
+  required String level,
+  required String logger,
+  required String message,
+  String? exception,
+}) {
+  final entry = StringBuffer('[${time.toLocal()}] $level ($logger): $message');
+  if (exception != null && exception.isNotEmpty) {
+    entry.write('\n$exception');
+  }
+  return entry.toString();
 }

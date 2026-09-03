@@ -1,4 +1,5 @@
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/constants/api_constants.dart';
 import 'package:arrmate/domain/models/models.dart';
 
@@ -447,16 +448,62 @@ class SonarrApi {
   }
 
   /// Manually imports the selected [files].
+  ///
+  /// The `ManualImport` command reads a file shape of its own instead of the
+  /// resource `/manualimport` returned: series and episodes come from flat
+  /// `seriesId` and `episodeIds` fields, and the nested objects are ignored.
+  /// Posting the resource as it arrived left both at their defaults, so the
+  /// command had no media to import against.
   Future<void> manualImport(List<ImportableFile> files) async {
+    final entries = <Map<String, dynamic>>[];
+    final unlinked = <String>[];
+
+    for (final file in files) {
+      final seriesId = file.series?.guid;
+      final episodeIds =
+          file.episodes?.map((e) => e.id).toList() ?? const <int>[];
+      if (seriesId == null || episodeIds.isEmpty) {
+        unlinked.add(file.displayName);
+        continue;
+      }
+      entries.add(_toImportCommandFile(file, seriesId, episodeIds));
+    }
+
+    if (unlinked.isNotEmpty) {
+      throw MissingDataError('No episode is linked to ${unlinked.join(', ')}');
+    }
+
     await _client.post(
       '/command',
-      data: {
-        'name': 'ManualImport',
-        'files': files.map((f) => f.toJson()).toList(),
-        'importMode': 'auto',
-      },
+      data: {'name': 'ManualImport', 'files': entries, 'importMode': 'auto'},
       customTimeout: instance.timeout(InstanceTimeout.slow),
     );
+  }
+
+  /// Maps [file] onto the entry the `ManualImport` command expects, importing
+  /// it into [episodeIds] of the series [seriesId].
+  ///
+  /// Only the fields the command declares are sent; everything else the
+  /// resource carries is dropped rather than ignored server-side.
+  Map<String, dynamic> _toImportCommandFile(
+    ImportableFile file,
+    int seriesId,
+    List<int> episodeIds,
+  ) {
+    return {
+      if (file.path != null) 'path': file.path,
+      if (file.folderName != null) 'folderName': file.folderName,
+      'seriesId': seriesId,
+      'episodeIds': episodeIds,
+      if (file.episodeFileId != null) 'episodeFileId': file.episodeFileId,
+      if (file.quality != null) 'quality': file.quality!.toJson(),
+      if (file.languages != null)
+        'languages': file.languages!.map((e) => e.toJson()).toList(),
+      if (file.releaseGroup != null) 'releaseGroup': file.releaseGroup,
+      if (file.indexerFlags != null) 'indexerFlags': file.indexerFlags,
+      if (file.releaseType != null) 'releaseType': file.releaseType,
+      if (file.downloadId != null) 'downloadId': file.downloadId,
+    };
   }
 
   /// Retrieves the system status.

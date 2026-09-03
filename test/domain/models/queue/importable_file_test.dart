@@ -167,6 +167,57 @@ void main() {
       expect((json['rejections'] as List).length, 1);
     });
 
+    test('Deve preservar os demais campos ao anexar um filme', () {
+      final movie = Movie.fromJson({
+        'id': 12,
+        'tmdbId': 555,
+        'title': 'Test Movie',
+        'sortTitle': 'test movie',
+        'year': 2024,
+        'added': '2024-01-01T00:00:00Z',
+      });
+      final file = ImportableFile(
+        id: 1,
+        name: 'Movie.mkv',
+        path: '/downloads/Movie.mkv',
+        relativePath: 'Movie.mkv',
+        folderName: 'Movie.2024.1080p',
+        size: 8589934592,
+        languages: [MediaLanguage(id: 1, name: 'English')],
+        releaseGroup: 'GROUP',
+        downloadId: 'download123',
+        indexerFlags: 8,
+        episodeFileId: 99,
+        releaseType: 'seasonPack',
+        rejections: [ImportableFileRejection(reason: 'Sample', type: 'sample')],
+      );
+
+      final mapped = file.copyWith(movie: movie);
+
+      expect(mapped.movie, movie);
+      expect(
+        mapped,
+        ImportableFile(
+          id: 1,
+          name: 'Movie.mkv',
+          path: '/downloads/Movie.mkv',
+          relativePath: 'Movie.mkv',
+          folderName: 'Movie.2024.1080p',
+          size: 8589934592,
+          languages: [MediaLanguage(id: 1, name: 'English')],
+          releaseGroup: 'GROUP',
+          downloadId: 'download123',
+          indexerFlags: 8,
+          episodeFileId: 99,
+          releaseType: 'seasonPack',
+          rejections: [
+            ImportableFileRejection(reason: 'Sample', type: 'sample'),
+          ],
+          movie: movie,
+        ),
+      );
+    });
+
     test('Deve comparar ImportableFile corretamente com Equatable', () {
       final file1 = ImportableFile(id: 1, size: 1000);
       final file2 = ImportableFile(id: 1, size: 1000);
