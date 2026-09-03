@@ -3,9 +3,11 @@ import 'package:arrmate/domain/repositories/movie_repository.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/screens/activity/providers/torrent_import_provider.dart';
+import 'package:arrmate/presentation/screens/activity/providers/torrent_link_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockMovieRepository extends Mock implements MovieRepository {}
 
@@ -16,6 +18,10 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const <ImportableFile>[]);
+  });
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
   });
 
   group('TorrentImportController', () {
@@ -72,6 +78,40 @@ void main() {
 
       // Then
       verify(() => repository.manualImport(any(), copyFiles: true)).called(1);
+    });
+
+    test('should rebuild the library link index after importing', () async {
+      // Given
+      // The torrent keeps its hash, so the index is not rebuilt on its own and
+      // the badge would keep claiming the torrent is unrelated to the library.
+      var builds = 0;
+      final repository = MockMovieRepository();
+      when(
+        () =>
+            repository.manualImport(any(), copyFiles: any(named: 'copyFiles')),
+      ).thenAnswer((_) async {});
+      final container = ProviderContainer(
+        overrides: [
+          movieRepositoryProvider.overrideWithValue(repository),
+          torrentLinkIndexProvider.overrideWith((ref) async {
+            builds++;
+            return TorrentLinkIndex.empty;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(torrentLinkIndexProvider, (_, _) {});
+      await container.read(torrentLinkIndexProvider.future);
+
+      // When
+      await container.read(torrentImportControllerProvider(true)).importFiles(
+        const [_file],
+        torrentHash: 'aabbccdd',
+      );
+      await container.read(torrentLinkIndexProvider.future);
+
+      // Then
+      expect(builds, 2);
     });
 
     test('should tie a series import to the torrent as well', () async {
