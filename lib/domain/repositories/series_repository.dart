@@ -130,7 +130,10 @@ abstract class SeriesRepository {
   ///
   /// [copyFiles] keeps the source where it is instead of letting the server
   /// decide, for files that back a torrent still seeding.
-  Future<void> manualImport(List<ImportableFile> files, {bool copyFiles});
+  Future<void> manualImport(
+    List<ImportableFile> files, {
+    bool copyFiles = false,
+  });
 
   /// Rescans the series folder and updates the library.
   Future<void> rescanSeries(int seriesId);
