@@ -11,6 +11,14 @@ import '../../../widgets/instance_load_failure_banner.dart';
 
 typedef _QueuePageLoader = Future<QueueItems> Function(int page, int pageSize);
 
+/// One instance and the call that reads a page of its queue.
+class _InstanceQueueSource {
+  final Instance instance;
+  final _QueuePageLoader loadPage;
+
+  const _InstanceQueueSource(this.instance, this.loadPage);
+}
+
 class _InstanceQueueResult {
   final List<QueueItem> items;
   final InstanceLoadFailure? failure;
@@ -48,6 +56,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
   bool _refreshPending = false;
   Completer<void>? _activeFetchCycle;
   List<InstanceLoadFailure> _failures = const [];
+  List<_InstanceQueueSource> _sources = const [];
   int _generation = 0;
 
   /// Returns the per-instance failures from the latest fetch, so the UI can
@@ -65,6 +74,7 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       unawaited(refresh());
     });
     ref.onDispose(() => _timer?.cancel());
+    _sources = _resolveSources();
 
     final result = await _fetchUntilCurrent(generation);
     if (generation == _generation) {
@@ -105,21 +115,23 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
     }
   }
 
-  Future<_QueueFetchResult> _fetchQueue() async {
-    final radarrInstances = ref.watch(
-      instancesByTypeProvider(InstanceType.radarr),
-    );
-    final sonarrInstances = ref.watch(
-      instancesByTypeProvider(InstanceType.sonarr),
-    );
-    final requests = <Future<_InstanceQueueResult>>[];
+  /// Resolves one loader per configured instance.
+  ///
+  /// The subscriptions live here and nowhere else: [build] is the only place a
+  /// notifier may watch, so a change to the configured instances rebuilds the
+  /// queue once, instead of every timer tick re-subscribing from inside a fetch
+  /// and asking the framework to rebuild the notifier that is already running.
+  List<_InstanceQueueSource> _resolveSources() {
+    final sources = <_InstanceQueueSource>[];
 
-    for (final instance in radarrInstances) {
+    for (final instance in ref.watch(
+      instancesByTypeProvider(InstanceType.radarr),
+    )) {
       final repository = ref.watch(
         movieRepositoryForInstanceProvider(instance),
       );
-      requests.add(
-        _fetchInstanceQueue(
+      sources.add(
+        _InstanceQueueSource(
           instance,
           (page, pageSize) =>
               repository.getQueue(page: page, pageSize: pageSize),
@@ -127,12 +139,14 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       );
     }
 
-    for (final instance in sonarrInstances) {
+    for (final instance in ref.watch(
+      instancesByTypeProvider(InstanceType.sonarr),
+    )) {
       final repository = ref.watch(
         seriesRepositoryForInstanceProvider(instance),
       );
-      requests.add(
-        _fetchInstanceQueue(
+      sources.add(
+        _InstanceQueueSource(
           instance,
           (page, pageSize) =>
               repository.getQueue(page: page, pageSize: pageSize),
@@ -140,7 +154,14 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
       );
     }
 
-    final results = await Future.wait(requests);
+    return sources;
+  }
+
+  Future<_QueueFetchResult> _fetchQueue() async {
+    final results = await Future.wait([
+      for (final source in _sources)
+        _fetchInstanceQueue(source.instance, source.loadPage),
+    ]);
     final items = results.expand((result) => result.items).toList();
     final failures = results
         .map((result) => result.failure)
