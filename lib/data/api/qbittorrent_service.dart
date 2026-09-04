@@ -34,6 +34,10 @@ class QBittorrentService {
   /// traps the client on it. Mirrors [ApiClient._activeBaseUrl].
   String _activeUrl;
 
+  /// Set once the server answers the 5.0 start/stop endpoints with a 404, so
+  /// a pre-5.0 instance is not probed on every action.
+  bool _usesLegacyStartStop = false;
+
   QBittorrentService(this.instance, {Dio? dio})
     : _candidateUrls = instance.connectionUrls,
       _activeUrl = instance.connectionUrls.first,
@@ -431,12 +435,11 @@ class QBittorrentService {
   /// [hashes] List of torrent hashes to pause.
   /// Throws if the API request fails.
   /// Returns a Future that completes when the action is acknowledged by the server.
-  Future<void> pauseTorrents(List<String> hashes) async {
-    await _request(
-      '/api/v2/torrents/pause',
-      method: 'POST',
-      data: {'hashes': hashes.join('|')},
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+  Future<void> pauseTorrents(List<String> hashes) {
+    return _halt(
+      hashes,
+      path: '/api/v2/torrents/stop',
+      legacyPath: '/api/v2/torrents/pause',
     );
   }
 
@@ -445,11 +448,48 @@ class QBittorrentService {
   /// [hashes] List of torrent hashes to resume.
   /// Throws if the API request fails.
   /// Returns a Future that completes when the action is acknowledged by the server.
-  Future<void> resumeTorrents(List<String> hashes) async {
+  Future<void> resumeTorrents(List<String> hashes) {
+    return _halt(
+      hashes,
+      path: '/api/v2/torrents/start',
+      legacyPath: '/api/v2/torrents/resume',
+    );
+  }
+
+  /// Posts [hashes] to [path], retrying on [legacyPath] when the server does
+  /// not serve it.
+  ///
+  /// qBittorrent 5 renamed `pause`/`resume` to `stop`/`start` and dropped the
+  /// old names, while 4.x only ever had the old ones. A 404 or 405 means the
+  /// request had no effect, so trying the other name cannot act twice — and
+  /// because the client accepts any status below 500, an unanswered rename
+  /// would otherwise look like a button that does nothing.
+  Future<void> _halt(
+    List<String> hashes, {
+    required String path,
+    required String legacyPath,
+  }) async {
+    final data = {'hashes': hashes.join('|')};
+    if (!_usesLegacyStartStop) {
+      final response = await _request(
+        path,
+        method: 'POST',
+        data: data,
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+      final status = response.statusCode;
+      if (status != 404 && status != 405) return;
+      logger.info(
+        '[QBittorrentService] $path is unavailable, falling back to the '
+        'pre-5.0 endpoints',
+      );
+      _usesLegacyStartStop = true;
+    }
+
     await _request(
-      '/api/v2/torrents/resume',
+      legacyPath,
       method: 'POST',
-      data: {'hashes': hashes.join('|')},
+      data: data,
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
   }
