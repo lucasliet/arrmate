@@ -343,6 +343,58 @@ void main() {
       instance.alternativeUrl,
     );
   });
+
+  test('should not republish a resolution that changed nothing', () async {
+    // Given
+    // Every listener of the instances is woken by a new state, and the ones
+    // that fetch — the queue among them — go back to the server for it. Only
+    // instances configured with a second URL are ever re-resolved, so a
+    // needless publish costs exactly the setups that have one.
+    final instance = Instance(
+      id: 'radarr-home',
+      type: InstanceType.radarr,
+      label: 'Home',
+      url: 'http://192.168.1.10:7878',
+      alternativeUrl: 'https://radarr.example.com',
+      apiKey: 'key',
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([instance.toJson()]),
+    });
+    final connectivityChanges =
+        StreamController<List<ConnectivityResult>>.broadcast();
+    addTearDown(connectivityChanges.close);
+    var probeCalls = 0;
+    final resolver = InstanceConnectionResolver(
+      loadConnectivity: () async => [ConnectivityResult.wifi],
+      ping: (instance, uri) async {
+        probeCalls++;
+        return true;
+      },
+      connectivityChanges: connectivityChanges.stream,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        instanceConnectionResolverProvider.overrideWithValue(resolver),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    await _waitUntil(() => probeCalls >= 1);
+
+    var notifications = 0;
+    container.listen(instancesProvider, (_, _) => notifications++);
+
+    // When the network reports a change that resolves to the very same URLs
+    connectivityChanges.add([ConnectivityResult.mobile]);
+    await _waitUntil(() => probeCalls >= 2);
+    for (var i = 0; i < 5; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    // Then
+    expect(notifications, 0);
+  });
 }
 
 Future<void> _waitUntilLoaded(ProviderContainer container) async {
