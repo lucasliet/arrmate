@@ -21,6 +21,8 @@ void main() {
   });
 
   setUp(() {
+    // The tests that do not stub the index let the controller invalidate the
+    // real one, whose build reaches the instance store.
     SharedPreferences.setMockInitialValues({});
   });
 
@@ -90,18 +92,10 @@ void main() {
         () =>
             repository.manualImport(any(), copyFiles: any(named: 'copyFiles')),
       ).thenAnswer((_) async {});
-      final container = ProviderContainer(
-        overrides: [
-          movieRepositoryProvider.overrideWithValue(repository),
-          torrentLinkIndexProvider.overrideWith((ref) async {
-            builds++;
-            return TorrentLinkIndex.empty;
-          }),
-        ],
+      final container = _container(
+        overrides: [movieRepositoryProvider.overrideWithValue(repository)],
+        onIndexBuild: () => builds++,
       );
-      addTearDown(container.dispose);
-      container.listen(torrentLinkIndexProvider, (_, _) {});
-      await container.read(torrentLinkIndexProvider.future);
 
       // When
       await container.read(torrentImportControllerProvider(true)).importFiles(
@@ -112,6 +106,59 @@ void main() {
 
       // Then
       expect(builds, 2);
+    });
+
+    test('should rebuild the index after a series import too', () async {
+      // Given
+      var builds = 0;
+      final repository = MockSeriesRepository();
+      when(
+        () =>
+            repository.manualImport(any(), copyFiles: any(named: 'copyFiles')),
+      ).thenAnswer((_) async {});
+      final container = _container(
+        overrides: [seriesRepositoryProvider.overrideWithValue(repository)],
+        onIndexBuild: () => builds++,
+      );
+
+      // When
+      await container.read(torrentImportControllerProvider(false)).importFiles(
+        const [_file],
+        torrentHash: 'aabbccdd',
+      );
+      await container.read(torrentLinkIndexProvider.future);
+
+      // Then
+      expect(builds, 2);
+    });
+
+    test('should leave the index alone when the import is refused', () async {
+      // Given
+      // Rebuilding sweeps the history of every instance, which is wasted work
+      // when nothing was imported to find.
+      var builds = 0;
+      final repository = MockMovieRepository();
+      when(
+        () =>
+            repository.manualImport(any(), copyFiles: any(named: 'copyFiles')),
+      ).thenThrow(StateError('refused'));
+      final container = _container(
+        overrides: [movieRepositoryProvider.overrideWithValue(repository)],
+        onIndexBuild: () => builds++,
+      );
+
+      // When
+      await expectLater(
+        () => container.read(torrentImportControllerProvider(true)).importFiles(
+          const [_file],
+          torrentHash: 'aabbccdd',
+        ),
+        throwsStateError,
+      );
+      await container.read(torrentLinkIndexProvider.future);
+
+      // Then
+      expect(builds, 1);
     });
 
     test('should tie a series import to the torrent as well', () async {
@@ -149,3 +196,23 @@ void main() {
 }
 
 const _file = ImportableFile(id: 1, name: 'Movie.mkv', size: 1024);
+
+/// Builds a container whose link index is stubbed and already resolved once,
+/// so a test only has to count the rebuilds the import causes.
+ProviderContainer _container({
+  required List<Override> overrides,
+  required void Function() onIndexBuild,
+}) {
+  final container = ProviderContainer(
+    overrides: [
+      ...overrides,
+      torrentLinkIndexProvider.overrideWith((ref) async {
+        onIndexBuild();
+        return TorrentLinkIndex.empty;
+      }),
+    ],
+  );
+  addTearDown(container.dispose);
+  container.listen(torrentLinkIndexProvider, (_, _) {});
+  return container;
+}
