@@ -376,7 +376,8 @@ class InstancesNotifier extends Notifier<InstancesState> {
       return;
     }
 
-    var instances = state.instances;
+    final previous = state.instances;
+    var instances = previous;
     for (final resolution in resolutions) {
       final candidate = resolution.key;
       final resolved = resolution.value;
@@ -392,6 +393,22 @@ class InstancesNotifier extends Notifier<InstancesState> {
         return current.copyWith(activeUrl: resolved.activeUrl);
       }).toList();
     }
+    // Publishing an unchanged resolution is not free: the value is a new list,
+    // so every listener is notified, and the ones that fetch — the queue above
+    // all — rebuild and hit the server again. Only a URL that actually moved is
+    // worth waking them for.
+    if (_sameInstances(instances, previous)) {
+      return;
+    }
     state = state.copyWith(instances: instances);
+  }
+
+  /// Whether the resolution left every instance exactly as it was.
+  bool _sameInstances(List<Instance> resolved, List<Instance> previous) {
+    if (resolved.length != previous.length) return false;
+    for (var i = 0; i < resolved.length; i++) {
+      if (resolved[i] != previous[i]) return false;
+    }
+    return true;
   }
 }

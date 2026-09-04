@@ -33,9 +33,15 @@ enum TorrentStatus {
         return TorrentStatus.stalledDL;
       case 'stalledup':
         return TorrentStatus.stalledUP;
+      // qBittorrent 5 renamed the paused states to "stopped"; both spellings
+      // are accepted so a torrent halted on either version is recognised
+      // instead of falling through to [unknown], where the UI would offer to
+      // pause something that is already stopped.
       case 'pauseddl':
+      case 'stoppeddl':
         return TorrentStatus.pausedDL;
       case 'pausedup':
+      case 'stoppedup':
         return TorrentStatus.pausedUP;
       case 'queueddl':
         return TorrentStatus.queuedDL;

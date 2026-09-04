@@ -146,6 +146,77 @@ void main() {
       ]);
     });
   });
+
+  group('QBittorrentService start and stop', () {
+    test('should stop a torrent through the endpoint qBittorrent 5 '
+        'serves', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter);
+
+      // When
+      await service.pauseTorrents(['hash']);
+
+      // Then
+      expect(adapter.requests.map((uri) => uri.path), [
+        '/api/v2/torrents/stop',
+      ]);
+    });
+
+    test('should start a torrent through the endpoint qBittorrent 5 '
+        'serves', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter);
+
+      // When
+      await service.resumeTorrents(['hash']);
+
+      // Then
+      expect(adapter.requests.map((uri) => uri.path), [
+        '/api/v2/torrents/start',
+      ]);
+    });
+
+    test('should fall back to the pre-5.0 endpoint when the new one is '
+        'not served', () async {
+      // Given
+      // The client accepts any status below 500, so an unanswered rename comes
+      // back as a plain response and the action silently does nothing.
+      final adapter = _RecordingAdapter(
+        pathStatusCodes: {'/api/v2/torrents/start': 404},
+      );
+      final service = _service(adapter);
+
+      // When
+      await service.resumeTorrents(['hash']);
+
+      // Then
+      expect(adapter.requests.map((uri) => uri.path), [
+        '/api/v2/torrents/start',
+        '/api/v2/torrents/resume',
+      ]);
+    });
+
+    test('should stop probing the new endpoint once it answered 404', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathStatusCodes: {'/api/v2/torrents/stop': 404},
+      );
+      final service = _service(adapter);
+
+      // When
+      await service.pauseTorrents(['hash']);
+      await service.pauseTorrents(['other']);
+
+      // Then
+      expect(adapter.requests.map((uri) => uri.path), [
+        '/api/v2/torrents/stop',
+        '/api/v2/torrents/pause',
+        '/api/v2/torrents/pause',
+      ]);
+    });
+  });
 }
 
 QBittorrentService _service(_RecordingAdapter adapter) {
@@ -183,14 +254,21 @@ QBittorrentService _serviceCookie(_RecordingAdapter adapter) {
 class _RecordingAdapter implements HttpClientAdapter {
   final Set<String> unavailableHosts;
   final Map<String, int> statusCodes;
+
+  /// Status codes keyed by request path, for servers that serve only part of
+  /// the API surface.
+  final Map<String, int> pathStatusCodes;
+
   final List<Uri> requests = [];
   final List<String> methods = [];
 
   _RecordingAdapter({
     Set<String>? unavailableHosts,
     Map<String, int>? statusCodes,
+    Map<String, int>? pathStatusCodes,
   }) : unavailableHosts = unavailableHosts ?? {},
-       statusCodes = statusCodes ?? {};
+       statusCodes = statusCodes ?? {},
+       pathStatusCodes = pathStatusCodes ?? {};
 
   @override
   Future<ResponseBody> fetch(
@@ -209,7 +287,8 @@ class _RecordingAdapter implements HttpClientAdapter {
       );
     }
 
-    final statusCode = statusCodes[uri.host] ?? 200;
+    final statusCode =
+        pathStatusCodes[uri.path] ?? statusCodes[uri.host] ?? 200;
 
     // Login endpoint — return 200 with Set-Cookie for reachable hosts.
     if (options.method == 'POST' && uri.path.endsWith('/api/v2/auth/login')) {
