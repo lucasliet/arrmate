@@ -189,6 +189,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 6. Se tocou em uma release na busca:
    - Diálogo: "Are you sure you want to grab [título da release]?"
    - Tocar "Download" para confirmar.
+   - Enquanto o envio acontece, o ícone de download daquela release vira um indicador de progresso e as demais ficam desabilitadas.
    - A release é enviada ao cliente de download.
    - Monitore em Atividade → Queue.
 
