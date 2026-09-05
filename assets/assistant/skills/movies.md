@@ -302,8 +302,9 @@ Use o **Purge** quando quiser remover completamente um filme **e** liberar o esp
    - Mensagem: "Are you sure you want to grab [título da release]?"
    - Botões: "Cancel" e "Download".
 7. Tocar **"Download"** para confirmar.
+   - Enquanto o envio acontece, o ícone de download **daquela release vira um indicador de progresso** e o botão de download das demais releases fica desabilitado — não é preciso tocar de novo.
    - A release é **enviada ao cliente de download** (configurado no Radarr: qBittorrent, Transmission, etc).
-   - Snackbar confirma sucesso.
+   - Snackbar confirma sucesso. Se falhar, o sheet continua aberto, o ícone volta ao normal e um snackbar de erro explica o motivo.
 8. Você pode monitorar o progresso indo para **Atividade → Queue**.
 
 **Observações:**

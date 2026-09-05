@@ -45,6 +45,10 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   bool _rememberFilters = false;
   bool _queryModified = false;
 
+  /// GUID of the release currently being sent to the download client, or null
+  /// when no grab is in flight.
+  String? _grabbingGuid;
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +94,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   }
 
   Future<void> _onDownload(Release release) async {
-    if (release.rejected) return;
+    if (release.rejected || _grabbingGuid != null) return;
 
     try {
       final confirmed = await showDialog<bool>(
@@ -112,6 +116,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       );
       if (confirmed != true || !mounted) return;
 
+      setState(() => _grabbingGuid = release.guid);
       await ref
           .read(releaseActionsProvider.notifier)
           .downloadRelease(
@@ -133,6 +138,8 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _grabbingGuid = null);
     }
   }
 
@@ -143,7 +150,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       showDragHandle: true,
       builder: (detailsContext) => _ReleaseDetailsSheet(
         release: release,
-        onDownload: release.rejected
+        onDownload: release.rejected || _grabbingGuid != null
             ? null
             : () {
                 Navigator.of(detailsContext).pop();
@@ -356,6 +363,10 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                       final release = visibleReleases[index];
                       return _ReleaseTile(
                         release: release,
+                        isGrabbing: _grabbingGuid == release.guid,
+                        isAnotherGrabRunning:
+                            _grabbingGuid != null &&
+                            _grabbingGuid != release.guid,
                         onDetails: () => _showDetails(release),
                         onDownload: () => _onDownload(release),
                       );
@@ -660,6 +671,15 @@ class _ChoiceSection<T> extends StatelessWidget {
 
 class _ReleaseTile extends StatelessWidget {
   final Release release;
+
+  /// Whether this release is the one currently being sent to the download
+  /// client.
+  final bool isGrabbing;
+
+  /// Whether a different release is being sent to the download client, which
+  /// keeps this tile from starting a second grab at the same time.
+  final bool isAnotherGrabRunning;
+
   final VoidCallback onDetails;
   final VoidCallback onDownload;
 
@@ -667,12 +687,15 @@ class _ReleaseTile extends StatelessWidget {
     required this.release,
     required this.onDetails,
     required this.onDownload,
+    this.isGrabbing = false,
+    this.isAnotherGrabRunning = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isRejected = release.rejected;
+    final canDownload = !isRejected && !isGrabbing && !isAnotherGrabRunning;
     final languageLabel = release.languages
         .map((language) => language.name)
         .whereType<String>()
@@ -758,9 +781,22 @@ class _ReleaseTile extends StatelessWidget {
               icon: const Icon(Icons.info_outline),
             ),
             IconButton(
-              tooltip: isRejected ? 'Rejected release' : 'Download release',
-              onPressed: isRejected ? null : onDownload,
-              icon: const Icon(Icons.download),
+              key: isGrabbing ? const Key('releaseGrabProgress') : null,
+              tooltip: isGrabbing
+                  ? 'Sending release to the download client'
+                  : isRejected
+                  ? 'Rejected release'
+                  : 'Download release',
+              onPressed: canDownload ? onDownload : null,
+              icon: isGrabbing
+                  ? SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : const Icon(Icons.download),
             ),
           ],
         ),

@@ -239,6 +239,135 @@ void main() {
       expect(rememberSwitch.value, isTrue);
     },
   );
+
+  testWidgets('should show progress on the release being grabbed', (
+    tester,
+  ) async {
+    // Given
+    final grab = Completer<void>();
+    final release = _release(rejected: false);
+
+    // When
+    await tester.pumpWidget(
+      _sheetUnderTest(releases: [release], grab: grab.future),
+    );
+    await tester.pumpAndSettle();
+    await _confirmDownloadOf(tester, release);
+
+    // Then
+    expect(find.byKey(const Key('releaseGrabProgress')), findsOneWidget);
+    expect(find.byIcon(Icons.download), findsNothing);
+  });
+
+  testWidgets('should block a second grab while one is still running', (
+    tester,
+  ) async {
+    // Given
+    final grab = Completer<void>();
+    final grabbed = _release(
+      rejected: false,
+      title: 'Example.Movie.2020.HEVC',
+      guid: 'grabbed-guid',
+    );
+    final other = _release(
+      rejected: false,
+      title: 'Example.Movie.2020.H264',
+      guid: 'other-guid',
+    );
+
+    // When
+    await tester.pumpWidget(
+      _sheetUnderTest(releases: [grabbed, other], grab: grab.future),
+    );
+    await tester.pumpAndSettle();
+    await _confirmDownloadOf(tester, grabbed);
+
+    // Then
+    final otherButton = tester.widget<IconButton>(
+      find.descendant(
+        of: find.widgetWithText(ListTile, other.title),
+        matching: find.widgetWithIcon(IconButton, Icons.download),
+      ),
+    );
+    expect(otherButton.onPressed, isNull);
+  });
+
+  testWidgets('should restore the download action when a grab fails', (
+    tester,
+  ) async {
+    // Given
+    final grab = Completer<void>();
+    final release = _release(rejected: false);
+
+    // When
+    await tester.pumpWidget(
+      _sheetUnderTest(releases: [release], grab: grab.future),
+    );
+    await tester.pumpAndSettle();
+    await _confirmDownloadOf(tester, release);
+    grab.completeError(Exception('indexer is down'));
+    await tester.pump();
+    await tester.pump();
+
+    // Then
+    expect(find.byKey(const Key('releaseGrabProgress')), findsNothing);
+    expect(
+      find.text('Error grabbing release: Exception: indexer is down'),
+      findsOneWidget,
+    );
+    final downloadButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.download),
+    );
+    expect(downloadButton.onPressed, isNotNull);
+  });
+}
+
+/// Builds a sheet whose grab completes only when [grab] does, so the in-flight
+/// state stays observable.
+Widget _sheetUnderTest({
+  required List<Release> releases,
+  required Future<void> grab,
+}) {
+  return ProviderScope(
+    overrides: [
+      movieReleasesProvider(1).overrideWith((ref) async => releases),
+      releaseActionsProvider.overrideWith(() => _PendingReleaseActions(grab)),
+    ],
+    child: const MaterialApp(
+      home: Scaffold(
+        body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
+      ),
+    ),
+  );
+}
+
+/// Taps the download action of [release] and confirms the dialog, leaving the
+/// grab in flight.
+Future<void> _confirmDownloadOf(WidgetTester tester, Release release) async {
+  await tester.tap(
+    find.descendant(
+      of: find.widgetWithText(ListTile, release.title),
+      matching: find.widgetWithIcon(IconButton, Icons.download),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(FilledButton, 'Download'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump();
+}
+
+class _PendingReleaseActions extends ReleaseActions {
+  final Future<void> pending;
+
+  _PendingReleaseActions(this.pending);
+
+  @override
+  Future<void> downloadRelease({
+    required String guid,
+    required String indexerId,
+    required bool isMovie,
+  }) => pending;
 }
 
 class _DelayedReleaseQueryStore extends ReleaseQueryStore {
@@ -265,10 +394,11 @@ class _DelayedReleaseQueryStore extends ReleaseQueryStore {
 Release _release({
   required bool rejected,
   String title = 'Example.Movie.2020.1080p',
+  String guid = 'release-guid',
   List<String>? rejections,
 }) {
   return Release(
-    guid: 'release-guid',
+    guid: guid,
     title: title,
     size: 1024,
     link: '',
