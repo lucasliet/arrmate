@@ -292,6 +292,31 @@ void main() {
     expect(otherButton.onPressed, isNull);
   });
 
+  testWidgets('should restore the details download action when a grab fails', (
+    tester,
+  ) async {
+    // Given
+    final grab = Completer<void>();
+    final release = _release(rejected: false);
+
+    // When
+    await tester.pumpWidget(
+      _sheetUnderTest(releases: [release], grab: grab.future),
+    );
+    await tester.pumpAndSettle();
+    await _confirmDownloadOf(tester, release);
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.info_outline));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Then
+    expect(_detailsDownloadButton(tester).onPressed, isNull);
+    grab.completeError(Exception('indexer is down'));
+    await tester.pump();
+    await tester.pump();
+    expect(_detailsDownloadButton(tester).onPressed, isNotNull);
+  });
+
   testWidgets('should restore the download action when a grab fails', (
     tester,
   ) async {
@@ -355,6 +380,13 @@ Future<void> _confirmDownloadOf(WidgetTester tester, Release release) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
   await tester.pump();
+}
+
+/// Reads the download button of the open release details sheet.
+FilledButton _detailsDownloadButton(WidgetTester tester) {
+  return tester.widget<FilledButton>(
+    find.byKey(const Key('releaseDetailsDownloadButton')),
+  );
 }
 
 class _PendingReleaseActions extends ReleaseActions {

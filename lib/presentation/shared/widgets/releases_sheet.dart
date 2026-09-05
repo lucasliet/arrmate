@@ -46,8 +46,9 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   bool _queryModified = false;
 
   /// GUID of the release currently being sent to the download client, or null
-  /// when no grab is in flight.
-  String? _grabbingGuid;
+  /// when no grab is in flight. A listenable so the details sheet, which lives
+  /// in the navigator overlay and is not rebuilt by [setState], follows it.
+  final ValueNotifier<String?> _grabbingGuid = ValueNotifier(null);
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   @override
   void dispose() {
     _searchController.dispose();
+    _grabbingGuid.dispose();
     super.dispose();
   }
 
@@ -94,7 +96,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   }
 
   Future<void> _onDownload(Release release) async {
-    if (release.rejected || _grabbingGuid != null) return;
+    if (release.rejected || _grabbingGuid.value != null) return;
 
     try {
       final confirmed = await showDialog<bool>(
@@ -116,7 +118,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       );
       if (confirmed != true || !mounted) return;
 
-      setState(() => _grabbingGuid = release.guid);
+      _grabbingGuid.value = release.guid;
       await ref
           .read(releaseActionsProvider.notifier)
           .downloadRelease(
@@ -139,7 +141,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _grabbingGuid = null);
+      if (mounted) _grabbingGuid.value = null;
     }
   }
 
@@ -148,14 +150,17 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (detailsContext) => _ReleaseDetailsSheet(
-        release: release,
-        onDownload: release.rejected || _grabbingGuid != null
-            ? null
-            : () {
-                Navigator.of(detailsContext).pop();
-                unawaited(_onDownload(release));
-              },
+      builder: (detailsContext) => ValueListenableBuilder<String?>(
+        valueListenable: _grabbingGuid,
+        builder: (context, grabbingGuid, child) => _ReleaseDetailsSheet(
+          release: release,
+          onDownload: release.rejected || grabbingGuid != null
+              ? null
+              : () {
+                  Navigator.of(detailsContext).pop();
+                  unawaited(_onDownload(release));
+                },
+        ),
       ),
     );
   }
@@ -332,50 +337,56 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: releaseListAsync.when(
-                data: (items) {
-                  if (items.isEmpty) {
-                    return const Center(child: Text('No releases found'));
-                  }
-                  if (visibleReleases.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('No releases match the current filters'),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              _updateQuery(_query.clearFilters());
-                            },
-                            child: const Text('Clear filters'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _grabbingGuid,
+                builder: (context, grabbingGuid, child) =>
+                    releaseListAsync.when(
+                      data: (items) {
+                        if (items.isEmpty) {
+                          return const Center(child: Text('No releases found'));
+                        }
+                        if (visibleReleases.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'No releases match the current filters',
+                                ),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _updateQuery(_query.clearFilters());
+                                  },
+                                  child: const Text('Clear filters'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
 
-                  return ListView.builder(
-                    controller: scrollController,
-                    itemCount: visibleReleases.length,
-                    itemBuilder: (context, index) {
-                      final release = visibleReleases[index];
-                      return _ReleaseTile(
-                        release: release,
-                        isGrabbing: _grabbingGuid == release.guid,
-                        isAnotherGrabRunning:
-                            _grabbingGuid != null &&
-                            _grabbingGuid != release.guid,
-                        onDetails: () => _showDetails(release),
-                        onDownload: () => _onDownload(release),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: LoadingIndicator()),
-                error: (error, stackTrace) =>
-                    Center(child: Text('Error: $error')),
+                        return ListView.builder(
+                          controller: scrollController,
+                          itemCount: visibleReleases.length,
+                          itemBuilder: (context, index) {
+                            final release = visibleReleases[index];
+                            return _ReleaseTile(
+                              release: release,
+                              isGrabbing: grabbingGuid == release.guid,
+                              isAnotherGrabRunning:
+                                  grabbingGuid != null &&
+                                  grabbingGuid != release.guid,
+                              onDetails: () => _showDetails(release),
+                              onDownload: () => _onDownload(release),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Center(child: LoadingIndicator()),
+                      error: (error, stackTrace) =>
+                          Center(child: Text('Error: $error')),
+                    ),
               ),
             ),
           ],
