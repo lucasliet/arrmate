@@ -79,7 +79,8 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
-        run: claude -p --model glm-4.5-air --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+          CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_ENFORCEMENT: "1"
+        run: claude -p --model glm-5.3-flash --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
 
       - name: Fallback on empty output
         run: |
@@ -91,9 +92,13 @@ jobs:
       - name: Set Output
         id: set_output
         run: |
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          # A unique delimiter plus the blank line before it keep the closing
+          # marker on its own line even when RELEASE_BODY.md has no trailing
+          # newline (which breaks the file command parser otherwise).
+          echo "release_notes<<RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
           cat RELEASE_BODY.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
 
   build_app:
     name: Build Android Application
