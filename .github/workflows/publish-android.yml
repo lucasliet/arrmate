@@ -80,7 +80,7 @@ jobs:
           ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
           CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_ENFORCEMENT: "1"
-        run: claude -p --model glm-5.3-flash --output-format text --max-turns 4 < prompt.txt > RELEASE_BODY.md
+        run: claude -p --model glm-4.5-air --output-format text --max-turns 4 < prompt.txt > RELEASE_BODY.md
 
       - name: Fallback on empty or failed output
         run: |
