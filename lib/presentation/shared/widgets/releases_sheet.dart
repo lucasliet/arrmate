@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:arrmate/core/services/release_query_store.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
+import 'package:arrmate/presentation/shared/widgets/filter_sections.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -468,7 +469,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ChoiceSection<ReleaseApprovalFilter>(
+                    ChoiceSection<ReleaseApprovalFilter>(
                       title: 'Approval',
                       values: ReleaseApprovalFilter.values,
                       selected: _query.approval,
@@ -477,7 +478,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         () => _query = _query.copyWith(approval: value),
                       ),
                     ),
-                    _ChoiceSection<ReleaseFreeleechFilter>(
+                    ChoiceSection<ReleaseFreeleechFilter>(
                       title: 'Freeleech',
                       values: ReleaseFreeleechFilter.values,
                       selected: _query.freeleech,
@@ -487,7 +488,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                       ),
                     ),
                     if (widget.showReleaseType)
-                      _ChoiceSection<ReleaseTypeFilter>(
+                      ChoiceSection<ReleaseTypeFilter>(
                         title: 'Release type',
                         values: ReleaseTypeFilter.values,
                         selected: _query.releaseType,
@@ -496,7 +497,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                           () => _query = _query.copyWith(releaseType: value),
                         ),
                       ),
-                    _FilterSection(
+                    FilterSection(
                       title: 'Protocol',
                       values: protocols,
                       selected: _query.protocols,
@@ -504,7 +505,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         () => _query = _query.copyWith(protocols: selected),
                       ),
                     ),
-                    _FilterSection(
+                    FilterSection(
                       title: 'Indexer',
                       values: indexers,
                       selected: _query.indexers,
@@ -512,7 +513,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         () => _query = _query.copyWith(indexers: selected),
                       ),
                     ),
-                    _FilterSection(
+                    FilterSection(
                       title: 'Quality',
                       values: qualities,
                       selected: _query.qualities,
@@ -520,7 +521,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         () => _query = _query.copyWith(qualities: selected),
                       ),
                     ),
-                    _FilterSection(
+                    FilterSection(
                       title: 'Language',
                       values: languages,
                       selected: _query.languages,
@@ -528,7 +529,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         () => _query = _query.copyWith(languages: selected),
                       ),
                     ),
-                    _FilterSection(
+                    FilterSection(
                       title: 'Custom format',
                       values: customFormats,
                       selected: _query.customFormats,
@@ -589,92 +590,6 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FilterSection extends StatelessWidget {
-  final String title;
-  final List<String> values;
-  final Set<String> selected;
-  final ValueChanged<Set<String>> onChanged;
-
-  const _FilterSection({
-    required this.title,
-    required this.values,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (values.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: values.map((value) {
-              return FilterChip(
-                label: Text(value),
-                selected: selected.contains(value),
-                onSelected: (isSelected) {
-                  final next = Set<String>.from(selected);
-                  isSelected ? next.add(value) : next.remove(value);
-                  onChanged(next);
-                },
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChoiceSection<T> extends StatelessWidget {
-  final String title;
-  final List<T> values;
-  final T selected;
-  final String Function(T value) labelBuilder;
-  final ValueChanged<T> onSelected;
-
-  const _ChoiceSection({
-    required this.title,
-    required this.values,
-    required this.selected,
-    required this.labelBuilder,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: values
-                .map(
-                  (value) => ChoiceChip(
-                    label: Text(labelBuilder(value)),
-                    selected: value == selected,
-                    onSelected: (_) => onSelected(value),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
       ),
     );
   }

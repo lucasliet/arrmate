@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/torrent_query_store.dart';
 import '../../../../domain/models/models.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/tour_mock_data.dart';
@@ -12,6 +14,7 @@ import 'providers/qbittorrent_provider.dart';
 import 'providers/torrent_link_provider.dart';
 import 'widgets/add_torrent_sheet.dart';
 import 'widgets/torrent_details_sheet.dart';
+import 'widgets/torrent_filters_sheet.dart';
 import 'widgets/torrent_list_item.dart';
 
 class QBittorrentTab extends ConsumerStatefulWidget {
@@ -22,35 +25,53 @@ class QBittorrentTab extends ConsumerStatefulWidget {
 }
 
 class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
-  String _selectedFilter = 'all';
+  final _searchController = TextEditingController();
+  late final TorrentQueryStore _queryStore;
+  TorrentQuery _query = const TorrentQuery();
+  bool _rememberFilters = false;
+  bool _queryModified = false;
 
-  /// Active media-library filter, or `null` when no library filter is applied.
-  TorrentLinkStatus? _selectedLinkFilter;
-
-  bool _isSearching = false;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-
-  final List<String> _filters = [
-    'all',
-    'downloading',
-    'seeding',
-    'paused',
-    'error',
-  ];
-
-  /// Library relations offered as filters, in decreasing order of urgency.
-  static const List<TorrentLinkStatus> _linkFilters = [
-    TorrentLinkStatus.orphan,
-    TorrentLinkStatus.fileMissing,
-    TorrentLinkStatus.linked,
-    TorrentLinkStatus.external,
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _queryStore = TorrentQueryStore();
+    unawaited(_loadQuery());
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadQuery() async {
+    final savedQuery = await _queryStore.load();
+    if (!mounted) return;
+    if (_queryModified) {
+      setState(() => _rememberFilters = savedQuery.remember);
+      if (savedQuery.remember) {
+        await _queryStore.save(query: _query, remember: true);
+      }
+      return;
+    }
+    _searchController.text = savedQuery.query.search;
+    setState(() {
+      _query = savedQuery.query;
+      _rememberFilters = savedQuery.remember;
+    });
+  }
+
+  void _updateQuery(TorrentQuery query) {
+    _queryModified = true;
+    setState(() => _query = query);
+    if (_rememberFilters) {
+      unawaited(_queryStore.save(query: query, remember: true));
+    }
+  }
+
+  void _clearQuery() {
+    _searchController.clear();
+    _updateQuery(_query.clearFilters());
   }
 
   /// Reloads both the torrent list and the library link index.
@@ -59,19 +80,29 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     await ref.read(qbittorrentTorrentsProvider.notifier).refresh();
   }
 
-  void _toggleSearch() {
-    setState(() {
-      _isSearching = !_isSearching;
-      if (!_isSearching) {
-        _searchController.clear();
-        _searchQuery = '';
-      }
-    });
-  }
+  Future<void> _showFilters({required bool showLinkFilters}) async {
+    final result = await showModalBottomSheet<TorrentFilterResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => TorrentFiltersSheet(
+        query: _query,
+        rememberFilters: _rememberFilters,
+        showLinkFilters: showLinkFilters,
+      ),
+    );
+    if (result == null || !mounted) return;
 
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() => _searchQuery = '');
+    _queryModified = true;
+    _searchController.text = result.query.search;
+    setState(() {
+      _query = result.query;
+      _rememberFilters = result.rememberFilters;
+    });
+    await _queryStore.save(
+      query: result.query,
+      remember: result.rememberFilters,
+    );
   }
 
   void _showAddTorrentSheet() {
@@ -123,36 +154,6 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     );
   }
 
-  /// Builds a filter chip following the tab's existing chip styling.
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onSelected,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (_) => onSelected(),
-        showCheckmark: false,
-        labelStyle: TextStyle(
-          color: isSelected ? context.colorScheme.onPrimary : null,
-        ),
-        backgroundColor: context.colorScheme.surfaceContainerHighest,
-        selectedColor: context.colorScheme.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: isSelected
-                ? Colors.transparent
-                : context.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Without a qBittorrent instance the tour still walks through this tab, so
@@ -169,9 +170,21 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               TorrentLinkIndex.empty);
     final showsLinkFilters = linkIndex.hasInstances;
     final tourKeys = ref.watch(appTourKeysProvider);
-    // The library filter only applies while its chips are on screen, otherwise
+    // The library filter only applies while its section is reachable, otherwise
     // a leftover selection would hide every torrent with no way to clear it.
-    final activeLinkFilter = showsLinkFilters ? _selectedLinkFilter : null;
+    final effectiveQuery = _query.copyWith(
+      linkFilter: showsLinkFilters ? _query.linkFilter : TorrentLinkFilter.all,
+    );
+    final torrents = torrentsState.valueOrNull ?? const <Torrent>[];
+    final visibleTorrents = applyTorrentQuery(
+      torrents,
+      effectiveQuery,
+      linkResolver: showsLinkFilters
+          ? (torrent) => linkIndex.resolve(torrent).status
+          : null,
+    );
+    final hiddenCount = torrents.length - visibleTorrents.length;
+    final hasVisibleActiveFilters = effectiveQuery.hasActiveFilters;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -180,90 +193,96 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
       ),
       body: Column(
         children: [
-          if (_isSearching)
+          // While the guided tour mockup stands in for the real list, the
+          // search and sort controls stay hidden so they never answer with the
+          // empty state the mockup replaces.
+          if (!showsTourMockup) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: TextField(
+                key: const Key('torrentSearchField'),
                 controller: _searchController,
-                autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search torrents...',
+                  hintText: 'Search torrents',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: _clearSearch,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: context.colorScheme.outline.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  suffixIcon: _query.search.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            _searchController.clear();
+                            _updateQuery(_query.copyWith(search: ''));
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
+                onChanged: (value) =>
+                    _updateQuery(_query.copyWith(search: value)),
               ),
             ),
-          // Filters
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Row(
-                      children: [
-                        ..._filters.map((filter) {
-                          return _buildFilterChip(
-                            label:
-                                filter[0].toUpperCase() + filter.substring(1),
-                            isSelected: _selectedFilter == filter,
-                            onSelected: () =>
-                                setState(() => _selectedFilter = filter),
-                          );
-                        }),
-                        if (showsLinkFilters) ...[
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                width: 1,
-                                thickness: 1,
-                                color: context.colorScheme.outline.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  PopupMenuButton<TorrentSortOption>(
+                    key: const Key('torrentSortButton'),
+                    icon: const Icon(Icons.sort),
+                    initialValue: _query.sortOption,
+                    tooltip: 'Sort by',
+                    onSelected: (value) =>
+                        _updateQuery(_query.copyWith(sortOption: value)),
+                    itemBuilder: (context) => TorrentSortOption.values
+                        .map(
+                          (option) => PopupMenuItem(
+                            value: option,
+                            child: Text(option.label),
                           ),
-                          ..._linkFilters.map((status) {
-                            return _buildFilterChip(
-                              label: status.label,
-                              isSelected: _selectedLinkFilter == status,
-                              onSelected: () => setState(() {
-                                _selectedLinkFilter =
-                                    _selectedLinkFilter == status
-                                    ? null
-                                    : status;
-                              }),
-                            );
-                          }),
-                        ],
-                      ],
+                        )
+                        .toList(),
+                  ),
+                  IconButton(
+                    key: const Key('torrentSortDirectionButton'),
+                    icon: Icon(
+                      _query.sortAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                    ),
+                    tooltip: _query.sortAscending ? 'Ascending' : 'Descending',
+                    onPressed: () => _updateQuery(
+                      _query.copyWith(sortAscending: !_query.sortAscending),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(_isSearching ? Icons.search_off : Icons.search),
-                  onPressed: _toggleSearch,
-                  tooltip: _isSearching ? 'Close search' : 'Search torrents',
-                ),
-              ],
+                  IconButton(
+                    key: const Key('torrentFilterButton'),
+                    tooltip: 'Filter torrents',
+                    onPressed: () =>
+                        _showFilters(showLinkFilters: showsLinkFilters),
+                    icon: Badge(
+                      isLabelVisible: hasVisibleActiveFilters,
+                      child: const Icon(Icons.filter_list),
+                    ),
+                  ),
+                  if (hasVisibleActiveFilters)
+                    TextButton(
+                      key: const Key('clearTorrentFiltersButton'),
+                      onPressed: _clearQuery,
+                      child: const Text('Clear'),
+                    ),
+                  const Spacer(),
+                  Text(
+                    hiddenCount == 0
+                        ? '${visibleTorrents.length} torrents'
+                        : '${visibleTorrents.length} torrents · $hiddenCount hidden',
+                    key: const Key('torrentResultCount'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-          ),
+            const Divider(height: 1),
+          ],
 
           if (linkIndex.failures.isNotEmpty)
             InstanceLoadFailureBanner(
@@ -276,7 +295,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               data: (torrents) {
                 if (showsTourMockup) return _buildTourMockup();
 
-                if (torrents.isEmpty && _selectedFilter == 'all') {
+                if (torrents.isEmpty) {
                   return EmptyState(
                     icon: Icons.cloud_download_outlined,
                     title: 'No Torrents',
@@ -288,55 +307,18 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                   );
                 }
 
-                final filteredTorrents =
-                    torrents
-                        .where((t) {
-                          if (_selectedFilter == 'all') return true;
-                          if (_selectedFilter == 'downloading') {
-                            return t.status.isActive && !t.status.isPaused;
-                          }
-                          if (_selectedFilter == 'seeding') {
-                            return t.status == TorrentStatus.uploading ||
-                                t.status == TorrentStatus.stalledUP;
-                          }
-                          if (_selectedFilter == 'paused') {
-                            return t.status.isPaused;
-                          }
-                          if (_selectedFilter == 'error') {
-                            return t.status.hasError;
-                          }
-                          return true;
-                        })
-                        .where((t) {
-                          if (activeLinkFilter == null) return true;
-                          return linkIndex.resolve(t).status ==
-                              activeLinkFilter;
-                        })
-                        .where((t) {
-                          if (_searchQuery.isEmpty) return true;
-                          return t.name.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          );
-                        })
-                        .toList()
-                      ..sort((a, b) {
-                        final aIsActive =
-                            a.status.isActive && !a.status.isPaused;
-                        final bIsActive =
-                            b.status.isActive && !b.status.isPaused;
-                        if (aIsActive && !bIsActive) return -1;
-                        if (!aIsActive && bIsActive) return 1;
-                        return a.name.toLowerCase().compareTo(
-                          b.name.toLowerCase(),
-                        );
-                      });
-
-                if (filteredTorrents.isEmpty) {
+                if (visibleTorrents.isEmpty) {
                   return Center(
-                    child: Text(
-                      _searchQuery.isEmpty
-                          ? 'No torrents found with this filter'
-                          : 'No torrents found',
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('No torrents match the current filters'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _clearQuery,
+                          child: const Text('Clear filters'),
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -345,9 +327,9 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                   onRefresh: _refreshAll,
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 80),
-                    itemCount: filteredTorrents.length,
+                    itemCount: visibleTorrents.length,
                     itemBuilder: (context, index) {
-                      final torrent = filteredTorrents[index];
+                      final torrent = visibleTorrents[index];
                       final link = linkIndex.resolve(torrent);
                       return TorrentListItem(
                         key: index == 0 ? tourKeys.activityTorrentKey : null,

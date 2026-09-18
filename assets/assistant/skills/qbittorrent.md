@@ -15,20 +15,17 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 
 **Estrutura visual:**
 
-**Filtros (topo):**
-- **Chips de filtro por status** (horizontalmente scrolláveis):
-  - **All** — todos os torrents.
-  - **Downloading** — torrents em download ativo.
-  - **Seeding** — torrents 100% completos fazendo upload (seed).
-  - **Paused** — torrents pausados (inclui downloads pausados e seeds pausadas).
-  - **Error** — torrents com erro (falha de conexão, espaço insuficiente, etc).
-- Toque em um chip para filtrar instantaneamente; o chip ativo muda de cor para destacar.
-- **Chips de filtro por vínculo com a biblioteca** (após um divisor vertical, só aparecem se houver Radarr/Sonarr configurado):
-  - **Orphan** — o torrent foi baixado pelo Radarr/Sonarr, mas o item já saiu do catálogo; só sobrou o torrent.
-  - **File removed** — o item ainda está no catálogo, mas o arquivo de mídia foi apagado.
-  - **In library** — o torrent sustenta um filme/episódio que continua na biblioteca.
-  - **Not in library** — baixado por fora, sem relação com a biblioteca.
-- Tocar novamente no chip de vínculo ativo remove o filtro.
+**Toolbar (topo):**
+- **Campo de busca** "Search torrents" (sempre visível): filtra pelo nome do torrent em tempo real; o X limpa a busca.
+- **Botão de ordenação** (ícone de sort): abre menu com as opções **Activity** (padrão: ativos primeiro, depois ordem alfabética), **Added date**, **Progress**, **Size**, **Download speed**, **Ratio** e **Name**.
+- **Botão de direção** (↑/↓ ao lado do sort): alterna entre ascendente e descendente (padrão: descendente).
+- **Botão de filtros** (ícone de funil; ganha um badge quando há filtro ativo): abre o sheet **"Torrent filters"** com:
+  - **Status** (chips de seleção única): **All** — todos os torrents; **Downloading** — downloads ativos; **Seeding** — 100% completos fazendo upload; **Paused** — pausados; **Error** — com erro.
+  - **Library link** (só aparece se houver Radarr/Sonarr configurado): **All**, **Orphan** (baixado pelo Radarr/Sonarr mas o item saiu do catálogo), **File removed** (item no catálogo, arquivo apagado), **In library** (sustenta um filme/episódio da biblioteca), **Not in library** (baixado por fora).
+  - **Remember filters** (toggle): mantém busca, filtros e ordenação salvos para as próximas sessões.
+  - Botões **"Clear filters"** (limpa sem fechar) e **"Apply"** (aplica e fecha).
+- **Clear**: botão de texto que aparece ao lado do funil quando há busca ou filtro ativo; limpa busca e filtros (a ordenação é mantida).
+- **Contador de resultados** (canto direito): "N torrents", ou "N torrents · M hidden" quando filtros estão escondendo itens.
 - **Cross-seed:** cópias cross-seed do mesmo release têm infohash diferente, então o Radarr/Sonarr só conhece uma delas. As outras herdam o mesmo vínculo (aparecem em **In library** ou **File removed**, não mais como **Orphan**) por comparação do nome do release. O casamento é só pelo nome normalizado (minúsculas, sem espaços nas pontas): pasta de download, tamanho e tracker são ignorados.
 - **Depois da importação:** o vínculo sobrevive à saída do item da fila. Ele é reconstruído pelo histórico do Radarr/Sonarr: pelo evento de *grab* e, quando não houve grab (torrent adicionado à mão no cliente e importado depois), pelo evento de importação — os dois carregam o mesmo infohash.
 
@@ -47,8 +44,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Pull-to-refresh** (arrastar para baixo) para atualizar lista em tempo real.
 
 **Estado vazio:**
-- Se "All" filter: "No Torrents — Add a new torrent to start downloading" com botão "Add Torrent".
-- Se outro filtro: "No torrents found with this filter".
+- Sem torrents no cliente: "No Torrents — Add a new torrent to start downloading" com botão "Add Torrent".
+- Com torrents mas nenhum correspondente à busca/filtros: "No torrents match the current filters" com botão "Clear filters".
 - **Exceção durante o tour inicial:** se o tour estiver rodando sem qBittorrent configurado, a aba mostra **torrents de exemplo** sob o aviso "Sample content shown during the tour". Eles não abrem detalhes, não representam downloads reais e somem — junto com a própria aba — assim que o tour é concluído ou pulado.
 
 **Ações:**
@@ -166,25 +163,34 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 - A importação **copia** os arquivos (hardlink, quando o Radarr/Sonarr estão configurados para isso e a pasta de download está no mesmo filesystem da biblioteca) — nunca move. O torrent continua semeando os mesmos arquivos.
 - O infohash do torrent vai como download id, então o item importado continua vinculado ao torrent na lista (badge **In library**) depois da importação.
 
-## Filtrar torrents por status — baixando seedando pausado erro
+## Filtrar e ordenar torrents — busca, status, vínculo e sort
 
-**Onde fica:** Aba Atividade → Torrents → chips de filtro no topo da lista.
+**Onde fica:** Aba Atividade → Torrents → toolbar acima da lista.
 
-**Chips disponíveis:**
-- **All** — todos os torrents (sem filtro).
-- **Downloading** — torrents em download ativo (status "Downloading").
-- **Seeding** — torrents 100% completos fazendo upload ("Uploading" ou "Seeding").
-- **Paused** — torrents pausados (inclui downloads pausados e seeds pausadas).
-- **Error** — torrents com erro ("Error", "Stalled", etc).
+**Busca:**
+- Campo "Search torrents" filtra pelo nome do torrent em tempo real.
+
+**Filtros (sheet "Torrent filters", aberto pelo botão de funil):**
+- **Status:**
+  - **All** — todos os torrents (sem filtro).
+  - **Downloading** — torrents em download ativo (status "Downloading").
+  - **Seeding** — torrents 100% completos fazendo upload ("Uploading" ou "Stalled UP").
+  - **Paused** — torrents pausados (inclui downloads pausados e seeds pausadas).
+  - **Error** — torrents com erro ("Error", "Missing Files").
+- **Library link** (só com Radarr/Sonarr configurado): All, Orphan, File removed, In library, Not in library.
+- **Remember filters** — salva a configuração (busca, filtros e ordenação) para as próximas sessões.
+- Toque em **Apply** para aplicar e fechar; **Clear filters** limpa sem fechar.
+
+**Ordenação (botão de sort):**
+- **Activity** (padrão) — torrents ativos primeiro, depois ordem alfabética.
+- **Added date** — data de adição. **Progress** — % concluído. **Size** — tamanho. **Download speed** — velocidade de download. **Ratio** — razão de upload/download. **Name** — ordem alfabética.
+- O botão ↑/↓ ao lado alterna ascendente/descendente.
 
 **Comportamento:**
-- Toque em um chip para ativar filtro.
-- O chip ativo fica **destacado visualmente** (cor mais intensa, checkmark, etc).
-- A lista refiltra **instantaneamente**.
-- Você pode voltar ao "All" tocando nele ou em outro chip.
+- O botão de funil ganha um **badge** quando há busca ou filtro ativo; o botão **Clear** aparece ao lado e limpa tudo (menos a ordenação).
+- O contador à direita mostra quantos torrents estão visíveis e quantos os filtros esconderam.
+- Se nenhum torrent corresponde: "No torrents match the current filters" com botão "Clear filters".
 
 **Observações:**
-- Cada chip mostra apenas torrents daquele status.
-- Se nenhum torrent corresponde ao filtro: "No torrents found with this filter".
-- O filtro "Downloading" útil para monitorar downloads em andamento.
-- O filtro "Error" útil para diagnosticar problemas.
+- O filtro "Downloading" é útil para monitorar downloads em andamento; o "Error" para diagnosticar problemas.
+- A ordenação é aplicada imediatamente ao selecionar no menu (não precisa de Apply).
