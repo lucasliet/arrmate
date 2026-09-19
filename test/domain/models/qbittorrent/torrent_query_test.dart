@@ -155,6 +155,7 @@ void main() {
         size: 100,
         dlspeed: 10,
         ratio: 0.5,
+        seedingTime: 3600,
       );
       final newer = _torrent(
         name: 'Newer',
@@ -163,6 +164,7 @@ void main() {
         size: 200,
         dlspeed: 20,
         ratio: 1.5,
+        seedingTime: 7200,
       );
 
       // When
@@ -251,6 +253,7 @@ Torrent _torrent({
   int size = 0,
   int dlspeed = 0,
   double ratio = 0,
+  int seedingTime = 0,
 }) {
   return Torrent(
     hash: name,
@@ -272,5 +275,6 @@ Torrent _torrent({
     amountLeft: 0,
     addedOn: addedOn,
     priority: 0,
+    seedingTime: seedingTime,
   );
 }

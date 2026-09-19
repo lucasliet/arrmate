@@ -59,6 +59,7 @@ enum TorrentSortOption {
   size,
   downloadSpeed,
   ratio,
+  seedTime,
   name;
 
   /// Human-readable label shown in the sort menu.
@@ -70,6 +71,7 @@ enum TorrentSortOption {
       TorrentSortOption.size => 'Size',
       TorrentSortOption.downloadSpeed => 'Download speed',
       TorrentSortOption.ratio => 'Ratio',
+      TorrentSortOption.seedTime => 'Seed time',
       TorrentSortOption.name => 'Name',
     };
   }
@@ -226,6 +228,9 @@ int _compareTorrents(Torrent first, Torrent second, TorrentSortOption option) {
     TorrentSortOption.size => first.size.compareTo(second.size),
     TorrentSortOption.downloadSpeed => first.dlspeed.compareTo(second.dlspeed),
     TorrentSortOption.ratio => first.ratio.compareTo(second.ratio),
+    TorrentSortOption.seedTime => first.seedingTime.compareTo(
+      second.seedingTime,
+    ),
     TorrentSortOption.name => first.name.toLowerCase().compareTo(
       second.name.toLowerCase(),
     ),

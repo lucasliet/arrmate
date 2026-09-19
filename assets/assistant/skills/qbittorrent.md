@@ -17,7 +17,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 
 **Toolbar (topo):**
 - **Campo de busca** "Search torrents" (sempre visível): filtra pelo nome do torrent em tempo real; o X limpa a busca.
-- **Botão de ordenação** (ícone de sort): abre menu com as opções **Activity** (padrão: ativos primeiro, depois ordem alfabética), **Added date**, **Progress**, **Size**, **Download speed**, **Ratio** e **Name**.
+- **Botão de ordenação** (ícone de sort): abre menu com as opções **Activity** (padrão: ativos primeiro, depois ordem alfabética), **Added date**, **Progress**, **Size**, **Download speed**, **Ratio**, **Seed time** e **Name**.
 - **Botão de direção** (↑/↓ ao lado do sort): alterna entre ascendente e descendente (padrão: descendente).
 - **Botão de filtros** (ícone de funil; ganha um badge quando há filtro ativo): abre o sheet **"Torrent filters"** com:
   - **Status** (chips de seleção única): **All** — todos os torrents; **Downloading** — downloads ativos; **Seeding** — 100% completos fazendo upload; **Paused** — pausados; **Error** — com erro.
@@ -183,7 +183,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 
 **Ordenação (botão de sort):**
 - **Activity** (padrão) — torrents ativos primeiro, depois ordem alfabética.
-- **Added date** — data de adição. **Progress** — % concluído. **Size** — tamanho. **Download speed** — velocidade de download. **Ratio** — razão de upload/download. **Name** — ordem alfabética.
+- **Added date** — data de adição. **Progress** — % concluído. **Size** — tamanho. **Download speed** — velocidade de download. **Ratio** — razão de upload/download. **Seed time** — tempo acumulado de seeding. **Name** — ordem alfabética.
 - O botão ↑/↓ ao lado alterna ascendente/descendente.
 
 **Comportamento:**
