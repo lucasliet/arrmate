@@ -16,21 +16,30 @@ LogPersistence createLogPersistence() => _FileLogPersistence();
 
 class _FileLogPersistence implements LogPersistence {
   File? _file;
+  final List<String> _pendingEntries = [];
 
   @override
   Future<void> initialize() async {
     final directory = await getApplicationDocumentsDirectory();
-    _file = File('${directory.path}/app_logs.txt');
-    await _file!.writeAsString(
+    final file = File('${directory.path}/app_logs.txt');
+    await file.writeAsString(
       '\n--- SESSION STARTED AT ${DateTime.now()} ---\n',
       mode: FileMode.append,
     );
+    _file = file;
+    for (final entry in _pendingEntries) {
+      await file.writeAsString('$entry\n', mode: FileMode.append);
+    }
+    _pendingEntries.clear();
   }
 
   @override
   Future<void> append(String entry) async {
     final file = _file;
-    if (file == null) return;
+    if (file == null) {
+      _pendingEntries.add(entry);
+      return;
+    }
     await file.writeAsString('$entry\n', mode: FileMode.append);
   }
 }

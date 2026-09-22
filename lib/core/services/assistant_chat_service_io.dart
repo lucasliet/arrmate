@@ -79,6 +79,19 @@ class AssistantChatService {
         e,
         st,
       );
+      final engine = _engine;
+      _engine = null;
+      if (engine != null) {
+        try {
+          await engine.dispose();
+        } catch (disposeError, disposeStackTrace) {
+          logger.error(
+            '[AssistantChatService] Failed to dispose engine after conversation initialization failure',
+            disposeError,
+            disposeStackTrace,
+          );
+        }
+      }
       rethrow;
     }
 

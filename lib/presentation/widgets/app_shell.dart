@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,8 +24,6 @@ class AppShell extends ConsumerWidget {
             context.go('/search'),
         const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
             context.go('/search'),
-        const SingleActivator(LogicalKeyboardKey.slash, shift: true): () =>
-            _showShortcutHelp(context),
       },
       child: Focus(
         autofocus: true,
@@ -98,32 +97,6 @@ class AppShell extends ConsumerWidget {
   void _onItemTapped(BuildContext context, int index) {
     final tab = AppTab.values[index];
     context.go(tab.path);
-  }
-
-  void _showShortcutHelp(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Keyboard shortcuts'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Ctrl/Cmd+K  Search'),
-            SizedBox(height: 8),
-            Text('?  Show keyboard shortcuts'),
-            SizedBox(height: 8),
-            Text('Escape  Close the active dialog'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 }
 

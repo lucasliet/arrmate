@@ -24,6 +24,7 @@ class AdaptiveSurface {
         context: context,
         isScrollControlled: true,
         isDismissible: isDismissible,
+        enableDrag: isDismissible,
         builder: builder,
       );
     }

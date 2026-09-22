@@ -10,8 +10,8 @@ qBittorrent servers explicitly allow the Arrmate origin.
 
 Build for an origin root with `flutter build web --release`. For a subpath,
 pass `--base-href /arrmate/` and publish the generated `build/web` directory at
-that exact path. The proxy must return `index.html` for unknown routes so
-refreshing `/movies/123` restores the Flutter route.
+that exact path. The subpath location must return `/arrmate/index.html` for
+unknown routes so refreshing `/arrmate/movies/123` restores the Flutter route.
 
 ## Reference nginx configuration
 
@@ -28,17 +28,19 @@ server {
 
   location / {
     try_files $uri $uri/ /index.html;
-    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
   }
 
-  location ~* \\.\(js|wasm|png|webp|woff2\)$ {
+  location ~* \.(js|wasm|png|webp|woff2)$ {
     try_files $uri =404;
     expires 1y;
     add_header Cache-Control "public, immutable";
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
   }
 
   location = /index.html {
     add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
   }
 
   location /radarr/ {
@@ -64,6 +66,31 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   }
+}
+```
+
+For a subpath deployment, replace the root, static asset, and `index.html`
+locations with the following locations, and keep the service proxy locations
+unchanged:
+
+```nginx
+location ~* ^/arrmate/(.+\.(?:js|wasm|png|webp|woff2))$ {
+  alias /srv/arrmate/web/$1;
+  expires 1y;
+  add_header Cache-Control "public, immutable";
+  add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
+}
+
+location /arrmate/ {
+  alias /srv/arrmate/web/;
+  try_files $uri $uri/ /arrmate/index.html;
+  add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
+}
+
+location = /arrmate/index.html {
+  alias /srv/arrmate/web/index.html;
+  add_header Cache-Control "no-cache";
+  add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
 }
 ```
 
