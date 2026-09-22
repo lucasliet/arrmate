@@ -1,11 +1,12 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:collection/collection.dart';
+
 import 'logger_service.dart';
 
 /// Contains information about a new application update.
@@ -108,7 +109,7 @@ class UpdateService {
       final assets = data['assets'] as List;
 
       String? architecture;
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
         final abis = androidInfo.supportedAbis;
