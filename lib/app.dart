@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/platform/platform_capabilities.dart';
-import 'presentation/providers/app_providers.dart';
 import 'presentation/widgets/update_dialog.dart';
 import 'presentation/widgets/whats_new_dialog.dart';
 import 'presentation/widgets/deep_link_listener.dart';
@@ -44,12 +43,6 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
       if (navContext != null) {
         unawaited(WhatsNewDialog.showIfNeeded(navContext, ref));
       }
-
-      // Check for initialization errors
-      final initError = ref.read(initializationErrorProvider);
-      if (initError != null) {
-        _showErrorDialog(initError);
-      }
     });
   }
 
@@ -58,24 +51,6 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
     if (rootNavigatorKey.currentContext == null) return;
     _tourTriggered = true;
     ref.read(appTourServiceProvider).startFull();
-  }
-
-  void _showErrorDialog(String message) {
-    if (!mounted) return;
-    final navContext = rootNavigatorKey.currentContext ?? context;
-    showDialog(
-      context: navContext,
-      builder: (context) => AlertDialog(
-        title: const Text('Initialization Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Dismiss'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

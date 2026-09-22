@@ -59,8 +59,12 @@ class LoggerService {
   Future<void> _initPersistence() async {
     try {
       await _persistence.initialize();
-    } catch (e) {
-      _logger.e('Error initializing log persistence', error: e);
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[LoggerService] Error initializing log persistence',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -91,8 +95,15 @@ class LoggerService {
     _logController.add(List.unmodifiable(_buffer));
 
     unawaited(
-      _persistence.append(entry.toLogString()).catchError((Object error) {
-        _logger.e('Error writing to log persistence', error: error);
+      _persistence.append(entry.toLogString()).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        _logger.e(
+          '[LoggerService] Error writing to log persistence',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }),
     );
   }
