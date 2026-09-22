@@ -7,12 +7,18 @@ class AdaptiveSurface {
   const AdaptiveSurface._();
 
   /// Presents [builder] using the interaction appropriate to available width.
+  ///
+  /// [availableWidth] should be the content width after persistent navigation;
+  /// when omitted, the current media width is used for backward compatibility.
   static Future<T?> show<T>({
     required BuildContext context,
     required WidgetBuilder builder,
     bool isDismissible = true,
+    double? availableWidth,
   }) {
-    final windowClass = WindowClass.fromWidth(MediaQuery.sizeOf(context).width);
+    final windowClass = WindowClass.fromWidth(
+      availableWidth ?? MediaQuery.sizeOf(context).width,
+    );
     if (windowClass == WindowClass.compact) {
       return showModalBottomSheet<T>(
         context: context,

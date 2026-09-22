@@ -14,15 +14,26 @@ class PlatformCapabilities {
     required this.supportsBrowserFileInput,
   });
 
+  /// Builds a capability set for a specific Flutter target.
+  ///
+  /// Supplying the target explicitly keeps capability policy deterministic and
+  /// independently testable without changing Flutter globals.
+  factory PlatformCapabilities.forPlatform({
+    required bool isWeb,
+    required TargetPlatform targetPlatform,
+  }) => PlatformCapabilities(
+    isWeb: isWeb,
+    supportsAppUpdates: !isWeb && targetPlatform == TargetPlatform.android,
+    supportsBackgroundNotifications: !isWeb,
+    supportsLocalAssistant: !isWeb,
+    supportsFileSystemCache: !isWeb,
+    supportsBrowserFileInput: isWeb,
+  );
+
   /// Builds the capability set for the active Flutter target.
-  factory PlatformCapabilities.current() => PlatformCapabilities(
+  factory PlatformCapabilities.current() => PlatformCapabilities.forPlatform(
     isWeb: kIsWeb,
-    supportsAppUpdates:
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
-    supportsBackgroundNotifications: !kIsWeb,
-    supportsLocalAssistant: !kIsWeb,
-    supportsFileSystemCache: !kIsWeb,
-    supportsBrowserFileInput: kIsWeb,
+    targetPlatform: defaultTargetPlatform,
   );
 
   /// Whether the application is running in a browser.

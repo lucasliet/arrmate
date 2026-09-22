@@ -95,7 +95,7 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
           builder: (context, ref, child) {
             // Listen for update availability inside the MaterialApp context
             ref.listen(updateProvider, (previous, next) {
-              if (kDebugMode) {
+              if (kDebugMode || !capabilities.supportsAppUpdates) {
                 return;
               }
 

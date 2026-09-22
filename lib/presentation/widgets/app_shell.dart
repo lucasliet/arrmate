@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../adaptive/window_class.dart';
 import '../router/app_router.dart';
 import '../tour/app_tour_keys.dart';
-import '../adaptive/window_class.dart';
 import 'notification_icon_button.dart';
 import 'offline_status_banner.dart';
 
@@ -22,8 +22,6 @@ class AppShell extends ConsumerWidget {
         const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
             context.go('/search'),
         const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
-            context.go('/search'),
-        const SingleActivator(LogicalKeyboardKey.slash): () =>
             context.go('/search'),
         const SingleActivator(LogicalKeyboardKey.slash, shift: true): () =>
             _showShortcutHelp(context),
@@ -111,7 +109,7 @@ class AppShell extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ctrl/Cmd+K or /  Search'),
+            Text('Ctrl/Cmd+K  Search'),
             SizedBox(height: 8),
             Text('?  Show keyboard shortcuts'),
             SizedBox(height: 8),

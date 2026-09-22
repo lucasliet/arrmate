@@ -1,8 +1,9 @@
-import 'package:logger/logger.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+
+import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
+
+import 'log_persistence.dart';
 
 /// Represents a single log entry in the application.
 class AppLogEntry {
@@ -34,7 +35,7 @@ class LoggerService {
   late final Logger _logger;
   final List<AppLogEntry> _buffer = [];
   final _logController = StreamController<List<AppLogEntry>>.broadcast();
-  File? _logFile;
+  final LogPersistence _persistence = createLogPersistence();
 
   static const int _maxBufferSize = 100;
 
@@ -51,21 +52,15 @@ class LoggerService {
       ),
       level: kDebugMode ? Level.debug : Level.info,
     );
-    _initFileLogger();
+    _initPersistence();
   }
 
-  /// Initializes the file logger by creating or opening the log file in the app documents directory.
-  Future<void> _initFileLogger() async {
+  /// Initializes the log persistence available on the current platform.
+  Future<void> _initPersistence() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      _logFile = File('${dir.path}/app_logs.txt');
-      // Append a separator for new session
-      await _logFile?.writeAsString(
-        '\n--- SESSION STARTED AT ${DateTime.now()} ---\n',
-        mode: FileMode.append,
-      );
+      await _persistence.initialize();
     } catch (e) {
-      _logger.e('Error initializing file logger', error: e);
+      _logger.e('Error initializing log persistence', error: e);
     }
   }
 
@@ -95,16 +90,11 @@ class LoggerService {
     }
     _logController.add(List.unmodifiable(_buffer));
 
-    // Async write to file
-    _logFile
-        ?.writeAsString('${entry.toLogString()}\n', mode: FileMode.append)
-        .catchError((e) {
-          // Use direct debug print or stderr, but user requested use of _logger.
-          // Since this is inside logger itself, we risk recursion if we call error().
-          // However, _logger.e writes to console, so it should be safe.
-          _logger.e('Error writing to log file', error: e);
-          return _logFile!;
-        });
+    unawaited(
+      _persistence.append(entry.toLogString()).catchError((Object error) {
+        _logger.e('Error writing to log persistence', error: error);
+      }),
+    );
   }
 
   /// Logs a debug message.
