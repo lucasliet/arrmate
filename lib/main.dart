@@ -35,13 +35,13 @@ void main() async {
     await container.read(inAppNotificationServiceProvider).init();
     logger.info('[main] In-app notification service initialized');
   } catch (e, stackTrace) {
-    logger.error(
-      '[main] CRITICAL: Failed to initialize services',
+    logger.warning(
+      '[main] Optional notification service initialization failed',
       e,
       stackTrace,
     );
     container.read(initializationErrorProvider.notifier).state =
-        'Failed to initialize notification services. Some features may not work correctly.';
+        'Notifications are unavailable. Other features remain ready.';
   }
 
   runApp(
