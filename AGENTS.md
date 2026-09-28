@@ -250,6 +250,37 @@ To ensure project stability, every code change or addition MUST be followed by:
    - **Review**: Use `kluster_code_review_auto` (for generated code) or
      `kluster_code_review_manual` (for critical logic) to verify changes.
 
+## Quality Gate (mandatory before push/tag)
+
+The MCP checks above validate the working tree; they are NOT the CI. The
+`Run Tests` workflow (`.github/workflows/run-tests.yml`) additionally runs
+`build_runner`, `flutter analyze lib test`, the full `flutter test` suite and
+`flutter_launcher_icons` on a pinned Flutter version. A green local MCP check
+does not guarantee a green CI run.
+
+> [!IMPORTANT]
+> Before ANY push to `main` and ALWAYS before creating/pushing a release tag,
+> run the full local CI mirror:
+>
+> ```sh
+> ./tool/ci_check.sh
+> ```
+>
+> Only proceed when it exits zero. If it fails, fix the failure before
+> committing, pushing or tagging.
+
+Additionally:
+
+- After pushing, **watch the workflow runs to completion** (e.g.
+  `gh run watch` / GitHub Actions tab) and treat a red run as an unresolved
+  task: diagnose via the failed job log, fix, and push again. Never report the
+  work as done while a triggered workflow is failing.
+- A tag push triggers the `Release` workflow: confirm it succeeds (and the
+  release is published) before considering the release done.
+- Do NOT amend a commit or move a tag that was already pushed unless the user
+  explicitly asks for it.
+
+
 ### MCP Tool Reference
 
 | Action           | MCP Tool                                   | ❌ Avoid          |

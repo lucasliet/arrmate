@@ -68,7 +68,7 @@ jobs:
         run: |
           # Feed the prompt via stdin; --output-format text prints only the
           # final message to stdout, which we redirect to RELEASE_BODY.md.
-          claude -p --model claude-haiku-4-5 --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+          claude -p --model claude-haiku-4-5 --output-format text --max-turns 4 < prompt.txt > RELEASE_BODY.md
           # An exit 0 with empty output still means no usable notes, so fail
           # explicitly to let the Z.AI fallback step below take over.
           [ -s RELEASE_BODY.md ]
@@ -79,21 +79,27 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ZAI_API_KEY }}
-        run: claude -p --model glm-4.5-air --output-format text --max-turns 2 < prompt.txt > RELEASE_BODY.md
+          CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_ENFORCEMENT: "1"
+        run: claude -p --model glm-4.5-air --output-format text --max-turns 4 < prompt.txt > RELEASE_BODY.md
 
-      - name: Fallback on empty output
+      - name: Fallback on empty or failed output
         run: |
-          # Fallback: Use last commit message if generation failed or file missing/empty
-          if [ ! -s RELEASE_BODY.md ]; then
+          # Fallback: use the last commit message when generation failed, the
+          # file is missing/empty, or the CLI error text ended up in it.
+          if [ ! -s RELEASE_BODY.md ] || grep -qE 'Reached max turns|API Error' RELEASE_BODY.md; then
             git log -1 --pretty=%B > RELEASE_BODY.md
           fi
       
       - name: Set Output
         id: set_output
         run: |
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          # A unique delimiter plus the blank line before it keep the closing
+          # marker on its own line even when RELEASE_BODY.md has no trailing
+          # newline (which breaks the file command parser otherwise).
+          echo "release_notes<<RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
           cat RELEASE_BODY.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
 
   build_app:
     name: Build Android Application
@@ -166,6 +172,7 @@ jobs:
           artifacts: "build/app/outputs/flutter-apk/app-arm*.apk"
           tag: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
           removeArtifacts: true
           body: |
             **Release Notes**

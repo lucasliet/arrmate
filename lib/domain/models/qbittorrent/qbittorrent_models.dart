@@ -4,4 +4,5 @@ export 'torrent.dart';
 export 'torrent_file.dart';
 export 'torrent_link.dart';
 export 'torrent_peer.dart';
+export 'torrent_query.dart';
 export 'torrent_status.dart';
