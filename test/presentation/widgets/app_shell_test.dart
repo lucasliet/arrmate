@@ -1,12 +1,13 @@
 import 'package:arrmate/presentation/providers/network_status_provider.dart';
 import 'package:arrmate/presentation/widgets/app_shell.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  testWidgets('keeps the original navigation on wide non-web layouts', (
+  testWidgets('uses platform navigation without duplicate page headers', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
@@ -42,8 +43,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Page title'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), kIsWeb ? findsNothing : findsOneWidget);
+    expect(find.byType(NavigationRail), kIsWeb ? findsOneWidget : findsNothing);
     expect(find.byTooltip('Search (Ctrl/Cmd+K)'), findsNothing);
   });
 }
