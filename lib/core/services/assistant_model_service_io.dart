@@ -199,25 +199,18 @@ class AssistantModelService {
     }
 
     final targetFile = File(path.join(targetDir.path, model.fileName));
-    final temporaryFile = File('${targetFile.path}.partial');
+    if (await targetFile.exists()) {
+      await targetFile.delete();
+    }
 
     _activeCancelToken = CancelToken();
     try {
-      if (await temporaryFile.exists()) {
-        await temporaryFile.delete();
-      }
       await _dio.download(
         model.downloadUrl,
-        temporaryFile.path,
+        targetFile.path,
         onReceiveProgress: onProgress,
         cancelToken: _activeCancelToken,
       );
-      await temporaryFile.rename(targetFile.path);
-    } catch (_) {
-      if (await temporaryFile.exists()) {
-        await temporaryFile.delete();
-      }
-      rethrow;
     } finally {
       _activeCancelToken = null;
     }

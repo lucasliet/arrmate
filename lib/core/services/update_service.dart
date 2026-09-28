@@ -85,7 +85,9 @@ class UpdateService {
         options: Options(
           sendTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-          headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+          headers: kIsWeb
+              ? null
+              : {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
         ),
       );
 
@@ -218,7 +220,9 @@ class UpdateService {
         options: Options(
           sendTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-          headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+          headers: kIsWeb
+              ? null
+              : {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
         ),
       );
 

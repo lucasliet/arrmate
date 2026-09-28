@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/services/logger_service.dart';
+import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/notifications_provider.dart';
 import 'presentation/router/app_router.dart';
 
@@ -33,11 +35,21 @@ void main() async {
     await container.read(inAppNotificationServiceProvider).init();
     logger.info('[main] In-app notification service initialized');
   } catch (e, stackTrace) {
-    logger.warning(
-      '[main] Optional notification service initialization failed',
-      e,
-      stackTrace,
-    );
+    if (kIsWeb) {
+      logger.warning(
+        '[main] Optional notification service initialization failed',
+        e,
+        stackTrace,
+      );
+    } else {
+      logger.error(
+        '[main] CRITICAL: Failed to initialize services',
+        e,
+        stackTrace,
+      );
+      container.read(initializationErrorProvider.notifier).state =
+          'Failed to initialize notification services. Some features may not work correctly.';
+    }
   }
 
   runApp(

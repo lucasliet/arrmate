@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_model_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../providers/assistant_provider.dart';
@@ -106,6 +107,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   ) {
     final theme = Theme.of(context);
     final hasModel = state.hasModel;
+    final capabilities = ref.watch(platformCapabilitiesProvider);
+    final showLocalAssistantOptions =
+        !capabilities.isWeb || capabilities.supportsLocalAssistant;
     final title = state.isOnlineMode
         ? 'OpenCode Zen'
         : state.selectedModel?.label ?? 'No local model selected';
@@ -113,7 +117,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         ? 'Online model: ${state.selectedOnlineModelId ?? 'deepseek-v4-flash-free'}'
         : hasModel
         ? _formatModelSize(state.selectedModel!.sizeBytes)
-        : 'Use OpenCode Zen or import/download a local model';
+        : showLocalAssistantOptions
+        ? 'Use OpenCode Zen or import/download a local model'
+        : 'Use OpenCode Zen';
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -168,41 +174,46 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
-                    value: 'download',
-                    child: Row(
-                      children: [
-                        Icon(Icons.download),
-                        SizedBox(width: 12),
-                        Text('Download'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'import',
-                    child: Row(
-                      children: [
-                        Icon(Icons.upload_file),
-                        SizedBox(width: 12),
-                        Text('Import'),
-                      ],
-                    ),
-                  ),
                 ];
 
-                if (state.installedModels.isNotEmpty) {
-                  items.add(
+                if (showLocalAssistantOptions) {
+                  items.addAll([
                     const PopupMenuItem(
-                      value: 'switch',
+                      value: 'download',
                       child: Row(
                         children: [
-                          Icon(Icons.swap_horiz),
+                          Icon(Icons.download),
                           SizedBox(width: 12),
-                          Text('Local Models'),
+                          Text('Download'),
                         ],
                       ),
                     ),
-                  );
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.upload_file),
+                          SizedBox(width: 12),
+                          Text('Import'),
+                        ],
+                      ),
+                    ),
+                  ]);
+
+                  if (state.installedModels.isNotEmpty) {
+                    items.add(
+                      const PopupMenuItem(
+                        value: 'switch',
+                        child: Row(
+                          children: [
+                            Icon(Icons.swap_horiz),
+                            SizedBox(width: 12),
+                            Text('Local Models'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                 }
 
                 return items;

@@ -9,6 +9,7 @@ import 'presentation/widgets/update_dialog.dart';
 import 'presentation/widgets/whats_new_dialog.dart';
 import 'presentation/widgets/deep_link_listener.dart';
 import 'presentation/providers/onboarding_provider.dart';
+import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
 import 'presentation/theme/app_theme.dart';
@@ -43,6 +44,13 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
       if (navContext != null) {
         unawaited(WhatsNewDialog.showIfNeeded(navContext, ref));
       }
+
+      if (!kIsWeb) {
+        final initError = ref.read(initializationErrorProvider);
+        if (initError != null) {
+          _showErrorDialog(initError);
+        }
+      }
     });
   }
 
@@ -51,6 +59,24 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
     if (rootNavigatorKey.currentContext == null) return;
     _tourTriggered = true;
     ref.read(appTourServiceProvider).startFull();
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    final navContext = rootNavigatorKey.currentContext ?? context;
+    showDialog(
+      context: navContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Initialization Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

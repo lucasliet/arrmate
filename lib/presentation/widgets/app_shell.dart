@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,29 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
+    if (!kIsWeb) {
+      return Scaffold(
+        body: Column(
+          children: [
+            const OfflineStatusBanner(),
+            Expanded(child: child),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          key: tourKeys.navBarKey,
+          selectedIndex: _calculateSelectedIndex(context),
+          onDestinationSelected: (index) => _onItemTapped(context, index),
+          destinations: AppTab.values.map((tab) {
+            return NavigationDestination(
+              icon: Icon(tab.icon),
+              selectedIcon: Icon(tab.selectedIcon),
+              label: tab.label,
+            );
+          }).toList(),
+        ),
+      );
+    }
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
@@ -30,11 +54,13 @@ class AppShell extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final windowClass = WindowClass.fromWidth(constraints.maxWidth);
+            final location = GoRouterState.of(context).matchedLocation;
             final selectedIndex = _calculateSelectedIndex(context);
+            final showRailNotifications = !AppTab.values.any(
+              (tab) => tab.path == location,
+            );
             final content = Column(
               children: [
-                if (windowClass.hasNavigationRail)
-                  _DesktopHeader(tab: AppTab.values[selectedIndex]),
                 const OfflineStatusBanner(),
                 Expanded(child: child),
               ],
@@ -48,6 +74,10 @@ class AppShell extends ConsumerWidget {
                           key: tourKeys.navBarKey,
                           extended: windowClass.hasExtendedNavigation,
                           selectedIndex: selectedIndex,
+                          trailing: showRailNotifications
+                              ? const NotificationIconButton()
+                              : null,
+                          trailingAtBottom: true,
                           onDestinationSelected: (index) =>
                               _onItemTapped(context, index),
                           destinations: AppTab.values
@@ -98,39 +128,4 @@ class AppShell extends ConsumerWidget {
     final tab = AppTab.values[index];
     context.go(tab.path);
   }
-}
-
-class _DesktopHeader extends StatelessWidget {
-  const _DesktopHeader({required this.tab});
-
-  final AppTab tab;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.surface,
-    child: SizedBox(
-      height: 64,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 24, end: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                tab.label,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            Tooltip(
-              message: 'Search (Ctrl/Cmd+K)',
-              child: IconButton(
-                onPressed: () => context.go('/search'),
-                icon: const Icon(Icons.search),
-              ),
-            ),
-            const NotificationIconButton(),
-          ],
-        ),
-      ),
-    ),
-  );
 }
