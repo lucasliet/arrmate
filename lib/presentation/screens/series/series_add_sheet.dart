@@ -70,6 +70,16 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
     super.dispose();
   }
 
+  /// Closes the sheet, falling back to the library route when the discovery
+  /// screen is the root of the navigation stack (direct URL or deep link).
+  void _closeSheet() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/series');
+    }
+  }
+
   void _onSeriesSelected(Series series) {
     setState(() {
       _selectedSeries = series;
@@ -143,7 +153,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       );
 
       if (mounted) {
-        context.pop();
+        _closeSheet();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Series added successfully')),
         );
@@ -210,7 +220,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
               IconButton(
                 tooltip: 'Close',
                 icon: const Icon(Icons.close),
-                onPressed: () => context.pop(),
+                onPressed: _closeSheet,
               ),
             ],
           ),

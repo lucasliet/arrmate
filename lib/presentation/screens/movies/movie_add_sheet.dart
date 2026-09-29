@@ -75,6 +75,16 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
     });
   }
 
+  /// Closes the sheet, falling back to the library route when the discovery
+  /// screen is the root of the navigation stack (direct URL or deep link).
+  void _closeSheet() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/movies');
+    }
+  }
+
   void _loadDefaults(Instance? instance) {
     if (instance == null || _loadedDefaultsInstanceId == instance.id) return;
     _loadedDefaultsInstanceId = instance.id;
@@ -136,7 +146,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       );
 
       if (mounted) {
-        context.pop();
+        _closeSheet();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Movie added successfully')),
         );
@@ -203,7 +213,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
               IconButton(
                 tooltip: 'Close',
                 icon: const Icon(Icons.close),
-                onPressed: () => context.pop(),
+                onPressed: _closeSheet,
               ),
             ],
           ),
