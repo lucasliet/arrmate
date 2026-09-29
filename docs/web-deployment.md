@@ -38,7 +38,8 @@ For a same-origin deployment, place the contents of `build/web` under
 are for a private LAN or VPN deployment. Replace the example subnet and site
 origin with the exact values for the deployment. The `map` and
 `limit_req_zone` directives belong in the Nginx `http` context, before the
-`server` block.
+`server` block. Flutter emits stable filenames such as `flutter_bootstrap.js`
+and `main.dart.js`, so static assets must be revalidated after each deploy.
 
 ```nginx
 map $http_origin $arrmate_origin_allowed {
@@ -67,8 +68,7 @@ server {
 
   location ~* ^/arrmate/.*\.(?:js|wasm|png|webp|woff|woff2|ttf|otf|json|jpg|jpeg|svg|ico|css)$ {
     try_files $uri =404;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
+    add_header Cache-Control "no-cache";
     add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'" always;
   }
 

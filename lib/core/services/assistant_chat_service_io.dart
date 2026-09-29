@@ -22,16 +22,19 @@ const _loadSkillTool = LiteLmTool(
   },
 );
 
+/// Runs on-device assistant conversations with the selected local model.
 class AssistantChatService {
   LiteLmEngine? _engine;
   LiteLmConversation? _conversation;
   String? _loadedModelPath;
   AssistantKnowledgeService? _knowledgeService;
 
+  /// Sets the knowledge source used by assistant tool calls.
   void setKnowledgeService(AssistantKnowledgeService service) {
     _knowledgeService = service;
   }
 
+  /// Loads the local model at [modelPath] and creates a conversation.
   Future<void> loadModel(String modelPath) async {
     if (_loadedModelPath == modelPath && _engine != null) {
       return;
@@ -99,6 +102,7 @@ class AssistantChatService {
     logger.info('[AssistantChatService] Model loaded: $modelPath');
   }
 
+  /// Sends [message] to the active conversation and returns its filtered reply.
   Future<String> sendMessage(String message) async {
     final conversation = _conversation;
     if (conversation == null) {
@@ -123,6 +127,7 @@ class AssistantChatService {
     }
   }
 
+  /// Releases the active conversation and model engine.
   Future<void> dispose() async {
     final conversation = _conversation;
     final engine = _engine;
