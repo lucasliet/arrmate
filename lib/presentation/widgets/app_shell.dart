@@ -92,7 +92,7 @@ class AppShell extends ConsumerWidget {
                       ),
                       selectedIndex: selectedIndex,
                       trailing: showRailNotifications
-                          ? const NotificationIconButton()
+                          ? const NotificationIconButton(showTooltip: false)
                           : null,
                       trailingAtBottom: true,
                       onDestinationSelected: (index) =>
