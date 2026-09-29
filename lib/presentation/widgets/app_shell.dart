@@ -71,9 +71,10 @@ class AppShell extends ConsumerWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.movie_filter_rounded,
-                              color: Theme.of(context).colorScheme.primary,
+                            Image.asset(
+                              'assets/images/icon_mark.png',
+                              width: 24,
+                              height: 24,
                             ),
                             if (windowClass.hasExtendedNavigation) ...[
                               const SizedBox(width: 12),
