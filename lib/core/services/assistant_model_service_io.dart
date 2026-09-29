@@ -118,7 +118,7 @@ class AssistantModelService {
   static const _selectedModelIdKey = 'assistant_selected_model_id';
 
   final Dio _dio;
-  CancelToken? _activeCancelToken;
+  final Set<CancelToken> _activeCancelTokens = {};
 
   /// Curated local-first catalog of open `.litertlm` models.
   static const List<AssistantModelCatalogEntry> catalog = [
@@ -199,36 +199,39 @@ class AssistantModelService {
     }
 
     final targetFile = File(path.join(targetDir.path, model.fileName));
-    final temporaryFile = File('${targetFile.path}.partial');
+    final temporaryDirectory = await targetDir.createTemp(
+      '.${model.fileName}.',
+    );
+    final temporaryFile = File(
+      path.join(temporaryDirectory.path, '${model.fileName}.partial'),
+    );
+    final cancelToken = CancelToken();
 
-    _activeCancelToken = CancelToken();
+    _activeCancelTokens.add(cancelToken);
     try {
-      if (await temporaryFile.exists()) {
-        await temporaryFile.delete();
-      }
       await _dio.download(
         model.downloadUrl,
         temporaryFile.path,
         onReceiveProgress: onProgress,
-        cancelToken: _activeCancelToken,
+        cancelToken: cancelToken,
       );
       await temporaryFile.rename(targetFile.path);
-    } catch (_) {
-      if (await temporaryFile.exists()) {
-        await temporaryFile.delete();
-      }
-      rethrow;
     } finally {
-      _activeCancelToken = null;
+      _activeCancelTokens.remove(cancelToken);
+      if (await temporaryDirectory.exists()) {
+        await temporaryDirectory.delete(recursive: true);
+      }
     }
 
     return _toInstalledModel(targetFile, source: model.id);
   }
 
-  /// Cancels the active model download, if any.
+  /// Cancels all active model downloads.
   void cancelDownload() {
-    _activeCancelToken?.cancel('Download cancelled by user');
-    _activeCancelToken = null;
+    for (final cancelToken in _activeCancelTokens.toList()) {
+      cancelToken.cancel('Download cancelled by user');
+    }
+    _activeCancelTokens.clear();
   }
 
   /// Imports an existing `.litertlm` file into managed storage.
