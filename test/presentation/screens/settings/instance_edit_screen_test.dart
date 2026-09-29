@@ -116,6 +116,69 @@ void main() {
     // Then
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'should obscure the api key field by default with a reveal toggle',
+    (tester) async {
+      // Given
+      final instance = Instance(
+        id: 'instance-a',
+        label: 'Instance A',
+        url: 'https://a.example.com',
+        apiKey: 'key-a',
+      );
+      SharedPreferences.setMockInitialValues({
+        'instances': jsonEncode([instance.toJson()]),
+      });
+
+      // When
+      await tester.pumpWidget(_screen(instance.id));
+      await tester.pumpAndSettle();
+
+      // Then
+      final apiKeyField = _apiKeyField(tester);
+      expect(apiKeyField.obscureText, isTrue);
+      expect(apiKeyField.controller?.text, 'key-a');
+      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
+    },
+  );
+
+  testWidgets('should reveal the api key when the eye button is tapped', (
+    tester,
+  ) async {
+    // Given
+    final instance = Instance(
+      id: 'instance-a',
+      label: 'Instance A',
+      url: 'https://a.example.com',
+      apiKey: 'key-a',
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([instance.toJson()]),
+    });
+    await tester.pumpWidget(_screen(instance.id));
+    await tester.pumpAndSettle();
+
+    // When
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.pumpAndSettle();
+
+    // Then
+    final apiKeyField = _apiKeyField(tester);
+    expect(apiKeyField.obscureText, isFalse);
+    expect(apiKeyField.controller?.text, 'key-a');
+    expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.visibility_outlined), findsNothing);
+  });
+}
+
+TextField _apiKeyField(WidgetTester tester) {
+  return tester.widget<TextField>(
+    find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.controller?.text == 'key-a',
+    ),
+  );
 }
 
 Widget _screen(String instanceId) {
