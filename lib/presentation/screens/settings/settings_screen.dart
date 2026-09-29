@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,24 +24,70 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        toolbarHeight: isDesktopWeb ? 88 : null,
+        titleSpacing: isDesktopWeb ? 32 : null,
         actions: const [NotificationIconButton()],
       ),
-      body: ListView(
-        children: [
+      body: isDesktopWeb
+          ? _buildDesktopContent(context, ref)
+          : ListView(
+              children: [
+                _buildInstancesSection(context, ref),
+                const Divider(),
+                _buildAppearanceSection(context, ref),
+                const Divider(),
+                _buildSystemSection(context, ref),
+                const Divider(),
+                _buildNotificationsSection(context, ref),
+                const Divider(),
+                _buildAboutSection(context, ref),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildDesktopContent(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - 64;
+        final twoColumns = availableWidth >= 960;
+        final panelWidth = twoColumns
+            ? (availableWidth - 24) / 2
+            : availableWidth;
+        final sections = [
           _buildInstancesSection(context, ref),
-          const Divider(),
           _buildAppearanceSection(context, ref),
-          const Divider(),
           _buildSystemSection(context, ref),
-          const Divider(),
           _buildNotificationsSection(context, ref),
-          const Divider(),
           _buildAboutSection(context, ref),
-        ],
-      ),
+        ];
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
+          child: Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              for (final section in sections)
+                SizedBox(
+                  width: panelWidth,
+                  child: Card(
+                    clipBehavior: Clip.antiAlias,
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: section,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

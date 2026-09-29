@@ -45,6 +45,11 @@ void main() {
     expect(find.text('Page title'), findsOneWidget);
     expect(find.byType(NavigationBar), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.byType(NavigationRail), kIsWeb ? findsOneWidget : findsNothing);
+    expect(find.text('ARRMATE'), kIsWeb ? findsOneWidget : findsNothing);
+    expect(
+      find.textContaining('Search  '),
+      kIsWeb ? findsOneWidget : findsNothing,
+    );
     expect(find.byTooltip('Search (Ctrl/Cmd+K)'), findsNothing);
   });
 }

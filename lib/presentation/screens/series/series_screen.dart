@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -178,6 +179,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
     final seriesAsync = ref.watch(filteredSeriesProvider);
     final settings = ref.watch(settingsProvider);
     final tourKeys = ref.watch(appTourKeysProvider);
@@ -198,7 +200,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                 ? _buildSearchAppBar(context)
                 : _buildNormalAppBar(context, settings),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: isDesktopWeb ? 32 : 16),
               sliver: seriesAsync.when(
                 data: (seriesList) {
                   if (seriesList.isEmpty) {
@@ -207,7 +209,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         ref.read(seriesSortProvider).filter != SeriesFilter.all;
 
                     if (showsTourMockup && !isFiltered) {
-                      return _buildTourMockup(settings, tourKeys);
+                      return _buildTourMockup(settings, tourKeys, isDesktopWeb);
                     }
 
                     return SliverFillRemaining(
@@ -243,7 +245,9 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                   }
 
                   return SliverGrid(
-                    gridDelegate: _libraryGridDelegate,
+                    gridDelegate: isDesktopWeb
+                        ? _desktopGridDelegate
+                        : _libraryGridDelegate,
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final series = seriesList[index];
                       return SeriesCard(
@@ -348,7 +352,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
               ],
             )
           : null,
-      floatingActionButton: _isSelecting
+      floatingActionButton: _isSelecting || isDesktopWeb
           ? null
           : FloatingActionButton(
               onPressed: () => context.push('/discover?type=series'),
@@ -366,12 +370,24 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         mainAxisSpacing: 12,
       );
 
+  static const SliverGridDelegateWithMaxCrossAxisExtent _desktopGridDelegate =
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 208,
+        childAspectRatio: 2 / 3,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+      );
+
   /// Builds the sample library shown while the guided tour runs without a
   /// Sonarr instance, so every series step has a visible card to highlight.
   ///
   /// The cards are inert and never persisted: they vanish as soon as the tour
   /// is finished or skipped, restoring the real empty state.
-  Widget _buildTourMockup(SettingsState settings, AppTourKeys tourKeys) {
+  Widget _buildTourMockup(
+    SettingsState settings,
+    AppTourKeys tourKeys,
+    bool isDesktopWeb,
+  ) {
     final seriesList = TourMockData.series();
 
     return SliverMainAxisGroup(
@@ -390,7 +406,9 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           )
         else
           SliverGrid(
-            gridDelegate: _libraryGridDelegate,
+            gridDelegate: isDesktopWeb
+                ? _desktopGridDelegate
+                : _libraryGridDelegate,
             delegate: SliverChildBuilderDelegate((context, index) {
               return TourMockup(
                 child: SeriesCard(
@@ -405,38 +423,57 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   }
 
   Widget _buildNormalAppBar(BuildContext context, SettingsState settings) {
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
+    final actions = <Widget>[
+      const InstanceSelector(type: InstanceType.sonarr),
+      IconButton(
+        icon: const Icon(Icons.search),
+        onPressed: () => setState(() => _isSearching = true),
+      ),
+      IconButton(
+        icon: const Icon(Icons.sort),
+        onPressed: () => _showSortSheet(context, ref),
+      ),
+      IconButton(
+        icon: Icon(
+          settings.viewMode == ViewMode.grid
+              ? Icons.view_list
+              : Icons.grid_view,
+        ),
+        tooltip: settings.viewMode == ViewMode.grid
+            ? 'Switch to List'
+            : 'Switch to Grid',
+        onPressed: () {
+          final newMode = settings.viewMode == ViewMode.grid
+              ? ViewMode.list
+              : ViewMode.grid;
+          ref.read(settingsProvider.notifier).setViewMode(newMode);
+        },
+      ),
+      const NotificationIconButton(),
+      if (isDesktopWeb) ...[
+        const SizedBox(width: 8),
+        FilledButton.icon(
+          onPressed: () => context.push('/discover?type=series'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add series'),
+        ),
+        const SizedBox(width: 24),
+      ],
+    ];
+    if (isDesktopWeb) {
+      return SliverAppBar(
+        toolbarHeight: 88,
+        titleSpacing: 32,
+        title: const Text('Series'),
+        actions: actions,
+      );
+    }
     return SliverAppBar.medium(
       pinned: false,
       floating: false,
       title: const Text('Series'),
-      actions: [
-        const InstanceSelector(type: InstanceType.sonarr),
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () => setState(() => _isSearching = true),
-        ),
-        IconButton(
-          icon: const Icon(Icons.sort),
-          onPressed: () => _showSortSheet(context, ref),
-        ),
-        IconButton(
-          icon: Icon(
-            settings.viewMode == ViewMode.grid
-                ? Icons.view_list
-                : Icons.grid_view,
-          ),
-          tooltip: settings.viewMode == ViewMode.grid
-              ? 'Switch to List'
-              : 'Switch to Grid',
-          onPressed: () {
-            final newMode = settings.viewMode == ViewMode.grid
-                ? ViewMode.list
-                : ViewMode.grid;
-            ref.read(settingsProvider.notifier).setViewMode(newMode);
-          },
-        ),
-        const NotificationIconButton(),
-      ],
+      actions: actions,
     );
   }
 

@@ -19,6 +19,9 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
+    final searchShortcut = Theme.of(context).platform == TargetPlatform.macOS
+        ? '⌘ K'
+        : 'Ctrl K';
     if (!kIsWeb) {
       return Scaffold(
         body: Column(
@@ -72,7 +75,54 @@ class AppShell extends ConsumerWidget {
                       children: [
                         NavigationRail(
                           key: tourKeys.navBarKey,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
                           extended: windowClass.hasExtendedNavigation,
+                          leading: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.movie_filter_rounded,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    if (windowClass.hasExtendedNavigation) ...[
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'ARRMATE',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 2,
+                                            ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                if (windowClass.hasExtendedNavigation)
+                                  OutlinedButton.icon(
+                                    onPressed: () => context.go('/search'),
+                                    icon: const Icon(Icons.search, size: 18),
+                                    label: Text('Search  $searchShortcut'),
+                                  )
+                                else
+                                  IconButton(
+                                    tooltip: 'Search',
+                                    onPressed: () => context.go('/search'),
+                                    icon: const Icon(Icons.search),
+                                  ),
+                              ],
+                            ),
+                          ),
                           selectedIndex: selectedIndex,
                           trailing: showRailNotifications
                               ? const NotificationIconButton()
@@ -91,7 +141,14 @@ class AppShell extends ConsumerWidget {
                               .toList(),
                         ),
                         const VerticalDivider(width: 1),
-                        Expanded(child: content),
+                        Expanded(
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1600),
+                              child: content,
+                            ),
+                          ),
+                        ),
                       ],
                     )
                   : content,

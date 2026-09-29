@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -34,10 +35,13 @@ class CalendarScreen extends ConsumerWidget {
         .toList();
     final filtersNotifier = ref.read(calendarFiltersProvider.notifier);
     final tourKeys = ref.watch(appTourKeysProvider);
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 900;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Calendar', key: tourKeys.calendarTitleKey),
+        toolbarHeight: isDesktopWeb ? 88 : null,
+        titleSpacing: isDesktopWeb ? 32 : null,
         actions: const [NotificationIconButton()],
       ),
       body: Column(
@@ -105,69 +109,94 @@ class CalendarScreen extends ConsumerWidget {
     final firstEvent = sortedDates.isEmpty
         ? null
         : grouped[sortedDates.first]!.first;
+    final dateSections = sortedDates.map((date) {
+      final dateEvents = grouped[date]!;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildDateHeader(context, date),
+          ...dateEvents.map((event) {
+            final item = CalendarItem(
+              key: identical(event, firstEvent)
+                  ? tourKeys.calendarListKey
+                  : null,
+              event: event,
+            );
+            return showsTourMockup ? TourMockup(child: item) : item;
+          }),
+          const SizedBox(height: 8),
+        ],
+      );
+    }).toList();
 
     return RefreshIndicator(
       onRefresh: () => ref.read(calendarProvider.notifier).refresh(),
-      child: ListView(
-        key: const ValueKey('calendar-events-list'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          if (showsTourMockup)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: TourMockupBanner(),
-            ),
-          if (visibleEvents.isEmpty)
-            SizedBox(
-              height: 320,
-              child: EmptyState(
-                icon: Icons.calendar_today,
-                title: filters.isActive
-                    ? 'No matching events'
-                    : 'No upcoming events',
-                subtitle: filters.isActive
-                    ? 'Adjust the calendar filters to see more events.'
-                    : 'Check back later or add content to your libraries.',
-              ),
-            )
-          else
-            ...sortedDates.map((date) {
-              final dateEvents = grouped[date]!;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDateHeader(context, date),
-                  ...dateEvents.map((event) {
-                    final item = CalendarItem(
-                      key: identical(event, firstEvent)
-                          ? tourKeys.calendarListKey
-                          : null,
-                      event: event,
-                    );
-                    return showsTourMockup ? TourMockup(child: item) : item;
-                  }),
-                  const SizedBox(height: 8),
-                ],
-              );
-            }),
-          if (hasInstances)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: Center(
-                child: loadStatus.isLoadingMore
-                    ? const CircularProgressIndicator(
-                        key: ValueKey('calendar-loading-more'),
-                      )
-                    : OutlinedButton.icon(
-                        key: const ValueKey('calendar-load-more'),
-                        onPressed: () =>
-                            ref.read(calendarProvider.notifier).loadMore(),
-                        icon: const Icon(Icons.expand_more),
-                        label: const Text('Load more'),
-                      ),
-              ),
-            ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktopWeb = kIsWeb && constraints.maxWidth >= 900;
+          return ListView(
+            key: const ValueKey('calendar-events-list'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              if (showsTourMockup)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: TourMockupBanner(),
+                ),
+              if (visibleEvents.isEmpty)
+                SizedBox(
+                  height: 320,
+                  child: EmptyState(
+                    icon: Icons.calendar_today,
+                    title: filters.isActive
+                        ? 'No matching events'
+                        : 'No upcoming events',
+                    subtitle: filters.isActive
+                        ? 'Adjust the calendar filters to see more events.'
+                        : 'Check back later or add content to your libraries.',
+                  ),
+                )
+              else if (isDesktopWeb)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
+                  child: Wrap(
+                    spacing: 24,
+                    runSpacing: 24,
+                    children: [
+                      for (final section in dateSections)
+                        SizedBox(
+                          width: (constraints.maxWidth - 88) / 2,
+                          child: Card(
+                            clipBehavior: Clip.antiAlias,
+                            margin: EdgeInsets.zero,
+                            child: section,
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                ...dateSections,
+              if (hasInstances)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  child: Center(
+                    child: loadStatus.isLoadingMore
+                        ? const CircularProgressIndicator(
+                            key: ValueKey('calendar-loading-more'),
+                          )
+                        : OutlinedButton.icon(
+                            key: const ValueKey('calendar-load-more'),
+                            onPressed: () =>
+                                ref.read(calendarProvider.notifier).loadMore(),
+                            icon: const Icon(Icons.expand_more),
+                            label: const Text('Load more'),
+                          ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

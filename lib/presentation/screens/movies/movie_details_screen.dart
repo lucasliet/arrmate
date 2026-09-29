@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -53,6 +54,7 @@ class MovieDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Movie movie) {
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
     final instance = ref.watch(currentRadarrInstanceProvider);
     final fanartImage = movie.images.where((i) => i.isFanart).firstOrNull;
     final fanartRemoteUrl = fanartImage?.remoteUrl;
@@ -74,7 +76,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 300,
+          expandedHeight: isDesktopWeb ? 360 : 300,
           pinned: true,
           iconTheme: const IconThemeData(color: Colors.white),
           flexibleSpace: FlexibleSpaceBar(
@@ -284,7 +286,7 @@ class MovieDetailsScreen extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(horizontal: isDesktopWeb ? 32 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -292,7 +294,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 100,
+                      width: isDesktopWeb ? 180 : 100,
                       child: AspectRatio(
                         aspectRatio: 2 / 3,
                         child: Semantics(
@@ -319,16 +321,18 @@ class MovieDetailsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: isDesktopWeb ? 28 : 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             movie.title,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                (isDesktopWeb
+                                        ? theme.textTheme.headlineMedium
+                                        : theme.textTheme.headlineSmall)
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           if (movie.year > 0) ...[
                             const SizedBox(height: 4),

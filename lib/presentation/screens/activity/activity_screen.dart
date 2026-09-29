@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +26,7 @@ class ActivityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 900;
     final qbittorrentInstance = ref.watch(currentQBittorrentInstanceProvider);
     final hasQBittorrent = qbittorrentInstance != null;
     final tourKeys = ref.watch(appTourKeysProvider);
@@ -33,14 +35,28 @@ class ActivityScreen extends ConsumerWidget {
     final showsTorrents =
         hasQBittorrent ||
         ref.watch(tourMockupProvider(InstanceType.qbittorrent));
+    final tabs = TabBarView(
+      children: [
+        const _QueueTab(),
+        const HistoryScreen(),
+        if (showsTorrents) const QBittorrentTab(),
+      ],
+    );
 
     return DefaultTabController(
       length: showsTorrents ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Activity'),
+          toolbarHeight: isDesktopWeb ? 88 : null,
+          titleSpacing: isDesktopWeb ? 32 : null,
           bottom: TabBar(
             key: tourKeys.activityTabBarKey,
+            isScrollable: isDesktopWeb,
+            tabAlignment: isDesktopWeb ? TabAlignment.start : null,
+            labelPadding: isDesktopWeb
+                ? const EdgeInsets.symmetric(horizontal: 32)
+                : null,
             tabs: [
               const Tab(text: 'Queue'),
               const Tab(text: 'History'),
@@ -63,13 +79,14 @@ class ActivityScreen extends ConsumerWidget {
             const NotificationIconButton(),
           ],
         ),
-        body: TabBarView(
-          children: [
-            const _QueueTab(),
-            const HistoryScreen(),
-            if (showsTorrents) const QBittorrentTab(),
-          ],
-        ),
+        body: isDesktopWeb
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: tabs,
+                ),
+              )
+            : tabs,
       ),
     );
   }
