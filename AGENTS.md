@@ -244,11 +244,6 @@ To ensure project stability, every code change or addition MUST be followed by:
 4. **Pub Commands**: Use `mcp_dart-mcp-server_pub` tool for `get`, `add`,
    `upgrade`, etc.
    - ❌ Do NOT run `flutter pub get` or `dart pub add` directly.
-5. **Kluster Verification**: Use Kluster.ai for code verification.
-   - **Snapshot**: ALWAYS call `kluster_open_snapshot_session` BEFORE generating
-     or modifying code.
-   - **Review**: Use `kluster_code_review_auto` (for generated code) or
-     `kluster_code_review_manual` (for critical logic) to verify changes.
 
 ## Quality Gate (mandatory before push/tag)
 

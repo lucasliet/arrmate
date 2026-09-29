@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,9 +18,6 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
-    final searchShortcut = Theme.of(context).platform == TargetPlatform.macOS
-        ? '⌘ K'
-        : 'Ctrl K';
     if (!kIsWeb) {
       return Scaffold(
         body: Column(
@@ -45,134 +41,102 @@ class AppShell extends ConsumerWidget {
       );
     }
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
-            context.go('/search'),
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
-            context.go('/search'),
-      },
-      child: Focus(
-        autofocus: true,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final windowClass = WindowClass.fromWidth(constraints.maxWidth);
-            final location = GoRouterState.of(context).matchedLocation;
-            final selectedIndex = _calculateSelectedIndex(context);
-            final showRailNotifications = !AppTab.values.any(
-              (tab) => tab.path == location,
-            );
-            final content = Column(
-              children: [
-                const OfflineStatusBanner(),
-                Expanded(child: child),
-              ],
-            );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final windowClass = WindowClass.fromWidth(constraints.maxWidth);
+        final location = GoRouterState.of(context).matchedLocation;
+        final selectedIndex = _calculateSelectedIndex(context);
+        final showRailNotifications = !AppTab.values.any(
+          (tab) => tab.path == location,
+        );
+        final content = Column(
+          children: [
+            const OfflineStatusBanner(),
+            Expanded(child: child),
+          ],
+        );
 
-            return Scaffold(
-              body: windowClass.hasNavigationRail
-                  ? Row(
-                      children: [
-                        NavigationRail(
-                          key: tourKeys.navBarKey,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerLow,
-                          extended: windowClass.hasExtendedNavigation,
-                          leading: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.movie_filter_rounded,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    if (windowClass.hasExtendedNavigation) ...[
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'ARRMATE',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 2,
-                                            ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-                                if (windowClass.hasExtendedNavigation)
-                                  OutlinedButton.icon(
-                                    onPressed: () => context.go('/search'),
-                                    icon: const Icon(Icons.search, size: 18),
-                                    label: Text('Search  $searchShortcut'),
-                                  )
-                                else
-                                  IconButton(
-                                    tooltip: 'Search',
-                                    onPressed: () => context.go('/search'),
-                                    icon: const Icon(Icons.search),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          selectedIndex: selectedIndex,
-                          trailing: showRailNotifications
-                              ? const NotificationIconButton()
-                              : null,
-                          trailingAtBottom: true,
-                          onDestinationSelected: (index) =>
-                              _onItemTapped(context, index),
-                          destinations: AppTab.values
-                              .map(
-                                (tab) => NavigationRailDestination(
-                                  icon: Icon(tab.icon),
-                                  selectedIcon: Icon(tab.selectedIcon),
-                                  label: Text(tab.label),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                        const VerticalDivider(width: 1),
-                        Expanded(
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 1600),
-                              child: content,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : content,
-              bottomNavigationBar: windowClass == WindowClass.compact
-                  ? NavigationBar(
+        return Scaffold(
+          body: windowClass.hasNavigationRail
+              ? Row(
+                  children: [
+                    NavigationRail(
                       key: tourKeys.navBarKey,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      extended: windowClass.hasExtendedNavigation,
+                      leading: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.movie_filter_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            if (windowClass.hasExtendedNavigation) ...[
+                              const SizedBox(width: 12),
+                              Text(
+                                'ARRMATE',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 2,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                       selectedIndex: selectedIndex,
+                      trailing: showRailNotifications
+                          ? const NotificationIconButton()
+                          : null,
+                      trailingAtBottom: true,
                       onDestinationSelected: (index) =>
                           _onItemTapped(context, index),
                       destinations: AppTab.values
                           .map(
-                            (tab) => NavigationDestination(
+                            (tab) => NavigationRailDestination(
                               icon: Icon(tab.icon),
                               selectedIcon: Icon(tab.selectedIcon),
-                              label: tab.label,
+                              label: Text(tab.label),
                             ),
                           )
                           .toList(),
-                    )
-                  : null,
-            );
-          },
-        ),
-      ),
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1600),
+                          child: content,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : content,
+          bottomNavigationBar: windowClass == WindowClass.compact
+              ? NavigationBar(
+                  key: tourKeys.navBarKey,
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: (index) =>
+                      _onItemTapped(context, index),
+                  destinations: AppTab.values
+                      .map(
+                        (tab) => NavigationDestination(
+                          icon: Icon(tab.icon),
+                          selectedIcon: Icon(tab.selectedIcon),
+                          label: tab.label,
+                        ),
+                      )
+                      .toList(),
+                )
+              : null,
+        );
+      },
     );
   }
 
