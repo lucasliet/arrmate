@@ -136,7 +136,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Movie added successfully')),
         );
@@ -203,7 +203,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
               IconButton(
                 tooltip: 'Close',
                 icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: () => context.pop(),
               ),
             ],
           ),

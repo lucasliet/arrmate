@@ -143,7 +143,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Series added successfully')),
         );
@@ -210,7 +210,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
               IconButton(
                 tooltip: 'Close',
                 icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: () => context.pop(),
               ),
             ],
           ),
