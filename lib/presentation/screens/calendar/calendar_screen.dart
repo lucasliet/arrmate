@@ -35,53 +35,57 @@ class CalendarScreen extends ConsumerWidget {
         .toList();
     final filtersNotifier = ref.read(calendarFiltersProvider.notifier);
     final tourKeys = ref.watch(appTourKeysProvider);
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 900;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Calendar', key: tourKeys.calendarTitleKey),
-        toolbarHeight: isDesktopWeb ? 88 : null,
-        titleSpacing: isDesktopWeb ? 32 : null,
-        actions: const [NotificationIconButton()],
-      ),
-      body: Column(
-        children: [
-          CalendarFilterBar(
-            instances: instances,
-            filters: filters,
-            onInstanceChanged: filtersNotifier.selectInstance,
-            onMediaTypeChanged: filtersNotifier.selectMediaType,
-            onOnlyMonitoredChanged: filtersNotifier.setOnlyMonitored,
-            onOnlyPremieresChanged: filtersNotifier.setOnlyPremieres,
-            onHideSpecialsChanged: filtersNotifier.setHideSpecials,
-            onReset: filtersNotifier.reset,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktopWeb = kIsWeb && constraints.maxWidth >= 900;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Calendar', key: tourKeys.calendarTitleKey),
+            toolbarHeight: isDesktopWeb ? 88 : null,
+            titleSpacing: isDesktopWeb ? 32 : null,
+            actions: const [NotificationIconButton()],
           ),
-          if (loadStatus.hasFailures)
-            _CalendarFailureBanner(
-              failures: loadStatus.failures,
-              onRetry: () => ref.read(calendarProvider.notifier).refresh(),
-            ),
-          Expanded(
-            child: calendarState.when(
-              skipLoadingOnRefresh: true,
-              data: (events) => _buildCalendarContent(
-                context,
-                ref,
-                events,
-                filters,
-                loadStatus,
-                instances.isNotEmpty,
+          body: Column(
+            children: [
+              CalendarFilterBar(
+                instances: instances,
+                filters: filters,
+                onInstanceChanged: filtersNotifier.selectInstance,
+                onMediaTypeChanged: filtersNotifier.selectMediaType,
+                onOnlyMonitoredChanged: filtersNotifier.setOnlyMonitored,
+                onOnlyPremieresChanged: filtersNotifier.setOnlyPremieres,
+                onHideSpecialsChanged: filtersNotifier.setHideSpecials,
+                onReset: filtersNotifier.reset,
               ),
-              error: (error, stack) => ErrorDisplay(
-                message: error.toString(),
-                onRetry: () => ref.read(calendarProvider.notifier).refresh(),
+              if (loadStatus.hasFailures)
+                _CalendarFailureBanner(
+                  failures: loadStatus.failures,
+                  onRetry: () => ref.read(calendarProvider.notifier).refresh(),
+                ),
+              Expanded(
+                child: calendarState.when(
+                  skipLoadingOnRefresh: true,
+                  data: (events) => _buildCalendarContent(
+                    context,
+                    ref,
+                    events,
+                    filters,
+                    loadStatus,
+                    instances.isNotEmpty,
+                  ),
+                  error: (error, stack) => ErrorDisplay(
+                    message: error.toString(),
+                    onRetry: () =>
+                        ref.read(calendarProvider.notifier).refresh(),
+                  ),
+                  loading: () =>
+                      const LoadingIndicator(message: 'Loading calendar...'),
+                ),
               ),
-              loading: () =>
-                  const LoadingIndicator(message: 'Loading calendar...'),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

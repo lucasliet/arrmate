@@ -86,6 +86,7 @@ server {
     if ($arrmate_block_mutation) { return 403; }
     limit_req zone=arrmate_api burst=40 nodelay;
     proxy_pass http://radarr:7878/;
+    proxy_set_header Authorization $http_authorization;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -95,6 +96,7 @@ server {
     if ($arrmate_block_mutation) { return 403; }
     limit_req zone=arrmate_api burst=40 nodelay;
     proxy_pass http://sonarr:8989/;
+    proxy_set_header Authorization $http_authorization;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -107,6 +109,7 @@ server {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+    proxy_set_header Authorization $http_authorization;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
