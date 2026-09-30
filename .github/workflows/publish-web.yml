@@ -45,7 +45,6 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
-          include-hidden-files: true
 
       - name: Upload branch publishing files
         uses: actions/upload-artifact@v4
@@ -53,7 +52,6 @@ jobs:
           name: arrmate-web-files
           path: build/web
           retention-days: 1
-          include-hidden-files: true
 
   deploy-web:
     name: Deploy Flutter Web
@@ -79,6 +77,9 @@ jobs:
         with:
           name: arrmate-web-files
           path: build/web
+
+      - name: Restore nojekyll marker
+        run: touch build/web/.nojekyll
 
       - name: Publish web files to gh-pages
         uses: peaceiris/actions-gh-pages@v4

@@ -13,6 +13,10 @@ runs, and version tags. A `v*` tag publishes the generated files to the
 Configure the repository's Pages source as **GitHub Actions**. The branch
 contains the static build, while the Pages deployment uses the workflow
 artifact because a `GITHUB_TOKEN` push does not start a separate Pages build.
+The `github-pages` environment restricts deployments by ref, so it must also
+allow the `v*` tag pattern (Settings → Environments → github-pages →
+Deployment branches and tags) or tag builds are rejected with "Tag is not
+allowed to deploy to github-pages".
 
 The build uses `--base-href /arrmate/` for the repository URL
 `https://<owner>.github.io/arrmate/`. It also publishes `404.html` as a copy of
