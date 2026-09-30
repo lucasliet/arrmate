@@ -44,9 +44,9 @@ Arrmate also runs in the browser, served from
 
 ## 📱 Screenshots
 
-| Movies | Series | Calendar | Assistant |
+| Movies | Series | Calendar | Series details |
 | --- | --- | --- | --- |
-| ![Movies library](assets/screenshots/movies.png) | ![Series library](assets/screenshots/series.png) | ![Release calendar](assets/screenshots/calendar.png) | ![AI assistant](assets/screenshots/assistant.png) |
+| ![Movies library](assets/screenshots/movies.png) | ![Series library](assets/screenshots/series.png) | ![Release calendar](assets/screenshots/calendar.png) | ![Series details](assets/screenshots/series_details.png) |
 
 ## 🚀 Features
 
