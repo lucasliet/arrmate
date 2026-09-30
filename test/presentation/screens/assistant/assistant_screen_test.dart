@@ -79,15 +79,45 @@ void main() {
     expect(find.text('Local Models'), findsNothing);
   });
 
-  testWidgets('preserves local options on non-web platforms', (tester) async {
+  testWidgets(
+    'hides local options on native platforms without local assistant',
+    (tester) async {
+      await tester.pumpWidget(
+        _assistantApp(
+          const PlatformCapabilities(
+            isWeb: false,
+            supportsAppUpdates: false,
+            supportsBackgroundNotifications: false,
+            supportsLocalAssistant: false,
+            supportsFileSystemCache: false,
+            supportsBrowserFileInput: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+
+      expect(find.text('OpenCode Zen'), findsNWidgets(2));
+      expect(find.text('Online Models'), findsOneWidget);
+      expect(find.text('Download'), findsNothing);
+      expect(find.text('Import'), findsNothing);
+      expect(find.text('Local Models'), findsNothing);
+    },
+  );
+
+  testWidgets('shows local options when local assistant is supported', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _assistantApp(
         const PlatformCapabilities(
           isWeb: false,
-          supportsAppUpdates: false,
-          supportsBackgroundNotifications: false,
-          supportsLocalAssistant: false,
-          supportsFileSystemCache: false,
+          supportsAppUpdates: true,
+          supportsBackgroundNotifications: true,
+          supportsLocalAssistant: true,
+          supportsFileSystemCache: true,
           supportsBrowserFileInput: false,
         ),
       ),

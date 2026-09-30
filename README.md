@@ -1,5 +1,8 @@
 # Arrmate: A Companion App for Radarr and Sonarr 📺
 
+[![GitHub Release](https://img.shields.io/github/v/release/lucasliet/arrmate?logo=github&label=GitHub%20Release)](https://github.com/lucasliet/arrmate/releases)
+[![AltStore](https://img.shields.io/badge/iOS-AltStore-000000?logo=apple&logoColor=white)](altstore://sources/add?url=https%3A%2F%2Fgithub.com%2Flucasliet%2Farrmate%2Freleases%2Flatest%2Fdownload%2Faltstore.json)
+
 Arrmate is a comprehensive companion app designed to work seamlessly with Radarr
 and Sonarr, offering a streamlined and user-friendly experience for managing
 your media library. With Arrmate, you can easily browse, search, and manage your
@@ -10,8 +13,30 @@ and efficient user experience.
 
 ## 📦 Installation
 
-To get started with Arrmate, follow these steps: Download the latest release
-from the [releases page](https://github.com/lucasliet/arrmate/releases).
+### Android
+
+Download the `.apk` from the
+[releases page](https://github.com/lucasliet/arrmate/releases) and install it
+(`app-arm64-v8a-release.apk` for 64-bit devices, `app-armeabi-v7a-release.apk`
+for 32-bit ones). The app checks for new versions on its own and installs
+updates automatically — no store required.
+
+### iOS (AltStore)
+
+Add the Arrmate source to [AltStore](https://altstore.io) and install the app
+from there. AltStore handles signing and delivers every update automatically,
+so the in-app updater stays disabled on iOS:
+
+> `https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json`
+
+Alternatively, download the `arrmate.ipa` from the latest
+[release](https://github.com/lucasliet/arrmate/releases) and sideload it with
+AltStore or Sideloadly.
+
+### Web
+
+Arrmate also runs in the browser, served from
+[GitHub Pages](https://lucasliet.github.io/arrmate/).
 
 ## 🚀 Features
 

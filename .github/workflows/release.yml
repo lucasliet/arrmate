@@ -184,3 +184,108 @@ jobs:
             - Android habilite instalação de fontes desconhecidas e instale o arquivo .apk correspondente, 
               - **app-arm64-v8a-release.apk** para 64bits (mais que 4GB de RAM)
               - **app-armeabi-v7a-release.apk** 32 bits
+              - o próprio app verifica atualizações e instala automaticamente
+
+  build_ios:
+    name: Build iOS Application
+    needs: [generate-notes, build_app]
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.2"
+          channel: 'stable'
+          cache: 'true'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build iOS (unsigned)
+        run: >
+          flutter build ios --release --no-codesign
+          --build-number=${{ github.run_number }}
+          --build-name=${GITHUB_REF_NAME#v}
+
+      - name: Package unsigned IPA
+        run: |
+          codesign -s - --force --deep build/ios/iphoneos/Runner.app
+          mkdir -p build/ios/ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa && zip -qry arrmate.ipa Payload
+
+      - name: Generate AltStore source
+        env:
+          RELEASE_NOTES: ${{ needs.generate-notes.outputs.release_notes }}
+        run: |
+          python3 - <<'EOF'
+          import datetime
+          import json
+          import os
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          ipa_size = os.path.getsize("build/ios/ipa/arrmate.ipa")
+
+          source = {
+              "name": "Arrmate",
+              "identifier": "br.com.lucasliet.arrmate.source",
+              "apps": [
+                  {
+                      "bundleIdentifier": "br.com.lucasliet.arrmate",
+                      "name": "Arrmate",
+                      "developerName": "Lucas Oliveira",
+                      "subtitle": "Companion app for Radarr, Sonarr and qBittorrent",
+                      "localizedDescription": "Native mobile companion for self-hosted media servers. Browse and manage your Radarr, Sonarr and qBittorrent instances, track downloads, follow release calendars and receive push notifications.",
+                      "iconURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/images/icon.png",
+                      "tintColor": "2196F3",
+                      "versions": [
+                          {
+                              "version": tag.lstrip("v"),
+                              "buildVersion": os.environ["GITHUB_RUN_NUMBER"],
+                              "date": datetime.date.today().isoformat(),
+                              "localizedDescription": os.environ.get("RELEASE_NOTES", ""),
+                              "downloadURL": "https://github.com/lucasliet/arrmate/releases/download/" + tag + "/arrmate.ipa",
+                              "size": ipa_size,
+                              "minOSVersion": "15.0",
+                          }
+                      ],
+                  }
+              ],
+              "news": [],
+          }
+
+          with open("build/ios/ipa/altstore.json", "w") as handle:
+              json.dump(source, handle, indent=2)
+          EOF
+
+      - name: Publish Release to Github
+        uses: ncipollo/release-action@v1
+        if: github.ref_type == 'tag'
+        with:
+          artifacts: "build/ios/ipa/arrmate.ipa,build/ios/ipa/altstore.json"
+          tag: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          removeArtifacts: false
+          body: |
+            **Release Notes**
+            ${{ needs.generate-notes.outputs.release_notes }}
+
+            ---
+            Instruções de instalação
+
+            - Android habilite instalação de fontes desconhecidas e instale o arquivo .apk correspondente, 
+              - **app-arm64-v8a-release.apk** para 64bits (mais que 4GB de RAM)
+              - **app-armeabi-v7a-release.apk** 32 bits
+              - o próprio app verifica atualizações e instala automaticamente
+            - iOS (AltStore) adicione a source abaixo no AltStore e instale/atualize por lá
+              - `https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json`
+            - iOS (manual) baixe o **arrmate.ipa** e faça sideload com AltStore/Sideloadly

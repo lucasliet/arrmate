@@ -25,7 +25,7 @@ class PlatformCapabilities {
     isWeb: isWeb,
     supportsAppUpdates: !isWeb && targetPlatform == TargetPlatform.android,
     supportsBackgroundNotifications: !isWeb,
-    supportsLocalAssistant: !isWeb,
+    supportsLocalAssistant: !isWeb && targetPlatform == TargetPlatform.android,
     supportsFileSystemCache: !isWeb,
     supportsBrowserFileInput: isWeb,
   );

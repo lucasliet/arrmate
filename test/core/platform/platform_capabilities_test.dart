@@ -17,7 +17,7 @@ void main() {
       expect(capabilities.supportsBrowserFileInput, isTrue);
     });
 
-    test('enables native update installation only on Android', () {
+    test('enables native-only features per platform', () {
       for (final platform in TargetPlatform.values) {
         final capabilities = PlatformCapabilities.forPlatform(
           isWeb: false,
@@ -29,7 +29,10 @@ void main() {
           platform == TargetPlatform.android,
         );
         expect(capabilities.supportsBackgroundNotifications, isTrue);
-        expect(capabilities.supportsLocalAssistant, isTrue);
+        expect(
+          capabilities.supportsLocalAssistant,
+          platform == TargetPlatform.android,
+        );
         expect(capabilities.supportsFileSystemCache, isTrue);
         expect(capabilities.supportsBrowserFileInput, isFalse);
       }

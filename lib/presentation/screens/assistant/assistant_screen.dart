@@ -109,8 +109,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final theme = Theme.of(context);
     final hasModel = state.hasModel;
     final capabilities = ref.watch(platformCapabilitiesProvider);
-    final showLocalAssistantOptions =
-        !capabilities.isWeb || capabilities.supportsLocalAssistant;
+    final showLocalAssistantOptions = capabilities.supportsLocalAssistant;
     final title = state.isOnlineMode
         ? 'OpenCode Zen'
         : state.selectedModel?.label ?? 'No local model selected';

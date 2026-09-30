@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../core/platform/platform_capabilities.dart';
 import '../../../domain/models/models.dart';
 
 import '../../providers/instances_provider.dart';
@@ -403,6 +404,9 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildAboutSection(BuildContext context, WidgetRef ref) {
     final updateState = ref.watch(updateProvider);
+    final capabilities = ref.watch(platformCapabilitiesProvider);
+    final updatesViaAltStore =
+        !capabilities.isWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,8 +435,14 @@ class SettingsScreen extends ConsumerWidget {
             return ListTile(
               leading: const Icon(Icons.info_outline),
               title: const Text('Version'),
-              subtitle: Text(version),
-              trailing: updateState.status == UpdateStatus.checking
+              subtitle: Text(
+                updatesViaAltStore
+                    ? '$version • updates via AltStore'
+                    : version,
+              ),
+              trailing: !capabilities.supportsAppUpdates
+                  ? null
+                  : updateState.status == UpdateStatus.checking
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -445,7 +455,9 @@ class SettingsScreen extends ConsumerWidget {
                             size: 20,
                           )
                         : const Icon(Icons.refresh, size: 20)),
-              onTap: updateState.status == UpdateStatus.checking
+              onTap:
+                  !capabilities.supportsAppUpdates ||
+                      updateState.status == UpdateStatus.checking
                   ? null
                   : () async {
                       await ref
