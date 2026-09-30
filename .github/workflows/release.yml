@@ -237,6 +237,11 @@ jobs:
           source = {
               "name": "Arrmate",
               "identifier": "br.com.lucasliet.arrmate.source",
+              "sourceURL": "https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json",
+              "subtitle": "Native companion for your self-hosted media servers",
+              "description": "Official AltStore Source for Arrmate, a native companion for self-hosted media servers. Manage Radarr, Sonarr and qBittorrent from your phone: browse your library, follow release calendars, watch downloads in real time and import torrents.",
+              "website": "https://github.com/lucasliet/arrmate",
+              "featuredApps": ["br.com.lucasliet.arrmate"],
               "apps": [
                   {
                       "bundleIdentifier": "br.com.lucasliet.arrmate",
@@ -246,6 +251,29 @@ jobs:
                       "localizedDescription": "Native mobile companion for self-hosted media servers. Browse and manage your Radarr, Sonarr and qBittorrent instances, track downloads, follow release calendars and receive push notifications.",
                       "iconURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/images/icon.png",
                       "tintColor": "2196F3",
+                      "category": "entertainment",
+                      "screenshots": [
+                          {
+                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/movies.png",
+                              "width": 750,
+                              "height": 1630
+                          },
+                          {
+                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/series.png",
+                              "width": 750,
+                              "height": 1630
+                          },
+                          {
+                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/calendar.png",
+                              "width": 750,
+                              "height": 1630
+                          },
+                          {
+                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/assistant.png",
+                              "width": 750,
+                              "height": 1630
+                          }
+                      ],
                       "versions": [
                           {
                               "version": tag.lstrip("v"),
