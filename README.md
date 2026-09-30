@@ -1,7 +1,7 @@
 # Arrmate: A Companion App for Radarr and Sonarr 📺
 
 [![GitHub Release](https://img.shields.io/github/v/release/lucasliet/arrmate?logo=github&label=GitHub%20Release)](https://github.com/lucasliet/arrmate/releases)
-[![AltStore](https://img.shields.io/badge/iOS-AltStore-000000?logo=apple&logoColor=white)](altstore://sources/add?url=https%3A%2F%2Fgithub.com%2Flucasliet%2Farrmate%2Freleases%2Flatest%2Fdownload%2Faltstore.json)
+[![AltStore](https://img.shields.io/badge/iOS-AltStore-000000?logo=apple&logoColor=white)](https://intradeus.github.io/http-protocol-redirector?r=altstore://source?url=https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json)
 
 Arrmate is a comprehensive companion app designed to work seamlessly with Radarr
 and Sonarr, offering a streamlined and user-friendly experience for managing
@@ -14,7 +14,7 @@ and efficient user experience.
 ## 📥 Installation
 
 [![Android — Download APK](https://img.shields.io/badge/Android-Download_APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/lucasliet/arrmate/releases/latest)
-[![iOS — Add to AltStore](https://img.shields.io/badge/iOS-Add_to_AltStore-000000?style=for-the-badge&logo=apple&logoColor=white)](altstore://sources/add?url=https%3A%2F%2Fgithub.com%2Flucasliet%2Farrmate%2Freleases%2Flatest%2Fdownload%2Faltstore.json)
+[![iOS — Add to AltStore](https://img.shields.io/badge/iOS-Add_to_AltStore-000000?style=for-the-badge&logo=apple&logoColor=white)](https://intradeus.github.io/http-protocol-redirector?r=altstore://source?url=https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json)
 [![Web — Open App](https://img.shields.io/badge/Web-Open_App-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lucasliet.github.io/arrmate/)
 
 ### Android
