@@ -11,12 +11,16 @@ downloads with the integrated qBittorrent support. The app is built using
 Flutter and utilizes the Riverpod state management library to ensure a smooth
 and efficient user experience.
 
-## 📦 Installation
+## 📥 Installation
+
+[![Android — Download APK](https://img.shields.io/badge/Android-Download_APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/lucasliet/arrmate/releases/latest)
+[![iOS — Add to AltStore](https://img.shields.io/badge/iOS-Add_to_AltStore-000000?style=for-the-badge&logo=apple&logoColor=white)](altstore://sources/add?url=https%3A%2F%2Fgithub.com%2Flucasliet%2Farrmate%2Freleases%2Flatest%2Fdownload%2Faltstore.json)
+[![Web — Open App](https://img.shields.io/badge/Web-Open_App-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lucasliet.github.io/arrmate/)
 
 ### Android
 
 Download the `.apk` from the
-[releases page](https://github.com/lucasliet/arrmate/releases) and install it
+[releases page](https://github.com/lucasliet/arrmate/releases/latest)
 (`app-arm64-v8a-release.apk` for 64-bit devices, `app-armeabi-v7a-release.apk`
 for 32-bit ones). The app checks for new versions on its own and installs
 updates automatically — no store required.
@@ -37,6 +41,12 @@ AltStore or Sideloadly.
 
 Arrmate also runs in the browser, served from
 [GitHub Pages](https://lucasliet.github.io/arrmate/).
+
+## 📱 Screenshots
+
+| Movies | Series | Calendar | Assistant |
+| --- | --- | --- | --- |
+| ![Movies library](assets/screenshots/movies.png) | ![Series library](assets/screenshots/series.png) | ![Release calendar](assets/screenshots/calendar.png) | ![AI assistant](assets/screenshots/assistant.png) |
 
 ## 🚀 Features
 
