@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_model_service.dart';
+import '../../../core/services/assistant_online_chat_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../providers/assistant_provider.dart';
 
@@ -114,7 +115,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         ? 'OpenCode Zen'
         : state.selectedModel?.label ?? 'No local model selected';
     final subtitle = state.isOnlineMode
-        ? 'Online model: ${state.selectedOnlineModelId ?? 'deepseek-v4-flash-free'}'
+        ? 'Online model: ${state.selectedOnlineModelId ?? AssistantOnlineChatService.defaultModelId}'
         : hasModel
         ? _formatModelSize(state.selectedModel!.sizeBytes)
         : showLocalAssistantOptions
@@ -356,57 +357,67 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   ) {
     final theme = Theme.of(context);
     final models = state.onlineModels.isEmpty
-        ? ['deepseek-v4-flash-free']
+        ? [AssistantOnlineChatService.defaultModelId]
         : state.onlineModels;
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.4,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Online Models', style: theme.textTheme.titleLarge),
-          ),
-          const Divider(height: 1),
-          ...models.map((modelId) {
-            final isSelected = modelId == state.selectedOnlineModelId;
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text('Online Models', style: theme.textTheme.titleLarge),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ...models.map((modelId) {
+                    final isSelected = modelId == state.selectedOnlineModelId;
 
-            return ListTile(
-              leading: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                color: isSelected ? theme.colorScheme.primary : null,
+                    return ListTile(
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? theme.colorScheme.primary : null,
+                      ),
+                      title: Text(modelId),
+                      subtitle: const Text('OpenCode Zen free model'),
+                      onTap: isSelected
+                          ? null
+                          : () {
+                              Navigator.pop(sheetContext);
+                              notifier.selectOnlineModel(modelId);
+                            },
+                    );
+                  }),
+                ],
               ),
-              title: Text(modelId),
-              subtitle: const Text('OpenCode Zen free model'),
-              onTap: isSelected
-                  ? null
-                  : () {
-                      Navigator.pop(context);
-                      notifier.selectOnlineModel(modelId);
-                    },
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -420,58 +431,68 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.4,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Download Model', style: theme.textTheme.titleLarge),
-          ),
-          const Divider(height: 1),
-          ...state.catalog.map((m) {
-            final isInstalled = state.installedModels.any(
-              (installed) => installed.source == m.id,
-            );
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text('Download Model', style: theme.textTheme.titleLarge),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ...state.catalog.map((m) {
+                    final isInstalled = state.installedModels.any(
+                      (installed) => installed.source == m.id,
+                    );
 
-            return ListTile(
-              leading: Icon(
-                isInstalled ? Icons.check_circle : Icons.download,
-                color: isInstalled ? theme.colorScheme.primary : null,
-              ),
-              title: Text(m.title),
-              subtitle: Text(m.description),
-              trailing: isInstalled
-                  ? Text(
-                      'Installed',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
+                    return ListTile(
+                      leading: Icon(
+                        isInstalled ? Icons.check_circle : Icons.download,
+                        color: isInstalled ? theme.colorScheme.primary : null,
                       ),
-                    )
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                notifier.downloadModel(m);
-              },
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
+                      title: Text(m.title),
+                      subtitle: Text(m.description),
+                      trailing: isInstalled
+                          ? Text(
+                              'Installed',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          : null,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        notifier.downloadModel(m);
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -485,62 +506,72 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.4,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Switch Model', style: theme.textTheme.titleLarge),
-          ),
-          const Divider(height: 1),
-          ...state.installedModels.map((m) {
-            final isSelected = m.id == state.selectedModelId;
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text('Switch Model', style: theme.textTheme.titleLarge),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ...state.installedModels.map((m) {
+                    final isSelected = m.id == state.selectedModelId;
 
-            return ListTile(
-              leading: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                color: isSelected ? theme.colorScheme.primary : null,
+                    return ListTile(
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? theme.colorScheme.primary : null,
+                      ),
+                      title: Text(m.label),
+                      subtitle: Text(_formatModelSize(m.sizeBytes)),
+                      trailing: IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _confirmDelete(context, notifier, m);
+                        },
+                      ),
+                      onTap: isSelected
+                          ? null
+                          : () {
+                              Navigator.pop(sheetContext);
+                              notifier.selectModel(m.id);
+                            },
+                    );
+                  }),
+                ],
               ),
-              title: Text(m.label),
-              subtitle: Text(_formatModelSize(m.sizeBytes)),
-              trailing: IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: theme.colorScheme.error,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _confirmDelete(context, notifier, m);
-                },
-              ),
-              onTap: isSelected
-                  ? null
-                  : () {
-                      Navigator.pop(context);
-                      notifier.selectModel(m.id);
-                    },
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

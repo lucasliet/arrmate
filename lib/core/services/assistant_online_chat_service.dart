@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
 import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
@@ -70,14 +70,35 @@ class AssistantOnlineChatService {
             ),
           );
 
-  static const defaultModelId = 'deepseek-v4-flash-free';
+  static const defaultModelId = 'mimo-v2.6-flash-free';
   static const _baseUrl = 'https://opencode.ai/zen/v1';
   static const _selectedModelIdKey = 'assistant_online_selected_model_id';
+
+  /// Free model ids blocked from the picker on every platform.
+  static const _blacklistedModelIds = {'deepseek-v4-flash-free'};
+
+  /// Free model id prefixes blocked from the picker on every platform.
+  static const _blacklistedModelPrefixes = ['jev-'];
+
+  /// User-Agent presented to OpenCode Zen, matching the official CLI client.
+  static const _userAgent = 'opencode/latest/2.0.18/cli';
+
+  /// Client identifier announced to OpenCode Zen, matching the official CLI.
+  static const _clientId = 'cli';
+
+  /// Length of the random part of an OpenCode Zen session id.
+  static const _sessionIdLength = 26;
+
+  /// Charset used to build OpenCode Zen session ids.
+  static const _sessionIdCharset =
+      'abcdefghijklmnopqrstuvwxyz'
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      '0123456789';
   static const _maxHistoryMessages = 12;
   static const _maxResponseTokens = 1600;
 
   final Dio _dio;
-  late final String _webSessionId = const Uuid().v4();
+  late final String _sessionId = _buildSessionId();
   List<String> _models = const [];
   String? _selectedModelId;
 
@@ -100,7 +121,10 @@ class AssistantOnlineChatService {
   /// Loads OpenCode Zen models ending with `-free`.
   Future<List<String>> loadFreeModels() async {
     try {
-      final response = await _dio.get('/models');
+      final response = await _dio.get(
+        '/models',
+        options: Options(headers: _zenHeaders),
+      );
       final data = _decodeResponse(response.data);
       final models = data['data'];
       if (models is! List) {
@@ -114,9 +138,8 @@ class AssistantOnlineChatService {
           .where(
             (modelId) =>
                 modelId.endsWith('-free') &&
-                (!kIsWeb ||
-                    (!modelId.startsWith('muse-spark-') &&
-                        !modelId.startsWith('jev-'))),
+                !_isBlacklisted(modelId) &&
+                (!kIsWeb || !modelId.startsWith('muse-spark-')),
           )
           .toList(growable: false);
 
@@ -205,9 +228,7 @@ class AssistantOnlineChatService {
   ) async {
     final response = await _dio.post(
       '/chat/completions',
-      options: kIsWeb
-          ? Options(headers: {'x-opencode-session': _webSessionId})
-          : null,
+      options: Options(headers: _zenHeaders),
       data: {
         'model': modelId,
         'messages': _buildMessages(history, prompt),
@@ -286,6 +307,26 @@ class AssistantOnlineChatService {
     final startIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
     return [...models.sublist(startIndex), ...models.sublist(0, startIndex)];
+  }
+
+  bool _isBlacklisted(String modelId) {
+    return _blacklistedModelIds.contains(modelId) ||
+        _blacklistedModelPrefixes.any(modelId.startsWith);
+  }
+
+  Map<String, String> get _zenHeaders => {
+    'user-agent': _userAgent,
+    'x-opencode-client': _clientId,
+    'x-opencode-session': _sessionId,
+  };
+
+  String _buildSessionId() {
+    final random = Random.secure();
+    final characters = List.generate(
+      _sessionIdLength,
+      (_) => _sessionIdCharset[random.nextInt(_sessionIdCharset.length)],
+    );
+    return 'ses_${characters.join()}';
   }
 
   String _resolveSelectedModel(List<String> models, String? persistedModelId) {
