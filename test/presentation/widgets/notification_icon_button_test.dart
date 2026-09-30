@@ -89,6 +89,29 @@ void main() {
       expect(iconButton.tooltip, 'Notifications');
     });
 
+    testWidgets(
+      'should omit the tooltip and keep semantics when showTooltip is false',
+      (tester) async {
+        // Given
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              unreadNotificationCountProvider.overrideWith((ref) => 0),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: NotificationIconButton(showTooltip: false)),
+            ),
+          ),
+        );
+
+        // Then
+        final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+        expect(iconButton.tooltip, isNull);
+        expect(find.byTooltip('Notifications'), findsNothing);
+        expect(find.bySemanticsLabel('Notifications'), findsOneWidget);
+      },
+    );
+
     testWidgets('should not show badge when unread count is 0', (tester) async {
       await tester.pumpWidget(buildWidget(unreadCount: 0));
 

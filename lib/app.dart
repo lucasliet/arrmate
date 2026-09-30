@@ -4,15 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/platform/platform_capabilities.dart';
 import 'presentation/widgets/update_dialog.dart';
 import 'presentation/widgets/whats_new_dialog.dart';
 import 'presentation/widgets/deep_link_listener.dart';
 import 'presentation/providers/onboarding_provider.dart';
+import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/settings_provider.dart';
-import 'presentation/providers/app_providers.dart'; // Added this import
 import 'presentation/tour/app_tour_service.dart';
 
 /// The root widget of the application.
@@ -34,7 +35,8 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
     super.initState();
     ref.listenManual(onboardingProvider, _onOnboardingChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!kDebugMode) {
+      final capabilities = ref.read(platformCapabilitiesProvider);
+      if (!kDebugMode && capabilities.supportsAppUpdates) {
         ref.read(updateProvider.notifier).checkForUpdate();
       }
 
@@ -43,10 +45,11 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
         unawaited(WhatsNewDialog.showIfNeeded(navContext, ref));
       }
 
-      // Check for initialization errors
-      final initError = ref.read(initializationErrorProvider);
-      if (initError != null) {
-        _showErrorDialog(initError);
+      if (!kIsWeb) {
+        final initError = ref.read(initializationErrorProvider);
+        if (initError != null) {
+          _showErrorDialog(initError);
+        }
       }
     });
   }
@@ -80,43 +83,43 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
-    return DeepLinkListener(
-      onNavigate: appRouter.go,
-      child: MaterialApp.router(
-        title: 'Arrmate',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(settings.colorScheme),
-        darkTheme: AppTheme.dark(settings.colorScheme),
-        themeMode: settings.appearance.themeMode,
-        routerConfig: appRouter,
-        builder: (context, child) {
-          return Consumer(
-            builder: (context, ref, child) {
-              // Listen for update availability inside the MaterialApp context
-              ref.listen(updateProvider, (previous, next) {
-                if (kDebugMode) {
-                  return;
-                }
+    final capabilities = ref.watch(platformCapabilitiesProvider);
+    final application = MaterialApp.router(
+      title: 'Arrmate',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(settings.colorScheme),
+      darkTheme: AppTheme.dark(settings.colorScheme),
+      themeMode: settings.appearance.themeMode,
+      routerConfig: appRouter,
+      builder: (context, child) {
+        return Consumer(
+          builder: (context, ref, child) {
+            // Listen for update availability inside the MaterialApp context
+            ref.listen(updateProvider, (previous, next) {
+              if (kDebugMode || !capabilities.supportsAppUpdates) {
+                return;
+              }
 
-                if (next.status == UpdateStatus.available &&
-                    previous?.status != UpdateStatus.available) {
-                  final navContext = rootNavigatorKey.currentContext;
-                  if (navContext != null) {
-                    showDialog(
-                      context: navContext,
-                      barrierDismissible: false,
-                      builder: (context) => const UpdateDialog(),
-                    );
-                  }
+              if (next.status == UpdateStatus.available &&
+                  previous?.status != UpdateStatus.available) {
+                final navContext = rootNavigatorKey.currentContext;
+                if (navContext != null) {
+                  showDialog(
+                    context: navContext,
+                    barrierDismissible: false,
+                    builder: (context) => const UpdateDialog(),
+                  );
                 }
-              });
+              }
+            });
 
-              return child!;
-            },
-            child: child,
-          );
-        },
-      ),
+            return child!;
+          },
+          child: child,
+        );
+      },
     );
+    if (capabilities.isWeb) return application;
+    return DeepLinkListener(onNavigate: appRouter.go, child: application);
   }
 }

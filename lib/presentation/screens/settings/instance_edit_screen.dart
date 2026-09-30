@@ -36,6 +36,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   bool _isTesting = false;
   bool _isSaving = false;
   bool _isDeleting = false;
+  bool _obscureApiKey = true;
   bool _testSuccess = false;
   int _operationGeneration = 0;
   String? _testMessage;
@@ -456,6 +457,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             TextFormField(
               key: tourKeys.instanceApiKeyFieldKey,
               controller: _apiKeyController,
+              obscureText: _obscureApiKey,
               decoration: InputDecoration(
                 labelText: 'API Key',
                 border: const OutlineInputBorder(),
@@ -463,6 +465,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     ? 'Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using '
                           '"Add Basic Auth" below for older versions.'
                     : null,
+                suffixIcon: IconButton(
+                  tooltip: _obscureApiKey ? 'Show API key' : 'Hide API key',
+                  icon: Icon(
+                    _obscureApiKey
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureApiKey = !_obscureApiKey),
+                ),
               ),
               validator: (value) {
                 final isEmpty = value == null || value.isEmpty;

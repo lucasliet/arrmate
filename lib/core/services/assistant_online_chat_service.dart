@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
@@ -75,6 +77,7 @@ class AssistantOnlineChatService {
   static const _maxResponseTokens = 1600;
 
   final Dio _dio;
+  late final String _webSessionId = const Uuid().v4();
   List<String> _models = const [];
   String? _selectedModelId;
 
@@ -108,7 +111,13 @@ class AssistantOnlineChatService {
           .whereType<Map<String, dynamic>>()
           .map((model) => model['id'])
           .whereType<String>()
-          .where((modelId) => modelId.endsWith('-free'))
+          .where(
+            (modelId) =>
+                modelId.endsWith('-free') &&
+                (!kIsWeb ||
+                    (!modelId.startsWith('muse-spark-') &&
+                        !modelId.startsWith('jev-'))),
+          )
           .toList(growable: false);
 
       if (freeModels.isEmpty) {
@@ -196,6 +205,9 @@ class AssistantOnlineChatService {
   ) async {
     final response = await _dio.post(
       '/chat/completions',
+      options: kIsWeb
+          ? Options(headers: {'x-opencode-session': _webSessionId})
+          : null,
       data: {
         'model': modelId,
         'messages': _buildMessages(history, prompt),

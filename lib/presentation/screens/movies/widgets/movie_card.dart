@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,6 +25,7 @@ class MovieCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -62,9 +64,9 @@ class MovieCard extends ConsumerWidget {
             ),
             _buildStatusIcons(context),
             Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
+              left: isDesktopWeb ? 12 : 8,
+              right: isDesktopWeb ? 12 : 8,
+              bottom: isDesktopWeb ? 12 : 8,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -73,9 +75,9 @@ class MovieCard extends ConsumerWidget {
                     movie.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: isDesktopWeb ? 15 : 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -84,7 +86,7 @@ class MovieCard extends ConsumerWidget {
                     movie.yearLabel,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 10,
+                      fontSize: isDesktopWeb ? 12 : 10,
                     ),
                   ),
                 ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,8 +14,7 @@ import 'presentation/router/app_router.dart';
 /// Initializes Flutter bindings, sets up the [ProviderContainer] for dependency injection,
 /// triggers the initialization of the [InAppNotificationService], and runs the [ArrmateApp].
 ///
-/// If initialization of critical services fails, it logs a critical error and
-/// updates the [initializationErrorProvider] to notify the user.
+/// Optional service failures are logged without preventing application startup.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -35,13 +35,21 @@ void main() async {
     await container.read(inAppNotificationServiceProvider).init();
     logger.info('[main] In-app notification service initialized');
   } catch (e, stackTrace) {
-    logger.error(
-      '[main] CRITICAL: Failed to initialize services',
-      e,
-      stackTrace,
-    );
-    container.read(initializationErrorProvider.notifier).state =
-        'Failed to initialize notification services. Some features may not work correctly.';
+    if (kIsWeb) {
+      logger.warning(
+        '[main] Optional notification service initialization failed',
+        e,
+        stackTrace,
+      );
+    } else {
+      logger.error(
+        '[main] CRITICAL: Failed to initialize services',
+        e,
+        stackTrace,
+      );
+      container.read(initializationErrorProvider.notifier).state =
+          'Failed to initialize notification services. Some features may not work correctly.';
+    }
   }
 
   runApp(
