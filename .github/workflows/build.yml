@@ -1,0 +1,293 @@
+name: Build Applications
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Existing version tag to build
+        type: string
+        required: true
+      checkout_ref:
+        description: Expected immutable source revision of the tag
+        type: string
+        required: false
+        default: ''
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build (for example v2.0.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arrmate-build-${{ github.workflow }}-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.41.2'
+  RELEASE_TAG: ${{ inputs.release_tag }}
+
+jobs:
+  resolve-build:
+    name: Resolve build source
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.source.outputs.tag }}
+      version: ${{ steps.source.outputs.version }}
+      commit: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_tag != '' && format('refs/tags/{0}', inputs.release_tag) || github.sha }}
+          persist-credentials: false
+      - name: Validate build source
+        id: source
+        shell: bash
+        env:
+          EXPECTED_REVISION: ${{ inputs.checkout_ref }}
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Release build requires a version tag, such as v2.0.0."
+              exit 1
+            fi
+            git show-ref --verify "refs/tags/$RELEASE_TAG"
+          elif [ "$GITHUB_EVENT_NAME" != "pull_request" ] && \
+            { [ "$GITHUB_EVENT_NAME" != "push" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; }; then
+            echo "::error::Manual and release builds require a version tag."
+            exit 1
+          fi
+          REVISION=$(git rev-parse HEAD)
+          if [ -n "$EXPECTED_REVISION" ] && [ "$REVISION" != "$EXPECTED_REVISION" ]; then
+            echo "::error::The tag no longer points to the expected source revision."
+            exit 1
+          fi
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "commit=$REVISION" >> "$GITHUB_OUTPUT"
+
+  build-android:
+    name: Build Android Application
+    needs: resolve-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve-build.outputs.commit }}
+          persist-credentials: false
+
+      - name: Download Android keystore
+        if: needs.resolve-build.outputs.tag != ''
+        id: android_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: upload-keystore.jks
+          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Create key.properties
+        if: needs.resolve-build.outputs.tag != ''
+        env:
+          KEYSTORE_PATH: ${{ steps.android_keystore.outputs.filePath }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          {
+            printf 'storeFile=%s\n' "$KEYSTORE_PATH"
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+          } > android/key.properties
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build APKs
+        shell: bash
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          BUILD_ARGS=(--release --split-per-abi)
+          if [ -n "$BUILD_VERSION" ]; then
+            BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
+          fi
+          flutter build apk "${BUILD_ARGS[@]}"
+
+      - name: Upload Android release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: build/app/outputs/flutter-apk/app-arm*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  build-ios:
+    name: Build iOS Application
+    needs: resolve-build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve-build.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build iOS (unsigned)
+        shell: bash
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          BUILD_ARGS=(--release --no-codesign)
+          if [ -n "$BUILD_VERSION" ]; then
+            BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
+          fi
+          flutter build ios "${BUILD_ARGS[@]}"
+
+      - name: Package unsigned IPA
+        run: |
+          codesign -s - --force --deep build/ios/iphoneos/Runner.app
+          mkdir -p build/ios/ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -qry arrmate.ipa Payload
+
+      - name: Upload iOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ios
+          path: build/ios/ipa/arrmate.ipa
+          if-no-files-found: error
+          retention-days: 7
+
+  build-desktop:
+    name: Build ${{ matrix.platform }} Application
+    needs: resolve-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-22.04
+          - platform: windows
+            os: windows-2022
+          - platform: macos
+            os: macos-15
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.resolve-build.outputs.commit }}
+
+      - name: Select macOS build SDK
+        if: matrix.platform == 'macos'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate application icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build native application
+        shell: bash
+        env:
+          TARGET_PLATFORM: ${{ matrix.platform }}
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          BUILD_ARGS=(--release)
+          if [ -n "$BUILD_VERSION" ]; then
+            BUILD_ARGS+=(--build-name="$BUILD_VERSION" --build-number="$GITHUB_RUN_NUMBER")
+          fi
+          flutter build "$TARGET_PLATFORM" "${BUILD_ARGS[@]}"
+
+      - name: Package Linux application
+        if: matrix.platform == 'linux'
+        run: |
+          mkdir -p build/release/arrmate-linux-x64
+          cp -a build/linux/x64/release/bundle/. build/release/arrmate-linux-x64/
+          tar -C build/release -czf build/release/arrmate-linux-x64.tar.gz arrmate-linux-x64
+
+      - name: Package Windows application
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build/release | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/release/arrmate-windows-x64.zip
+
+      - name: Package macOS application
+        if: matrix.platform == 'macos'
+        run: |
+          mkdir -p build/release
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/Arrmate.app build/release/arrmate-macos.zip
+
+      - name: Upload desktop release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: |
+            build/release/arrmate-*.zip
+            build/release/arrmate-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
