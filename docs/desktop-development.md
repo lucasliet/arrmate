@@ -121,6 +121,8 @@ source, and publishes the complete release together.
 Desktop archives include Flutter assets and libraries. Extract the complete
 archive before launching the executable or app bundle. Linux still requires
 the runtime libraries and Secret Service session described above.
+Tagged Linux builds update the bundled `version.json` before packaging because
+Flutter 3.41.2 leaves it at the `pubspec.yaml` version despite build overrides.
 
 To rebuild an existing version after changing the release workflow, run the
 **Release** workflow manually from `main` and supply its existing tag in the

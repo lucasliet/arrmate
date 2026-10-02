@@ -188,17 +188,12 @@ jobs:
                               "height": 1630
                           },
                           {
-                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/series.png",
+                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/series_details.png",
                               "width": 750,
                               "height": 1630
                           },
                           {
                               "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/calendar.png",
-                              "width": 750,
-                              "height": 1630
-                          },
-                          {
-                              "imageURL": "https://raw.githubusercontent.com/lucasliet/arrmate/main/assets/screenshots/series_details.png",
                               "width": 750,
                               "height": 1630
                           }

@@ -61,9 +61,9 @@ do not apply to native requests.
 
 ## 📱 Screenshots
 
-| Movies | Series | Calendar | Series details |
-| --- | --- | --- | --- |
-| ![Movies library](assets/screenshots/movies.png) | ![Series library](assets/screenshots/series.png) | ![Release calendar](assets/screenshots/calendar.png) | ![Series details](assets/screenshots/series_details.png) |
+| Movies | Series details | Calendar |
+| --- | --- | --- |
+| ![Movies library](assets/screenshots/movies.png) | ![Series details](assets/screenshots/series_details.png) | ![Release calendar](assets/screenshots/calendar.png) |
 
 ## 🚀 Features
 

@@ -261,6 +261,23 @@ jobs:
           fi
           flutter build "$TARGET_PLATFORM" "${BUILD_ARGS[@]}"
 
+      - name: Set Linux release version metadata
+        if: matrix.platform == 'linux' && needs.resolve-build.outputs.tag != ''
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("build/linux/x64/release/bundle/data/flutter_assets/version.json")
+          metadata = json.loads(path.read_text())
+          metadata["version"] = os.environ["BUILD_VERSION"]
+          metadata["build_number"] = os.environ["GITHUB_RUN_NUMBER"]
+          path.write_text(json.dumps(metadata, indent=2) + "\n")
+          PY
+
       - name: Package Linux application
         if: matrix.platform == 'linux'
         run: |
