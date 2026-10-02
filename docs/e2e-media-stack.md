@@ -28,7 +28,7 @@ release lists attribute to indexers such as `1337x (Prowlarr)`.
 From the repository root, with Docker running:
 
 ```sh
-docker compose -f tool/e2e/docker-compose.yml up -d --build
+docker compose -f tool/e2e/docker-compose.yml up -d --build --wait
 sh tool/e2e/smoke.sh
 ```
 
@@ -40,6 +40,30 @@ docker compose -f tool/e2e/docker-compose.yml down
 
 The process keeps state in memory. Restarting the container restores the
 sample library.
+
+The smoke command requires Python 3.10 or newer on the host and runs 16 HTTP
+scenarios, including new grabs and their automatic imports in both services.
+It takes about a minute, mutates fixtures, and requires a fresh lab. Before
+repeating it or starting a manual UI pass, reset the container:
+
+```sh
+docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate --wait
+```
+
+The `Media Lab API Checks` workflow runs this same command against Docker
+Compose and uploads its test and server logs as `media-lab-api-evidence`.
+These are mock API contract checks. They do not drive the Arrmate UI; see
+[e2e-coverage-audit.md](e2e-coverage-audit.md) for the full coverage assessment.
+
+If Docker is unavailable, the identical server can be run on the host with
+Python 3.10 or newer:
+
+```sh
+python3 -u tool/e2e/mock/server.py
+```
+
+Run the smoke command in another terminal. Stop and restart the server to
+restore fixtures. All four lab ports must be available.
 
 ## Instances to add in Arrmate
 

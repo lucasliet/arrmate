@@ -1,8 +1,10 @@
 # End-to-end feature matrix
 
-Every user-facing control in Arrmate, with the result expected against the
-media lab described in [e2e-media-stack.md](e2e-media-stack.md). Use it as the
-checklist for a full manual pass on any platform build.
+A manual checklist of Arrmate screens and controls, with expected results
+against the media lab described in [e2e-media-stack.md](e2e-media-stack.md).
+It is a partial coverage inventory; listing a case does not mean it has been
+executed. See [e2e-coverage-audit.md](e2e-coverage-audit.md) for the coverage
+audit, executable checks, and remaining application and platform scenarios.
 
 ## How to read this file
 
@@ -42,18 +44,6 @@ Grabs, searches, imports, queue removals, and deletions change this state the
 way a real stack would; see [Media lab limits](#media-lab-limits) for what the
 lab still does not model.
 
---- | --- |
-| Radarr movies | Dune (id 1, file on disk), The Matrix (id 2, file on disk), Arrival (id 3, monitored, no file), Oppenheimer (id 4, in cinemas, release ahead of today) |
-| Radarr lookup only | Inception (tmdb 27205), Blade Runner 2049 (tmdb 335984), both `id: 0` |
-| Sonarr series | Severance (id 1, 4 of 9 episodes on disk, finale upcoming), The Bear (id 2, 8 of 8, ended) |
-| Sonarr lookup only | Shogun (tvdb 417742, `id: 0`) |
-| Profiles / folders / tags | HD-1080p and Ultra-HD; `/movies` and `/tv`; tag `lab` |
-| Arrival releases | 3 Prowlarr rows; the 720p row is rejected |
-| Radarr queue | Dune downloading; Arrival warning, import pending (manual import) |
-| Sonarr queue | Severance S01E09 downloading |
-| qBittorrent | Dune (downloading, `radarr`), The Matrix (seeding, `radarr`, 40×`a`), The Matrix cross-seed (seeding, `cross-seed`, 40×`b`), Arrival (paused, `radarr`), Broken Sample (error, `radarr`), Unrelated Concert Bootleg 2020 (seeding, no category), Severance S01E09 (downloading, `sonarr`), Severance S01E01 (seeding, `sonarr`, 40×`9`) |
-| History | Matrix grabbed + imported (40×`a`); Arrival failed (40×`d`); Severance S01E01 grabbed + imported (40×`9`) |
-
 ---
 
 ## Shell and navigation (NAV)
@@ -69,7 +59,7 @@ lab still does not model.
 | NAV-07 | Notification bell | Tap bell on any tab | Opens `/notifications`; badge shows unread count, `99+` above 99 | Verified |
 | NAV-08 | Rail bell on nested routes | Wide layout, open a movie | Bell appears in rail trailing area without tooltip | Verified |
 | NAV-09 | Offline banner | Disconnect network | “Offline” banner with last-online time and the 7-day image cache note; disappears on reconnect | Not run |
-| NAV-10 | Home tab on launch | Set Home Tab (SET-09), restart app | App opens on the chosen tab | Verified |
+| NAV-10 | Home tab on launch | Set Home Tab (SET-04), restart app | App opens on the chosen tab | Verified |
 | NAV-11 | Adaptive sheets | Open any sheet at < 600 and ≥ 600 | Bottom sheet at both widths, drag handle included. Wide windows keep it width-capped along the bottom; it is not a centered dialog | Verified |
 
 ## Deep links (LNK)
@@ -139,7 +129,7 @@ do not register the scheme, so run this section on those three platforms only.
 | MVD-15 | Menu → Delete files | Dune overflow | Enabled when the movie has a file, disabled for Arrival; confirm → “Deleted 1 file” | Not run |
 | MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to library; its torrents turn Orphan | Not run |
 | MVD-17 | Menu → Purge | Overflow → Purge | Same flow as MOV-17 for one movie; “Movie purged.” summary | Not run |
-| MVD-18 | Wide vs compact hero | Width < 1200 and ≥ 1200 | Hero 300/360, poster 100/180, padding 16/32 | Not run |
+| MVD-18 | Wide vs compact hero | Content width < 1200 and ≥ 1200, after subtracting the rail | Hero 300/360, poster 100/180, padding 16/32 | Not run |
 
 ## Interactive search (REL)
 
@@ -386,7 +376,7 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| INS-01 | Add Radarr | Type Radarr, `http://127.0.0.1:7878`, `arrmate-radarr`, Test | “Connection successful!” with version 5.18.4, instance name, “Tags: 1 available” | Seen |
+| INS-01 | Add Radarr | Type Radarr, `http://127.0.0.1:7878`, `arrmate-radarr`, Test | “Connection successful!” with version 5.18.4, instance name, “Tags: 2 available” | Seen |
 | INS-02 | Add Sonarr | `:8989`, `arrmate-sonarr` | Version 4.0.14 | Seen |
 | INS-03 | Add qBittorrent, bearer | `:8080`, API key `arrmate-qbit` | “Auth: API Key”, torrent count | Seen |
 | INS-04 | qBittorrent Basic Auth | Empty key → Advanced → Add Basic Auth `admin` / `adminarr` | “Auth: Username & Password” | Not run |

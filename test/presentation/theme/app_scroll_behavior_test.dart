@@ -1,67 +1,109 @@
+import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/providers/instances_provider.dart';
+import 'package:arrmate/presentation/screens/movies/movies_screen.dart';
+import 'package:arrmate/presentation/screens/movies/providers/movies_provider.dart';
+import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
+import 'package:arrmate/presentation/screens/series/series_screen.dart';
 import 'package:arrmate/presentation/theme/app_scroll_behavior.dart';
+import 'package:arrmate/presentation/tour/tour_mock_data.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('should drag scrollables with a mouse', () {
-    const behavior = AppScrollBehavior();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
-    expect(behavior.dragDevices, contains(PointerDeviceKind.mouse));
-    expect(behavior.dragDevices, contains(PointerDeviceKind.touch));
-  });
+  for (final movies in [true, false]) {
+    testWidgets(
+      '${movies ? 'movie' : 'series'} library refreshes from a mouse drag with one search result',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1280, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        var loads = 0;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentRadarrInstanceProvider.overrideWithValue(null),
+              currentSonarrInstanceProvider.overrideWithValue(null),
+              if (movies)
+                moviesProvider.overrideWith(() => _Movies(() => loads++))
+              else
+                seriesProvider.overrideWith(() => _Series(() => loads++)),
+            ],
+            child: MaterialApp(
+              scrollBehavior: const AppScrollBehavior(),
+              home: movies ? const MoviesScreen() : const SeriesScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(loads, 1);
+        await tester.tap(find.byIcon(Icons.search));
+        await tester.pumpAndSettle();
+        final query = movies ? 'Northern' : 'Blue';
+        await tester.enterText(find.byType(TextField), query);
+        await tester.pumpAndSettle();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TextField)),
+        );
+        final results = movies
+            ? container.read(filteredMoviesProvider).requireValue.length
+            : container.read(filteredSeriesProvider).requireValue.length;
+        expect(results, 1);
+        final scrollable = find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first;
+        expect(
+          tester.state<ScrollableState>(scrollable).position.maxScrollExtent,
+          0,
+        );
 
-  testWidgets('should refresh a short list from a mouse drag', (tester) async {
-    var refreshes = 0;
+        final gesture = await tester.startGesture(
+          const Offset(600, 400),
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.moveBy(const Offset(0, 300));
+        await tester.pump(const Duration(milliseconds: 200));
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        scrollBehavior: AppScrollBehavior(),
-        home: _ShortRefreshList(),
-      ),
+        expect(loads, 2);
+        expect(find.text(query), findsNothing);
+        expect(
+          movies
+              ? container.read(movieSearchProvider)
+              : container.read(seriesSearchProvider),
+          isEmpty,
+        );
+        expect(tester.takeException(), isNull);
+      },
     );
-    await tester.pump();
-
-    final state = tester.state<_ShortRefreshListState>(
-      find.byType(_ShortRefreshList),
-    );
-    state.onRefresh = () async {
-      refreshes++;
-    };
-
-    final gesture = await tester.startGesture(
-      const Offset(200, 120),
-      kind: PointerDeviceKind.mouse,
-    );
-    await gesture.moveBy(const Offset(0, 300));
-    await tester.pump(const Duration(milliseconds: 200));
-    await gesture.up();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(refreshes, 1);
-  });
+  }
 }
 
-class _ShortRefreshList extends StatefulWidget {
-  const _ShortRefreshList();
+class _Movies extends MoviesNotifier {
+  _Movies(this.onLoad);
+  final VoidCallback onLoad;
 
   @override
-  State<_ShortRefreshList> createState() => _ShortRefreshListState();
+  List<Movie> build() {
+    onLoad();
+    return TourMockData.movies();
+  }
 }
 
-class _ShortRefreshListState extends State<_ShortRefreshList> {
-  /// Completes when the indicator finishes a pull.
-  Future<void> Function() onRefresh = () async {};
+class _Series extends SeriesNotifier {
+  _Series(this.onLoad);
+  final VoidCallback onLoad;
 
   @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () => onRefresh(),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [SizedBox(height: 80, child: Text('one row'))],
-      ),
-    );
+  List<Series> build() {
+    onLoad();
+    return TourMockData.series();
   }
 }
