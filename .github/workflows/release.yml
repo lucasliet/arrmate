@@ -4,16 +4,57 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to rebuild (for example v2.0.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arrmate-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
-  generate-notes:
-    name: Generate Release Notes
+  prepare-release:
+    name: Resolve release tag
     runs-on: ubuntu-latest
     outputs:
-      release_notes: ${{ steps.set_output.outputs.release_notes }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      commit: ${{ steps.version.outputs.commit }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          persist-credentials: false
+      - name: Validate release tag and resolve source revision
+        id: version
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release requires a version tag, such as v2.0.0."
+            exit 1
+          fi
+          git show-ref --verify "refs/tags/$RELEASE_TAG"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  generate-notes:
+    name: Generate Release Notes
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare-release.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -27,18 +68,12 @@ jobs:
 
       - name: Build Release Notes Prompt
         run: |
-          # Get previous tag or root
           PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" HEAD^ 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then RANGE="HEAD"; else RANGE="$PREV_TAG..HEAD"; fi
 
-          # Build the prompt into a file to avoid shell quoting issues with
-          # special characters in commit messages (quotes, backticks, $).
-          # Quoted heredocs ('EOF') disable shell expansion entirely; the git
-          # log is appended verbatim so its content is never interpreted.
-          # The file is shared by both generation steps below.
           cat > prompt.txt <<'EOF'
           REPO: ${{ github.repository }}
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ needs.prepare-release.outputs.tag }}
 
           CHANGES:
           EOF
@@ -50,7 +85,7 @@ jobs:
           GUIDELINES:
           - Focus on meaningful changes for final user experience, so ignore technical details like refactor and tests made, etc.
           - Answer everything in brazilian portuguese
-          - Start with the title '# ${{ github.repository }} ${{ github.ref_name }}'
+          - Start with the title '# ${{ github.repository }} ${{ needs.prepare-release.outputs.tag }}'
           - Write a brief, engaging summary paragraph explaining what this release achieves.
           - Group changes into '## Key Features' (if there are any) and '## Bug Fixes' (if there are any).
           - Use bullet points.
@@ -67,11 +102,7 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          # Feed the prompt via stdin; --output-format text prints only the
-          # final message to stdout, which we redirect to RELEASE_BODY.md.
           claude -p --model claude-haiku-4-5 --output-format text --max-turns 4 < prompt.txt > RELEASE_BODY.md
-          # An exit 0 with empty output still means no usable notes, so fail
-          # explicitly to let the Z.AI fallback step below take over.
           [ -s RELEASE_BODY.md ]
 
       - name: Generate Release Notes with Z.AI (fallback)
@@ -85,159 +116,52 @@ jobs:
 
       - name: Fallback on empty or failed output
         run: |
-          # Fallback: use the last commit message when generation failed, the
-          # file is missing/empty, or the CLI error text ended up in it.
-          if [ ! -s RELEASE_BODY.md ] || grep -qE 'Reached max turns|API Error' RELEASE_BODY.md; then
+          if [ ! -s RELEASE_BODY.md ] || grep -qE 'Reached max turns|API Error|Failed to authenticate' RELEASE_BODY.md; then
             git log -1 --pretty=%B > RELEASE_BODY.md
           fi
-      
-      - name: Set Output
-        id: set_output
-        run: |
-          # A unique delimiter plus the blank line before it keep the closing
-          # marker on its own line even when RELEASE_BODY.md has no trailing
-          # newline (which breaks the file command parser otherwise).
-          echo "release_notes<<RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
-          cat RELEASE_BODY.md >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
 
-  build_app:
-    name: Build Android Application
-    needs: generate-notes
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_BODY.md
+          if-no-files-found: error
+          retention-days: 7
+
+  build-applications:
+    name: Build Applications
+    needs: prepare-release
+    uses: ./.github/workflows/build.yml
+    with:
+      release_tag: ${{ needs.prepare-release.outputs.tag }}
+      checkout_ref: ${{ needs.prepare-release.outputs.commit }}
+    secrets: inherit
+
+  publish-release:
+    name: Publish Release
+    needs: [prepare-release, generate-notes, build-applications]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - uses: actions/checkout@v6
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
         with:
-          persist-credentials: false
-
-      - name: Download Android keystore
-        id: android_keystore
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: upload-keystore.jks
-          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-
-      - name: Create key.properties
-        run: |
-          echo "storeFile=${{ steps.android_keystore.outputs.filePath }}" > android/key.properties
-          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: "21"
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.41.2"
-          channel: 'stable'
-          cache: 'true'
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Generate Icons
-        run: dart run flutter_launcher_icons
-
-      # - name: Build Android App Bundle
-      #   run: >
-      #     flutter build appbundle 
-      #     --build-number=${{ github.run_number }} 
-      #     --build-name=0.0.${{ github.run_number }}
-      
-      # - name: Publish Release to PlayStore internal track
-      #   uses: r0adkll/upload-google-play@v1
-      #   with:
-      #     serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
-      #     packageName: br.com.lucasliet.blueguava
-      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
-      #     track: internal
-      #     status: draft
-
-      - name: Build APKs
-        run: >
-          flutter build apk --release --split-per-abi
-          --build-number=${{ github.run_number }}
-          --build-name=${{ github.ref_name }}
-
-      - name: Publish Release to Github
-        uses: ncipollo/release-action@v1
-        if: github.ref_type == 'tag'
-        with:
-          artifacts: "build/app/outputs/flutter-apk/app-arm*.apk"
-          tag: ${{ github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          allowUpdates: true
-          removeArtifacts: true
-          body: |
-            **Release Notes**
-            ${{ needs.generate-notes.outputs.release_notes }}
-
-            ---
-            Instruções de instalação
-
-            - Android habilite instalação de fontes desconhecidas e instale o arquivo .apk correspondente, 
-              - **app-arm64-v8a-release.apk** para 64bits (mais que 4GB de RAM)
-              - **app-armeabi-v7a-release.apk** 32 bits
-              - o próprio app verifica atualizações e instala automaticamente
-
-  build_ios:
-    name: Build iOS Application
-    needs: [generate-notes, build_app]
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.41.2"
-          channel: 'stable'
-          cache: 'true'
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Generate Icons
-        run: dart run flutter_launcher_icons
-
-      - name: Build iOS (unsigned)
-        run: >
-          flutter build ios --release --no-codesign
-          --build-number=${{ github.run_number }}
-          --build-name=${GITHUB_REF_NAME#v}
-
-      - name: Package unsigned IPA
-        run: |
-          codesign -s - --force --deep build/ios/iphoneos/Runner.app
-          mkdir -p build/ios/ipa/Payload
-          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
-          cd build/ios/ipa && zip -qry arrmate.ipa Payload
+          pattern: release-*
+          merge-multiple: true
+          path: dist
 
       - name: Generate AltStore source
-        env:
-          RELEASE_NOTES: ${{ needs.generate-notes.outputs.release_notes }}
         run: |
           python3 - <<'EOF'
           import datetime
           import json
           import os
+          from pathlib import Path
 
-          tag = os.environ["GITHUB_REF_NAME"]
-          ipa_size = os.path.getsize("build/ios/ipa/arrmate.ipa")
+          tag = os.environ["RELEASE_TAG"]
+          ipa_size = Path("dist/arrmate.ipa").stat().st_size
+          release_notes = Path("dist/RELEASE_BODY.md").read_text()
 
           source = {
               "name": "Arrmate",
@@ -284,7 +208,7 @@ jobs:
                               "version": tag.lstrip("v"),
                               "buildVersion": os.environ["GITHUB_RUN_NUMBER"],
                               "date": datetime.date.today().isoformat(),
-                              "localizedDescription": os.environ.get("RELEASE_NOTES", ""),
+                              "localizedDescription": release_notes,
                               "downloadURL": "https://github.com/lucasliet/arrmate/releases/download/" + tag + "/arrmate.ipa",
                               "size": ipa_size,
                               "minOSVersion": "15.0",
@@ -295,30 +219,40 @@ jobs:
               "news": [],
           }
 
-          with open("build/ios/ipa/altstore.json", "w") as handle:
-              json.dump(source, handle, indent=2)
+
+          Path("dist/altstore.json").write_text(json.dumps(source, indent=2))
           EOF
 
-      - name: Publish Release to Github
+      - name: Require every platform artifact
+        run: |
+          for ASSET in app-arm64-v8a-release.apk app-armeabi-v7a-release.apk \
+            arrmate.ipa arrmate-windows-x64.zip arrmate-linux-x64.tar.gz \
+            arrmate-macos.zip altstore.json; do
+            test -s "dist/$ASSET" || { echo "::error::Missing release artifact: $ASSET"; exit 1; }
+          done
+
+      - name: Add installation instructions
+        run: |
+          cat >> dist/RELEASE_BODY.md <<'EOF'
+
+          ---
+          ## Instalação
+
+          - Android: instale o APK correspondente à arquitetura do aparelho.
+          - iOS: instale o `arrmate.ipa` usando AltStore ou Sideloadly.
+          - AltStore source: https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json
+          - Windows: extraia `arrmate-windows-x64.zip` e execute `arrmate.exe`.
+          - Linux: extraia `arrmate-linux-x64.tar.gz` e execute `arrmate-linux-x64/arrmate`.
+          - macOS: extraia `arrmate-macos.zip` e abra `Arrmate.app`.
+          EOF
+
+      - name: Publish all platforms together
         uses: ncipollo/release-action@v1
-        if: github.ref_type == 'tag'
         with:
-          artifacts: "build/ios/ipa/arrmate.ipa,build/ios/ipa/altstore.json"
-          tag: ${{ github.ref_name }}
+          artifacts: dist/app-arm64-v8a-release.apk,dist/app-armeabi-v7a-release.apk,dist/arrmate.ipa,dist/altstore.json,dist/arrmate-windows-x64.zip,dist/arrmate-linux-x64.tar.gz,dist/arrmate-macos.zip
+          tag: ${{ needs.prepare-release.outputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
-          removeArtifacts: false
-          body: |
-            **Release Notes**
-            ${{ needs.generate-notes.outputs.release_notes }}
-
-            ---
-            Instruções de instalação
-
-            - Android habilite instalação de fontes desconhecidas e instale o arquivo .apk correspondente, 
-              - **app-arm64-v8a-release.apk** para 64bits (mais que 4GB de RAM)
-              - **app-armeabi-v7a-release.apk** 32 bits
-              - o próprio app verifica atualizações e instala automaticamente
-            - iOS (AltStore) adicione a source abaixo no AltStore e instale/atualize por lá
-              - `https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json`
-            - iOS (manual) baixe o **arrmate.ipa** e faça sideload com AltStore/Sideloadly
+          removeArtifacts: true
+          artifactErrorsFailBuild: true
+          bodyFile: dist/RELEASE_BODY.md

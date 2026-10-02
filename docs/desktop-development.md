@@ -3,8 +3,9 @@
 Arrmate includes Flutter runners for Windows, Linux, and macOS, generated
 with Flutter 3.41.2, the version pinned in CI. These targets execute the
 existing Dart application natively. They do not embed a browser or load the
-web build. Desktop packaging, installers, signing, and automatic updates are
-separate follow-up work.
+web build. Tagged releases package the complete desktop bundles alongside
+Android and iOS. Installers, signing, and automatic desktop updates remain
+separate work.
 
 ## Build and run
 
@@ -66,8 +67,8 @@ targets. The runner includes:
 - Registration of the existing `arrmate://` URL scheme.
 
 Select a development team in Xcode when building with a signing identity.
-Public distribution still needs signing and notarization; this change does
-not create a distribution configuration or publish an installer.
+The release archive contains the application bundle. Signing, notarization,
+and a disk-image installer are not configured.
 
 ## Runtime capabilities
 
@@ -92,11 +93,38 @@ desktop-file/URI activation still require platform packaging integration.
 
 ## Verification
 
-`build-desktop.yml` builds all three release targets on their respective
+`build-desktop.yml` builds all three desktop targets on their respective
 GitHub Actions hosts for pull requests, pushes to `main`, and manual runs.
 The existing test workflow continues to analyze Dart and run the test suite.
-These builds verify compilation; they do not establish interactive runtime
-parity or publish packages.
+These checks verify compilation and do not establish interactive runtime
+parity.
+
+## Release packaging
+
+`release.yml` publishes versions when a `v*` tag is pushed. After resolving the
+tag to an immutable source revision, it calls the reusable `build.yml`
+workflow while release notes are generated independently. That build workflow
+runs Android, iOS, and the desktop matrix in parallel; the matrix reuses
+`build-desktop.yml`. A single publication job waits for every build, downloads
+their artifacts, creates the AltStore source, and publishes the complete
+release together.
+
+| Platform | Release asset |
+| --- | --- |
+| Android | `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk` |
+| iOS | `arrmate.ipa`, `altstore.json` |
+| Windows x64 | `arrmate-windows-x64.zip` |
+| Linux x64 | `arrmate-linux-x64.tar.gz` |
+| macOS | `arrmate-macos.zip` |
+
+Desktop archives include Flutter assets and libraries. Extract the complete
+archive before launching the executable or app bundle. Linux still requires
+the runtime libraries and Secret Service session described above.
+
+To rebuild an existing version after changing the release workflow, run the
+**Release** workflow manually from `main` and supply its existing tag in the
+`tag` input. The workflow builds that tag's source and updates its release;
+it does not release the current `main` application code.
 
 Before declaring a desktop target ready for distribution, check startup,
 persisted credentials after a restart, an HTTP LAN server connection,

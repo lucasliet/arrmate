@@ -42,12 +42,16 @@ AltStore or Sideloadly.
 Arrmate also runs in the browser, served from
 [GitHub Pages](https://lucasliet.github.io/arrmate/).
 
-### Desktop (development support)
+### Desktop
 
-The project includes native Windows, Linux, and macOS runners. Build each
-target on its corresponding operating system; see
+Tagged releases include native Windows, Linux, and macOS bundles. Download
+`arrmate-windows-x64.zip`, `arrmate-linux-x64.tar.gz`, or `arrmate-macos.zip`
+from [Releases](https://github.com/lucasliet/arrmate/releases), extract the
+archive, and run the application. These bundles do not include installers,
+distribution signing, or macOS notarization.
+
+To build from source, use the corresponding operating system; see
 [Desktop development](docs/desktop-development.md) for dependencies and commands.
-Desktop installers and signed releases are not published yet.
 
 Web, native desktop, and tablet apps share the same responsive layout,
 selected by available content width. Navigation, libraries, details, calendar,

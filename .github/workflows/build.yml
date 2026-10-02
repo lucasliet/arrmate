@@ -1,0 +1,188 @@
+name: Build Applications
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Existing version tag to build
+        type: string
+        required: true
+      checkout_ref:
+        description: Expected immutable source revision of the tag
+        type: string
+        required: false
+        default: ''
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build (for example v2.0.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.41.2'
+  RELEASE_TAG: ${{ inputs.release_tag }}
+
+jobs:
+  resolve-build:
+    name: Resolve build source
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.source.outputs.tag }}
+      version: ${{ steps.source.outputs.version }}
+      commit: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.release_tag }}
+          persist-credentials: false
+      - name: Validate the tagged source
+        id: source
+        shell: bash
+        env:
+          EXPECTED_REVISION: ${{ inputs.checkout_ref }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Build requires a version tag, such as v2.0.0."
+            exit 1
+          fi
+          git show-ref --verify "refs/tags/$RELEASE_TAG"
+          REVISION=$(git rev-parse HEAD)
+          if [ -n "$EXPECTED_REVISION" ] && [ "$REVISION" != "$EXPECTED_REVISION" ]; then
+            echo "::error::The tag no longer points to the expected source revision."
+            exit 1
+          fi
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "commit=$REVISION" >> "$GITHUB_OUTPUT"
+
+  build-android:
+    name: Build Android Application
+    needs: resolve-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve-build.outputs.commit }}
+          persist-credentials: false
+
+      - name: Download Android keystore
+        id: android_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: upload-keystore.jks
+          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Create key.properties
+        env:
+          KEYSTORE_PATH: ${{ steps.android_keystore.outputs.filePath }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          {
+            printf 'storeFile=%s\n' "$KEYSTORE_PATH"
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+          } > android/key.properties
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build APKs
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION"
+
+      - name: Upload Android release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: build/app/outputs/flutter-apk/app-arm*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  build-ios:
+    name: Build iOS Application
+    needs: resolve-build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve-build.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build iOS (unsigned)
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
+        run: |
+          flutter build ios --release --no-codesign \
+            --build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION"
+
+      - name: Package unsigned IPA
+        run: |
+          codesign -s - --force --deep build/ios/iphoneos/Runner.app
+          mkdir -p build/ios/ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -qry arrmate.ipa Payload
+
+      - name: Upload iOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ios
+          path: build/ios/ipa/arrmate.ipa
+          if-no-files-found: error
+          retention-days: 7
+
+  build-desktop:
+    name: Build Desktop Applications
+    needs: resolve-build
+    uses: ./.github/workflows/build-desktop.yml
+    with:
+      release_tag: ${{ needs.resolve-build.outputs.tag }}
+      checkout_ref: ${{ needs.resolve-build.outputs.commit }}

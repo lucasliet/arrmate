@@ -6,12 +6,24 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag used for versioning and packaging
+        type: string
+        required: false
+        default: ''
+      checkout_ref:
+        description: Immutable source revision for a release build
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
 concurrency:
-  group: arrmate-desktop-${{ github.ref }}
+  group: arrmate-desktop-${{ github.workflow }}-${{ inputs.release_tag || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,6 +45,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.ref }}
 
       - name: Select macOS build SDK
         if: matrix.platform == 'macos'
@@ -60,4 +73,45 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Build native application
-        run: flutter build ${{ matrix.platform }} --release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            flutter build ${{ matrix.platform }} --release \
+              --build-name="${RELEASE_TAG#v}" --build-number="$GITHUB_RUN_NUMBER"
+          else
+            flutter build ${{ matrix.platform }} --release
+          fi
+
+      - name: Package Linux application
+        if: inputs.release_tag != '' && matrix.platform == 'linux'
+        run: |
+          mkdir -p build/release/arrmate-linux-x64
+          cp -a build/linux/x64/release/bundle/. build/release/arrmate-linux-x64/
+          tar -C build/release -czf build/release/arrmate-linux-x64.tar.gz arrmate-linux-x64
+
+      - name: Package Windows application
+        if: inputs.release_tag != '' && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build/release | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/release/arrmate-windows-x64.zip
+
+      - name: Package macOS application
+        if: inputs.release_tag != '' && matrix.platform == 'macos'
+        run: |
+          mkdir -p build/release
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/Arrmate.app build/release/arrmate-macos.zip
+
+      - name: Upload desktop release artifact
+        if: inputs.release_tag != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: |
+            build/release/arrmate-*.zip
+            build/release/arrmate-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
