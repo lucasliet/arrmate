@@ -14,6 +14,9 @@ checklist for a full manual pass on any platform build.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
   - `N/A`: not implemented in the app (see [Behavior gaps](#behavior-gaps-found-while-mapping)).
+- **Expected** follows the current lab, which models grabs, imports, queue
+  removal, and deletions. Some expectations changed after the last pass; rerun
+  those rows rather than trusting their old status.
 
 Destructive rows (delete, purge, remove, reset) change lab state. Run them last
 in each section, or restart the lab before the next section.
@@ -22,6 +25,22 @@ in each section, or restart the lab before the next section.
 
 | Kind | Items |
 | --- | --- |
+| Radarr movies | Dune (id 1, 1080p on disk, 2160p upgrade downloading), The Matrix (id 2, on disk), Arrival (id 3, monitored, no file, completed download awaiting manual import), Oppenheimer (id 4, in cinemas since 5 days ago; digital +30 days, physical +70) |
+| Radarr lookup only | Inception (tmdb 27205, `tt1375666`), Blade Runner 2049 (tmdb 335984), both `id: 0` |
+| Sonarr series | Severance (id 1: S01 4 of 9 on disk, E05 stalled, E09 downloading, E06–E08 missing; S02 ten episodes from +4 days weekly; S00E01 special at +6 days, unmonitored), The Bear (id 2, 8 of 8, ended) |
+| Sonarr lookup only | Shogun (tvdb 417742, `id: 0`, ten episodes once added) |
+| Profiles / folders / tags | HD-1080p and Ultra-HD; `/movies`, `/movies-4k`, `/tv`, `/tv-anime`; tags `lab` and `4k` |
+| Movie releases | 4 Prowlarr rows per movie; the 720p row is rejected |
+| Radarr queue | Dune downloading; Arrival warning, import pending (manual import) |
+| Sonarr queue | Severance S01E09 downloading; Severance S01E05 stalled (warning) |
+| qBittorrent | Dune (downloading, `radarr`, 40×`c`), The Matrix (seeding, `radarr`, 40×`a`), The Matrix cross-seed (seeding, `cross-seed`, 40×`b`), Arrival (stopped, complete, `radarr`, 40×`d`), Broken Sample (error, `radarr`), Unrelated Concert Bootleg 2020 (seeding, no category), Severance S01E01 (seeding, `sonarr`, 40×`9`), S01E09 (downloading, `sonarr`, 40×`8`), S01E05 (stalled, `sonarr`, 40×`7`) |
+| History | Dune grabbed + imported + renamed + 2160p grab; Matrix grabbed + imported (40×`a`); Arrival HDTV grabbed + failed, WEBDL grabbed (40×`d`); Oppenheimer ignored; The Bear pack grabbed + imported, one ignored; Severance S01E01–E04 grabbed + imported, E05 and E09 grabbed |
+
+Grabs, searches, imports, queue removals, and deletions change this state the
+way a real stack would; see [Media lab limits](#media-lab-limits) for what the
+lab still does not model.
+
+--- | --- |
 | Radarr movies | Dune (id 1, file on disk), The Matrix (id 2, file on disk), Arrival (id 3, monitored, no file), Oppenheimer (id 4, in cinemas, release ahead of today) |
 | Radarr lookup only | Inception (tmdb 27205), Blade Runner 2049 (tmdb 335984), both `id: 0` |
 | Sonarr series | Severance (id 1, 4 of 9 episodes on disk, finale upcoming), The Bear (id 2, 8 of 8, ended) |
@@ -81,8 +100,8 @@ do not register the scheme, so run this section on those three platforms only.
 | MOV-04 | Pull to refresh | Pull down with a search active | Search cleared, list reloads | Not run |
 | MOV-05 | Sort: Title / Year / Added / Rating / Size / Runtime / Grabbed / Digital Release | Sort sheet, pick each | Order changes for each value; sheet closes on pick | Not run |
 | MOV-06 | Order Ascending / Descending | Sort sheet | Order inverts | Not run |
-| MOV-07 | Filter All / Monitored / Unmonitored / Missing / Downloaded / Wanted / Dangling | Sort sheet, pick each | Downloaded = Dune, Matrix. Missing/Wanted include Arrival. Unmonitored and Dangling empty until MOV-13 | Not run |
-| MOV-08 | Root folder filter | Sort sheet → `/movies` and “All folders” | Section visible; filter keeps all four | Not run |
+| MOV-07 | Filter All / Monitored / Unmonitored / Missing / Downloaded / Wanted / Dangling | Sort sheet, pick each | Downloaded = Dune, Matrix. Missing includes Arrival and Oppenheimer; Wanted includes Arrival. Unmonitored and Dangling empty until MOV-13 | Not run |
+| MOV-08 | Root folder filter | Sort sheet → `/movies` and “All folders” | `/movies` keeps all four; `/movies-4k` is empty until MVE-04 moves Dune | Not run |
 | MOV-09 | Filtered empty state | Filter Unmonitored | “No results found” with hint to clear filters | Not run |
 | MOV-10 | Enter selection | Long-press Dune (grid and list) | “1 selected” app bar, batch bar, FAB hidden | Not run |
 | MOV-11 | Add/remove from selection | Tap Matrix, tap Dune again | Count 2 → 1; deselecting last item exits selection | Not run |
@@ -90,8 +109,8 @@ do not register the scheme, so run this section on those three platforms only.
 | MOV-13 | Batch Unmonitor | Select Dune + Arrival → Unmonitor | Snackbar “Unmonitored 2 movies”; bookmark icons empty; reopen app, still unmonitored | Not run |
 | MOV-14 | Batch Monitor | Select same → Monitor | “Monitored 2 movies”; icons filled | Not run |
 | MOV-15 | Batch Delete | Select Oppenheimer → Delete → Delete; tick “Add to import exclusion list” | Confirm dialog; “Deleted 1 movie”; Oppenheimer gone from library and calendar | Not run |
-| MOV-16 | Batch Delete files | Select Dune → Delete → Delete files | Confirm; “Deleted 1 file”; Dune shows missing; Dune torrent badge becomes “File removed” once complete | Not run |
-| MOV-17 | Batch Purge | Select The Matrix → Delete → Purge | Confirm; seeding warning if seed time < minimum days (Cancel / Keep seeding / Delete all); cross-seed dialog for the 40×`b` copy (Keep / Delete); summary snackbar; Matrix gone from library, both torrents gone if approved | Not run |
+| MOV-16 | Batch Delete files | Select Dune → Delete → Delete files | Confirm; “Deleted 1 file”; Dune shows missing; History gains a File Deleted event; Dune’s 2160p torrent stays In library (still downloading) | Not run |
+| MOV-17 | Batch Purge | Select The Matrix → Delete → Purge | Confirm; seeding warning if seed time < minimum days (Cancel / Keep seeding / Delete all); cross-seed dialog for the 40×`b` copy (Keep / Delete); summary snackbar; Matrix gone from library and history, both torrents gone if approved; a kept cross-seed turns Orphan | Not run |
 | MOV-18 | Batch cancel | Open any batch dialog, Cancel | No change | Not run |
 | MOV-19 | Instance selector | Add a second Radarr instance (INS-12) | DNS icon appears; switching reloads the library; hidden with one instance | Not run |
 | MOV-20 | Add entry point | Compact: FAB `+`; width ≥ 1200: “Add movie” button | Opens Discover in movie mode; FAB hidden on wide | Not run |
@@ -105,18 +124,18 @@ do not register the scheme, so run this section on those three platforms only.
 | MVD-02 | Poster viewer | Tap poster, pinch, Close | Fullscreen, zoom 1×–4×, closes | Not run |
 | MVD-03 | Ratings and status chip | Dune details | Rating badges with values > 0; “Downloaded” chip | Not run |
 | MVD-04 | External links | Tap Trailer, IMDb, Trakt, Letterboxd | Browser opens; Trailer hidden without a trailer id | Not run |
-| MVD-05 | Refresh & Scan | App bar | Snackbar “Refresh & Scan triggered” | Not run |
-| MVD-06 | Automatic Search | App bar | Snackbar “Search started” | Not run |
+| MVD-05 | Refresh & Scan | App bar | Snackbar “Refresh & Scan triggered”; ARR log gains “Updating info for …” and “Scanning disk for …” | Not run |
+| MVD-06 | Automatic Search | App bar | Snackbar “Search started”. On Arrival: a 1080p BluRay grab joins the queue and imports within about a minute. On Dune (has a file): nothing grabbed | Not run |
 | MVD-07 | Monitor toggle | App bar on Arrival, twice | “Unmonitored” then “Monitored”; library icon follows | Not run |
 | MVD-08 | Files section | Dune details | One 1080p file card; tap opens File Details sheet with codecs/size | Not run |
-| MVD-09 | Delete single file | File card trash → Delete | “File deleted”; section shows “No media files”; status chip changes | Not run |
-| MVD-10 | Extra files | Dune details | `subs/english.srt` subtitle card (display only) | Not run |
+| MVD-09 | Delete single file | File card trash → Delete | “File deleted”; section shows “No media files”; status chip changes; History gains a File Deleted event | Not run |
+| MVD-10 | Extra files | Dune details | `Dune (2021).en.srt` subtitle and `Dune (2021).nfo` metadata cards (display only); none on a movie without a file | Not run |
 | MVD-11 | History section | The Matrix details | Grabbed and imported events; tap opens event sheet | Not run |
 | MVD-12 | Torrents section | The Matrix details | Both Matrix torrents (linked + cross-seed); tap opens torrent sheet without “Open in library” | Not run |
 | MVD-13 | Torrents section empty | Oppenheimer details | “No torrents in the download client” | Not run |
 | MVD-14 | Menu → Edit | Overflow → Edit | Edit Movie screen (MVE) | Not run |
 | MVD-15 | Menu → Delete files | Dune overflow | Enabled when the movie has a file, disabled for Arrival; confirm → “Deleted 1 file” | Not run |
-| MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to library | Not run |
+| MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to library; its torrents turn Orphan | Not run |
 | MVD-17 | Menu → Purge | Overflow → Purge | Same flow as MOV-17 for one movie; “Movie purged.” summary | Not run |
 | MVD-18 | Wide vs compact hero | Width < 1200 and ≥ 1200 | Hero 300/360, poster 100/180, padding 16/32 | Not run |
 
@@ -126,7 +145,7 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| REL-01 | Open | Arrival → Interactive Search | Three Prowlarr releases, count “3 results” | Seen |
+| REL-01 | Open | Arrival → Interactive Search | Four Prowlarr releases, count “4 results” | Seen |
 | REL-02 | Rejected row | Look at the 720p row | Dimmed, strikethrough, first rejection reason, download disabled, row tap disabled, info icon works | Not run |
 | REL-03 | Search releases | Type `bluray` | List narrows; count shows “· N hidden”; clear X restores | Not run |
 | REL-04 | Sort: Release weight / Quality weight / Custom format score / Seeders / Age / Size / Indexer | Sort menu | Order changes; rejected rows stay last | Not run |
@@ -135,7 +154,7 @@ Shared by movies, seasons, and episodes.
 | REL-07 | Remember filters | Enable, close, reopen search | Filters restored | Not run |
 | REL-08 | Toolbar Clear | With filters active | Clears filters, keeps sort | Not run |
 | REL-09 | Release details | Info icon | Details sheet; “Download release” or “Release rejected” | Not run |
-| REL-10 | Grab | Download icon on 1080p BluRay → Download | “Release grabbed successfully”; sheet closes; Radarr queue and qBittorrent gain the release | Not run |
+| REL-10 | Grab | Download icon on 1080p BluRay → Download | “Release grabbed successfully”; sheet closes; Radarr queue and qBittorrent gain the release; within about a minute the torrent seeds, the queue item leaves, and the movie has a file | Not run |
 | REL-11 | Grab cancel | Download icon → Cancel | Nothing grabbed | Not run |
 
 ## Movie edit (MVE)
@@ -144,9 +163,9 @@ Shared by movies, seasons, and episodes.
 | --- | --- | --- | --- | --- |
 | MVE-01 | Monitored switch | Toggle, Save | “Movie updated”; persists on reopen | Not run |
 | MVE-02 | Quality Profile | Change to Ultra-HD, Save | Info grid shows Ultra-HD | Not run |
-| MVE-03 | Minimum Availability | Announced / In Cinemas / Released | Saved (lab ignores this field, see gaps) | Not run |
-| MVE-04 | Root Folder | Change folder on Dune | “Move Files?” dialog (Yes/No) because Dune has a file | Not run |
-| MVE-05 | Tags | Tick `lab`, Save | Tag saved | Not run |
+| MVE-03 | Minimum Availability | Announced / In Cinemas / Released | Saved; reopening shows the new value. Oppenheimer set to In Cinemas becomes available (Wanted filter) | Not run |
+| MVE-04 | Root Folder | Change folder on Dune | “Move Files?” dialog (Yes/No) because Dune has a file; pick `/movies-4k`; path and file path move to `/movies-4k/Dune (2021)` | Not run |
+| MVE-05 | Tags | Tick `lab`, Save | Tag saved; tags `lab` and `4k` offered | Not run |
 | MVE-06 | Back without saving | Change fields, back | No change persisted | Not run |
 
 ## Discover and add (DIS)
@@ -154,20 +173,20 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | DIS-01 | Search by title | Movies → Add → `inception` | Inception result, poster, year, rating | Verified |
-| DIS-02 | Search by id / URL | `tmdb:27205`, `27205`, `imdb:tt1375666`, a TMDB URL | Same lookup term is normalized | Not run |
+| DIS-02 | Search by id / URL | `tmdb:27205`, `27205`, `imdb:tt1375666`, a TMDB URL | Each finds Inception (title, `tmdb:`, and `imdb:` lookups are all served by the lab) | Not run |
 | DIS-03 | Hide already added | Search `matrix`, toggle chip | On (default): The Matrix hidden. Off: shown with green check | Not run |
 | DIS-04 | Existing result tap | Chip off, tap The Matrix | Opens `/movies/2` | Not run |
 | DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Not run |
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
-| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; Inception in library; reopening Discover shows it as added | Not run |
+| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; Inception in library; reopening Discover shows it as added; adding it again is rejected | Not run |
 | DIS-09 | Add validation | Clear profile or folder, Add | “Please select a movie, quality profile, and root folder” | Not run |
 | DIS-10 | Remembered defaults | Add a second movie | Previous profile/folder preselected | Not run |
 | DIS-11 | Back navigation | Back from configure, preview | Returns step by step; Close leaves Discover | Not run |
 | DIS-12 | Series search | Series → Add → `shogun` | Shogun result, opens Series Preview | Verified |
 | DIS-13 | Series configure | Configure Addition | Monitor (All, Future, Missing, Existing, Recent, Pilot, First Season, Last Season, Monitor/Unmonitor Specials, None), Monitor New Seasons, Series Type, Season Folder, Profile, Root Folder, Tags | Verified |
-| DIS-14 | Add series | HD-1080p, `/tv`, Add | “Series added successfully”; Shogun in library with a Pilot episode | Not run |
-| DIS-15 | Series by id | `tvdb:417742`, `imdb:` | Shogun found | Not run |
+| DIS-14 | Add series | HD-1080p, `/tv`, Add | “Series added successfully”; Shogun in library with ten season 1 episodes, monitored per the Monitor choice (None or Future leaves them unmonitored) | Not run |
+| DIS-15 | Series by id | `tvdb:417742`, `imdb:` | Shogun found (`imdb:tt2788316`) | Not run |
 
 ---
 
@@ -183,7 +202,7 @@ Shared by movies, seasons, and episodes.
 | SER-06 | Selection | Long-press, tap, Select all, X | Same as MOV-10…12 | Not run |
 | SER-07 | Batch Unmonitor / Monitor | Select both | “Unmonitored 2 series” / “Monitored 2 series”; persists | Not run |
 | SER-08 | Batch Delete | Select The Bear → Delete → Delete (exclusion checkbox) | “Deleted 1 series” | Not run |
-| SER-09 | Batch Delete files | Select Severance → Delete files | “Deleted N files”; episodes lose files | Not run |
+| SER-09 | Batch Delete files | Select Severance → Delete files | “Deleted 4 files”; season 1 shows 0 of 9; History gains File Deleted events | Not run |
 | SER-10 | Batch Purge | Select Severance → Purge | Seeding warning and cross-seed prompts as needed; summary; series and its torrents removed | Not run |
 | SER-11 | Add entry point | FAB / “Add series” | Discover in series mode | Not run |
 
@@ -193,30 +212,30 @@ Shared by movies, seasons, and episodes.
 | --- | --- | --- | --- | --- |
 | SED-01 | Open details | Tap Severance | Fanart, poster, status, network, overview, info grid | Not run |
 | SED-02 | Poster viewer, external links | Poster, IMDb / Trakt / TVDB | Same as MVD-02/04 | Not run |
-| SED-03 | Refresh & Scan, Automatic Search | App bar | “Refresh & Scan triggered”, “Search started” | Not run |
+| SED-03 | Refresh & Scan, Automatic Search | App bar | “Refresh & Scan triggered”, “Search started”; the search grabs E06–E08 (E05 and E09 are already queued) and they import within about a minute | Not run |
 | SED-04 | Monitor toggle | App bar twice | “Unmonitored” / “Monitored” | Not run |
 | SED-05 | Seasons All / None | Seasons header | “All seasons monitored” / “All seasons unmonitored”; season bookmarks follow | Not run |
 | SED-06 | Season monitor | Season 1 bookmark | Toggles; series monitored follows any season | Not run |
-| SED-07 | Season menu → Automatic / Interactive search | Season ⋮ | “Searching for Severance - Season 1...” then “Search started”; releases sheet in season mode | Not run |
+| SED-07 | Season menu → Automatic / Interactive search | Season ⋮ | “Searching for Severance - Season 1...” then “Search started”; interactive mode lists a season pack and single-episode releases | Not run |
 | SED-08 | Season multi-select | Long-press season 1; All / None | Season batch bar: Search, Unmonitor, Delete → Delete files / Purge | Not run |
 | SED-09 | Season batch Search / Unmonitor | Batch bar | “Search started for 1 season” / “Unmonitored 1 season” | Not run |
 | SED-10 | Season batch Delete files / Purge | Batch submenu | Confirm; “Deleted N files” / “Purged 1 season: …”; series stays | Not run |
-| SED-11 | Torrents section | Severance details | Both Severance torrents; tap opens sheet | Not run |
+| SED-11 | Torrents section | Severance details | The three Severance torrents (S01E01 seeding, S01E05 stalled, S01E09 downloading); tap opens sheet | Not run |
 | SED-12 | Menu → Edit / Delete files / Delete / Purge | Overflow | Delete files disabled when no files; Delete dialog with files + re-add checkboxes; Purge summary “Series purged.” | Not run |
-| SED-13 | Specials hidden | Series with season 0 | Season 0 never listed | Not run |
+| SED-13 | Specials hidden | Series with season 0 | Season 0 (the S00E01 special) never listed | Not run |
 
 ## Season and episode (EPI)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| EPI-01 | Season list | Tap season 1 | Episodes, first files present, upcoming finale | Not run |
+| EPI-01 | Season list | Tap season 1 | Season 1: E01–E04 with files, E05 and E09 in the queue, E06–E08 missing. Season 2: ten upcoming episodes | Not run |
 | EPI-02 | Episode monitor | Bookmark on an episode | “Episode monitored” / “Episode unmonitored” | Not run |
-| EPI-03 | Episode automatic search | Episode row action | “Searching for S01E0x...” then “Search started for …” | Not run |
-| EPI-04 | Episode interactive search + grab | Episode row → releases → grab | Sonarr queue row and `sonarr` torrent added | Not run |
+| EPI-03 | Episode automatic search | Episode row action | “Searching for S01E0x...” then “Search started for …”; a missing aired episode gets a grab that imports within about a minute | Not run |
+| EPI-04 | Episode interactive search + grab | Episode row → releases → grab | Releases list only that episode; grab adds a Sonarr queue row and a `sonarr` torrent, which imports within about a minute | Not run |
 | EPI-05 | Season app bar searches | Automatic / Interactive | Same as SED-07 | Not run |
 | EPI-06 | Delete season files / Purge season | Season app bar | Disabled when no files; confirm; snackbar | Not run |
 | EPI-07 | Episode sheet | Tap S01E01 | Air date, runtime, status, file card, torrents (S01E01 seeding torrent), history | Not run |
-| EPI-08 | Episode file details / delete | File card tap, trash | Details sheet; “File deleted” | Not run |
+| EPI-08 | Episode file details / delete | File card tap, trash | Details sheet; “File deleted”; season count drops by one | Not run |
 | EPI-09 | Episode history event | Tap event | Read-only event sheet | Not run |
 
 ## Series edit (SEE)
@@ -234,17 +253,17 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| CAL-01 | Event list | Open Calendar | Oppenheimer (In Cinemas) and Severance upcoming episodes under TODAY / TOMORROW / dated headers | Seen |
+| CAL-01 | Event list | Open Calendar | Oppenheimer (In Cinemas, five days ago), Severance S00E01 special, and Severance S02E01–E06 under TODAY / TOMORROW / dated headers | Seen |
 | CAL-02 | Instance filter | Any instance / Radarr / Sonarr | Narrows to that instance | Not run |
 | CAL-03 | Media type filter | All media / Movies / Series | Narrows by type | Not run |
-| CAL-04 | Monitored chip | Unmonitor Arrival (MVD-07), enable chip | Arrival hidden | Not run |
-| CAL-05 | Premieres chip | Enable | Only E01 of seasons > 0; movies stay | Not run |
-| CAL-06 | Hide specials chip | Enable | Season 0 / episode 0 hidden | Not run |
+| CAL-04 | Monitored chip | Enable chip; then unmonitor Oppenheimer | Enable chip: the unmonitored S00E01 special hides. Unmonitor Oppenheimer (MVD-07): it hides too | Not run |
+| CAL-05 | Premieres chip | Enable | Only S02E01 among episodes; movies stay | Not run |
+| CAL-06 | Hide specials chip | Enable | S00E01 hidden | Not run |
 | CAL-07 | Reset chip | With any filter active | Visible only then; clears all | Not run |
 | CAL-08 | Filtered empty | Filters hiding everything | “No matching events” | Not run |
 | CAL-09 | Tap movie event | Oppenheimer | Movie details | Not run |
 | CAL-10 | Tap episode event | Severance episode | Season screen with that episode sheet open | Not run |
-| CAL-11 | Load more | Button at bottom | Next 45 days appended (lab ignores dates, see gaps) | Not run |
+| CAL-11 | Load more | Button at bottom | Next 45 days appended: Oppenheimer physical release and Severance S02E07–E10 | Not run |
 | CAL-12 | Pull to refresh | Pull down | Reloads, keeps list while loading | Not run |
 | CAL-13 | Wide layout | Width ≥ 900 | Date sections in two columns | Not run |
 | CAL-14 | Partial failure banner | Stop one instance (wrong key) | Banner lists the failed instance, Retry | Not run |
@@ -255,33 +274,33 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| QUE-01 | Queue list | Activity → Queue | Dune downloading, Arrival with “Unable to Import Automatically”, Severance S01E09; summary “3 tasks (1 problem)” | Seen |
+| QUE-01 | Queue list | Activity → Queue | Dune downloading, Arrival with “Manual Import required”, Severance S01E09 downloading, Severance S01E05 stalled; summary “4 tasks (2 problems)” | Seen |
 | QUE-02 | Refresh icon | App bar | Queue, history, torrents reload | Not run |
 | QUE-03 | Pull to refresh | Pull down | Reload | Not run |
 | QUE-04 | Options: Instance / Protocol / Client | Tune icon | Each dropdown narrows; badge on tune icon | Not run |
-| QUE-05 | Options: Problems only | Switch | Only Arrival | Not run |
+| QUE-05 | Options: Problems only | Switch | Only Arrival and Severance S01E05 | Not run |
 | QUE-06 | Options: sort Title / Added, Ascending / Descending, Reset, Apply | Sheet | Order changes; Reset restores defaults | Not run |
 | QUE-07 | Filtered empty | Filters hiding all | “No matching tasks” + Clear filters | Not run |
-| QUE-08 | Item sheet | Tap Dune | Status, progress + ETA, info rows (quality, indexer, protocol, client, path) | Not run |
+| QUE-08 | Item sheet | Tap Dune | Status, progress + ETA (Dune creeps forward), info rows (quality, indexer, protocol, client, path) | Not run |
 | QUE-09 | Open Movie / Open Series | Item sheet | Navigates to the media | Not run |
 | QUE-10 | Removal switches | Item sheet | Remove from Download Client (on), Add to Blocklist, Search for Replacement (hidden while Blocklist is on) | Not run |
-| QUE-11 | Remove from Queue | Severance item → Remove | “Item removed from queue”; row gone | Not run |
+| QUE-11 | Remove from Queue | Severance S01E05 → Remove, then repeat with each switch | “Item removed from queue”; row gone. Remove from Download Client on: the torrent leaves qBittorrent. Blocklist on: History gains Download Failed and, unless replacement is off, another release is grabbed; the blocklisted one shows rejected in interactive search | Not run |
 | QUE-12 | Live update | Leave Queue open | Polls every 5 s | Not run |
 
 ## Activity: Manual import (IMP)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| IMP-01 | Open | Arrival item → Manual Import | `Arrival 2016 WEBDL-1080p.mkv` matched to Arrival, “1 file selected” | Not run |
+| IMP-01 | Open | Arrival item → Manual Import | `Arrival 2016 WEBDL-1080p` matched to Arrival; the sample is listed with a `Sample` rejection | Not run |
 | IMP-02 | Toggle file | Untick / tick | Import button hides with 0 selected | Not run |
-| IMP-03 | Import | Import | “1 file(s) imported successfully” (lab does not import, see gaps) | Not run |
+| IMP-03 | Import | Import | “1 file(s) imported successfully”; Arrival gains a file; the queue item leaves; History gains Folder Imported | Not run |
 
 ## Activity: History (HIS)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | HIS-01 | List | History tab | Grabbed, Imported, Failed events from both apps, newest first | Seen |
-| HIS-02 | Event filter values | Release Grabbed / Folder Imported / Download Failed / Download Ignored / File Renamed / File Deleted | Server-filtered list per type; Folder Imported shows Matrix and Severance | Not run |
+| HIS-02 | Event filter values | Release Grabbed / Folder Imported / Download Failed / Download Ignored / File Renamed / File Deleted | Server-filtered list per type. Grabbed: every grab. Folder Imported: Dune, Matrix, Severance, The Bear. Failed: Arrival HDTV. Ignored: Oppenheimer CAM, The Bear 720p. Renamed: Dune. Deleted: empty until a file is deleted | Not run |
 | HIS-03 | Instance filter | All instances / each | Client-side narrow | Not run |
 | HIS-04 | Clear chip | With filters | Clears both | Not run |
 | HIS-05 | Event sheet | Tap event | Badge, description, quality, language, date, indexer, client, score | Not run |
@@ -292,24 +311,24 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | TOR-01 | Tab visible | qBittorrent configured | Third tab “Torrents”; hidden without qBittorrent | Seen |
-| TOR-02 | List | Torrents tab | All 8 fixture torrents with state, progress, speeds, seed time | Seen |
+| TOR-02 | List | Torrents tab | All 9 fixture torrents with state, progress, speeds, seed time | Seen |
 | TOR-03 | Search | `matrix` | Two Matrix torrents; clear X | Not run |
 | TOR-04 | Sort Activity / Added date / Progress / Size / Download speed / Ratio / Seed time / Name | Sort menu | Order changes per field | Not run |
 | TOR-05 | Sort direction | Arrow | Inverts | Not run |
-| TOR-06 | Status: Downloading | Filters | Dune, Severance S01E09 only; “2 torrents · 6 hidden” | Verified |
+| TOR-06 | Status: Downloading | Filters | Dune, Severance S01E09, Severance S01E05 (stalled); “3 torrents · 6 hidden” | Verified |
 | TOR-07 | Status: Seeding | Filters | Both Matrix copies, concert, Severance S01E01 | Verified |
-| TOR-08 | Status: Paused / Error | Filters | Arrival / Broken Sample | Not run |
-| TOR-09 | Link: In library | Filters | Matrix (`radarr`), Matrix cross-seed, Dune, Severance torrents | Not run |
-| TOR-10 | Link: File removed | Filters | Arrival paused torrent only if complete; otherwise none (incomplete downloads count as In library) | Not run |
+| TOR-08 | Status: Paused / Error | Filters | Paused: Arrival (stopped, complete) / Error: Broken Sample | Not run |
+| TOR-09 | Link: In library | Filters | Matrix (`radarr`), Matrix cross-seed, Dune, the three Severance torrents | Not run |
+| TOR-10 | Link: File removed | Filters | Arrival (complete, movie has no file); empty after IMP-03 | Not run |
 | TOR-11 | Link: Orphan | Filters | `radarr`-category torrents with no Radarr match (Broken Sample); red border | Not run |
 | TOR-12 | Link: Not in library | Filters | Unrelated Concert Bootleg 2020 | Not run |
 | TOR-13 | Link section hidden | Remove Radarr and Sonarr instances | Library link section absent from filters | Not run |
 | TOR-14 | Remember filters | Enable, restart app | Search, filters, sort restored | Not run |
 | TOR-15 | Clear filters / Apply / toolbar Clear | Sheet and toolbar | Clear keeps sort | Not run |
 | TOR-16 | Matrix badges | Seeding list | `radarr` copy “The Matrix”; cross-seed copy “The Matrix” + “Cross-seed” | Verified |
-| TOR-17 | Episode badge | Severance torrents | “Severance · S01E01” / “· S01E09” | Not run |
+| TOR-17 | Episode badge | Severance torrents | “Severance · S01E01” / “· S01E05” / “· S01E09” | Not run |
 | TOR-18 | Pull to refresh | Pull down | Torrents and link index reload | Not run |
-| TOR-19 | Live update | Keep tab open | Downloading torrents poll every 3 s | Not run |
+| TOR-19 | Live update | Keep tab open | Dune and S01E09 progress grows every poll; grabbed torrents finish in about a minute | Not run |
 
 ## Activity: Torrent sheet and actions (TRA)
 
@@ -318,17 +337,17 @@ Shared by movies, seasons, and episodes.
 | TRA-01 | Open sheet | Tap Dune | Progress, ETA, Total Size, Downloaded, Uploaded, Ratio, speeds, Seeds, Leechers, Added On, Category, Save Path, Tags, Hash | Not run |
 | TRA-02 | Media Library section | Matrix sheets | Linked description; cross-seed italic note on the `b` copy; Media and Instance rows | Not run |
 | TRA-03 | Open in library | Matrix sheet → Open in library | The Matrix details on the right instance | Not run |
-| TRA-04 | Pause | Dune → Pause | Sheet closes; Dune shows paused; appears under Paused | Not run |
+| TRA-04 | Pause | Dune → Pause | Sheet closes; Dune shows paused (`stoppedDL`); appears under Paused; its queue item shows paused | Not run |
 | TRA-05 | Resume | Dune → Resume | Back to downloading | Not run |
-| TRA-06 | Recheck | Any → Recheck | State becomes checking | Not run |
-| TRA-07 | Files sheet | Files | One file; checkbox toggles Do Not Download (strikethrough) | Not run |
-| TRA-08 | File priority | Row ⋮ → High / Normal / Low / Do Not Download | Checkmark moves (lab does not persist priority) | Not run |
-| TRA-09 | Peers | Tap Seeds/Leechers | One peer, Brazil, qBittorrent 5.1.2 | Not run |
+| TRA-06 | Recheck | Any → Recheck | State becomes checking for about 3 s, then returns to the previous state | Not run |
+| TRA-07 | Files sheet | Files | Movie torrents list three files (video, sample, subtitle); checkbox toggles Do Not Download (strikethrough) and persists on reopen | Not run |
+| TRA-08 | File priority | Row ⋮ → High / Normal / Low / Do Not Download | Checkmark moves and persists on reopen | Not run |
+| TRA-09 | Peers | Tap Seeds/Leechers | One peer, Brazil, qBittorrent 5.1.2; none on stopped torrents | Not run |
 | TRA-10 | Move | Move → `/downloads/moved` → Move | “Location moved successfully. Data is being moved.”; Save Path updated | Not run |
 | TRA-11 | Move validation | Empty path | “Please enter a valid path” | Not run |
 | TRA-12 | Import to Media Library visibility | Dune (incomplete) vs Matrix (complete) | Button only on complete torrents | Not run |
 | TRA-13 | Import target | Import → Movies / Series tabs, search | Monitored items only | Not run |
-| TRA-14 | Import files | Pick a movie → tick file → Import | “1 file(s) imported successfully” | Not run |
+| TRA-14 | Import files | Pick a movie → tick file → Import | “1 file(s) imported successfully”; the movie gains a file. The list shows every completed file under the torrent’s save path, not just this torrent (see gaps) | Not run |
 | TRA-15 | Remove, seeding warning | Concert → Remove Torrent | “Torrent still seeding” if seed time < minimum days (Keep torrent / Delete anyway) | Not run |
 | TRA-16 | Remove dialog | Remove; with and without “Also delete files on disk” | Torrent leaves the list; Cancel keeps it | Not run |
 
@@ -337,11 +356,11 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | ADD-01 | Open | FAB `+` (and empty-state button) | “Add Torrent” sheet | Not run |
-| ADD-02 | Magnet / URLs | Paste a magnet, Add Torrent | “Torrent added successfully”; new downloading row | Not run |
+| ADD-02 | Magnet / URLs | Paste a magnet, Add Torrent | “Torrent added successfully”; new downloading row named from the magnet `dn`; finishes in about a minute | Not run |
 | ADD-03 | .torrent file | Select .torrent File, then X | Card with filename; URL field hidden; X restores it | Not run |
 | ADD-04 | Category autocomplete | Focus Category | Suggests `radarr`, `sonarr`, `cross-seed`; free text allowed | Not run |
 | ADD-05 | Tags autocomplete | Type, comma | Chips `arrmate`, `cross-seed`; chip delete | Not run |
-| ADD-06 | Save path, Start Paused | Fill, Add | Torrent added paused at that path | Not run |
+| ADD-06 | Save path, Start Paused | Fill, Add | Torrent added stopped at that path (needs the `stopped` flag, sent since commit `b15ac6f`) | Not run |
 | ADD-07 | Validation | Empty source | “Please provide URLs or select a .torrent file” | Not run |
 
 ---
@@ -385,17 +404,17 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| SYS-01 | Logs: ARR Logs | Logs | Lab startup line; source dropdown per instance; pull to refresh | Seen |
+| SYS-01 | Logs: ARR Logs | Logs | Info, warn, and error lines from the lab, newest first, plus a line per command run; source dropdown per instance; pull to refresh | Seen |
 | SYS-02 | Logs: App Logs | Tab | Arrmate internal logs | Not run |
-| SYS-03 | Logs: level filter | All / Info / Warn / Error / Debug | Filters the active tab | Not run |
+| SYS-03 | Logs: level filter | All / Info / Warn / Error / Debug | Filters the active tab; ARR Logs has one line each at Info, Warn, Error at startup | Not run |
 | SYS-04 | Logs: copy row / copy all | Icons | “Log copied” / “All logs copied to clipboard” | Not run |
 | SYS-05 | Logs: clear app logs | App Logs tab, clear icon | “App logs cleared” (icon hidden on ARR Logs) | Not run |
-| SYS-06 | Logs: detail sheet | Tap row | Time, Level, Logger, Message, Exception | Not run |
-| SYS-07 | Health | Open | One warning about the mocked download client per app | Seen |
+| SYS-06 | Logs: detail sheet | Tap row | Time, Level, Logger, Message; the error line shows an Exception | Not run |
+| SYS-07 | Health | Open | Two warnings per app: the mocked download client and TorrentDay unavailable | Seen |
 | SYS-08 | Health: Run health check | Icon | Progress bar, reload | Not run |
 | SYS-09 | Connection Diagnostics | Open | Network summary, each endpoint `OK · Nms · v…`, last 20 request traces | Not run |
 | SYS-10 | Diagnostics: rerun, Export report | Icons | Re-runs; share sheet with sanitized report (no API keys) | Not run |
-| SYS-11 | System Overview | Open, pull to refresh | Radarr and Sonarr cards: version, library counts and size, disk space | Not run |
+| SYS-11 | System Overview | Open, pull to refresh | Radarr and Sonarr cards: version, library counts and size, three disk-space entries | Not run |
 | SYS-12 | Quality Profiles | Open | Radarr and Sonarr sections with HD-1080p, Ultra-HD | Not run |
 | SYS-13 | Minimum seeding days | Set 5, Save | Trailing “5d”; seeding warnings use it | Not run |
 | SYS-14 | Version History | Open | GitHub releases, “Installed” badge | Not run |
@@ -409,7 +428,7 @@ Shared by movies, seasons, and episodes.
 | NTF-01 | Setup | Setup Notifications | Topic generated, notifications enabled | Not run |
 | NTF-02 | Enable switch | Toggle | “Connected to ntfy.sh” / “Disconnected” | Not run |
 | NTF-03 | Copy topic | Copy icon | “Topic copied to clipboard” | Not run |
-| NTF-04 | Auto-configure | Auto-configure *arr instances | Results dialog; Radarr and Sonarr gain an ntfy notification (`GET /api/v3/notification`) | Not run |
+| NTF-04 | Auto-configure | Auto-configure *arr instances | Results dialog; Radarr and Sonarr gain an ntfy notification (`GET /api/v3/notification`); running it again updates the existing one | Not run |
 | NTF-05 | Event checkboxes | Grab, Import, Failure, Added, Deleted, File Deleted, Instance Update, Manual Interaction, Health Issues (+ Include Warnings, Health Restored) | Saved; pushed to instances on leave | Not run |
 | NTF-06 | ntfy documentation link | Button | Browser | Not run |
 | NTF-07 | Center: list | `/notifications` after a purge | Purge entry with type icon, “NEW” chip | Not run |
@@ -458,17 +477,17 @@ They are not covered by the rows above and need a product decision.
 - The episode sheet shows monitoring as read-only; monitoring is only on the season list.
 - Manual import and torrent import cannot change the matched movie, episode, or quality.
 - Torrents have no long-press or bulk actions.
+- Import to Media Library scans the torrent's save path (`/downloads/radarr`), so the file list includes every completed download in that category, not only the selected torrent. qBittorrent's `content_path` would scope it to the torrent.
 - The notification center does not navigate to the media on tap.
 - The skills describe battery saver, polling interval, a test notification, topic sharing, an auto-update toggle, and a What's New tile; none of these exist in the UI.
 
 ## Media lab limits
 
-The lab answers every endpoint the app calls, except as noted. Rows that hit
-these limits pass on UI feedback only:
+The lab models the side effects the app depends on (see
+[e2e-media-stack.md](e2e-media-stack.md)). It still does not model:
 
-- `PUT /api/v3/notification/{id}` returns 404, so re-running auto-configure on an instance that already has the ntfy connection fails.
-- `POST /api/v3/command` returns `completed` for every command without side effects: searches, refresh, rescan, health check, and `ManualImport` do not change files or the queue.
-- `/calendar` ignores `start` and `end`, so Load more returns the same events.
-- `POST /api/v2/torrents/filePrio` accepts the request but does not change priorities.
-- `PUT /movie/editor` ignores `minimumAvailability`; `PUT /series/editor` ignores `monitorNewItems` and `seasonFolder`.
-- `DELETE /queue/{id}` ignores `blocklist` and `skipRedownload`.
+- Refresh, Rescan, and health-check commands: they only add a log line.
+- Real indexers: every search returns the same synthetic releases per item, and Prowlarr search is static.
+- Upgrades: a file is never replaced by a better grab; a second import simply overwrites the file record.
+- Fixture downloads (Dune, Severance S01E09) never finish; they stall at 97% so the fixture queue stays stable. Restart the lab to reset their progress.
+- Import exclusions are stored but not shown anywhere, matching the app, which has no exclusion screen.
