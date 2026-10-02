@@ -1019,13 +1019,47 @@ class Handler(BaseHTTPRequestHandler):
         wide = "fanart" in path
         self._send(200, cover_bytes(seed, wide), "image/png")
 
+    def _history_names(self, query: dict) -> set[str] | None:
+        """Map Radarr/Sonarr numeric history filters onto fixture event names."""
+        raw = query.get("eventType") or []
+        if not raw:
+            return None
+        tokens: list[str] = []
+        for value in raw:
+            tokens.extend(part.strip() for part in value.split(",") if part.strip())
+        radarr = {
+            "1": {"grabbed"},
+            "3": {"downloadFolderImported", "movieFolderImported"},
+            "4": {"downloadFailed"},
+            "6": {"movieFileDeleted"},
+            "8": {"movieFileRenamed"},
+            "9": {"downloadIgnored"},
+        }
+        sonarr = {
+            "1": {"grabbed"},
+            "2": {"downloadFolderImported"},
+            "3": {"seriesFolderImported", "downloadFolderImported"},
+            "4": {"downloadFailed"},
+            "5": {"episodeFileDeleted"},
+            "6": {"episodeFileRenamed"},
+            "7": {"downloadIgnored"},
+        }
+        table = radarr if self.role == "radarr" else sonarr
+        names: set[str] = set()
+        for token in tokens:
+            if token.isdigit():
+                names |= table.get(token, set())
+            else:
+                names.add(token)
+        return names
+
     def _page(self, records: list, query: dict) -> dict:
         page = int((query.get("page") or ["1"])[0])
         page_size = int((query.get("pageSize") or ["50"])[0])
-        event_type = (query.get("eventType") or [None])[0]
+        names = self._history_names(query)
         filtered = records
-        if event_type:
-            filtered = [item for item in records if item.get("eventType") == event_type]
+        if names is not None:
+            filtered = [item for item in records if item.get("eventType") in names]
         start = (page - 1) * page_size
         return {
             "page": page,
