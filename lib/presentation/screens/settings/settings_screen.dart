@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/utils/formatters.dart';
 import '../../../core/platform/platform_capabilities.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
-
+import '../../adaptive/content_layout.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -25,70 +25,68 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 900;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        toolbarHeight: isDesktopWeb ? 88 : null,
-        titleSpacing: isDesktopWeb ? 32 : null,
-        actions: const [NotificationIconButton()],
-      ),
-      body: isDesktopWeb
-          ? _buildDesktopContent(context, ref)
-          : ListView(
-              children: [
-                _buildInstancesSection(context, ref),
-                const Divider(),
-                _buildAppearanceSection(context, ref),
-                const Divider(),
-                _buildSystemSection(context, ref),
-                const Divider(),
-                _buildNotificationsSection(context, ref),
-                const Divider(),
-                _buildAboutSection(context, ref),
-              ],
-            ),
+    return AdaptiveLayout(
+      builder: (context) {
+        final isWide = ContentLayout.of(context).hasWideSections;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Settings'),
+            toolbarHeight: isWide ? 88 : null,
+            titleSpacing: isWide ? 32 : null,
+            actions: const [NotificationIconButton()],
+          ),
+          body: _buildContent(context, ref),
+        );
+      },
     );
   }
 
-  Widget _buildDesktopContent(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth - 64;
-        final twoColumns = availableWidth >= 960;
-        final panelWidth = twoColumns
-            ? (availableWidth - 24) / 2
-            : availableWidth;
-        final sections = [
-          _buildInstancesSection(context, ref),
-          _buildAppearanceSection(context, ref),
-          _buildSystemSection(context, ref),
-          _buildNotificationsSection(context, ref),
-          _buildAboutSection(context, ref),
-        ];
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
+    final layout = ContentLayout.of(context);
+    final isWide = layout.hasWideSections;
+    final availableWidth = layout.width - (isWide ? 64 : 0);
+    final twoColumns = isWide && availableWidth >= 960;
+    final panelWidth = twoColumns ? (availableWidth - 24) / 2 : availableWidth;
+    final sections = [
+      _buildInstancesSection(context, ref),
+      _buildAppearanceSection(context, ref),
+      _buildSystemSection(context, ref),
+      _buildNotificationsSection(context, ref),
+      _buildAboutSection(context, ref),
+    ];
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
-          child: Wrap(
-            spacing: 24,
-            runSpacing: 24,
-            children: [
-              for (final section in sections)
-                SizedBox(
-                  width: panelWidth,
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: section,
+    return SingleChildScrollView(
+      key: const PageStorageKey('settings-content'),
+      padding: isWide
+          ? const EdgeInsets.fromLTRB(32, 8, 32, 32)
+          : EdgeInsets.zero,
+      child: isWide
+          ? Wrap(
+              spacing: 24,
+              runSpacing: 24,
+              children: [
+                for (final section in sections)
+                  SizedBox(
+                    width: panelWidth,
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: section,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        );
-      },
+              ],
+            )
+          : Column(
+              children: [
+                for (var index = 0; index < sections.length; index++) ...[
+                  if (index > 0) const Divider(),
+                  sections[index],
+                ],
+              ],
+            ),
     );
   }
 

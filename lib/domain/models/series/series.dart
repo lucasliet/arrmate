@@ -254,8 +254,11 @@ class Series extends Equatable {
   /// Returns the internal ID, using [guid] or falling back to [tvdbId].
   int get id => guid ?? (tvdbId + 100000);
 
-  /// Checks if the series exists in the database.
-  bool get exists => guid != null;
+  /// Whether Sonarr already has this series in the library.
+  ///
+  /// Lookup results for series that are not added use `id: 0`. That value is
+  /// present, but it is not a library row, so it does not count as existing.
+  bool get exists => guid != null && guid != 0;
 
   /// Checks if all episodes are downloaded.
   bool get isDownloaded => (statistics?.percentOfEpisodes ?? 0) >= 100;

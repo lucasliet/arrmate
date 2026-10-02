@@ -21,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -31,6 +33,9 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate application icons
+        run: dart run flutter_launcher_icons
 
       - name: Build web app
         run: flutter build web --release --base-href /arrmate/
@@ -71,6 +76,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Download web files
         uses: actions/download-artifact@v4

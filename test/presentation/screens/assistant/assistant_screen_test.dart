@@ -3,19 +3,25 @@ import 'package:arrmate/core/services/assistant_model_service.dart';
 import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
 import 'package:arrmate/presentation/screens/assistant/assistant_screen.dart';
+import 'package:arrmate/presentation/theme/app_theme.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _AssistantNotifier extends AssistantNotifier {
-  _AssistantNotifier({this.onlineModels = const []});
+  _AssistantNotifier({this.onlineModels = const [], this.isGenerating = false});
 
   final List<String> onlineModels;
+  final bool isGenerating;
   String? lastSelectedOnlineModel;
+  String? lastMessage;
 
   @override
   AssistantState build() => AssistantState(
     isLoading: false,
+    isGenerating: isGenerating,
     selectedOnlineModelId: AssistantOnlineChatService.defaultModelId,
     onlineModels: onlineModels,
     installedModels: [
@@ -34,6 +40,11 @@ class _AssistantNotifier extends AssistantNotifier {
   Future<void> selectOnlineModel(String modelId) async {
     lastSelectedOnlineModel = modelId;
   }
+
+  @override
+  Future<void> sendMessage(String content) async {
+    lastMessage = content;
+  }
 }
 
 Widget _assistantApp(
@@ -47,11 +58,133 @@ Widget _assistantApp(
       assistantProvider.overrideWith(() => effectiveNotifier),
       platformCapabilitiesProvider.overrideWithValue(capabilities),
     ],
-    child: const MaterialApp(home: AssistantScreen()),
+    child: MaterialApp(
+      theme: AppTheme.light(AppColorScheme.blue),
+      home: const AssistantScreen(),
+    ),
   );
 }
 
 void main() {
+  for (final platform in [
+    TargetPlatform.windows,
+    TargetPlatform.linux,
+    TargetPlatform.macOS,
+    TargetPlatform.android,
+    TargetPlatform.iOS,
+  ]) {
+    testWidgets(
+      'wide native $platform retains capabilities and keyboard draft',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1600, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final notifier = _AssistantNotifier();
+        final capabilities = PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: platform,
+        );
+        await tester.pumpWidget(
+          _assistantApp(capabilities, notifier: notifier),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSize(find.byType(TextField)).width,
+          lessThanOrEqualTo(900),
+        );
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+        expect(find.text('Online Models'), findsOneWidget);
+        expect(
+          find.text('Import'),
+          platform == TargetPlatform.android ? findsOneWidget : findsNothing,
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('Online Models'), findsNothing);
+        await tester.enterText(
+          find.byType(TextField),
+          'Native online question',
+        );
+        await tester.binding.setSurfaceSize(const Size(500, 800));
+        await tester.pumpAndSettle();
+        expect(find.text('Native online question'), findsOneWidget);
+        await tester.testTextInput.receiveAction(TextInputAction.send);
+        await tester.pumpAndSettle();
+        expect(notifier.lastMessage, 'Native online question');
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          isEmpty,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('keyboard submission preserves draft while generating', (
+    tester,
+  ) async {
+    final notifier = _AssistantNotifier(isGenerating: true);
+    await tester.pumpWidget(
+      _assistantApp(
+        PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: TargetPlatform.linux,
+        ),
+        notifier: notifier,
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Next question');
+    await tester.testTextInput.receiveAction(TextInputAction.send);
+    await tester.pump();
+    expect(notifier.lastMessage, isNull);
+    expect(find.text('Next question'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'desktop model sheet is bounded, scrolls with wheel, and closes with Escape',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _assistantApp(
+          PlatformCapabilities.forPlatform(
+            isWeb: false,
+            targetPlatform: TargetPlatform.linux,
+          ),
+          notifier: _AssistantNotifier(
+            onlineModels: List.generate(40, (index) => 'native-model-$index'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Online Models'));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(ListView)).width, 720);
+      final list = find.byType(ListView);
+      final scrollable = find.descendant(
+        of: list,
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollable).position;
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: tester.getCenter(list),
+          scrollDelta: const Offset(0, 200),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(position.pixels, greaterThan(0));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('keeps online options when local assistant is unsupported', (
     tester,
   ) async {

@@ -242,6 +242,48 @@ void main() {
       // Then
       expect(results.map((torrent) => torrent.name), ['alpha', 'Beta']);
     });
+
+    test('should keep seeding torrents out of the downloading filter', () {
+      // Given
+      final downloading = _torrent(
+        name: 'Downloading',
+        status: TorrentStatus.downloading,
+      );
+      final stalled = _torrent(
+        name: 'Stalled',
+        status: TorrentStatus.stalledDL,
+      );
+      final queued = _torrent(name: 'Queued', status: TorrentStatus.queuedDL);
+      final checking = _torrent(
+        name: 'Checking',
+        status: TorrentStatus.checkingDL,
+      );
+      final seeding = _torrent(
+        name: 'Seeding',
+        status: TorrentStatus.uploading,
+      );
+      final stalledUp = _torrent(
+        name: 'StalledUp',
+        status: TorrentStatus.stalledUP,
+      );
+      const query = TorrentQuery(status: TorrentStatusFilter.downloading);
+
+      // When
+      final results = applyTorrentQuery([
+        downloading,
+        stalled,
+        queued,
+        checking,
+        seeding,
+        stalledUp,
+      ], query);
+
+      // Then
+      expect(
+        results.map((torrent) => torrent.name),
+        unorderedEquals(['Downloading', 'Stalled', 'Queued', 'Checking']),
+      );
+    });
   });
 }
 

@@ -7,7 +7,7 @@ description: Adicionar/editar/remover instância Radarr/Sonarr/qBittorrent, API 
 
 ## Adicionar instância — Radarr Sonarr ou qBittorrent
 
-**Onde fica:** Configurações (quinta aba da barra inferior) → seção "Instances" → "Add Instance".
+**Location:** **Settings** in bottom navigation or the sidebar → "Instances" → "Add Instance".
 
 A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou qBittorrent.
 
@@ -60,7 +60,7 @@ A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou
 
 **Observações:**
 - Todos os campos são salvos **localmente** no dispositivo.
-- Metadados da instância (perfis, pastas, tags) são **cacheados** na primeira conexão.
+- Metadados da instância (perfis, pastas, tags) são **cacheados** na primeira conexão. Os formulários de adicionar e editar filme ou série relêem as tags do servidor ao abrir.
 - Você pode ter **múltiplas instâncias** de cada tipo simultaneamente.
 
 ## Onde encontrar a API key do Radarr ou Sonarr

@@ -7,7 +7,7 @@ description: Calendário de próximos lançamentos e episódios, filtros por ins
 
 ## Calendário — próximos lançamentos de filmes e episódios
 
-**Onde fica:** Aba Calendário (terceira aba da barra inferior).
+**Location:** **Calendar** in bottom navigation or the sidebar.
 
 A aba Calendário mostra próximos lançamentos agrupados e ordenados por data:
 

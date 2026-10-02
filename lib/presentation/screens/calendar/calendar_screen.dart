@@ -1,16 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../domain/models/models.dart';
+import '../../adaptive/content_layout.dart';
 import '../../providers/instances_provider.dart';
-import '../../widgets/common_widgets.dart';
-import '../../widgets/notification_icon_button.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/tour_mock_data.dart';
 import '../../tour/tour_mockup_provider.dart';
 import '../../tour/widgets/tour_mockup_banner.dart';
+import '../../widgets/common_widgets.dart';
+import '../../widgets/notification_icon_button.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_filter_bar.dart';
 import 'widgets/calendar_item.dart';
@@ -37,12 +37,12 @@ class CalendarScreen extends ConsumerWidget {
     final tourKeys = ref.watch(appTourKeysProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktopWeb = kIsWeb && constraints.maxWidth >= 900;
+        final isWide = ContentLayout(constraints.maxWidth).hasWideSections;
         return Scaffold(
           appBar: AppBar(
             title: Text('Calendar', key: tourKeys.calendarTitleKey),
-            toolbarHeight: isDesktopWeb ? 88 : null,
-            titleSpacing: isDesktopWeb ? 32 : null,
+            toolbarHeight: isWide ? 88 : null,
+            titleSpacing: isWide ? 32 : null,
             actions: const [NotificationIconButton()],
           ),
           body: Column(
@@ -137,7 +137,7 @@ class CalendarScreen extends ConsumerWidget {
       onRefresh: () => ref.read(calendarProvider.notifier).refresh(),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isDesktopWeb = kIsWeb && constraints.maxWidth >= 900;
+          final isWide = ContentLayout(constraints.maxWidth).hasWideSections;
           return ListView(
             key: const ValueKey('calendar-events-list'),
             physics: const AlwaysScrollableScrollPhysics(),
@@ -160,7 +160,7 @@ class CalendarScreen extends ConsumerWidget {
                         : 'Check back later or add content to your libraries.',
                   ),
                 )
-              else if (isDesktopWeb)
+              else if (isWide)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
                   child: Wrap(

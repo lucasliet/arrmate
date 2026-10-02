@@ -1,0 +1,51 @@
+name: Media Lab API Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  media-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Start fresh media lab
+        run: docker compose -f tool/e2e/docker-compose.yml up -d --build --wait --wait-timeout 60
+
+      - name: Verify HTTP contracts and state transitions
+        shell: bash
+        run: |
+          set -o pipefail
+          sh tool/e2e/smoke.sh 2>&1 | tee media-lab-checks.log
+
+      - name: Collect lab logs
+        if: always()
+        run: docker compose -f tool/e2e/docker-compose.yml logs --no-color > media-lab-server.log
+
+      - name: Upload API evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-lab-api-evidence
+          path: |
+            media-lab-checks.log
+            media-lab-server.log
+          retention-days: 14
+
+      - name: Stop media lab
+        if: always()
+        run: docker compose -f tool/e2e/docker-compose.yml down

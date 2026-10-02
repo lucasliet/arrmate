@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
+import '../../../adaptive/content_layout.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import 'series_poster.dart';
 
@@ -24,76 +24,82 @@ class SeriesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radiusMd),
-        side: isSelected
-            ? BorderSide(color: theme.colorScheme.primary, width: 3)
-            : BorderSide.none,
-      ),
-      color: isSelected
-          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-          : null,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Stack(
-          children: [
-            Positioned.fill(child: SeriesPoster(series: series)),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.5),
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                    stops: const [0.0, 0.2, 0.6, 1.0],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLargePoster = ContentLayout(
+          constraints.maxWidth,
+        ).hasLargePoster;
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusMd),
+            side: isSelected
+                ? BorderSide(color: theme.colorScheme.primary, width: 3)
+                : BorderSide.none,
+          ),
+          color: isSelected
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : null,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: Stack(
+              children: [
+                Positioned.fill(child: SeriesPoster(series: series)),
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.5),
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.8),
+                        ],
+                        stops: const [0.0, 0.2, 0.6, 1.0],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            _buildStatusIcons(context),
-            Positioned(
-              left: isDesktopWeb ? 12 : 8,
-              right: isDesktopWeb ? 12 : 8,
-              bottom: isDesktopWeb ? 12 : 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    series.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isDesktopWeb ? 15 : 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                _buildStatusIcons(context),
+                Positioned(
+                  left: isLargePoster ? 12 : 8,
+                  right: isLargePoster ? 12 : 8,
+                  bottom: isLargePoster ? 12 : 8,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        series.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isLargePoster ? 15 : 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${series.year} • ${series.seasonCount} Seasons',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: isLargePoster ? 12 : 10,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${series.year} • ${series.seasonCount} Seasons',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: isDesktopWeb ? 12 : 10,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

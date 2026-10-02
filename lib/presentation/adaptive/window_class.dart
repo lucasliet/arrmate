@@ -12,11 +12,20 @@ enum WindowClass {
   /// A wide desktop layout at 1440 logical pixels and above.
   large;
 
+  /// First width that supports persistent navigation.
+  static const mediumMinWidth = 600.0;
+
+  /// First width that supports labeled navigation and wide content sections.
+  static const expandedMinWidth = 900.0;
+
+  /// First width in the large window category.
+  static const largeMinWidth = 1440.0;
+
   /// Resolves a window class from the width available to the widget.
   static WindowClass fromWidth(double width) {
-    if (width < 600) return WindowClass.compact;
-    if (width < 900) return WindowClass.medium;
-    if (width < 1440) return WindowClass.expanded;
+    if (width < mediumMinWidth) return WindowClass.compact;
+    if (width < expandedMinWidth) return WindowClass.medium;
+    if (width < largeMinWidth) return WindowClass.expanded;
     return WindowClass.large;
   }
 

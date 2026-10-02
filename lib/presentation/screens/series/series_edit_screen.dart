@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
+import '../../../../domain/repositories/series_repository.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_provider.dart';
@@ -26,6 +28,8 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   late Set<int> _selectedTagIds;
 
   bool _isSaving = false;
+  SeriesRepository? _dataRepository;
+  Future<(List<QualityProfile>, List<RootFolder>)>? _dataFuture;
 
   @override
   void initState() {
@@ -120,11 +124,28 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(seriesRepositoryProvider);
-    final tags =
-        ref.watch(currentSonarrInstanceProvider)?.tags ?? const <Tag>[];
+    final tags = watchInstanceTags(
+      ref,
+      ref.watch(currentSonarrInstanceProvider),
+    );
 
     if (repository == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Live tags and form edits rebuild independently of server configuration.
+    if (!identical(repository, _dataRepository)) {
+      _dataRepository = repository;
+      _dataFuture =
+          Future.wait([
+            repository.getQualityProfiles(),
+            repository.getRootFolders(),
+          ]).then(
+            (value) => (
+              value[0] as List<QualityProfile>,
+              value[1] as List<RootFolder>,
+            ),
+          );
     }
 
     return Scaffold(
@@ -147,16 +168,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
         ],
       ),
       body: FutureBuilder<(List<QualityProfile>, List<RootFolder>)>(
-        future:
-            Future.wait([
-              repository.getQualityProfiles(),
-              repository.getRootFolders(),
-            ]).then(
-              (value) => (
-                value[0] as List<QualityProfile>,
-                value[1] as List<RootFolder>,
-              ),
-            ),
+        future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));

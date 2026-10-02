@@ -305,7 +305,9 @@ class AppTourService {
           body:
               'Switch between Movies, Series, Calendar, Activity, and '
               'Settings anytime.',
-          align: ContentAlign.top,
+          align: _keys.navBarKey.currentWidget is NavigationRail
+              ? ContentAlign.right
+              : ContentAlign.top,
         ),
       ],
       onFinish: _finishTour,

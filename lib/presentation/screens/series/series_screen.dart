@@ -1,20 +1,20 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../adaptive/content_layout.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
-import '../../widgets/common_widgets.dart';
-import '../../widgets/instance_selector.dart';
-import '../../widgets/notification_icon_button.dart';
-import '../../widgets/sort_bottom_sheet.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/tour_mock_data.dart';
 import '../../tour/tour_mockup_provider.dart';
 import '../../tour/widgets/tour_mockup_banner.dart';
+import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
+import '../../widgets/notification_icon_button.dart';
+import '../../widgets/sort_bottom_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
@@ -179,185 +179,204 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
     final seriesAsync = ref.watch(filteredSeriesProvider);
     final settings = ref.watch(settingsProvider);
     final tourKeys = ref.watch(appTourKeysProvider);
     final showsTourMockup = ref.watch(tourMockupProvider(InstanceType.sonarr));
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.read(seriesSearchProvider.notifier).update('');
-          _searchController.clear();
-          await ref.read(seriesProvider.notifier).refresh();
-        },
-        child: CustomScrollView(
-          slivers: [
-            _isSelecting
-                ? _buildSelectionAppBar(context, seriesAsync)
-                : _isSearching
-                ? _buildSearchAppBar(context)
-                : _buildNormalAppBar(context, settings),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: isDesktopWeb ? 32 : 16),
-              sliver: seriesAsync.when(
-                data: (seriesList) {
-                  if (seriesList.isEmpty) {
-                    final isFiltered =
-                        ref.read(seriesSearchProvider).isNotEmpty ||
-                        ref.read(seriesSortProvider).filter != SeriesFilter.all;
+    return AdaptiveLayout(
+      builder: (context) {
+        final isWide = ContentLayout.of(context).hasWideToolbar;
+        return Scaffold(
+          body: RefreshIndicator(
+            onRefresh: () async {
+              ref.read(seriesSearchProvider.notifier).update('');
+              _searchController.clear();
+              await ref.read(seriesProvider.notifier).refresh();
+            },
+            child: CustomScrollView(
+              // A filtered library can be shorter than the viewport. Without
+              // this, the list cannot overscroll and pull-to-refresh never
+              // starts.
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _isSelecting
+                    ? _buildSelectionAppBar(context, seriesAsync)
+                    : _isSearching
+                    ? _buildSearchAppBar(context)
+                    : _buildNormalAppBar(context, settings),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: isWide ? 32 : 16),
+                  sliver: seriesAsync.when(
+                    data: (seriesList) {
+                      if (seriesList.isEmpty) {
+                        final isFiltered =
+                            ref.read(seriesSearchProvider).isNotEmpty ||
+                            ref.read(seriesSortProvider).filter !=
+                                SeriesFilter.all;
 
-                    if (showsTourMockup && !isFiltered) {
-                      return _buildTourMockup(settings, tourKeys, isDesktopWeb);
-                    }
+                        if (showsTourMockup && !isFiltered) {
+                          return _buildTourMockup(settings, tourKeys, isWide);
+                        }
 
-                    return SliverFillRemaining(
-                      child: EmptyState(
-                        icon: isFiltered
-                            ? Icons.filter_list_off
-                            : Icons.tv_outlined,
-                        title: isFiltered
-                            ? 'No results found'
-                            : 'No series found',
-                        subtitle: isFiltered
-                            ? 'Try clearing or adjusting your search query or filters.'
-                            : 'Add series to your Sonarr library to see them here.',
-                      ),
-                    );
-                  }
-
-                  if (settings.viewMode == ViewMode.list) {
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final series = seriesList[index];
-                        return SeriesListTile(
-                          key: index == 0 ? tourKeys.seriesLibraryKey : null,
-                          series: series,
-                          isSelected: _selectedIds.contains(series.id),
-                          onTap: _isSelecting
-                              ? () => _toggleSelection(series.id)
-                              : () => context.go('/series/${series.id}'),
-                          onLongPress: () => _toggleSelection(series.id),
+                        return SliverFillRemaining(
+                          child: EmptyState(
+                            icon: isFiltered
+                                ? Icons.filter_list_off
+                                : Icons.tv_outlined,
+                            title: isFiltered
+                                ? 'No results found'
+                                : 'No series found',
+                            subtitle: isFiltered
+                                ? 'Try clearing or adjusting your search query or filters.'
+                                : 'Add series to your Sonarr library to see them here.',
+                          ),
                         );
-                      }, childCount: seriesList.length),
-                    );
-                  }
+                      }
 
-                  return SliverGrid(
-                    gridDelegate: isDesktopWeb
-                        ? _desktopGridDelegate
-                        : _libraryGridDelegate,
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final series = seriesList[index];
-                      return SeriesCard(
-                        key: index == 0 ? tourKeys.seriesLibraryKey : null,
-                        series: series,
-                        isSelected: _selectedIds.contains(series.id),
-                        onTap: _isSelecting
-                            ? () => _toggleSelection(series.id)
-                            : () => context.go('/series/${series.id}'),
-                        onLongPress: () => _toggleSelection(series.id),
+                      if (settings.viewMode == ViewMode.list) {
+                        return SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final series = seriesList[index];
+                            return SeriesListTile(
+                              key: index == 0
+                                  ? tourKeys.seriesLibraryKey
+                                  : null,
+                              series: series,
+                              isSelected: _selectedIds.contains(series.id),
+                              onTap: _isSelecting
+                                  ? () => _toggleSelection(series.id)
+                                  : () => context.go('/series/${series.id}'),
+                              onLongPress: () => _toggleSelection(series.id),
+                            );
+                          }, childCount: seriesList.length),
+                        );
+                      }
+
+                      return SliverGrid(
+                        gridDelegate: isWide
+                            ? _wideGridDelegate
+                            : _libraryGridDelegate,
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final series = seriesList[index];
+                          return SeriesCard(
+                            key: index == 0 ? tourKeys.seriesLibraryKey : null,
+                            series: series,
+                            isSelected: _selectedIds.contains(series.id),
+                            onTap: _isSelecting
+                                ? () => _toggleSelection(series.id)
+                                : () => context.go('/series/${series.id}'),
+                            onLongPress: () => _toggleSelection(series.id),
+                          );
+                        }, childCount: seriesList.length),
                       );
-                    }, childCount: seriesList.length),
-                  );
-                },
-                error: (error, stack) => SliverFillRemaining(
-                  child: ErrorDisplay(
-                    message: error.toString(),
-                    onRetry: () => ref.read(seriesProvider.notifier).refresh(),
+                    },
+                    error: (error, stack) => SliverFillRemaining(
+                      child: ErrorDisplay(
+                        message: error.toString(),
+                        onRetry: () =>
+                            ref.read(seriesProvider.notifier).refresh(),
+                      ),
+                    ),
+                    loading: () => const SliverFillRemaining(
+                      child: LoadingIndicator(message: 'Loading series...'),
+                    ),
                   ),
                 ),
-                loading: () => const SliverFillRemaining(
-                  child: LoadingIndicator(message: 'Loading series...'),
-                ),
-              ),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+              ],
             ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _isSelecting
-          ? BatchActionBar(
-              selectedCount: _selectedIds.length,
-              actions: [
-                BatchAction(
-                  icon: Icons.bookmark,
-                  label: 'Monitor',
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.setSeriesMonitored(
-                      context,
-                      _resolveSelected(
-                        seriesAsync.valueOrNull ?? const <Series>[],
-                      ),
-                      monitored: true,
-                    ),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.bookmark_border,
-                  label: 'Unmonitor',
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.setSeriesMonitored(
-                      context,
-                      _resolveSelected(
-                        seriesAsync.valueOrNull ?? const <Series>[],
-                      ),
-                      monitored: false,
-                    ),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.delete_outline,
-                  label: 'Delete',
-                  isDestructive: true,
-                  submenu: [
+          ),
+          bottomNavigationBar: _isSelecting
+              ? BatchActionBar(
+                  selectedCount: _selectedIds.length,
+                  actions: [
                     BatchAction(
-                      icon: Icons.delete_outline,
-                      label: 'Delete',
-                      isDestructive: true,
+                      icon: Icons.bookmark,
+                      label: 'Monitor',
                       onPressed: () => _runBatchAction(
                         context,
-                        (h) => h.deleteSeriesList(
+                        (h) => h.setSeriesMonitored(
                           context,
-                          _selectedIds.toList(),
-                          deleteFiles: false,
+                          _resolveSelected(
+                            seriesAsync.valueOrNull ?? const <Series>[],
+                          ),
+                          monitored: true,
                         ),
                       ),
                     ),
                     BatchAction(
-                      icon: Icons.delete_sweep,
-                      label: 'Delete files',
-                      isDestructive: true,
+                      icon: Icons.bookmark_border,
+                      label: 'Unmonitor',
                       onPressed: () => _runBatchAction(
                         context,
-                        (h) =>
-                            h.deleteSeriesFiles(context, _selectedIds.toList()),
+                        (h) => h.setSeriesMonitored(
+                          context,
+                          _resolveSelected(
+                            seriesAsync.valueOrNull ?? const <Series>[],
+                          ),
+                          monitored: false,
+                        ),
                       ),
                     ),
                     BatchAction(
-                      icon: Icons.delete_forever,
-                      label: 'Purge',
+                      icon: Icons.delete_outline,
+                      label: 'Delete',
                       isDestructive: true,
-                      onPressed: () => _runBatchAction(
-                        context,
-                        (h) =>
-                            h.purgeSeriesList(context, _selectedIds.toList()),
-                      ),
+                      submenu: [
+                        BatchAction(
+                          icon: Icons.delete_outline,
+                          label: 'Delete',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) => h.deleteSeriesList(
+                              context,
+                              _selectedIds.toList(),
+                              deleteFiles: false,
+                            ),
+                          ),
+                        ),
+                        BatchAction(
+                          icon: Icons.delete_sweep,
+                          label: 'Delete files',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) => h.deleteSeriesFiles(
+                              context,
+                              _selectedIds.toList(),
+                            ),
+                          ),
+                        ),
+                        BatchAction(
+                          icon: Icons.delete_forever,
+                          label: 'Purge',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) => h.purgeSeriesList(
+                              context,
+                              _selectedIds.toList(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                )
+              : null,
+          floatingActionButton: _isSelecting || isWide
+              ? null
+              : FloatingActionButton(
+                  onPressed: () => context.push('/discover?type=series'),
+                  child: const Icon(Icons.add),
                 ),
-              ],
-            )
-          : null,
-      floatingActionButton: _isSelecting || isDesktopWeb
-          ? null
-          : FloatingActionButton(
-              onPressed: () => context.push('/discover?type=series'),
-              child: const Icon(Icons.add),
-            ),
+        );
+      },
     );
   }
 
@@ -370,7 +389,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         mainAxisSpacing: 12,
       );
 
-  static const SliverGridDelegateWithMaxCrossAxisExtent _desktopGridDelegate =
+  static const SliverGridDelegateWithMaxCrossAxisExtent _wideGridDelegate =
       SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 208,
         childAspectRatio: 2 / 3,
@@ -386,7 +405,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   Widget _buildTourMockup(
     SettingsState settings,
     AppTourKeys tourKeys,
-    bool isDesktopWeb,
+    bool isWide,
   ) {
     final seriesList = TourMockData.series();
 
@@ -406,9 +425,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           )
         else
           SliverGrid(
-            gridDelegate: isDesktopWeb
-                ? _desktopGridDelegate
-                : _libraryGridDelegate,
+            gridDelegate: isWide ? _wideGridDelegate : _libraryGridDelegate,
             delegate: SliverChildBuilderDelegate((context, index) {
               return TourMockup(
                 child: SeriesCard(
@@ -423,7 +440,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   }
 
   Widget _buildNormalAppBar(BuildContext context, SettingsState settings) {
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
+    final isWide = ContentLayout.of(context).hasWideToolbar;
     final actions = <Widget>[
       const InstanceSelector(type: InstanceType.sonarr),
       IconButton(
@@ -451,7 +468,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         },
       ),
       const NotificationIconButton(),
-      if (isDesktopWeb) ...[
+      if (isWide) ...[
         const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: () => context.push('/discover?type=series'),
@@ -461,7 +478,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         const SizedBox(width: 24),
       ],
     ];
-    if (isDesktopWeb) {
+    if (isWide) {
       return SliverAppBar(
         toolbarHeight: 88,
         titleSpacing: 32,

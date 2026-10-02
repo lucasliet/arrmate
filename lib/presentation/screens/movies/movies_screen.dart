@@ -1,20 +1,20 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
+import '../../adaptive/content_layout.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/batch_action_bar.dart';
 import '../../shared/widgets/batch_actions_handler.dart';
-import '../../widgets/common_widgets.dart';
-import '../../widgets/instance_selector.dart';
-import '../../widgets/notification_icon_button.dart';
-import '../../widgets/sort_bottom_sheet.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/tour_mock_data.dart';
 import '../../tour/tour_mockup_provider.dart';
 import '../../tour/widgets/tour_mockup_banner.dart';
+import '../../widgets/common_widgets.dart';
+import '../../widgets/instance_selector.dart';
+import '../../widgets/notification_icon_button.dart';
+import '../../widgets/sort_bottom_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
@@ -179,184 +179,202 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
     final moviesAsync = ref.watch(filteredMoviesProvider);
     final settings = ref.watch(settingsProvider);
     final tourKeys = ref.watch(appTourKeysProvider);
     final showsTourMockup = ref.watch(tourMockupProvider(InstanceType.radarr));
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.read(movieSearchProvider.notifier).update('');
-          _searchController.clear();
-          await ref.read(moviesProvider.notifier).refresh();
-        },
-        child: CustomScrollView(
-          slivers: [
-            _isSelecting
-                ? _buildSelectionAppBar(context, moviesAsync)
-                : _isSearching
-                ? _buildSearchAppBar(context)
-                : _buildNormalAppBar(context, settings),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: isDesktopWeb ? 32 : 16),
-              sliver: moviesAsync.when(
-                data: (movies) {
-                  if (movies.isEmpty) {
-                    final isFiltered =
-                        ref.read(movieSearchProvider).isNotEmpty ||
-                        ref.read(movieSortProvider).filter != MovieFilter.all;
+    return AdaptiveLayout(
+      builder: (context) {
+        final isWide = ContentLayout.of(context).hasWideToolbar;
+        return Scaffold(
+          body: RefreshIndicator(
+            onRefresh: () async {
+              ref.read(movieSearchProvider.notifier).update('');
+              _searchController.clear();
+              await ref.read(moviesProvider.notifier).refresh();
+            },
+            child: CustomScrollView(
+              // A filtered library can be shorter than the viewport. Without
+              // this, the list cannot overscroll and pull-to-refresh never
+              // starts.
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _isSelecting
+                    ? _buildSelectionAppBar(context, moviesAsync)
+                    : _isSearching
+                    ? _buildSearchAppBar(context)
+                    : _buildNormalAppBar(context, settings),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: isWide ? 32 : 16),
+                  sliver: moviesAsync.when(
+                    data: (movies) {
+                      if (movies.isEmpty) {
+                        final isFiltered =
+                            ref.read(movieSearchProvider).isNotEmpty ||
+                            ref.read(movieSortProvider).filter !=
+                                MovieFilter.all;
 
-                    if (showsTourMockup && !isFiltered) {
-                      return _buildTourMockup(settings, tourKeys, isDesktopWeb);
-                    }
+                        if (showsTourMockup && !isFiltered) {
+                          return _buildTourMockup(settings, tourKeys, isWide);
+                        }
 
-                    return SliverFillRemaining(
-                      child: EmptyState(
-                        icon: isFiltered
-                            ? Icons.filter_list_off
-                            : Icons.movie_outlined,
-                        title: isFiltered
-                            ? 'No results found'
-                            : 'No movies found',
-                        subtitle: isFiltered
-                            ? 'Try clearing or adjusting your search query or filters.'
-                            : 'Add movies to your Radarr library to see them here.',
-                      ),
-                    );
-                  }
-
-                  if (settings.viewMode == ViewMode.list) {
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final movie = movies[index];
-                        return MovieListTile(
-                          key: index == 0 ? tourKeys.moviesLibraryKey : null,
-                          movie: movie,
-                          isSelected: _selectedIds.contains(movie.id),
-                          onTap: _isSelecting
-                              ? () => _toggleSelection(movie.id)
-                              : () => context.go('/movies/${movie.id}'),
-                          onLongPress: () => _toggleSelection(movie.id),
+                        return SliverFillRemaining(
+                          child: EmptyState(
+                            icon: isFiltered
+                                ? Icons.filter_list_off
+                                : Icons.movie_outlined,
+                            title: isFiltered
+                                ? 'No results found'
+                                : 'No movies found',
+                            subtitle: isFiltered
+                                ? 'Try clearing or adjusting your search query or filters.'
+                                : 'Add movies to your Radarr library to see them here.',
+                          ),
                         );
-                      }, childCount: movies.length),
-                    );
-                  }
+                      }
 
-                  return SliverGrid(
-                    gridDelegate: isDesktopWeb
-                        ? _desktopGridDelegate
-                        : _libraryGridDelegate,
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final movie = movies[index];
-                      return MovieCard(
-                        key: index == 0 ? tourKeys.moviesLibraryKey : null,
-                        movie: movie,
-                        isSelected: _selectedIds.contains(movie.id),
-                        onTap: _isSelecting
-                            ? () => _toggleSelection(movie.id)
-                            : () => context.go('/movies/${movie.id}'),
-                        onLongPress: () => _toggleSelection(movie.id),
+                      if (settings.viewMode == ViewMode.list) {
+                        return SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final movie = movies[index];
+                            return MovieListTile(
+                              key: index == 0
+                                  ? tourKeys.moviesLibraryKey
+                                  : null,
+                              movie: movie,
+                              isSelected: _selectedIds.contains(movie.id),
+                              onTap: _isSelecting
+                                  ? () => _toggleSelection(movie.id)
+                                  : () => context.go('/movies/${movie.id}'),
+                              onLongPress: () => _toggleSelection(movie.id),
+                            );
+                          }, childCount: movies.length),
+                        );
+                      }
+
+                      return SliverGrid(
+                        gridDelegate: isWide
+                            ? _wideGridDelegate
+                            : _libraryGridDelegate,
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final movie = movies[index];
+                          return MovieCard(
+                            key: index == 0 ? tourKeys.moviesLibraryKey : null,
+                            movie: movie,
+                            isSelected: _selectedIds.contains(movie.id),
+                            onTap: _isSelecting
+                                ? () => _toggleSelection(movie.id)
+                                : () => context.go('/movies/${movie.id}'),
+                            onLongPress: () => _toggleSelection(movie.id),
+                          );
+                        }, childCount: movies.length),
                       );
-                    }, childCount: movies.length),
-                  );
-                },
-                error: (error, stack) => SliverFillRemaining(
-                  child: ErrorDisplay(
-                    message: error.toString(),
-                    onRetry: () => ref.read(moviesProvider.notifier).refresh(),
+                    },
+                    error: (error, stack) => SliverFillRemaining(
+                      child: ErrorDisplay(
+                        message: error.toString(),
+                        onRetry: () =>
+                            ref.read(moviesProvider.notifier).refresh(),
+                      ),
+                    ),
+                    loading: () => const SliverFillRemaining(
+                      child: LoadingIndicator(message: 'Loading movies...'),
+                    ),
                   ),
                 ),
-                loading: () => const SliverFillRemaining(
-                  child: LoadingIndicator(message: 'Loading movies...'),
-                ),
-              ),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+              ],
             ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _isSelecting
-          ? BatchActionBar(
-              selectedCount: _selectedIds.length,
-              actions: [
-                BatchAction(
-                  icon: Icons.bookmark,
-                  label: 'Monitor',
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.setMoviesMonitored(
-                      context,
-                      _resolveSelected(
-                        moviesAsync.valueOrNull ?? const <Movie>[],
-                      ),
-                      monitored: true,
-                    ),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.bookmark_border,
-                  label: 'Unmonitor',
-                  onPressed: () => _runBatchAction(
-                    context,
-                    (h) => h.setMoviesMonitored(
-                      context,
-                      _resolveSelected(
-                        moviesAsync.valueOrNull ?? const <Movie>[],
-                      ),
-                      monitored: false,
-                    ),
-                  ),
-                ),
-                BatchAction(
-                  icon: Icons.delete_outline,
-                  label: 'Delete',
-                  isDestructive: true,
-                  submenu: [
+          ),
+          bottomNavigationBar: _isSelecting
+              ? BatchActionBar(
+                  selectedCount: _selectedIds.length,
+                  actions: [
                     BatchAction(
-                      icon: Icons.delete_outline,
-                      label: 'Delete',
-                      isDestructive: true,
+                      icon: Icons.bookmark,
+                      label: 'Monitor',
                       onPressed: () => _runBatchAction(
                         context,
-                        (h) => h.deleteMovies(
+                        (h) => h.setMoviesMonitored(
                           context,
-                          _selectedIds.toList(),
-                          deleteFiles: false,
+                          _resolveSelected(
+                            moviesAsync.valueOrNull ?? const <Movie>[],
+                          ),
+                          monitored: true,
                         ),
                       ),
                     ),
                     BatchAction(
-                      icon: Icons.delete_sweep,
-                      label: 'Delete files',
-                      isDestructive: true,
+                      icon: Icons.bookmark_border,
+                      label: 'Unmonitor',
                       onPressed: () => _runBatchAction(
                         context,
-                        (h) =>
-                            h.deleteMovieFiles(context, _selectedIds.toList()),
+                        (h) => h.setMoviesMonitored(
+                          context,
+                          _resolveSelected(
+                            moviesAsync.valueOrNull ?? const <Movie>[],
+                          ),
+                          monitored: false,
+                        ),
                       ),
                     ),
                     BatchAction(
-                      icon: Icons.delete_forever,
-                      label: 'Purge',
+                      icon: Icons.delete_outline,
+                      label: 'Delete',
                       isDestructive: true,
-                      onPressed: () => _runBatchAction(
-                        context,
-                        (h) => h.purgeMovies(context, _selectedIds.toList()),
-                      ),
+                      submenu: [
+                        BatchAction(
+                          icon: Icons.delete_outline,
+                          label: 'Delete',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) => h.deleteMovies(
+                              context,
+                              _selectedIds.toList(),
+                              deleteFiles: false,
+                            ),
+                          ),
+                        ),
+                        BatchAction(
+                          icon: Icons.delete_sweep,
+                          label: 'Delete files',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) => h.deleteMovieFiles(
+                              context,
+                              _selectedIds.toList(),
+                            ),
+                          ),
+                        ),
+                        BatchAction(
+                          icon: Icons.delete_forever,
+                          label: 'Purge',
+                          isDestructive: true,
+                          onPressed: () => _runBatchAction(
+                            context,
+                            (h) =>
+                                h.purgeMovies(context, _selectedIds.toList()),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                )
+              : null,
+          floatingActionButton: _isSelecting || isWide
+              ? null
+              : FloatingActionButton(
+                  onPressed: () => context.push('/discover?type=movie'),
+                  child: const Icon(Icons.add),
                 ),
-              ],
-            )
-          : null,
-      floatingActionButton: _isSelecting || isDesktopWeb
-          ? null
-          : FloatingActionButton(
-              onPressed: () => context.push('/discover?type=movie'),
-              child: const Icon(Icons.add),
-            ),
+        );
+      },
     );
   }
 
@@ -369,7 +387,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         mainAxisSpacing: 12,
       );
 
-  static const SliverGridDelegateWithMaxCrossAxisExtent _desktopGridDelegate =
+  static const SliverGridDelegateWithMaxCrossAxisExtent _wideGridDelegate =
       SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 208,
         childAspectRatio: 2 / 3,
@@ -385,7 +403,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   Widget _buildTourMockup(
     SettingsState settings,
     AppTourKeys tourKeys,
-    bool isDesktopWeb,
+    bool isWide,
   ) {
     final movies = TourMockData.movies();
 
@@ -405,9 +423,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           )
         else
           SliverGrid(
-            gridDelegate: isDesktopWeb
-                ? _desktopGridDelegate
-                : _libraryGridDelegate,
+            gridDelegate: isWide ? _wideGridDelegate : _libraryGridDelegate,
             delegate: SliverChildBuilderDelegate((context, index) {
               return TourMockup(
                 child: MovieCard(
@@ -423,7 +439,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
 
   Widget _buildNormalAppBar(BuildContext context, SettingsState settings) {
     final tourKeys = ref.watch(appTourKeysProvider);
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
+    final isWide = ContentLayout.of(context).hasWideToolbar;
     final actions = <Widget>[
       const InstanceSelector(type: InstanceType.radarr),
       IconButton(
@@ -453,7 +469,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         },
       ),
       const NotificationIconButton(),
-      if (isDesktopWeb) ...[
+      if (isWide) ...[
         const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: () => context.push('/discover?type=movie'),
@@ -463,7 +479,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         const SizedBox(width: 24),
       ],
     ];
-    if (isDesktopWeb) {
+    if (isWide) {
       return SliverAppBar(
         toolbarHeight: 88,
         titleSpacing: 32,

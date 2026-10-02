@@ -109,5 +109,33 @@ void main() {
       expect(movie.addOptions?.monitor, MovieMonitorType.movieAndCollection);
       expect(movie.toJson()['addOptions'], {'monitor': 'movieAndCollection'});
     });
+
+    test('should treat lookup id 0 as not in the library', () {
+      // Given
+      final lookup = {
+        'id': 0,
+        'tmdbId': 27205,
+        'title': 'Inception',
+        'year': 2010,
+        'added': '0001-01-01T00:00:00Z',
+      };
+      final library = {
+        'id': 2,
+        'tmdbId': 603,
+        'title': 'The Matrix',
+        'year': 1999,
+        'added': '2023-01-01T00:00:00Z',
+      };
+
+      // When
+      final lookupMovie = Movie.fromJson(lookup);
+      final libraryMovie = Movie.fromJson(library);
+
+      // Then
+      expect(lookupMovie.exists, isFalse);
+      expect(lookupMovie.id, 0);
+      expect(libraryMovie.exists, isTrue);
+      expect(libraryMovie.id, 2);
+    });
   });
 }

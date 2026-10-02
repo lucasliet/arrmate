@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../adaptive/content_layout.dart';
+
 /// Defines the available color schemes for the application.
 enum AppColorScheme {
   blue('Blue', Colors.blue),
@@ -140,9 +142,15 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       dialogTheme: DialogThemeData(
+        constraints: const BoxConstraints(
+          maxWidth: ContentLayout.maximumDialogWidth,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
+        constraints: const BoxConstraints(
+          maxWidth: ContentLayout.maximumSheetWidth,
+        ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),

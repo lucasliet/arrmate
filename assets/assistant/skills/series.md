@@ -7,13 +7,13 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 
 ## Adicionar série — buscar e cadastrar no Sonarr
 
-**Onde fica:** Aba Séries → botão "+" (floating action button no canto inferior direito).
+**Location:** **Series** → **"Add series"** in the wide toolbar, or **"+"** in the bottom-right corner on compact layouts. Both open **Discover** in series mode.
 
-> **Atalho:** o "+" abre a tela **Discover** já em modo série. Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TVDB/IMDb ou URL.
+> **Shortcut:** Both add controls open **Discover** in series mode. See the discovery section below for title, ID, or URL search.
 
 **Passo a passo:**
-1. Abrir a aba **Séries** (segunda aba da barra inferior).
-2. Tocar no botão **"+"** no canto inferior direito (FAB redondo).
+1. Open **Series** in bottom navigation or the sidebar.
+2. Select **"Add series"** in the wide toolbar, or the **"+"** floating button on compact layouts.
 3. Abre a tela **Discover** com AppBar "Add Series" e ícone **X** ("Close") à direita para sair.
 4. No campo **"Search"**, digite o título da série (ex: "Breaking Bad", "Game of Thrones").
 5. A busca roda sozinha com debounce enquanto você digita; pressionar Enter dispara a busca imediatamente.
@@ -34,7 +34,7 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
    - **Season Folder:** switch (padrão ON) — se ON, cria pastas por temporada (Season 01, Season 02, etc).
    - **Quality Profile:** dropdown listando perfis do Sonarr.
    - **Root Folder:** dropdown com pastas destino.
-   - **Tags:** chips das tags da instância (aparece só quando o Sonarr tem tags cadastradas).
+   - **Tags:** chips das tags da instância (aparece só quando o Sonarr tem tags cadastradas). A lista é relida do servidor ao abrir o formulário, então uma tag criada depois do teste de conexão também aparece.
 10. Tocar **"Add"** no canto superior direito (vira spinner enquanto envia).
 11. Snackbar confirma "Series added successfully" e a lista atualiza.
 
@@ -46,9 +46,9 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 
 ## Adicionar via Discover — busca por título ID ou URL
 
-**Onde fica:** Aba Séries → botão "+" (FAB) → abre a tela **Discover** em modo série.
+**Location:** **Series** → **"Add series"** in the wide toolbar, or **"+"** in the bottom-right corner on compact layouts. Both open **Discover** in series mode.
 
-A tela **Discover** abre **direto no tipo de mídia da aba de origem** — o "+" da aba Séries busca séries, o "+" da aba Filmes busca filmes. Não há abas Movies/Series dentro da tela: para adicionar um filme, use o "+" da aba Filmes. A busca aceita não só o título, mas também identificadores e links.
+**Discover** opens in the media type of the originating library. Use **"Add movie"** / **"Add series"** in wide toolbars or **"+"** in compact layouts. To change media type, open the other library first. Search accepts titles, identifiers, and URLs.
 
 **Layout da tela:**
 - **AppBar** com título "Add Series" e ícone **X** ("Close").
@@ -95,7 +95,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - Título da série fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
-- **Poster** no lado esquerdo.
+- **Poster** no lado esquerdo. Toque abre o poster em tela cheia: pinça, roda do mouse para cima ou scroll do trackpad aumentam o zoom até 4×; rolar para baixo no mínimo (1×) não reduz. Fechar volta aos detalhes.
 - **Título** em bold.
 - **Ano** de início.
 - **Nota/Rating** (ex: 9.5/10).

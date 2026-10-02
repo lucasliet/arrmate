@@ -6,6 +6,7 @@ import '../../../core/services/media_add_defaults_store.dart';
 import '../../../core/utils/discovery_results.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
 import '../../widgets/common_widgets.dart';
@@ -146,11 +147,17 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       );
 
       if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        final container = ProviderScope.containerOf(context);
         _closeSheet();
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Movie added successfully')),
         );
-        ref.invalidate(moviesProvider);
+        // Reload the library on the next frame, after the pop and the
+        // snackbar have been scheduled.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          container.invalidate(moviesProvider);
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -182,26 +189,6 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
 
   Widget _buildSearch() {
     final searchResult = ref.watch(movieLookupProvider);
-    final sortSelector = DropdownButtonFormField<DiscoverySortOption>(
-      initialValue: _sort,
-      decoration: const InputDecoration(labelText: 'Sort', isDense: true),
-      items: DiscoverySortOption.values
-          .map(
-            (option) =>
-                DropdownMenuItem(value: option, child: Text(option.label)),
-          )
-          .toList(),
-      onChanged: (value) {
-        if (value != null) setState(() => _sort = value);
-      },
-    );
-    final hideExistingFilter = FilterChip(
-      selected: _hideExisting,
-      label: const Text('Hide already added'),
-      onSelected: (value) {
-        setState(() => _hideExisting = value);
-      },
-    );
 
     return _buildSurface(
       (scrollController) => Column(
@@ -240,13 +227,46 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: LayoutBuilder(
               builder: (context, constraints) {
+                // Built inside the callback. A dropdown created outside and
+                // reused here is moved during layout and corrupts the parent
+                // LayoutBuilder.
+                final sortSelector =
+                    DropdownButtonFormField<DiscoverySortOption>(
+                      initialValue: _sort,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Sort',
+                        isDense: true,
+                      ),
+                      items: DiscoverySortOption.values
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _sort = value);
+                      },
+                    );
+                final hideExistingFilter = FilterChip(
+                  selected: _hideExisting,
+                  label: const Text('Hide already added'),
+                  onSelected: (value) {
+                    setState(() => _hideExisting = value);
+                  },
+                );
                 if (constraints.maxWidth < 320) {
                   return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       sortSelector,
                       const SizedBox(height: 8),
-                      hideExistingFilter,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: hideExistingFilter,
+                      ),
                     ],
                   );
                 }
@@ -400,8 +420,10 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
   Widget _buildConfigForm() {
     final qualityProfiles = ref.watch(movieQualityProfilesProvider);
     final rootFolders = ref.watch(movieRootFoldersProvider);
-    final tags =
-        ref.watch(currentRadarrInstanceProvider)?.tags ?? const <Tag>[];
+    final tags = watchInstanceTags(
+      ref,
+      ref.watch(currentRadarrInstanceProvider),
+    );
 
     return _buildSurface(
       (scrollController) => Column(

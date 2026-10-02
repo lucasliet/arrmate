@@ -27,10 +27,14 @@ class PosterViewer extends StatelessWidget {
             icon: const Icon(Icons.close),
           ),
         ),
-        body: Center(
-          child: InteractiveViewer(
-            minScale: 1,
-            maxScale: 4,
+        body: InteractiveViewer(
+          minScale: 1,
+          maxScale: 4,
+          // A mouse wheel already zooms. A trackpad scroll otherwise pans, and
+          // a poster that already fits the viewport cannot pan, so the gesture
+          // looks like a no-op.
+          trackpadScrollCausesScale: true,
+          child: Center(
             child: AspectRatio(aspectRatio: 2 / 3, child: poster),
           ),
         ),
