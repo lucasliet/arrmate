@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_details_provider.dart';
@@ -148,8 +149,10 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(movieRepositoryProvider);
-    final tags =
-        ref.watch(currentRadarrInstanceProvider)?.tags ?? const <Tag>[];
+    final tags = watchInstanceTags(
+      ref,
+      ref.watch(currentRadarrInstanceProvider),
+    );
 
     if (repository != null) {
       _initDataFuture();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_provider.dart';
@@ -120,8 +121,10 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(seriesRepositoryProvider);
-    final tags =
-        ref.watch(currentSonarrInstanceProvider)?.tags ?? const <Tag>[];
+    final tags = watchInstanceTags(
+      ref,
+      ref.watch(currentSonarrInstanceProvider),
+    );
 
     if (repository == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
