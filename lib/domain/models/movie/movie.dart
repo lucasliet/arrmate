@@ -172,8 +172,11 @@ class Movie extends Equatable {
   /// Returns the internal ID, using [guid] or falling back to [tmdbId].
   int get id => guid ?? (tmdbId + 100000);
 
-  /// Checks if the movie exists in the database.
-  bool get exists => guid != null;
+  /// Whether Radarr already has this movie in the library.
+  ///
+  /// Lookup results for movies that are not added use `id: 0`. That value is
+  /// present, but it is not a library row, so it does not count as existing.
+  bool get exists => guid != null && guid != 0;
 
   /// Checks if a movie file is present.
   bool get isDownloaded => movieFile != null;
