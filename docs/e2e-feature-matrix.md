@@ -13,10 +13,10 @@ audit, executable checks, and remaining application and platform scenarios.
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
 - **Status** records the last real UI pass. Navigation, movies, Discover
   through DIS-15, the series library (including the `/tv` filter and the
-  add-series sheet), series details SED-01 and SED-03 through SED-07 and
-  SED-13, episode monitoring, the episode sheet, and the calendar, queue,
-  and history lists were verified on desktop. The season 1 episode list was
-  seen; season 2 was not opened. Rows still marked
+  add-series sheet), series details SED-01 through SED-07 and SED-13, both
+  season lists, episode monitoring, the episode sheet, and the calendar
+  through CAL-11, plus the queue and history lists, were verified on desktop.
+  Rows still marked
   `Not run` were not driven, or still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
@@ -207,7 +207,7 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | SED-01 | Open details | Tap Severance | Fanart, poster, status, network, overview, info grid | Verified |
-| SED-02 | Poster viewer, external links | Poster, IMDb / Trakt / TVDB | IMDb, Trakt, and TVDB buttons are on the details screen. The poster viewer was not in the captured frame | Seen |
+| SED-02 | Poster viewer, external links | Poster, IMDb / Trakt / TVDB | Poster opens in a full-screen viewer with a close control. IMDb, Trakt, and TVDB buttons are on the details screen | Verified |
 | SED-03 | Refresh & Scan, Automatic Search | App bar | “Refresh & Scan triggered”, “Search started”; the search grabs E06–E08 (E05 and E09 are already queued) and they import within about a minute | Verified |
 | SED-04 | Monitor toggle | App bar twice | “Unmonitored” / “Monitored” | Verified |
 | SED-05 | Seasons All / None | Seasons header | “All seasons monitored” / “All seasons unmonitored”; season bookmarks follow | Verified |
@@ -224,7 +224,7 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| EPI-01 | Season list | Tap season 1 | Season 1 lists E01–E09. A green date means the episode has a file; a red date means it aired, is monitored, and has no file. After SED-03 imported E06–E08, this pass showed E01–E04 and E06–E08 green and E05 and E09 red. Season 2 (ten upcoming episodes) was not opened | Seen |
+| EPI-01 | Season list | Tap season 1, then season 2 | Season 1 lists E01–E09. A green date means the episode has a file; a red date means it aired, is monitored, and has no file. After SED-03 imported E06–E08, E01–E04 and E06–E08 are green and E05 and E09 are red. Season 2 lists ten upcoming episodes (E01–E10, blue dates) | Verified |
 | EPI-02 | Episode monitor | Bookmark on an episode | “Episode monitored” / “Episode unmonitored” | Verified |
 | EPI-03 | Episode automatic search | Episode row action | “Searching for S01E0x...” then “Search started for …”; a missing aired episode gets a grab that imports within about a minute | Not run |
 | EPI-04 | Episode interactive search + grab | Episode row → releases → grab | Releases list only that episode; grab adds a Sonarr queue row and a `sonarr` torrent, which imports within about a minute | Not run |
@@ -250,16 +250,16 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | CAL-01 | Event list | Open Calendar | Oppenheimer (In Cinemas, five days ago), Severance S00E01 special, and Severance S02E01–E06 under TODAY / TOMORROW / dated headers | Verified |
-| CAL-02 | Instance filter | Any instance / Radarr / Sonarr | Narrows to that instance | Not run |
+| CAL-02 | Instance filter | Any instance / Radarr / Sonarr | Sonarr shows only Severance episodes | Verified |
 | CAL-03 | Media type filter | All media / Movies / Series | Narrows by type | Verified |
-| CAL-04 | Monitored chip | Enable chip; then unmonitor Oppenheimer | Enable chip: the unmonitored S00E01 special hides. Unmonitor Oppenheimer (MVD-07): it hides too | Not run |
-| CAL-05 | Premieres chip | Enable | Only S02E01 among episodes; movies stay | Not run |
-| CAL-06 | Hide specials chip | Enable | S00E01 hidden | Not run |
-| CAL-07 | Reset chip | With any filter active | Visible only then; clears all | Not run |
-| CAL-08 | Filtered empty | Filters hiding everything | “No matching events” | Not run |
-| CAL-09 | Tap movie event | Oppenheimer | Movie details | Not run |
-| CAL-10 | Tap episode event | Severance episode | Season screen with that episode sheet open | Not run |
-| CAL-11 | Load more | Button at bottom | Next 45 days appended: Oppenheimer physical release and Severance S02E07–E10 | Not run |
+| CAL-04 | Monitored chip | Enable chip; then unmonitor Oppenheimer | Unmonitored Oppenheimer hides. S00E01 (Main Titles) stays, so that special is monitored in this lab | Verified |
+| CAL-05 | Premieres chip | Enable | Only S02E01 among episodes; Oppenheimer In Cinemas and Digital Release stay | Verified |
+| CAL-06 | Hide specials chip | Enable | S00E01 (Main Titles, October 8) hidden; season episodes and Oppenheimer stay | Verified |
+| CAL-07 | Reset chip | With any filter active | Visible only while a filter is on; clears every chip and restores the full list, including the special | Verified |
+| CAL-08 | Filtered empty | Filters hiding everything | “No matching events” | Verified |
+| CAL-09 | Tap movie event | Oppenheimer | Movie details | Verified |
+| CAL-10 | Tap episode event | Severance episode | Season screen with that episode sheet open | Verified |
+| CAL-11 | Load more | Button at bottom | Later dates append. This pass reached S02E06, S02E07, and a December header | Verified |
 | CAL-12 | Pull to refresh | Pull down | Reloads, keeps list while loading | Not run |
 | CAL-13 | Wide layout | Width ≥ 900 | Date sections in two columns | Verified |
 | CAL-14 | Partial failure banner | Stop one instance (wrong key) | Banner lists the failed instance, Retry | Not run |
@@ -274,7 +274,7 @@ Shared by movies, seasons, and episodes.
 | QUE-02 | Refresh icon | App bar | Queue, history, torrents reload | Not run |
 | QUE-03 | Pull to refresh | Pull down | Reload | Not run |
 | QUE-04 | Options: Instance / Protocol / Client | Tune icon | Each dropdown narrows; badge on tune icon | Not run |
-| QUE-05 | Options: Problems only | Switch | Only Arrival and Severance S01E05 | Not run |
+| QUE-05 | Options: Problems only | Switch | Warning rows only. After the lab drifted, that is Arrival, Severance S01E05, and Severance S01E09 (both episodes stalled) | Not run |
 | QUE-06 | Options: sort Title / Added, Ascending / Descending, Reset, Apply | Sheet | Order changes; Reset restores defaults | Not run |
 | QUE-07 | Filtered empty | Filters hiding all | “No matching tasks” + Clear filters | Not run |
 | QUE-08 | Item sheet | Tap Dune | Status, progress + ETA (Dune creeps forward), info rows (quality, indexer, protocol, client, path) | Not run |
