@@ -306,3 +306,21 @@ Most MCP tools require a `roots` parameter with **file URI format**:
 > [!CAUTION]
 > Only fall back to direct CLI commands if the MCP server is unavailable or
 > explicitly returns an error indicating a tool limitation.
+
+## Cursor Cloud specific instructions
+
+Cloud Agent VMs for this repo have Flutter **3.41.2** (Dart 3.11.0) at
+`/opt/flutter`, with `flutter` and `dart` on `PATH`. That matches the version
+pinned in `.github/workflows/run-tests.yml`. Chrome is available for web;
+`CHROME_EXECUTABLE` points at `/usr/local/bin/google-chrome`.
+
+- The Dart MCP server is not installed here. Use the Flutter CLI for
+  `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`,
+  `flutter analyze lib test`, and `flutter test`.
+- Headless web: `flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8123`.
+  `tool/run_web.sh` targets a Chrome device and needs a display.
+- Android SDK and Linux desktop libraries (GTK, Ninja) are not installed.
+  `flutter test` and the web target are the checks this environment can run.
+  iOS builds are not possible on Linux.
+- Radarr, Sonarr, and qBittorrent are not bundled. The app starts without them
+  and shows empty libraries until an instance is saved.
