@@ -280,7 +280,8 @@ void main() {
                   label: 'Movies',
                   tooltip: 'Notifications',
                   onBuild: (duringLayout) {
-                    moviesBuiltDuringLayout = duringLayout;
+                    moviesBuiltDuringLayout =
+                        moviesBuiltDuringLayout || duringLayout;
                   },
                 ),
               ),
@@ -292,7 +293,8 @@ void main() {
                 tooltip: 'Close',
                 onClose: () => context.pop(),
                 onBuild: (duringLayout) {
-                  discoverBuiltDuringLayout = duringLayout;
+                  discoverBuiltDuringLayout =
+                      discoverBuiltDuringLayout || duringLayout;
                 },
               ),
             ),

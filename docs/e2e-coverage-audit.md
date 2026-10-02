@@ -54,6 +54,11 @@ repository stays the same; regressions check tag selection and monitoring
 edits without refetching, and fresh configuration after a repository change.
 These checks do not promote the untested SEE rows to Verified.
 
+The shell regression preserves every layout-phase violation across successive
+builds. A negative control temporarily restored the former `LayoutBuilder`
+shell and confirmed that the regression rejects a page built during layout.
+The current shell passes; this is still a widget check rather than a UI pass.
+
 ## Executable validation
 
 | Check | What it proves | What it does not prove |
