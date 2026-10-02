@@ -1,0 +1,14 @@
+# Local media lab for Arrmate end-to-end checks.
+#
+# One process serves four APIs so a grab in Radarr or Sonarr shows up in the
+# qBittorrent queue without an external indexer or metadata key.
+services:
+  media-lab:
+    build: ./mock
+    image: arrmate-media-lab
+    container_name: arrmate-media-lab
+    ports:
+      - "7878:7878"
+      - "8989:8989"
+      - "9696:9696"
+      - "8080:8080"
