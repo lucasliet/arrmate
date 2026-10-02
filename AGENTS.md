@@ -324,3 +324,7 @@ pinned in `.github/workflows/run-tests.yml`. Chrome is available for web;
   iOS builds are not possible on Linux.
 - Radarr, Sonarr, and qBittorrent are not bundled. The app starts without them
   and shows empty libraries until an instance is saved.
+- Docker Engine and the Compose plugin are installed. The daemon uses
+  `fuse-overlayfs` because nested overlay mounts fail in this VM. The
+  environment start script brings `dockerd` up when it is not already running;
+  `docker` and `docker compose` then work for the `ubuntu` user.
