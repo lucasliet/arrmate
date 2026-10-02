@@ -12,9 +12,12 @@ audit, executable checks, and remaining application and platform scenarios.
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
 - **Status** records the last real UI pass. Navigation, movies, Discover
-  through DIS-15, the series library list, and the calendar, queue, and
-  history lists were verified on desktop. Rows still marked `Not run` were
-  not driven, or failed and still need a retest:
+  through DIS-15, the series library (including the `/tv` filter and the
+  add-series sheet), series details SED-01 and SED-03 through SED-07 and
+  SED-13, the season 1 episode list, episode monitoring, the episode sheet,
+  and the calendar,
+  queue, and history lists were verified on desktop. Rows still marked
+  `Not run` were not driven, or still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -191,43 +194,43 @@ Shared by movies, seasons, and episodes.
 | SER-02 | Grid / list, search, pull to refresh | Same as MOV-02…04 | Same behavior | Verified |
 | SER-03 | Sort: Title / Year / Added / Rating / Size / Next Airing / Previous Airing | Sort sheet | Order changes | Verified |
 | SER-04 | Filter All / Monitored / Unmonitored / Ended / Continuing / Missing / Dangling | Sort sheet | Ended = The Bear and Shogun; Continuing and Missing = Severance | Verified |
-| SER-05 | Root folder filter | `/tv` | Both series | Not run |
-| SER-06 | Selection | Long-press, tap, Select all, X | Same as MOV-10…12 | Not run |
+| SER-05 | Root folder filter | `/tv` | Shogun, Severance, and The Bear | Verified |
+| SER-06 | Selection | Hold the pointer still for one second on a card. A press that moves scrolls instead of selecting. Then tap, Select all, and X | Same as MOV-10…12 | Not run |
 | SER-07 | Batch Unmonitor / Monitor | Select both | “Unmonitored 2 series” / “Monitored 2 series”; persists | Not run |
 | SER-08 | Batch Delete | Select The Bear → Delete → Delete (exclusion checkbox) | “Deleted 1 series” | Not run |
 | SER-09 | Batch Delete files | Select Severance → Delete files | “Deleted 4 files”; season 1 shows 0 of 9; History gains File Deleted events | Not run |
 | SER-10 | Batch Purge | Select Severance → Purge | Seeding warning and cross-seed prompts as needed; summary; series and its torrents removed | Not run |
-| SER-11 | Add entry point | FAB / “Add series” | Discover in series mode | Not run |
+| SER-11 | Add entry point | FAB / “Add series” | Discover in series mode | Verified |
 
 ## Series details (SED)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| SED-01 | Open details | Tap Severance | Fanart, poster, status, network, overview, info grid | Not run |
-| SED-02 | Poster viewer, external links | Poster, IMDb / Trakt / TVDB | Same as MVD-02/04 | Not run |
-| SED-03 | Refresh & Scan, Automatic Search | App bar | “Refresh & Scan triggered”, “Search started”; the search grabs E06–E08 (E05 and E09 are already queued) and they import within about a minute | Not run |
-| SED-04 | Monitor toggle | App bar twice | “Unmonitored” / “Monitored” | Not run |
-| SED-05 | Seasons All / None | Seasons header | “All seasons monitored” / “All seasons unmonitored”; season bookmarks follow | Not run |
-| SED-06 | Season monitor | Season 1 bookmark | Toggles; series monitored follows any season | Not run |
-| SED-07 | Season menu → Automatic / Interactive search | Season ⋮ | “Searching for Severance - Season 1...” then “Search started”; interactive mode lists a season pack and single-episode releases | Not run |
+| SED-01 | Open details | Tap Severance | Fanart, poster, status, network, overview, info grid | Verified |
+| SED-02 | Poster viewer, external links | Poster, IMDb / Trakt / TVDB | IMDb, Trakt, and TVDB buttons are on the details screen. The poster viewer was not in the captured frame | Seen |
+| SED-03 | Refresh & Scan, Automatic Search | App bar | “Refresh & Scan triggered”, “Search started”; the search grabs E06–E08 (E05 and E09 are already queued) and they import within about a minute | Verified |
+| SED-04 | Monitor toggle | App bar twice | “Unmonitored” / “Monitored” | Verified |
+| SED-05 | Seasons All / None | Seasons header | “All seasons monitored” / “All seasons unmonitored”; season bookmarks follow | Verified |
+| SED-06 | Season monitor | Season 1 bookmark | Toggles; series monitored follows any season | Verified |
+| SED-07 | Season menu → Automatic / Interactive search | Season ⋮ | “Searching for Severance - Season 1...” then “Search started”; interactive mode lists a season pack and single-episode releases | Verified |
 | SED-08 | Season multi-select | Long-press season 1; All / None | Season batch bar: Search, Unmonitor, Delete → Delete files / Purge | Not run |
 | SED-09 | Season batch Search / Unmonitor | Batch bar | “Search started for 1 season” / “Unmonitored 1 season” | Not run |
 | SED-10 | Season batch Delete files / Purge | Batch submenu | Confirm; “Deleted N files” / “Purged 1 season: …”; series stays | Not run |
-| SED-11 | Torrents section | Severance details | The three Severance torrents (S01E01 seeding, S01E05 stalled, S01E09 downloading); tap opens sheet | Not run |
+| SED-11 | Torrents section | Severance details | On a fresh lab: the three Severance torrents (S01E01 seeding, S01E05 stalled, S01E09 downloading); tap opens the sheet. After SED-03 this pass showed S01E08 and S01E07 uploading instead, so rerun on a fresh lab before treating that list as a failure | Not run |
 | SED-12 | Menu → Edit / Delete files / Delete / Purge | Overflow | Delete files disabled when no files; Delete dialog with files + re-add checkboxes; Purge summary “Series purged.” | Not run |
-| SED-13 | Specials hidden | Series with season 0 | Season 0 (the S00E01 special) never listed | Not run |
+| SED-13 | Specials hidden | Series with season 0 | Season 0 (the S00E01 special) never listed. Severance shows Season 1 and Season 2 only; The Bear shows Season 1 only | Verified |
 
 ## Season and episode (EPI)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| EPI-01 | Season list | Tap season 1 | Season 1: E01–E04 with files, E05 and E09 in the queue, E06–E08 missing. Season 2: ten upcoming episodes | Not run |
-| EPI-02 | Episode monitor | Bookmark on an episode | “Episode monitored” / “Episode unmonitored” | Not run |
+| EPI-01 | Season list | Tap season 1 | Season 1 lists E01–E09. A green date means the episode has a file; a red date means it aired, is monitored, and has no file. After SED-03 imported E06–E08, this pass showed E01–E04 and E06–E08 green and E05 and E09 red. Season 2 (ten upcoming episodes) was not opened | Seen |
+| EPI-02 | Episode monitor | Bookmark on an episode | “Episode monitored” / “Episode unmonitored” | Verified |
 | EPI-03 | Episode automatic search | Episode row action | “Searching for S01E0x...” then “Search started for …”; a missing aired episode gets a grab that imports within about a minute | Not run |
 | EPI-04 | Episode interactive search + grab | Episode row → releases → grab | Releases list only that episode; grab adds a Sonarr queue row and a `sonarr` torrent, which imports within about a minute | Not run |
 | EPI-05 | Season app bar searches | Automatic / Interactive | Same as SED-07 | Not run |
 | EPI-06 | Delete season files / Purge season | Season app bar | Disabled when no files; confirm; snackbar | Not run |
-| EPI-07 | Episode sheet | Tap S01E01 | Air date, runtime, status, file card, torrents (S01E01 seeding torrent), history | Not run |
+| EPI-07 | Episode sheet | Tap S01E01 | Air date, runtime, status, file card, the S01E01 torrent, and history | Verified |
 | EPI-08 | Episode file details / delete | File card tap, trash | Details sheet; “File deleted”; season count drops by one | Not run |
 | EPI-09 | Episode history event | Tap event | Read-only event sheet | Not run |
 
