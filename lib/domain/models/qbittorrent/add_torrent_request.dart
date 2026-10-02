@@ -37,6 +37,10 @@ class AddTorrentRequest extends Equatable {
   bool get isValid =>
       (urls != null && urls!.isNotEmpty) || torrentFilePath != null;
 
+  /// Builds the `/api/v2/torrents/add` form fields.
+  ///
+  /// The paused flag goes out under both names: qBittorrent 5 only reads
+  /// `stopped` and 4.x only reads `paused`, each ignoring the other.
   Map<String, String> toFormFields() {
     final fields = <String, String>{
       'urls': ?urls,
@@ -44,6 +48,7 @@ class AddTorrentRequest extends Equatable {
       'category': ?category,
       'tags': ?tags,
       'paused': paused.toString(),
+      'stopped': paused.toString(),
       'skip_checking': skipChecking.toString(),
     };
     return fields;
