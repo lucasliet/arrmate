@@ -62,7 +62,9 @@ no library item.
 
 ## Pass through the app
 
-Run these after the three instances test as connected.
+Run these after the three instances test as connected. They are a quick smoke
+pass; [e2e-feature-matrix.md](e2e-feature-matrix.md) lists every control with
+its expected result and last tested status.
 
 1. Movies library shows Dune, The Matrix, Arrival, and Oppenheimer with posters, years, and overviews. Search `matrix` keeps The Matrix. Sort and the monitored filter still leave a visible card.
 2. Open Dune. The details screen shows the overview, poster or fanart, the 1080p file, and extra subtitle. History for that movie can be empty. The Matrix history lists grabbed and imported.
