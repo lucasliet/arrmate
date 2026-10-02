@@ -2,8 +2,10 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/movies_screen.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movies_provider.dart';
+import 'package:arrmate/presentation/screens/movies/widgets/movie_card.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
 import 'package:arrmate/presentation/screens/series/series_screen.dart';
+import 'package:arrmate/presentation/screens/series/widgets/series_card.dart';
 import 'package:arrmate/presentation/theme/app_scroll_behavior.dart';
 import 'package:arrmate/presentation/tour/tour_mock_data.dart';
 import 'package:flutter/gestures.dart';
@@ -80,6 +82,44 @@ void main() {
               : container.read(seriesSearchProvider),
           isEmpty,
         );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '${movies ? 'movie' : 'series'} library selects from a stationary mouse hold',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1280, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentRadarrInstanceProvider.overrideWithValue(null),
+              currentSonarrInstanceProvider.overrideWithValue(null),
+              if (movies)
+                moviesProvider.overrideWith(() => _Movies(() {}))
+              else
+                seriesProvider.overrideWith(() => _Series(() {})),
+            ],
+            child: MaterialApp(
+              scrollBehavior: const AppScrollBehavior(),
+              home: movies ? const MoviesScreen() : const SeriesScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final card = movies
+            ? find.byType(MovieCard).first
+            : find.byType(SeriesCard).first;
+        final gesture = await tester.startGesture(
+          tester.getCenter(card),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump(const Duration(milliseconds: 800));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        // The count is exposed by the selection chrome more than once.
+        expect(find.text('1 selected'), findsWidgets);
         expect(tester.takeException(), isNull);
       },
     );
