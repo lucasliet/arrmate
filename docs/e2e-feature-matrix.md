@@ -12,12 +12,10 @@ audit, executable checks, and remaining application and platform scenarios.
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
 - **Status** records the last real UI pass. Navigation, the movies library,
-  movie details, interactive search, and the movie editor were verified on
-  desktop. A later pass verified poster zoom (MVD-02), editor tags (MVE-05),
-  and remembered add defaults (DIS-10). DIS-08 and Discover's Close control
-  (DIS-11) still need a retest: leaving Discover rebuilt the navigator during
-  layout and painted a red error. Rows still marked `Not run` were not driven,
-  or failed and still need a retest:
+  movie details, interactive search, the movie editor, and Discover through
+  DIS-15 were verified on desktop. Adding a movie and closing Discover
+  (`9a52f82`) return to the library with no red error. Rows still marked
+  `Not run` were not driven, or failed and still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -175,14 +173,14 @@ Shared by movies, seasons, and episodes.
 | DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Verified |
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
-| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Not run |
+| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Verified |
 | DIS-09 | Add validation | Clear profile or folder, Add | Not reachable: the profile and folder dropdowns have no clear control, so the empty-selection snackbar cannot be driven | N/A |
 | DIS-10 | Remembered defaults | Add a second movie | Previous profile/folder preselected | Verified |
-| DIS-11 | Back navigation | Back from configure, preview, then Close | Returns step by step; Close leaves Discover and shows the library with no red error | Not run |
+| DIS-11 | Back navigation | Back from configure, preview, then Close | Returns step by step; Close leaves Discover and shows the library with no red error | Verified |
 | DIS-12 | Series search | Series → Add → `shogun` | Shogun result, opens Series Preview | Verified |
 | DIS-13 | Series configure | Configure Addition | Monitor (All, Future, Missing, Existing, Recent, Pilot, First Season, Last Season, Monitor/Unmonitor Specials, None), Monitor New Seasons, Series Type, Season Folder, Profile, Root Folder, Tags | Verified |
-| DIS-14 | Add series | HD-1080p, `/tv`, Add | “Series added successfully”; Shogun in library with ten season 1 episodes, monitored per the Monitor choice (None or Future leaves them unmonitored) | Not run |
-| DIS-15 | Series by id | `tvdb:417742`, `imdb:` | Shogun found (`imdb:tt2788316`) | Not run |
+| DIS-14 | Add series | HD-1080p, `/tv`, Add | “Series added successfully”; Shogun in library with ten season 1 episodes, monitored per the Monitor choice (None or Future leaves them unmonitored) | Verified |
+| DIS-15 | Series by id | `tvdb:417742`, `imdb:` | Shogun found (`imdb:tt2788316`) | Verified |
 
 ---
 
