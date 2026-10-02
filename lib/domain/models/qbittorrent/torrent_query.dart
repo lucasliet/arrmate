@@ -209,7 +209,10 @@ bool _matchesStatus(Torrent torrent, TorrentStatusFilter filter) {
   return switch (filter) {
     TorrentStatusFilter.all => true,
     TorrentStatusFilter.downloading =>
-      torrent.status.isActive && !torrent.status.isPaused,
+      torrent.status == TorrentStatus.downloading ||
+          torrent.status == TorrentStatus.stalledDL ||
+          torrent.status == TorrentStatus.queuedDL ||
+          torrent.status == TorrentStatus.checkingDL,
     TorrentStatusFilter.seeding =>
       torrent.status == TorrentStatus.uploading ||
           torrent.status == TorrentStatus.stalledUP,
