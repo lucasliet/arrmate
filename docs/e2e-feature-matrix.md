@@ -14,13 +14,13 @@ audit, executable checks, and remaining application and platform scenarios.
 - **Status** records the last real UI pass. Navigation, movies, Discover
   through DIS-15, the series library (including the `/tv` filter and the
   add-series sheet), series details SED-01 and SED-03 through SED-07 and
-  SED-13, the season 1 episode list, episode monitoring, the episode sheet,
-  and the calendar,
-  queue, and history lists were verified on desktop. Rows still marked
+  SED-13, episode monitoring, the episode sheet, and the calendar, queue,
+  and history lists were verified on desktop. The season 1 episode list was
+  seen; season 2 was not opened. Rows still marked
   `Not run` were not driven, or still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
-  - `Not run`: never exercised in the UI.
+  - `Not run`: not completed in the UI, or needs a retest after an inconclusive run.
   - `N/A`: not implemented in the app (see [Behavior gaps](#behavior-gaps-found-while-mapping)).
 - **Expected** follows the current lab, which models grabs, imports, queue
   removal, and deletions. Some expectations changed after the last pass; rerun

@@ -7,40 +7,52 @@ Sonarr, Prowlarr, or qBittorrent servers.
 
 ## Existing UI evidence
 
-Audited the branch at `2263b10` and the two Cursor evidence reports in
-[PR #38](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5952057484) and
-[the partial desktop pass](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5953209855).
-The reports concern desktop Linux and earlier commits (`86488ab` and
-`2263b10`); they do not certify the current head or Windows/macOS/tablet runs.
+Reviewed the final Cursor commits through `9fed4ac` and the evidence in
+[PR #38](https://github.com/lucasliet/arrmate/pull/38), including the
+[poster and tags retest](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5955283496),
+[Discover add/close retest](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5955737873),
+[series library and activity pass](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5955967495),
+and [series details and episodes pass](https://github.com/lucasliet/arrmate/pull/38#issuecomment-5956381398).
+The reports concern desktop Linux at several intermediate commits; they do
+not certify all flows at the current head or Windows/macOS/tablet runs.
 The screenshots and recordings are hosted in Cursor's agent artifacts. Their
 links and reported observations were reviewed, but the artifacts were not
 independently replayed in this audit.
 
-The checked-in manual matrix contains **269 cases**: **40 marked Verified**,
-**13 Seen**, and **216 Not run**. Only 40/269 (14.9%) have a reported successful
-UI action. This is a count of checklist statuses, not code coverage. API or
+The checked-in manual matrix contains **269 cases**: **97 marked Verified**,
+**12 Seen**, **159 Not run**, and **1 N/A**. Only 97/269 (36.1%) have a reported
+successful UI action. This is a count of checklist statuses, not code coverage. API or
 widget checks do not promote a manual case to Verified.
 
-| Area | Cases | Verified | Seen | Not run |
-| --- | ---: | ---: | ---: | ---: |
-| Navigation and deep links | 21 | 10 | 0 | 11 |
-| Movies, editing, discovery, release search | 71 | 27 | 1 | 43 |
-| Series, seasons, episodes, editing | 37 | 0 | 0 | 37 |
-| Calendar | 14 | 0 | 1 | 13 |
-| Queue, history, import, torrents | 63 | 3 | 4 | 56 |
-| Settings, instances, system tools | 41 | 0 | 7 | 34 |
-| Notifications | 11 | 0 | 0 | 11 |
-| Assistant | 4 | 0 | 0 | 4 |
-| Guided tour | 5 | 0 | 0 | 5 |
-| Updates | 2 | 0 | 0 | 2 |
+| Area | Cases | Verified | Seen | Not run | N/A |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Navigation and deep links | 21 | 10 | 0 | 11 | 0 |
+| Movies, editing, discovery, release search | 71 | 64 | 1 | 5 | 1 |
+| Series, seasons, episodes, editing | 37 | 15 | 2 | 20 | 0 |
+| Calendar | 14 | 3 | 0 | 11 | 0 |
+| Queue, history, import, torrents | 63 | 5 | 2 | 56 | 0 |
+| Settings, instances, system tools | 41 | 0 | 7 | 34 | 0 |
+| Notifications | 11 | 0 | 0 | 11 | 0 |
+| Assistant | 4 | 0 | 0 | 4 | 0 |
+| Guided tour | 5 | 0 | 0 | 5 | 0 |
+| Updates | 2 | 0 | 0 | 2 | 0 |
 
-The partial QA comment records 33 PASS, 4 FAIL, 12 BLOCKED, and 220 cases not
-exercised. That is a separate pass result, not the accumulated status of the
-matrix: three failures were incorrect expectations, and the mouse refresh
-failure was fixed in `be7e455`. MOV-04 still needs a real UI recheck. The new
-widget regression drives both actual library screens, with one filtered
-result, and verifies a mouse drag clears the query and reloads their providers.
-It does not claim a native desktop UI pass.
+Later UI passes supersede the initial partial report for mouse refresh
+(MOV-04), poster zoom (MVD-02), live tags (MVE-05), and Discover add/close
+(DIS-08, DIS-11, DIS-14). DIS-09 is N/A because the app selects a default
+profile and folder and offers no control to clear them.
+
+EPI-01 remains Seen: season 1 rendered, but season 2 was not opened. SED-11
+remains Not run: the reported torrent list after imports differed from the
+fresh fixtures and still needs an isolated UI retest. SER-06 also remains
+Not run: a stationary mouse hold passes widget regressions for both libraries,
+but the desktop attempt moved the pointer and did not establish a UI pass.
+
+Review also reproduced four profile/folder fetches during live-tag loading
+and two edits in the series editor. Configuration is now reused while the
+repository stays the same; regressions check tag selection and monitoring
+edits without refetching, and fresh configuration after a repository change.
+These checks do not promote the untested SEE rows to Verified.
 
 ## Executable validation
 
@@ -69,9 +81,10 @@ and fails early when the lab is not fresh; restart it before another pass.
 
 ## Remaining coverage needed
 
-1. Drive the actual application through the 229 cases without a Verified UI
-   status, recording commit, platform, viewport, action, expected state, and
-   evidence per ID. Start with series/episode parity, add/edit/save/reopen,
+1. Drive the actual application through the 171 applicable cases without a
+   Verified UI status (12 Seen and 159 Not run), recording commit, platform,
+   viewport, action, expected state, and evidence per ID. Start with series
+   editing, remaining seasons/episode actions, add/edit/save/reopen,
    interactive grab through import, queue removal switches, file deletion,
    purge/cross-seed cancellation, and torrent actions.
 2. Repeat core navigation and destructive/media flows on Windows and macOS,
