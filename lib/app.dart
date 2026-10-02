@@ -12,6 +12,7 @@ import 'presentation/providers/onboarding_provider.dart';
 import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
+import 'presentation/theme/app_scroll_behavior.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/tour/app_tour_service.dart';
@@ -90,6 +91,7 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
       theme: AppTheme.light(settings.colorScheme),
       darkTheme: AppTheme.dark(settings.colorScheme),
       themeMode: settings.appearance.themeMode,
+      scrollBehavior: const AppScrollBehavior(),
       routerConfig: appRouter,
       builder: (context, child) {
         return Consumer(

@@ -195,6 +195,10 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
               await ref.read(seriesProvider.notifier).refresh();
             },
             child: CustomScrollView(
+              // A filtered library can be shorter than the viewport. Without
+              // this, the list cannot overscroll and pull-to-refresh never
+              // starts.
+              physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 _isSelecting
                     ? _buildSelectionAppBar(context, seriesAsync)
