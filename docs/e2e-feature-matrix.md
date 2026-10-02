@@ -9,7 +9,9 @@ checklist for a full manual pass on any platform build.
 - **ID** is stable. Reference it in QA reports (`MOV-12 FAIL: ...`).
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
-- **Status** records the last real UI pass, on commit `05374a9`:
+- **Status** records the last real UI pass. The desktop layout rows were
+  rechecked on commit `86488ab` (navigation and the movies library). Rows still
+  marked `Not run` were not driven in that pass:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -62,13 +64,13 @@ lab still does not model.
 | NAV-02 | Icon rail | Width 600–899 | Icon-only rail, brand mark, same 5 destinations | Verified |
 | NAV-03 | Labeled sidebar | Width ≥ 900 (and ≥ 1440) | Extended rail with labels and “ARRMATE” | Verified |
 | NAV-04 | Tab switch | Tap each destination | Route changes to `/movies`, `/series`, `/calendar`, `/activity`, `/settings`; active tab highlighted | Verified |
-| NAV-05 | Resize while open | Drag window across 600 and 900 | Navigation swaps without losing the current screen or state | Not run |
-| NAV-06 | Content width cap | Width > 1600 | Content stays centered at 1600 max | Not run |
-| NAV-07 | Notification bell | Tap bell on any tab | Opens `/notifications`; badge shows unread count, `99+` above 99 | Not run |
-| NAV-08 | Rail bell on nested routes | Wide layout, open a movie | Bell appears in rail trailing area without tooltip | Not run |
+| NAV-05 | Resize while open | Drag window across 600 and 900 | Navigation swaps without losing the current screen or state | Verified |
+| NAV-06 | Content width cap | Width > 1600 | Content stays centered at 1600 max | Verified |
+| NAV-07 | Notification bell | Tap bell on any tab | Opens `/notifications`; badge shows unread count, `99+` above 99 | Verified |
+| NAV-08 | Rail bell on nested routes | Wide layout, open a movie | Bell appears in rail trailing area without tooltip | Verified |
 | NAV-09 | Offline banner | Disconnect network | “Offline” banner with last-online time and the 7-day image cache note; disappears on reconnect | Not run |
-| NAV-10 | Home tab on launch | Set Home Tab (SET-09), restart app | App opens on the chosen tab | Not run |
-| NAV-11 | Adaptive sheets | Open any sheet at < 600 and ≥ 600 | Bottom sheet when compact, dialog (max 720×800) otherwise | Not run |
+| NAV-10 | Home tab on launch | Set Home Tab (SET-09), restart app | App opens on the chosen tab | Verified |
+| NAV-11 | Adaptive sheets | Open any sheet at < 600 and ≥ 600 | Bottom sheet at both widths, drag handle included. Wide windows keep it width-capped along the bottom; it is not a centered dialog | Verified |
 
 ## Deep links (LNK)
 
@@ -95,34 +97,34 @@ do not register the scheme, so run this section on those three platforms only.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | MOV-01 | Library load | Open Movies | Dune, The Matrix, Arrival, Oppenheimer with posters and years | Verified |
-| MOV-02 | Grid / list toggle | Tap view icon twice | Switches grid ↔ list; tooltip flips “Switch to List/Grid”; choice persists after restart | Not run |
+| MOV-02 | Grid / list toggle | Tap view icon twice | Switches grid ↔ list; tooltip flips “Switch to List/Grid”; choice persists after restart | Verified |
 | MOV-03 | Search | Tap search, type `matrix` | Only The Matrix; close (X) restores all | Verified |
-| MOV-04 | Pull to refresh | Pull down with a search active | Search cleared, list reloads | Not run |
-| MOV-05 | Sort: Title / Year / Added / Rating / Size / Runtime / Grabbed / Digital Release | Sort sheet, pick each | Order changes for each value; sheet closes on pick | Not run |
-| MOV-06 | Order Ascending / Descending | Sort sheet | Order inverts | Not run |
-| MOV-07 | Filter All / Monitored / Unmonitored / Missing / Downloaded / Wanted / Dangling | Sort sheet, pick each | Downloaded = Dune, Matrix. Missing includes Arrival and Oppenheimer; Wanted includes Arrival. Unmonitored and Dangling empty until MOV-13 | Not run |
-| MOV-08 | Root folder filter | Sort sheet → `/movies` and “All folders” | `/movies` keeps all four; `/movies-4k` is empty until MVE-04 moves Dune | Not run |
-| MOV-09 | Filtered empty state | Filter Unmonitored | “No results found” with hint to clear filters | Not run |
-| MOV-10 | Enter selection | Long-press Dune (grid and list) | “1 selected” app bar, batch bar, FAB hidden | Not run |
-| MOV-11 | Add/remove from selection | Tap Matrix, tap Dune again | Count 2 → 1; deselecting last item exits selection | Not run |
-| MOV-12 | Select all / close selection | Tap Select all, then X | Count equals visible (filtered) items; X clears | Not run |
-| MOV-13 | Batch Unmonitor | Select Dune + Arrival → Unmonitor | Snackbar “Unmonitored 2 movies”; bookmark icons empty; reopen app, still unmonitored | Not run |
-| MOV-14 | Batch Monitor | Select same → Monitor | “Monitored 2 movies”; icons filled | Not run |
-| MOV-15 | Batch Delete | Select Oppenheimer → Delete → Delete; tick “Add to import exclusion list” | Confirm dialog; “Deleted 1 movie”; Oppenheimer gone from library and calendar | Not run |
-| MOV-16 | Batch Delete files | Select Dune → Delete → Delete files | Confirm; “Deleted 1 file”; Dune shows missing; History gains a File Deleted event; Dune’s 2160p torrent stays In library (still downloading) | Not run |
-| MOV-17 | Batch Purge | Select The Matrix → Delete → Purge | Confirm; seeding warning if seed time < minimum days (Cancel / Keep seeding / Delete all); cross-seed dialog for the 40×`b` copy (Keep / Delete); summary snackbar; Matrix gone from library and history, both torrents gone if approved; a kept cross-seed turns Orphan | Not run |
-| MOV-18 | Batch cancel | Open any batch dialog, Cancel | No change | Not run |
+| MOV-04 | Pull to refresh | Pull down with a search active, including a mouse drag on a short list | Search cleared, list reloads | Not run |
+| MOV-05 | Sort: Title / Year / Added / Rating / Size / Runtime / Grabbed / Digital Release | Sort sheet, pick each | Order changes for each value; sheet closes on pick | Verified |
+| MOV-06 | Order Ascending / Descending | Sort sheet | Order inverts | Verified |
+| MOV-07 | Filter All / Monitored / Unmonitored / Missing / Downloaded / Wanted / Dangling | Sort sheet, pick each | Downloaded = Dune, Matrix. Missing = Arrival only (monitored, no file, and available). Wanted = Arrival and Oppenheimer, because Oppenheimer is still in cinemas and not available yet. Unmonitored and Dangling empty until MOV-13 | Verified |
+| MOV-08 | Root folder filter | Sort sheet → `/movies` and “All folders” | Chips are the folders movies already use: All folders and `/movies`. `/movies` keeps all four. `/movies-4k` appears only after a movie is moved there | Verified |
+| MOV-09 | Filtered empty state | Filter Unmonitored | “No results found” with hint to clear filters | Verified |
+| MOV-10 | Enter selection | Long-press Dune (grid and list) | “1 selected” app bar, batch bar, FAB hidden | Verified |
+| MOV-11 | Add/remove from selection | Tap Matrix, tap Dune again | Count 2 → 1; deselecting last item exits selection | Verified |
+| MOV-12 | Select all / close selection | Tap Select all, then X | Count equals visible (filtered) items; X clears | Verified |
+| MOV-13 | Batch Unmonitor | Select Dune + Arrival → Unmonitor | Snackbar “Unmonitored 2 movies”; bookmark icons empty; reopen app, still unmonitored | Verified |
+| MOV-14 | Batch Monitor | Select same → Monitor | “Monitored 2 movies”; icons filled | Verified |
+| MOV-15 | Batch Delete | Select Oppenheimer → Delete → Delete; tick “Add to import exclusion list” | Confirm dialog; “Deleted 1 movie”; Oppenheimer gone from library and calendar | Verified |
+| MOV-16 | Batch Delete files | Select Dune → Delete → Delete files | Confirm; “Deleted 1 file”; Dune shows missing; History gains a File Deleted event; Dune’s 2160p torrent stays In library (still downloading) | Verified |
+| MOV-17 | Batch Purge | Select The Matrix → Delete → Purge | Confirm; seeding warning if seed time < minimum days (Cancel / Keep seeding / Delete all); cross-seed dialog for the 40×`b` copy (Keep / Delete); summary snackbar; Matrix gone from library and history, both torrents gone if approved; a kept cross-seed turns Orphan | Verified |
+| MOV-18 | Batch cancel | Open any batch dialog, Cancel | No change | Verified |
 | MOV-19 | Instance selector | Add a second Radarr instance (INS-12) | DNS icon appears; switching reloads the library; hidden with one instance | Not run |
-| MOV-20 | Add entry point | Compact: FAB `+`; width ≥ 1200: “Add movie” button | Opens Discover in movie mode; FAB hidden on wide | Not run |
-| MOV-21 | Queue indicator on card | Library with Dune queued | Dune card shows queue status tooltip | Not run |
+| MOV-20 | Add entry point | Compact: FAB `+`; width ≥ 1200: “Add movie” button | Opens Discover in movie mode; FAB hidden on wide | Verified |
+| MOV-21 | Queue indicator on card | Library with Dune queued | Dune card shows queue status tooltip | Verified |
 
 ## Movie details (MVD)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| MVD-01 | Open details | Tap Dune | Fanart, poster, overview, info grid (studio, status, profile, size, path) | Not run |
+| MVD-01 | Open details | Tap Dune | Fanart, poster, overview, info grid (studio, status, profile, size, path) | Verified |
 | MVD-02 | Poster viewer | Tap poster, pinch, Close | Fullscreen, zoom 1×–4×, closes | Not run |
-| MVD-03 | Ratings and status chip | Dune details | Rating badges with values > 0; “Downloaded” chip | Not run |
+| MVD-03 | Ratings and status chip | Dune details | Rating badges with values > 0; “Downloaded” chip | Verified |
 | MVD-04 | External links | Tap Trailer, IMDb, Trakt, Letterboxd | Browser opens; Trailer hidden without a trailer id | Not run |
 | MVD-05 | Refresh & Scan | App bar | Snackbar “Refresh & Scan triggered”; ARR log gains “Updating info for …” and “Scanning disk for …” | Not run |
 | MVD-06 | Automatic Search | App bar | Snackbar “Search started”. On Arrival: a 1080p BluRay grab joins the queue and imports within about a minute. On Dune (has a file): nothing grabbed | Not run |
@@ -146,7 +148,7 @@ Shared by movies, seasons, and episodes.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | REL-01 | Open | Arrival → Interactive Search | Four Prowlarr releases, count “4 results” | Seen |
-| REL-02 | Rejected row | Look at the 720p row | Dimmed, strikethrough, first rejection reason, download disabled, row tap disabled, info icon works | Not run |
+| REL-02 | Rejected row | Look at the 720p row | Dimmed, strikethrough, first rejection reason, download disabled, row tap disabled, info icon works | Verified |
 | REL-03 | Search releases | Type `bluray` | List narrows; count shows “· N hidden”; clear X restores | Not run |
 | REL-04 | Sort: Release weight / Quality weight / Custom format score / Seeders / Age / Size / Indexer | Sort menu | Order changes; rejected rows stay last | Not run |
 | REL-05 | Sort direction | Arrow | Toggles ascending/descending | Not run |
