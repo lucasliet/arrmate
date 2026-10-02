@@ -11,10 +11,13 @@ audit, executable checks, and remaining application and platform scenarios.
 - **ID** is stable. Reference it in QA reports (`MOV-12 FAIL: ...`).
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
-- **Status** records the last real UI pass. Desktop passes on `86488ab` and
-  `2263b10` covered navigation, the movies library, movie details, interactive
-  search, the movie editor, and Discover through DIS-08. Rows still marked
-  `Not run` were not driven, or failed and still need a retest:
+- **Status** records the last real UI pass. Navigation, the movies library,
+  movie details, interactive search, and the movie editor were verified on
+  desktop. A later pass verified poster zoom (MVD-02), editor tags (MVE-05),
+  and remembered add defaults (DIS-10). DIS-08 and Discover's Close control
+  (DIS-11) still need a retest: leaving Discover rebuilt the navigator during
+  layout and painted a red error. Rows still marked `Not run` were not driven,
+  or failed and still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -114,7 +117,7 @@ do not register the scheme, so run this section on those three platforms only.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | MVD-01 | Open details | Tap Dune | Fanart, poster, overview, info grid (studio, status, profile, size, path) | Verified |
-| MVD-02 | Poster viewer | Tap poster, scroll the wheel or trackpad up over the image, then Close | Fullscreen. Scroll up zooms in, up to 4×. Scroll down at 1× stays at 1×. Close dismisses it | Not run |
+| MVD-02 | Poster viewer | Tap poster, scroll the wheel or trackpad up over the image, then Close | Fullscreen. Scroll up zooms in, up to 4×. Scroll down at 1× stays at 1×. Close dismisses it | Verified |
 | MVD-03 | Ratings and status chip | Dune details | Rating badges with values > 0; “Downloaded” chip | Verified |
 | MVD-04 | External links | Tap Trailer, IMDb, Trakt, Letterboxd | Browser opens; Trailer hidden without a trailer id | Verified |
 | MVD-05 | Refresh & Scan | App bar | Snackbar “Refresh & Scan triggered”; ARR log gains “Updating info for …” and “Scanning disk for …” | Not run |
@@ -158,7 +161,7 @@ Shared by movies, seasons, and episodes.
 | MVE-02 | Quality Profile | Change to Ultra-HD, Save | Info grid shows Ultra-HD | Verified |
 | MVE-03 | Minimum Availability | Announced / In Cinemas / Released | Saved; reopening shows the new value. Oppenheimer set to In Cinemas becomes available (Wanted filter) | Verified |
 | MVE-04 | Root Folder | Change folder on Dune | “Move Files?” dialog (Yes/No) because Dune has a file; pick `/movies-4k`; path and file path move to `/movies-4k/Dune (2021)` | Verified |
-| MVE-05 | Tags | Tick `lab`, Save | Tag saved. Both `lab` and `4k` are offered even when the saved instance snapshot only had `lab`, because the editor reloads tags from the server | Not run |
+| MVE-05 | Tags | Tick `lab`, Save | Tag saved. Both `lab` and `4k` are offered even when the saved instance snapshot only had `lab`, because the editor reloads tags from the server | Verified |
 | MVE-06 | Back without saving | Change fields, back | No change persisted | Verified |
 
 ## Discover and add (DIS)
@@ -173,9 +176,9 @@ Shared by movies, seasons, and episodes.
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
 | DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Not run |
-| DIS-09 | Add validation | Clear profile or folder, Add | “Please select a movie, quality profile, and root folder” | Not run |
-| DIS-10 | Remembered defaults | Add a second movie | Previous profile/folder preselected | Not run |
-| DIS-11 | Back navigation | Back from configure, preview | Returns step by step; Close leaves Discover | Not run |
+| DIS-09 | Add validation | Clear profile or folder, Add | Not reachable: the profile and folder dropdowns have no clear control, so the empty-selection snackbar cannot be driven | N/A |
+| DIS-10 | Remembered defaults | Add a second movie | Previous profile/folder preselected | Verified |
+| DIS-11 | Back navigation | Back from configure, preview, then Close | Returns step by step; Close leaves Discover and shows the library with no red error | Not run |
 | DIS-12 | Series search | Series → Add → `shogun` | Shogun result, opens Series Preview | Verified |
 | DIS-13 | Series configure | Configure Addition | Monitor (All, Future, Missing, Existing, Recent, Pilot, First Season, Last Season, Monitor/Unmonitor Specials, None), Monitor New Seasons, Series Type, Season Folder, Profile, Root Folder, Tags | Verified |
 | DIS-14 | Add series | HD-1080p, `/tv`, Add | “Series added successfully”; Shogun in library with ten season 1 episodes, monitored per the Monitor choice (None or Future leaves them unmonitored) | Not run |
@@ -473,6 +476,7 @@ They are not covered by the rows above and need a product decision.
 - Import to Media Library scans the torrent's save path (`/downloads/radarr`), so the file list includes every completed download in that category, not only the selected torrent. qBittorrent's `content_path` would scope it to the torrent.
 - The notification center does not navigate to the media on tap.
 - The skills describe battery saver, polling interval, a test notification, topic sharing, an auto-update toggle, and a What's New tile; none of these exist in the UI.
+- Discover's quality profile and root folder dropdowns keep a selection once options load. There is no clear control, so the “Please select a movie, quality profile, and root folder” snackbar cannot be reached from the UI (DIS-09).
 
 ## Media lab limits
 
