@@ -51,8 +51,11 @@ asset directory.
 
 ### macOS
 
-Install Xcode and its command-line tools and CocoaPods. The application ID is
-`br.com.lucasliet.arrmate`, matching the mobile targets. The runner includes:
+Install Xcode 26.1.1 or newer, its command-line tools, and CocoaPods. The
+current `connectivity_plus` plugin requires this SDK to compile its guarded
+satellite-network API. CI uses `macos-15` with the latest stable installed
+Xcode. The application ID is `br.com.lucasliet.arrmate`, matching the mobile
+targets. The runner includes:
 
 - Network client entitlements in Debug/Profile and Release for service APIs,
   images, ntfy, and the online assistant.

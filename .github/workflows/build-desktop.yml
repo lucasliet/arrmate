@@ -27,10 +27,16 @@ jobs:
           - platform: windows
             os: windows-2022
           - platform: macos
-            os: macos-14
+            os: macos-15
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Select macOS build SDK
+        if: matrix.platform == 'macos'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Install Linux build dependencies
         if: matrix.platform == 'linux'
