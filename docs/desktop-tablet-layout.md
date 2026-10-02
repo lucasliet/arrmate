@@ -94,7 +94,7 @@ Widget tests cover:
 
 Run the relevant widget tests in the Flutter VM and Chrome, the full test
 suite, Dart analysis, and release web/Linux builds. Windows and macOS release
-builds run on their corresponding hosts in `build-desktop.yml`.
+builds run on their corresponding hosts in `build.yml`.
 
 Implementation validation with Flutter 3.41.2 passed Dart formatting and
 analysis, 899 VM tests (three existing skips), the selected Chrome regression

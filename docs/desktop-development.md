@@ -93,8 +93,10 @@ desktop-file/URI activation still require platform packaging integration.
 
 ## Verification
 
-`build-desktop.yml` builds all three desktop targets on their respective
-GitHub Actions hosts for pull requests, pushes to `main`, and manual runs.
+`build.yml` builds Android, iOS, Windows, Linux, and macOS in parallel on their
+respective GitHub Actions hosts for pull requests, pushes to `main`, and manual
+runs. Each target uploads its application bundle. Android checks use debug
+signing; the release keystore is used only when building a version tag.
 The existing test workflow continues to analyze Dart and run the test suite.
 These checks verify compilation and do not establish interactive runtime
 parity.
@@ -104,10 +106,9 @@ parity.
 `release.yml` publishes versions when a `v*` tag is pushed. After resolving the
 tag to an immutable source revision, it calls the reusable `build.yml`
 workflow while release notes are generated independently. That build workflow
-runs Android, iOS, and the desktop matrix in parallel; the matrix reuses
-`build-desktop.yml`. A single publication job waits for every build, downloads
-their artifacts, creates the AltStore source, and publishes the complete
-release together.
+runs Android, iOS, and its desktop matrix in parallel. A single publication
+job waits for every build, downloads their artifacts, creates the AltStore
+source, and publishes the complete release together.
 
 | Platform | Release asset |
 | --- | --- |
