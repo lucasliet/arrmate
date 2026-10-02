@@ -11,11 +11,10 @@ audit, executable checks, and remaining application and platform scenarios.
 - **ID** is stable. Reference it in QA reports (`MOV-12 FAIL: ...`).
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
-- **Status** records the last real UI pass. Navigation, the movies library,
-  movie details, interactive search, the movie editor, and Discover through
-  DIS-15 were verified on desktop. Adding a movie and closing Discover
-  (`9a52f82`) return to the library with no red error. Rows still marked
-  `Not run` were not driven, or failed and still need a retest:
+- **Status** records the last real UI pass. Navigation, movies, Discover
+  through DIS-15, the series library list, and the calendar, queue, and
+  history lists were verified on desktop. Rows still marked `Not run` were
+  not driven, or failed and still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -188,10 +187,10 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| SER-01 | Library load | Open Series | Severance and The Bear with posters | Not run |
-| SER-02 | Grid / list, search, pull to refresh | Same as MOV-02…04 | Same behavior | Not run |
-| SER-03 | Sort: Title / Year / Added / Rating / Size / Next Airing / Previous Airing | Sort sheet | Order changes | Not run |
-| SER-04 | Filter All / Monitored / Unmonitored / Ended / Continuing / Missing / Dangling | Sort sheet | Ended = The Bear; Continuing and Missing = Severance | Not run |
+| SER-01 | Library load | Open Series | Shogun, Severance, and The Bear with posters | Verified |
+| SER-02 | Grid / list, search, pull to refresh | Same as MOV-02…04 | Same behavior | Verified |
+| SER-03 | Sort: Title / Year / Added / Rating / Size / Next Airing / Previous Airing | Sort sheet | Order changes | Verified |
+| SER-04 | Filter All / Monitored / Unmonitored / Ended / Continuing / Missing / Dangling | Sort sheet | Ended = The Bear and Shogun; Continuing and Missing = Severance | Verified |
 | SER-05 | Root folder filter | `/tv` | Both series | Not run |
 | SER-06 | Selection | Long-press, tap, Select all, X | Same as MOV-10…12 | Not run |
 | SER-07 | Batch Unmonitor / Monitor | Select both | “Unmonitored 2 series” / “Monitored 2 series”; persists | Not run |
@@ -247,9 +246,9 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| CAL-01 | Event list | Open Calendar | Oppenheimer (In Cinemas, five days ago), Severance S00E01 special, and Severance S02E01–E06 under TODAY / TOMORROW / dated headers | Seen |
+| CAL-01 | Event list | Open Calendar | Oppenheimer (In Cinemas, five days ago), Severance S00E01 special, and Severance S02E01–E06 under TODAY / TOMORROW / dated headers | Verified |
 | CAL-02 | Instance filter | Any instance / Radarr / Sonarr | Narrows to that instance | Not run |
-| CAL-03 | Media type filter | All media / Movies / Series | Narrows by type | Not run |
+| CAL-03 | Media type filter | All media / Movies / Series | Narrows by type | Verified |
 | CAL-04 | Monitored chip | Enable chip; then unmonitor Oppenheimer | Enable chip: the unmonitored S00E01 special hides. Unmonitor Oppenheimer (MVD-07): it hides too | Not run |
 | CAL-05 | Premieres chip | Enable | Only S02E01 among episodes; movies stay | Not run |
 | CAL-06 | Hide specials chip | Enable | S00E01 hidden | Not run |
@@ -259,7 +258,7 @@ Shared by movies, seasons, and episodes.
 | CAL-10 | Tap episode event | Severance episode | Season screen with that episode sheet open | Not run |
 | CAL-11 | Load more | Button at bottom | Next 45 days appended: Oppenheimer physical release and Severance S02E07–E10 | Not run |
 | CAL-12 | Pull to refresh | Pull down | Reloads, keeps list while loading | Not run |
-| CAL-13 | Wide layout | Width ≥ 900 | Date sections in two columns | Not run |
+| CAL-13 | Wide layout | Width ≥ 900 | Date sections in two columns | Verified |
 | CAL-14 | Partial failure banner | Stop one instance (wrong key) | Banner lists the failed instance, Retry | Not run |
 
 ---
@@ -268,7 +267,7 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| QUE-01 | Queue list | Activity → Queue | Dune downloading, Arrival with “Manual Import required”, Severance S01E09 downloading, Severance S01E05 stalled; summary “4 tasks (2 problems)” | Seen |
+| QUE-01 | Queue list | Activity → Queue | Dune downloading, Arrival with “Manual Import required”, Severance S01E09 downloading, Severance S01E05 stalled; summary “4 tasks (2 problems)” | Verified |
 | QUE-02 | Refresh icon | App bar | Queue, history, torrents reload | Not run |
 | QUE-03 | Pull to refresh | Pull down | Reload | Not run |
 | QUE-04 | Options: Instance / Protocol / Client | Tune icon | Each dropdown narrows; badge on tune icon | Not run |
@@ -293,7 +292,7 @@ Shared by movies, seasons, and episodes.
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| HIS-01 | List | History tab | Grabbed, Imported, Failed events from both apps, newest first | Seen |
+| HIS-01 | List | History tab | Grabbed, Imported, Failed events from both apps, newest first | Verified |
 | HIS-02 | Event filter values | Release Grabbed / Folder Imported / Download Failed / Download Ignored / File Renamed / File Deleted | Server-filtered list per type. Grabbed: every grab. Folder Imported: Dune, Matrix, Severance, The Bear. Failed: Arrival HDTV. Ignored: Oppenheimer CAM, The Bear 720p. Renamed: Dune. Deleted: empty until a file is deleted | Not run |
 | HIS-03 | Instance filter | All instances / each | Client-side narrow | Not run |
 | HIS-04 | Clear chip | With filters | Clears both | Not run |
