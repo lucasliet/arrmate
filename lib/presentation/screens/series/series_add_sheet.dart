@@ -160,8 +160,8 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
         messenger.showSnackBar(
           const SnackBar(content: Text('Series added successfully')),
         );
-        // See [MovieAddSheet]: refresh after the pop so the library layout
-        // is not mutated mid-frame.
+        // Reload the library on the next frame, after the pop and the
+        // snackbar have been scheduled.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           container.invalidate(seriesProvider);
         });

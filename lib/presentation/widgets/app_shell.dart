@@ -18,111 +18,110 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final windowClass = WindowClass.fromWidth(constraints.maxWidth);
-        final location = GoRouterState.of(context).matchedLocation;
-        final selectedIndex = _calculateSelectedIndex(context);
-        final showRailNotifications = !AppTab.values.any(
-          (tab) => tab.path == location,
-        );
-        final content = Column(
-          children: [
-            const OfflineStatusBanner(),
-            Expanded(child: child),
-          ],
-        );
+    // The shell fills the window, so the window width is the rail/bar
+    // breakpoint. Measuring it with a LayoutBuilder would rebuild this
+    // navigator during performLayout. Route changes then reactivate page
+    // tooltips in that phase, and the tooltip overlay mutates a layout
+    // builder that is not a descendant of the shell.
+    final windowClass = WindowClass.fromWidth(MediaQuery.sizeOf(context).width);
+    final location = GoRouterState.of(context).matchedLocation;
+    final selectedIndex = _calculateSelectedIndex(context);
+    final showRailNotifications = !AppTab.values.any(
+      (tab) => tab.path == location,
+    );
+    final content = Column(
+      children: [
+        const OfflineStatusBanner(),
+        Expanded(child: child),
+      ],
+    );
 
-        return Scaffold(
-          // Keep the page at the same child position across navigation changes.
-          body: Row(
-            children: [
-              if (windowClass.hasNavigationRail)
-                NavigationRail(
-                  key: tourKeys.navBarKey,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerLow,
-                  extended: windowClass.hasExtendedNavigation,
-                  scrollable: true,
-                  leading: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/images/icon_mark.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                        if (windowClass.hasExtendedNavigation) ...[
-                          const SizedBox(width: 12),
-                          Text(
-                            'ARRMATE',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 2,
-                                ),
-                          ),
-                        ],
-                      ],
+    return Scaffold(
+      // Keep the page at the same child position across navigation changes.
+      body: Row(
+        children: [
+          if (windowClass.hasNavigationRail)
+            NavigationRail(
+              key: tourKeys.navBarKey,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerLow,
+              extended: windowClass.hasExtendedNavigation,
+              scrollable: true,
+              leading: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/icon_mark.png',
+                      width: 24,
+                      height: 24,
                     ),
-                  ),
-                  selectedIndex: selectedIndex,
-                  trailing: showRailNotifications
-                      ? const NotificationIconButton(showTooltip: false)
-                      : null,
-                  trailingAtBottom: true,
-                  onDestinationSelected: (index) =>
-                      _onItemTapped(context, index),
-                  destinations: AppTab.values
-                      .map(
-                        (tab) => NavigationRailDestination(
-                          icon: Icon(tab.icon),
-                          selectedIcon: Icon(tab.selectedIcon),
-                          label: Text(tab.label),
-                        ),
-                      )
-                      .toList(),
-                )
-              else
-                const SizedBox.shrink(),
-              if (windowClass.hasNavigationRail)
-                const VerticalDivider(width: 1)
-              else
-                const SizedBox.shrink(),
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: ContentLayout.maximumContentWidth,
-                    ),
-                    child: content,
-                  ),
+                    if (windowClass.hasExtendedNavigation) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        'ARRMATE',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2,
+                            ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+              selectedIndex: selectedIndex,
+              trailing: showRailNotifications
+                  ? const NotificationIconButton(showTooltip: false)
+                  : null,
+              trailingAtBottom: true,
+              onDestinationSelected: (index) => _onItemTapped(context, index),
+              destinations: AppTab.values
+                  .map(
+                    (tab) => NavigationRailDestination(
+                      icon: Icon(tab.icon),
+                      selectedIcon: Icon(tab.selectedIcon),
+                      label: Text(tab.label),
+                    ),
+                  )
+                  .toList(),
+            )
+          else
+            const SizedBox.shrink(),
+          if (windowClass.hasNavigationRail)
+            const VerticalDivider(width: 1)
+          else
+            const SizedBox.shrink(),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ContentLayout.maximumContentWidth,
+                ),
+                child: content,
+              ),
+            ),
           ),
-          bottomNavigationBar: windowClass == WindowClass.compact
-              ? NavigationBar(
-                  key: tourKeys.navBarKey,
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (index) =>
-                      _onItemTapped(context, index),
-                  destinations: AppTab.values
-                      .map(
-                        (tab) => NavigationDestination(
-                          icon: Icon(tab.icon),
-                          selectedIcon: Icon(tab.selectedIcon),
-                          label: tab.label,
-                        ),
-                      )
-                      .toList(),
-                )
-              : null,
-        );
-      },
+        ],
+      ),
+      bottomNavigationBar: windowClass == WindowClass.compact
+          ? NavigationBar(
+              key: tourKeys.navBarKey,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) => _onItemTapped(context, index),
+              destinations: AppTab.values
+                  .map(
+                    (tab) => NavigationDestination(
+                      icon: Icon(tab.icon),
+                      selectedIcon: Icon(tab.selectedIcon),
+                      label: tab.label,
+                    ),
+                  )
+                  .toList(),
+            )
+          : null,
     );
   }
 

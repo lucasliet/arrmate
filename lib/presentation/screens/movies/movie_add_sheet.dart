@@ -153,9 +153,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
         messenger.showSnackBar(
           const SnackBar(content: Text('Movie added successfully')),
         );
-        // The library grid rebuilds inside the shell layout. Invalidating it
-        // in this same turn mutates that layout builder while the route is
-        // still popping.
+        // Reload the library on the next frame, after the pop and the
+        // snackbar have been scheduled.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           container.invalidate(moviesProvider);
         });

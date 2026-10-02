@@ -7,14 +7,14 @@ import '../providers/notifications_provider.dart';
 /// An icon button that displays a notification bell with an unread count badge.
 ///
 /// Tapping this button navigates to the notifications screen. When embedded in
-/// the adaptive navigation rail, set [showTooltip] to false: the rail mounts
-/// and unmounts this widget on route changes, and a tooltip overlay being
-/// dismissed mid-layout can corrupt the shell's LayoutBuilder on web.
+/// the adaptive navigation rail, set [showTooltip] to false. The rail inserts
+/// this button only on routes outside the primary tabs, so the tooltip overlay
+/// is not needed there.
 class NotificationIconButton extends ConsumerWidget {
   /// Whether the button shows a long-press/hover tooltip.
   ///
-  /// Disable it when embedded in the adaptive navigation rail, where a
-  /// tooltip overlay dismissed mid-layout can corrupt the shell.
+  /// The navigation rail passes false. That button is inserted only while the
+  /// current route is outside the primary tabs.
   final bool showTooltip;
 
   const NotificationIconButton({super.key, this.showTooltip = true});
