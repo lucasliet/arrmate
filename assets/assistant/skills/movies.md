@@ -32,7 +32,7 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca por título
      - Released (lançado em qualquer formato).
    - **Quality Profile:** dropdown listando perfis de qualidade do Radarr (ex: "1080p", "4K").
    - **Root Folder:** dropdown com pastas destino do Radarr (ex: "/movies", "/media/movies").
-   - **Tags:** chips das tags da instância (aparece só quando o Radarr tem tags cadastradas).
+   - **Tags:** chips das tags da instância (aparece só quando o Radarr tem tags cadastradas). A lista é relida do servidor ao abrir o formulário, então uma tag criada depois do teste de conexão também aparece.
 10. Tocar **"Add"** no canto superior direito (vira spinner enquanto envia).
 11. Snackbar confirma "Movie added successfully" e a lista volta a atualizar automaticamente.
 
@@ -94,7 +94,7 @@ Ao tocar em um filme, abre a tela **MovieDetailsScreen** com layout em scroll ve
 - Título do filme fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
-- **Poster** no lado esquerdo.
+- **Poster** no lado esquerdo. Toque abre o poster em tela cheia: pinça, roda do mouse para cima ou scroll do trackpad aumentam o zoom até 4×; rolar para baixo no mínimo (1×) não reduz. Fechar volta aos detalhes.
 - **Título** em bold.
 - **Ano** de lançamento.
 - **Nota/Rating** (ex: 8.5/10 de fontes como IMDb ou TMDB).

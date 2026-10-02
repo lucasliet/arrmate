@@ -34,7 +34,7 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
    - **Season Folder:** switch (padrão ON) — se ON, cria pastas por temporada (Season 01, Season 02, etc).
    - **Quality Profile:** dropdown listando perfis do Sonarr.
    - **Root Folder:** dropdown com pastas destino.
-   - **Tags:** chips das tags da instância (aparece só quando o Sonarr tem tags cadastradas).
+   - **Tags:** chips das tags da instância (aparece só quando o Sonarr tem tags cadastradas). A lista é relida do servidor ao abrir o formulário, então uma tag criada depois do teste de conexão também aparece.
 10. Tocar **"Add"** no canto superior direito (vira spinner enquanto envia).
 11. Snackbar confirma "Series added successfully" e a lista atualiza.
 
@@ -95,7 +95,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 - Título da série fica visível no topo conforme scroll.
 
 **Poster e informações principais:**
-- **Poster** no lado esquerdo.
+- **Poster** no lado esquerdo. Toque abre o poster em tela cheia: pinça, roda do mouse para cima ou scroll do trackpad aumentam o zoom até 4×; rolar para baixo no mínimo (1×) não reduz. Fechar volta aos detalhes.
 - **Título** em bold.
 - **Ano** de início.
 - **Nota/Rating** (ex: 9.5/10).

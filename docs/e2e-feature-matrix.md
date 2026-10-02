@@ -11,9 +11,10 @@ audit, executable checks, and remaining application and platform scenarios.
 - **ID** is stable. Reference it in QA reports (`MOV-12 FAIL: ...`).
 - **Expected** uses lab fixture data. Restart the container to restore it:
   `docker compose -f tool/e2e/docker-compose.yml up -d --force-recreate`.
-- **Status** records the last real UI pass. The desktop layout rows were
-  rechecked on commit `86488ab` (navigation and the movies library). Rows still
-  marked `Not run` were not driven in that pass:
+- **Status** records the last real UI pass. Desktop passes on `86488ab` and
+  `2263b10` covered navigation, the movies library, movie details, interactive
+  search, the movie editor, and Discover through DIS-08. Rows still marked
+  `Not run` were not driven, or failed and still need a retest:
   - `Verified`: the action was run and the result matched.
   - `Seen`: the screen rendered with lab data, but its actions were not run.
   - `Not run`: never exercised in the UI.
@@ -89,7 +90,7 @@ do not register the scheme, so run this section on those three platforms only.
 | MOV-01 | Library load | Open Movies | Dune, The Matrix, Arrival, Oppenheimer with posters and years | Verified |
 | MOV-02 | Grid / list toggle | Tap view icon twice | Switches grid ↔ list; tooltip flips “Switch to List/Grid”; choice persists after restart | Verified |
 | MOV-03 | Search | Tap search, type `matrix` | Only The Matrix; close (X) restores all | Verified |
-| MOV-04 | Pull to refresh | Pull down with a search active, including a mouse drag on a short list | Search cleared, list reloads | Not run |
+| MOV-04 | Pull to refresh | Pull down with a search active, including a mouse drag on a short list | Search cleared, list reloads | Verified |
 | MOV-05 | Sort: Title / Year / Added / Rating / Size / Runtime / Grabbed / Digital Release | Sort sheet, pick each | Order changes for each value; sheet closes on pick | Verified |
 | MOV-06 | Order Ascending / Descending | Sort sheet | Order inverts | Verified |
 | MOV-07 | Filter All / Monitored / Unmonitored / Missing / Downloaded / Wanted / Dangling | Sort sheet, pick each | Downloaded = Dune, Matrix. Missing = Arrival only (monitored, no file, and available). Wanted = Arrival and Oppenheimer, because Oppenheimer is still in cinemas and not available yet. Unmonitored and Dangling empty until MOV-13 | Verified |
@@ -113,23 +114,23 @@ do not register the scheme, so run this section on those three platforms only.
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | MVD-01 | Open details | Tap Dune | Fanart, poster, overview, info grid (studio, status, profile, size, path) | Verified |
-| MVD-02 | Poster viewer | Tap poster, pinch, Close | Fullscreen, zoom 1×–4×, closes | Not run |
+| MVD-02 | Poster viewer | Tap poster, scroll the wheel or trackpad up over the image, then Close | Fullscreen. Scroll up zooms in, up to 4×. Scroll down at 1× stays at 1×. Close dismisses it | Not run |
 | MVD-03 | Ratings and status chip | Dune details | Rating badges with values > 0; “Downloaded” chip | Verified |
-| MVD-04 | External links | Tap Trailer, IMDb, Trakt, Letterboxd | Browser opens; Trailer hidden without a trailer id | Not run |
+| MVD-04 | External links | Tap Trailer, IMDb, Trakt, Letterboxd | Browser opens; Trailer hidden without a trailer id | Verified |
 | MVD-05 | Refresh & Scan | App bar | Snackbar “Refresh & Scan triggered”; ARR log gains “Updating info for …” and “Scanning disk for …” | Not run |
 | MVD-06 | Automatic Search | App bar | Snackbar “Search started”. On Arrival: a 1080p BluRay grab joins the queue and imports within about a minute. On Dune (has a file): nothing grabbed | Not run |
-| MVD-07 | Monitor toggle | App bar on Arrival, twice | “Unmonitored” then “Monitored”; library icon follows | Not run |
+| MVD-07 | Monitor toggle | App bar on Arrival, twice | “Unmonitored” then “Monitored”; library icon follows | Verified |
 | MVD-08 | Files section | Dune details | One 1080p file card; tap opens File Details sheet with codecs/size | Not run |
 | MVD-09 | Delete single file | File card trash → Delete | “File deleted”; section shows “No media files”; status chip changes; History gains a File Deleted event | Not run |
-| MVD-10 | Extra files | Dune details | `Dune (2021).en.srt` subtitle and `Dune (2021).nfo` metadata cards (display only); none on a movie without a file | Not run |
-| MVD-11 | History section | The Matrix details | Grabbed and imported events; tap opens event sheet | Not run |
-| MVD-12 | Torrents section | The Matrix details | Both Matrix torrents (linked + cross-seed); tap opens torrent sheet without “Open in library” | Not run |
-| MVD-13 | Torrents section empty | Oppenheimer details | “No torrents in the download client” | Not run |
-| MVD-14 | Menu → Edit | Overflow → Edit | Edit Movie screen (MVE) | Not run |
-| MVD-15 | Menu → Delete files | Dune overflow | Enabled when the movie has a file, disabled for Arrival; confirm → “Deleted 1 file” | Not run |
-| MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to library; its torrents turn Orphan | Not run |
-| MVD-17 | Menu → Purge | Overflow → Purge | Same flow as MOV-17 for one movie; “Movie purged.” summary | Not run |
-| MVD-18 | Wide vs compact hero | Content width < 1200 and ≥ 1200, after subtracting the rail | Hero 300/360, poster 100/180, padding 16/32 | Not run |
+| MVD-10 | Extra files | Dune details | `Dune (2021).en.srt` subtitle and `Dune (2021).nfo` metadata cards (display only); none on a movie without a file | Verified |
+| MVD-11 | History section | The Matrix details | Grabbed and imported events; tap opens event sheet | Verified |
+| MVD-12 | Torrents section | The Matrix details | Both Matrix torrents (linked + cross-seed); tap opens torrent sheet without “Open in library” | Verified |
+| MVD-13 | Torrents section empty | Oppenheimer details | “No torrents in the download client” | Verified |
+| MVD-14 | Menu → Edit | Overflow → Edit | Edit Movie screen (MVE) | Verified |
+| MVD-15 | Menu → Delete files | Dune overflow | Enabled when the movie has a file, disabled for Arrival; confirm → “Deleted 1 file” | Verified |
+| MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to the library. The copy in the Radarr category becomes Orphan. A cross-seed kept in another category (the lab uses `cross-seed`) becomes Not in library: once the movie and its history are gone, only a managed category is classified as Orphan | Verified |
+| MVD-17 | Menu → Purge | Overflow → Purge | Same flow as MOV-17 for one movie; “Movie purged.” summary | Verified |
+| MVD-18 | Wide vs compact hero | Content width < 1200 and ≥ 1200, after subtracting the rail | Hero 300/360, poster 100/180, padding 16/32 | Verified |
 
 ## Interactive search (REL)
 
@@ -139,39 +140,39 @@ Shared by movies, seasons, and episodes.
 | --- | --- | --- | --- | --- |
 | REL-01 | Open | Arrival → Interactive Search | Four Prowlarr releases, count “4 results” | Seen |
 | REL-02 | Rejected row | Look at the 720p row | Dimmed, strikethrough, first rejection reason, download disabled, row tap disabled, info icon works | Verified |
-| REL-03 | Search releases | Type `bluray` | List narrows; count shows “· N hidden”; clear X restores | Not run |
-| REL-04 | Sort: Release weight / Quality weight / Custom format score / Seeders / Age / Size / Indexer | Sort menu | Order changes; rejected rows stay last | Not run |
-| REL-05 | Sort direction | Arrow | Toggles ascending/descending | Not run |
-| REL-06 | Filters sheet | Approval, Freeleech, Protocol, Indexer, Quality, Language, Custom format, Original language | Each narrows the list; Release type only on series; Clear filters and Apply work | Not run |
-| REL-07 | Remember filters | Enable, close, reopen search | Filters restored | Not run |
-| REL-08 | Toolbar Clear | With filters active | Clears filters, keeps sort | Not run |
-| REL-09 | Release details | Info icon | Details sheet; “Download release” or “Release rejected” | Not run |
-| REL-10 | Grab | Download icon on 1080p BluRay → Download | “Release grabbed successfully”; sheet closes; Radarr queue and qBittorrent gain the release; within about a minute the torrent seeds, the queue item leaves, and the movie has a file | Not run |
-| REL-11 | Grab cancel | Download icon → Cancel | Nothing grabbed | Not run |
+| REL-03 | Search releases | Type `bluray` | List narrows; count shows “· N hidden”; clear X restores | Verified |
+| REL-04 | Sort: Release weight / Quality weight / Custom format score / Seeders / Age / Size / Indexer | Sort menu | Order changes; rejected rows stay last | Verified |
+| REL-05 | Sort direction | Arrow | Toggles ascending/descending | Verified |
+| REL-06 | Filters sheet | Approval, Freeleech, Protocol, Indexer, Quality, Language, Custom format, Original language | Each narrows the list; Release type only on series; Clear filters and Apply work | Verified |
+| REL-07 | Remember filters | Enable, close, reopen search | Filters restored | Verified |
+| REL-08 | Toolbar Clear | With filters active | Clears filters, keeps sort | Verified |
+| REL-09 | Release details | Info icon | Details sheet; “Download release” or “Release rejected” | Verified |
+| REL-10 | Grab | Download icon on 1080p BluRay → Download | “Release grabbed successfully”; sheet closes; Radarr queue and qBittorrent gain the release; within about a minute the torrent seeds, the queue item leaves, and the movie has a file | Verified |
+| REL-11 | Grab cancel | Download icon → Cancel | Nothing grabbed | Verified |
 
 ## Movie edit (MVE)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
-| MVE-01 | Monitored switch | Toggle, Save | “Movie updated”; persists on reopen | Not run |
-| MVE-02 | Quality Profile | Change to Ultra-HD, Save | Info grid shows Ultra-HD | Not run |
-| MVE-03 | Minimum Availability | Announced / In Cinemas / Released | Saved; reopening shows the new value. Oppenheimer set to In Cinemas becomes available (Wanted filter) | Not run |
-| MVE-04 | Root Folder | Change folder on Dune | “Move Files?” dialog (Yes/No) because Dune has a file; pick `/movies-4k`; path and file path move to `/movies-4k/Dune (2021)` | Not run |
-| MVE-05 | Tags | Tick `lab`, Save | Tag saved; tags `lab` and `4k` offered | Not run |
-| MVE-06 | Back without saving | Change fields, back | No change persisted | Not run |
+| MVE-01 | Monitored switch | Toggle, Save | “Movie updated”; persists on reopen | Verified |
+| MVE-02 | Quality Profile | Change to Ultra-HD, Save | Info grid shows Ultra-HD | Verified |
+| MVE-03 | Minimum Availability | Announced / In Cinemas / Released | Saved; reopening shows the new value. Oppenheimer set to In Cinemas becomes available (Wanted filter) | Verified |
+| MVE-04 | Root Folder | Change folder on Dune | “Move Files?” dialog (Yes/No) because Dune has a file; pick `/movies-4k`; path and file path move to `/movies-4k/Dune (2021)` | Verified |
+| MVE-05 | Tags | Tick `lab`, Save | Tag saved. Both `lab` and `4k` are offered even when the saved instance snapshot only had `lab`, because the editor reloads tags from the server | Not run |
+| MVE-06 | Back without saving | Change fields, back | No change persisted | Verified |
 
 ## Discover and add (DIS)
 
 | ID | Control | Steps | Expected | Status |
 | --- | --- | --- | --- | --- |
 | DIS-01 | Search by title | Movies → Add → `inception` | Inception result, poster, year, rating | Verified |
-| DIS-02 | Search by id / URL | `tmdb:27205`, `27205`, `imdb:tt1375666`, a TMDB URL | Each finds Inception (title, `tmdb:`, and `imdb:` lookups are all served by the lab) | Not run |
-| DIS-03 | Hide already added | Search `matrix`, toggle chip | On (default): The Matrix hidden. Off: shown with green check | Not run |
-| DIS-04 | Existing result tap | Chip off, tap The Matrix | Opens `/movies/2` | Not run |
-| DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Not run |
+| DIS-02 | Search by id / URL | `tmdb:27205`, `27205`, `imdb:tt1375666`, a TMDB URL | Each finds Inception (title, `tmdb:`, and `imdb:` lookups are all served by the lab) | Verified |
+| DIS-03 | Hide already added | Search `matrix`, toggle chip | On (default): The Matrix hidden. Off: shown with green check | Verified |
+| DIS-04 | Existing result tap | Chip off, tap The Matrix | Opens `/movies/2` | Verified |
+| DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Verified |
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
-| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; Inception in library; reopening Discover shows it as added; adding it again is rejected | Not run |
+| DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Not run |
 | DIS-09 | Add validation | Clear profile or folder, Add | “Please select a movie, quality profile, and root folder” | Not run |
 | DIS-10 | Remembered defaults | Add a second movie | Previous profile/folder preselected | Not run |
 | DIS-11 | Back navigation | Back from configure, preview | Returns step by step; Close leaves Discover | Not run |
