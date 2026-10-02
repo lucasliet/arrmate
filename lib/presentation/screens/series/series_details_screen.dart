@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../core/utils/media_external_links.dart';
 import '../../../../domain/models/models.dart';
+import '../../adaptive/content_layout.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
@@ -23,10 +23,9 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/media/poster_viewer.dart';
 import 'providers/series_metadata_provider.dart';
 import 'providers/series_provider.dart';
-import 'widgets/series_poster.dart';
-
 import 'season_details_screen.dart';
 import 'series_edit_screen.dart';
+import 'widgets/series_poster.dart';
 
 /// Displays detailed information about a specific series, including seasons and options.
 class SeriesDetailsScreen extends ConsumerWidget {
@@ -38,25 +37,29 @@ class SeriesDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final seriesState = ref.watch(seriesDetailsProvider(seriesId));
 
-    return Scaffold(
-      body: seriesState.when(
-        data: (series) => _buildContent(context, ref, series),
-        error: (error, stack) => Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: ErrorDisplay(
-            message: error.toString(),
-            onRetry: () => ref.refresh(seriesDetailsProvider(seriesId)),
+    return AdaptiveLayout(
+      builder: (context) {
+        return Scaffold(
+          body: seriesState.when(
+            data: (series) => _buildContent(context, ref, series),
+            error: (error, stack) => Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: ErrorDisplay(
+                message: error.toString(),
+                onRetry: () => ref.refresh(seriesDetailsProvider(seriesId)),
+              ),
+            ),
+            loading: () => const Scaffold(
+              body: LoadingIndicator(message: 'Loading details...'),
+            ),
           ),
-        ),
-        loading: () => const Scaffold(
-          body: LoadingIndicator(message: 'Loading details...'),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Series series) {
-    final isDesktopWeb = kIsWeb && MediaQuery.sizeOf(context).width >= 1200;
+    final isWide = ContentLayout.of(context).hasWideToolbar;
     final instance = ref.watch(currentSonarrInstanceProvider);
     final fanartImage = series.images
         .where((i) => i.coverType == 'fanart')
@@ -80,7 +83,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: isDesktopWeb ? 360 : 300,
+          expandedHeight: isWide ? 360 : 300,
           pinned: true,
           iconTheme: const IconThemeData(color: Colors.white),
           flexibleSpace: FlexibleSpaceBar(
@@ -277,7 +280,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isDesktopWeb ? 32 : 16),
+            padding: EdgeInsets.symmetric(horizontal: isWide ? 32 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -285,7 +288,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: isDesktopWeb ? 180 : 100,
+                      width: isWide ? 180 : 100,
                       child: AspectRatio(
                         aspectRatio: 2 / 3,
                         child: Semantics(
@@ -312,7 +315,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: isDesktopWeb ? 28 : 16),
+                    SizedBox(width: isWide ? 28 : 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +323,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
                           Text(
                             series.title,
                             style:
-                                (isDesktopWeb
+                                (isWide
                                         ? theme.textTheme.headlineMedium
                                         : theme.textTheme.headlineSmall)
                                     ?.copyWith(fontWeight: FontWeight.bold),
@@ -361,7 +364,10 @@ class SeriesDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
 
                 const SizedBox(height: 32),
-                Row(
+                OverflowBar(
+                  alignment: MainAxisAlignment.spaceBetween,
+                  overflowAlignment: OverflowBarAlignment.start,
+                  overflowSpacing: 8,
                   children: [
                     Text(
                       'Seasons',
@@ -369,62 +375,66 @@ class SeriesDetailsScreen extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Spacer(),
-                    TextButton.icon(
-                      key: const Key('monitorAllSeasonsBtn'),
-                      onPressed: () async {
-                        try {
-                          await ref
-                              .read(seriesControllerProvider(seriesId))
-                              .monitorAllSeasons(series, true);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('All seasons monitored'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                                backgroundColor: theme.colorScheme.error,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.bookmark, size: 18),
-                      label: const Text('All'),
-                    ),
-                    TextButton.icon(
-                      key: const Key('unmonitorAllSeasonsBtn'),
-                      onPressed: () async {
-                        try {
-                          await ref
-                              .read(seriesControllerProvider(seriesId))
-                              .monitorAllSeasons(series, false);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('All seasons unmonitored'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                                backgroundColor: theme.colorScheme.error,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.bookmark_border, size: 18),
-                      label: const Text('None'),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton.icon(
+                          key: const Key('monitorAllSeasonsBtn'),
+                          onPressed: () async {
+                            try {
+                              await ref
+                                  .read(seriesControllerProvider(seriesId))
+                                  .monitorAllSeasons(series, true);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('All seasons monitored'),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: theme.colorScheme.error,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.bookmark, size: 18),
+                          label: const Text('All'),
+                        ),
+                        TextButton.icon(
+                          key: const Key('unmonitorAllSeasonsBtn'),
+                          onPressed: () async {
+                            try {
+                              await ref
+                                  .read(seriesControllerProvider(seriesId))
+                                  .monitorAllSeasons(series, false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('All seasons unmonitored'),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: theme.colorScheme.error,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.bookmark_border, size: 18),
+                          label: const Text('None'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -552,27 +562,36 @@ class SeriesDetailsScreen extends ConsumerWidget {
       if (series.path != null) _InfoItem('Path', series.path!),
     ];
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: items.map((item) {
-        return SizedBox(
-          width: (MediaQuery.of(context).size.width - 48) / 2,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = ContentLayout(constraints.maxWidth).infoColumnCount;
+        final itemWidth = (constraints.maxWidth - 16 * (columns - 1)) / columns;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: items.map((item) {
+            return SizedBox(
+              width: itemWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.value,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(item.value, style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 

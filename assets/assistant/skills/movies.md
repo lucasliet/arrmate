@@ -7,13 +7,13 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca por título
 
 ## Adicionar filme — buscar e cadastrar no Radarr
 
-**Onde fica:** Aba Filmes → botão "+" (floating action button no canto inferior direito).
+**Location:** **Movies** → **"Add movie"** in the wide toolbar, or **"+"** in the bottom-right corner on compact layouts. Both open **Discover** in movie mode.
 
-> **Atalho:** o "+" abre a tela **Discover** já em modo filme. Veja a seção "Adicionar via Discover" abaixo para busca por título, ID TMDB/IMDb ou URL.
+> **Shortcut:** Both add controls open **Discover** in movie mode. See the discovery section below for title, ID, or URL search.
 
 **Passo a passo:**
-1. Abrir a aba Filmes (primeira aba da barra inferior).
-2. Tocar no botão **"+"** no canto inferior direito (FAB redondo).
+1. Open **Movies** in bottom navigation or the sidebar.
+2. Select **"Add movie"** in the wide toolbar, or the **"+"** floating button on compact layouts.
 3. Abre a tela **Discover** com AppBar "Add Movie" e ícone **X** ("Close") à direita para sair.
 4. No campo **"Search"**, digite o título do filme (ex: "Inception", "The Matrix").
 5. A busca roda sozinha com debounce enquanto você digita; pressionar Enter dispara a busca imediatamente.
@@ -44,9 +44,9 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca por título
 
 ## Adicionar via Discover — busca por título ID ou URL
 
-**Onde fica:** Aba Filmes → botão "+" (FAB) → abre a tela **Discover** em modo filme.
+**Location:** **Movies** → **"Add movie"** in the wide toolbar, or **"+"** in the bottom-right corner on compact layouts. Both open **Discover** in movie mode.
 
-A tela **Discover** abre **direto no tipo de mídia da aba de origem** — o "+" da aba Filmes busca filmes, o "+" da aba Séries busca séries. Não há abas Movies/Series dentro da tela: para adicionar uma série, use o "+" da aba Séries. A busca aceita não só o título, mas também identificadores e links.
+**Discover** opens in the media type of the originating library. Use **"Add movie"** / **"Add series"** in wide toolbars or **"+"** in compact layouts. To change media type, open the other library first. Search accepts titles, identifiers, and URLs.
 
 **Layout da tela:**
 - **AppBar** com título "Add Movie" e ícone **X** ("Close").

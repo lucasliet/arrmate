@@ -11,7 +11,7 @@ Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes)
 
 Funcionalidades principais:
 - Biblioteca de filmes e séries: navegar, buscar, filtrar, ordenar, selecionar em lote, monitorar/desmonitorar e deletar.
-- **Discover (busca e adição):** tela de descoberta acessível pelo FAB das abas Filmes/Séries — abre já no tipo da aba de origem e aceita título, ID TMDB/IMDb/TVDB ou URL.
+- **Discover:** Open with **"Add movie"** / **"Add series"** in wide toolbars or **"+"** in compact layouts. It starts in the originating media type and supports titles, TMDB/IMDb/TVDB IDs, URLs, debounced search, sorting, and "Hide already added".
 - Adicionar novos filmes e séries via busca online no Radarr/Sonarr.
 - Busca manual de releases (grab interativo) com filtro e seleção.
 - Calendário de próximos lançamentos e episódios, com **filtros** (instância, tipo, monitorados, estreias, ocultar especiais).
@@ -33,7 +33,7 @@ O app é feito em Flutter, roda totalmente no dispositivo e não envia dados pes
 
 ## Navegação principal — abas Filmes Séries Calendário Atividade Configurações
 
-O Arrmate usa uma barra de navegação inferior com 5 abas:
+Arrmate uses bottom navigation below 600 logical pixels, an icon sidebar from 600, and a labeled sidebar from 900. The same five destinations are available on web, desktop, and tablets:
 
 1. **Filmes** — Biblioteca de filmes do Radarr.
 2. **Séries** — Biblioteca de séries do Sonarr.

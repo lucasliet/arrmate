@@ -68,7 +68,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - **Onboarding guiado** — tour de coach marks na primeira abertura, com replay em Configurações → About → Getting Started; enquanto roda sem instância configurada, exibe cards de exemplo (apenas visuais) para cada passo ter um alvo.
 
 **Busca & Conteúdo:**
-- **Discover** — tela de busca/adição aberta pelo FAB das abas Filmes/Séries (já no tipo da aba de origem), aceita título, ID TMDB/IMDb/TVDB ou URL, com debounce, ordenação ("Sort") e filtro "Hide already added".
+- **Discover:** Open with **"Add movie"** / **"Add series"** in wide toolbars or **"+"** in compact layouts. It starts in the originating media type and supports titles, TMDB/IMDb/TVDB IDs, URLs, debounced search, sorting, and "Hide already added".
 - **Import exclusions** — opção, ao deletar filme/série, de impedir re-importação automática.
 - **Deep links** — abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou configurações via `arrmate://`.
 

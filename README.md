@@ -42,6 +42,19 @@ AltStore or Sideloadly.
 Arrmate also runs in the browser, served from
 [GitHub Pages](https://lucasliet.github.io/arrmate/).
 
+### Desktop (development support)
+
+The project includes native Windows, Linux, and macOS runners. Build each
+target on its corresponding operating system; see
+[Desktop development](docs/desktop-development.md) for dependencies and commands.
+Desktop installers and signed releases are not published yet.
+
+Web, native desktop, and tablet apps share the same responsive layout,
+selected by available content width. Navigation, libraries, details, calendar,
+activity, settings, and assistant adapt when the window changes size; see
+[Desktop and tablet layout](docs/desktop-tablet-layout.md). Browser CORS rules
+do not apply to native requests.
+
 ## 📱 Screenshots
 
 | Movies | Series | Calendar | Series details |

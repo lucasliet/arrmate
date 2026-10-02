@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_model_service.dart';
 import '../../../core/services/assistant_online_chat_service.dart';
 import '../../../core/utils/formatters.dart';
+import '../../adaptive/content_layout.dart';
 import '../../providers/assistant_provider.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
@@ -52,52 +55,75 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Assistant')),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildModelSelector(context, notifier, state),
-                const Divider(height: 1),
-                Expanded(child: _messages(state)),
-                if (state.error != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+    return AdaptiveLayout(
+      builder: (context) {
+        final layout = ContentLayout.of(context);
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Assistant'),
+            toolbarHeight: layout.hasWideSections ? 88 : null,
+            titleSpacing: layout.hasWideSections ? 32 : null,
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: ContentLayout.maximumAssistantWidth,
+              ),
+              child: SafeArea(
+                top: false,
+                child: state.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Column(
                         children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Theme.of(context).colorScheme.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              state.error!,
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onErrorContainer,
+                          _buildModelSelector(context, notifier, state),
+                          const Divider(height: 1),
+                          Expanded(child: _messages(state)),
+                          if (state.error != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.errorContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        state.error!,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onErrorContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                          _input(notifier, state),
                         ],
                       ),
-                    ),
-                  ),
-                _input(notifier, state),
-              ],
+              ),
             ),
+          ),
+        );
+      },
     );
   }
 
@@ -248,38 +274,47 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: state.messages.length,
-      itemBuilder: (context, index) {
-        final m = state.messages[index];
-        final isUser = m.role == AssistantMessageRole.user;
-        final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final messageWidth = math.min(
+          ContentLayout.maximumMessageWidth,
+          (constraints.maxWidth - 32) * 0.8,
+        );
+        return ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount: state.messages.length,
+          itemBuilder: (context, index) {
+            final m = state.messages[index];
+            final isUser = m.role == AssistantMessageRole.user;
+            final theme = Theme.of(context);
 
-        return Align(
-          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.8,
-            ),
-            decoration: BoxDecoration(
-              color: isUser
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              m.content,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isUser
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
+            return Align(
+              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                constraints: BoxConstraints(maxWidth: messageWidth),
+                decoration: BoxDecoration(
+                  color: isUser
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  m.content,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isUser
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -300,6 +335,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
+              textInputAction: TextInputAction.send,
               decoration: const InputDecoration(
                 hintText: 'Ask about Arrmate...',
                 border: OutlineInputBorder(
@@ -335,6 +371,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 
   void _sendMessage(AssistantNotifier notifier, AssistantState state) {
+    if (state.isGenerating || !state.hasModel) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();

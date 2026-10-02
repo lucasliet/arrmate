@@ -10,7 +10,7 @@ description: Filtrar/ordenar filmes e séries, alternar grade/lista, busca local
 **Onde fica:** Aba Filmes → AppBar no topo.
 
 **Passo a passo:**
-1. Abrir a aba Filmes (primeira aba na barra inferior).
+1. Open **Movies** in bottom navigation or the sidebar.
 2. No topo da tela, localize a AppBar com três ícones no canto direito:
    - Ícone de lupa (busca)
    - Ícone de ordenação/filtro (funzinho)
@@ -50,7 +50,7 @@ description: Filtrar/ordenar filmes e séries, alternar grade/lista, busca local
 **Passo a passo:**
 Funciona exatamente como Filmes:
 
-1. Abrir a aba Séries (segunda aba na barra inferior).
+1. Open **Series** in bottom navigation or the sidebar.
 2. Tocar no **ícone de ordenação/filtro**.
 3. O sheet exibe as mesmas três seções:
 
@@ -124,6 +124,6 @@ Funciona exatamente como Filmes:
 - A busca funciona apenas na **biblioteca local já carregada na memória do app**.
 
 **Observações:**
-- **Busca local vs. adição:** Busca aqui busca filmes/séries que já estão na sua biblioteca. Para adicionar um novo filme/série que não está na lista, use o botão **"+"** (FAB) na aba Filmes ou Séries.
+- **Library search and adding media:** Library search filters items already in your collection. To add new media, select **"Add movie"** / **"Add series"** in the wide toolbar, or **"+"** in compact Movies/Series layouts.
 - **Sem conexão:** Se o app não consegue conectar ao Radarr/Sonarr, a busca continua funcionando nos dados já carregados.
 - **Combinação com filtros:** Você pode buscar e depois aplicar filtros/ordenação no mesmo sheet de sort/filter.

@@ -14,6 +14,8 @@ class _RecordingPresenter {
   /// Identifiers presented by each segment, in order.
   final List<List<String>> steps = [];
 
+  final Map<String, ContentAlign> alignments = {};
+
   VoidCallback? _onFinish;
   VoidCallback? _onSkip;
 
@@ -23,6 +25,9 @@ class _RecordingPresenter {
     required VoidCallback onSkip,
   }) {
     steps.add(targets.map((target) => '${target.identify}').toList());
+    for (final target in targets) {
+      alignments['${target.identify}'] = target.contents!.first.align;
+    }
     _onFinish = onFinish;
     _onSkip = onSkip;
   }
@@ -43,6 +48,23 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
+
+  for (final navigationRail in [false, true]) {
+    testWidgets('navigation tour remains visible with rail=$navigationRail', (
+      tester,
+    ) async {
+      final harness = await _pumpHarness(
+        tester,
+        navigationRail: navigationRail,
+      );
+      harness.service.startFull();
+      await _walkToTheEnd(tester, harness);
+      expect(
+        harness.presenter.alignments['nav_bar'],
+        navigationRail ? ContentAlign.right : ContentAlign.top,
+      );
+    });
+  }
 
   testWidgets('should raise the mockup flag and open the first segment', (
     tester,
@@ -221,6 +243,7 @@ class _Harness {
 Future<_Harness> _pumpHarness(
   WidgetTester tester, {
   AppTourKeys? keys,
+  bool navigationRail = false,
   Set<GlobalKey> unmounted = const {},
 }) async {
   final tourKeys = keys ?? AppTourKeys();
@@ -267,7 +290,26 @@ Future<_Harness> _pumpHarness(
               target(tourKeys.calendarListKey),
               target(tourKeys.activityQueueKey),
               target(tourKeys.activityTorrentKey),
-              target(tourKeys.navBarKey),
+              if (navigationRail)
+                SizedBox(
+                  height: 200,
+                  child: NavigationRail(
+                    key: tourKeys.navBarKey,
+                    selectedIndex: 0,
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.movie),
+                        label: Text('Movies'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.tv),
+                        label: Text('Series'),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                target(tourKeys.navBarKey),
               SizedBox(
                 height: 48,
                 child: TabBar(

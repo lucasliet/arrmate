@@ -10,7 +10,7 @@ description: Configurar ntfy.sh, tópico, auto-configurar webhooks, tipos de eve
 **Onde fica:** Configurações → seção "Notifications" → "Notification Settings".
 
 **Passo a passo (primeira vez):**
-1. Abrir Configurações (quinta aba da barra inferior).
+1. Open **Settings** in bottom navigation or the sidebar.
 2. Localizar seção **"Notifications"** (deve estar visível sem scroll ou após scroll).
 3. Tocar em **"Notification Settings"** (com ícone de sino e descrição "Setup notifications").
 4. Abre a tela **NotificationSettingsScreen** com:

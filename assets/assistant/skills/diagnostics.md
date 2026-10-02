@@ -7,7 +7,7 @@ description: Diagnósticos de conexão, latência, traces de requisições, expo
 
 ## Connection Diagnostics — testar endpoints e exportar relatório
 
-**Onde fica:** Configurações (quinta aba da barra inferior) → seção "System" → "System Management" → seção "Server" → "Connection Diagnostics".
+**Location:** **Settings** in bottom navigation or the sidebar → "System" → "System Management" → "Server" → "Connection Diagnostics".
 
 A tela de **Connection Diagnostics** testa a conectividade de cada instância configurada e ajuda a investigar problemas de rede.
 

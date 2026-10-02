@@ -10,7 +10,7 @@ description: Tema claro/escuro/automático, cor de destaque, aba inicial
 **Onde fica:** Configurações → seção "Appearance" → "Theme Mode".
 
 **Passo a passo:**
-1. Abrir Configurações (quinta aba da barra inferior).
+1. Open **Settings** in bottom navigation or the sidebar.
 2. Localizar seção **"Appearance"** (deve estar visível no topo).
 3. Tocar em **"Theme Mode"** (mostra subtítulo com modo atual: Light, Dark, ou System).
 4. Um **AlertDialog** (diálogo de seleção) aparece com opções:

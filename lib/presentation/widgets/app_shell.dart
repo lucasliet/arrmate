@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../adaptive/content_layout.dart';
 import '../adaptive/window_class.dart';
 import '../router/app_router.dart';
 import '../tour/app_tour_keys.dart';
@@ -18,29 +18,6 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tourKeys = ref.watch(appTourKeysProvider);
-    if (!kIsWeb) {
-      return Scaffold(
-        body: Column(
-          children: [
-            const OfflineStatusBanner(),
-            Expanded(child: child),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          key: tourKeys.navBarKey,
-          selectedIndex: _calculateSelectedIndex(context),
-          onDestinationSelected: (index) => _onItemTapped(context, index),
-          destinations: AppTab.values.map((tab) {
-            return NavigationDestination(
-              icon: Icon(tab.icon),
-              selectedIcon: Icon(tab.selectedIcon),
-              label: tab.label,
-            );
-          }).toList(),
-        ),
-      );
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final windowClass = WindowClass.fromWidth(constraints.maxWidth);
@@ -57,68 +34,76 @@ class AppShell extends ConsumerWidget {
         );
 
         return Scaffold(
-          body: windowClass.hasNavigationRail
-              ? Row(
-                  children: [
-                    NavigationRail(
-                      key: tourKeys.navBarKey,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerLow,
-                      extended: windowClass.hasExtendedNavigation,
-                      leading: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/icon_mark.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            if (windowClass.hasExtendedNavigation) ...[
-                              const SizedBox(width: 12),
-                              Text(
-                                'ARRMATE',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 2,
-                                    ),
-                              ),
-                            ],
-                          ],
+          // Keep the page at the same child position across navigation changes.
+          body: Row(
+            children: [
+              if (windowClass.hasNavigationRail)
+                NavigationRail(
+                  key: tourKeys.navBarKey,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerLow,
+                  extended: windowClass.hasExtendedNavigation,
+                  scrollable: true,
+                  leading: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/images/icon_mark.png',
+                          width: 24,
+                          height: 24,
                         ),
-                      ),
-                      selectedIndex: selectedIndex,
-                      trailing: showRailNotifications
-                          ? const NotificationIconButton(showTooltip: false)
-                          : null,
-                      trailingAtBottom: true,
-                      onDestinationSelected: (index) =>
-                          _onItemTapped(context, index),
-                      destinations: AppTab.values
-                          .map(
-                            (tab) => NavigationRailDestination(
-                              icon: Icon(tab.icon),
-                              selectedIcon: Icon(tab.selectedIcon),
-                              label: Text(tab.label),
-                            ),
-                          )
-                          .toList(),
+                        if (windowClass.hasExtendedNavigation) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'ARRMATE',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2,
+                                ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const VerticalDivider(width: 1),
-                    Expanded(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1600),
-                          child: content,
+                  ),
+                  selectedIndex: selectedIndex,
+                  trailing: showRailNotifications
+                      ? const NotificationIconButton(showTooltip: false)
+                      : null,
+                  trailingAtBottom: true,
+                  onDestinationSelected: (index) =>
+                      _onItemTapped(context, index),
+                  destinations: AppTab.values
+                      .map(
+                        (tab) => NavigationRailDestination(
+                          icon: Icon(tab.icon),
+                          selectedIcon: Icon(tab.selectedIcon),
+                          label: Text(tab.label),
                         ),
-                      ),
-                    ),
-                  ],
+                      )
+                      .toList(),
                 )
-              : content,
+              else
+                const SizedBox.shrink(),
+              if (windowClass.hasNavigationRail)
+                const VerticalDivider(width: 1)
+              else
+                const SizedBox.shrink(),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: ContentLayout.maximumContentWidth,
+                    ),
+                    child: content,
+                  ),
+                ),
+              ),
+            ],
+          ),
           bottomNavigationBar: windowClass == WindowClass.compact
               ? NavigationBar(
                   key: tourKeys.navBarKey,
