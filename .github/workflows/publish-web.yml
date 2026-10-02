@@ -32,6 +32,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate application icons
+        run: dart run flutter_launcher_icons
+
       - name: Build web app
         run: flutter build web --release --base-href /arrmate/
 
