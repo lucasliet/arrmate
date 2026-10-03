@@ -342,6 +342,7 @@ void main() {
         ? TargetPlatform.macOS
         : TargetPlatform.linux;
     final children = <int>[];
+    var installerDiagnostics = '';
     tearDown(() async {
       for (final processId in children) {
         Process.killPid(processId);
@@ -407,6 +408,7 @@ void main() {
           '--force',
           '--sign',
           '-',
+          '--generate-entitlement-der',
           '--entitlements',
           path.absolute('macos', 'Runner', 'Release.entitlements'),
           appDirectory,
@@ -430,7 +432,7 @@ void main() {
         ),
       );
       await helper.writeAsString(desktopUpdateScript(platform));
-      return Process.run(
+      final result = await Process.run(
         platform == TargetPlatform.windows ? 'powershell.exe' : '/bin/sh',
         [
           if (platform == TargetPlatform.windows) ...[
@@ -449,6 +451,14 @@ void main() {
         ],
         environment: {'ARRMATE_TEST_MARKER': marker.path},
       ).timeout(const Duration(seconds: 45));
+      final log = File(path.join(work.path, 'install.log'));
+      installerDiagnostics = await log.exists() ? await log.readAsString() : '';
+      return ProcessResult(
+        result.pid,
+        result.exitCode,
+        result.stdout,
+        '${result.stderr}\n$installerDiagnostics',
+      );
     }
 
     Future<String> launchedVersion(File marker) async {
@@ -460,7 +470,9 @@ void main() {
         }
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
-      fail('The installer did not restart the application.');
+      fail(
+        'The installer did not restart the application. $installerDiagnostics',
+      );
     }
 
     test(
