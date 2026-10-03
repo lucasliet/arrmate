@@ -126,6 +126,9 @@ session, compatible system libraries, and a Secret Service provider. The
 AppImage runtime normally uses FUSE; `--appimage-extract-and-run` works without it.
 Tagged Linux builds update the bundled `version.json` before packaging because
 Flutter 3.41.2 leaves it at the `pubspec.yaml` version despite build overrides.
+Windows uses the executable's native `ProductVersion` resource; both packaging
+and update preparation verify it against the release tag. Windows does not
+generate a Linux-style `version.json`.
 
 To rebuild an existing version after changing the release workflow, run the
 **Release** workflow manually from `main` and supply its existing tag in the
@@ -151,8 +154,16 @@ the previous version. Windows/Linux also recover if the replacement exits during
 the initial launch check. macOS verifies that Launch Services accepts the launch;
 later application crashes are not automatically rolled back.
 
+The GitHub macOS distribution runs without App Sandbox so the application can
+stage its replacement and start the detached installer. Before starting Flutter,
+it imports missing Flutter preferences from the previous sandbox container once,
+preserving server configurations and existing settings. The original preferences
+remain intact; a failed import stops startup instead of silently resetting them.
+Disposable caches are rebuilt outside the old container. This configuration is
+for direct distribution and does not support Mac App Store submission.
+
 The installation directory must be writable by the current user. The updater
-does not elevate privileges or modify the user-data directories holding settings,
+does not elevate privileges or replace the user-data directories holding settings,
 credentials, and caches. Move a read-only or translocated app to a writable
 location before updating. Failed installations retain `install.log` in their
 `.arrmate-update-*` staging directory for diagnosis. ZIP paths, extraction sizes,

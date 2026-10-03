@@ -70,3 +70,8 @@ jobs:
       - run: flutter pub get
       - name: Verify native replacement and recovery
         run: flutter test test/core/services/desktop_update_service_test.dart
+      - name: Verify macOS sandbox migration
+        if: matrix.platform == 'macos'
+        run: |
+          swiftc macos/Runner/LegacyPreferencesMigration.swift tool/macos-preferences-test/main.swift -o "$RUNNER_TEMP/macos-preferences-test"
+          "$RUNNER_TEMP/macos-preferences-test"

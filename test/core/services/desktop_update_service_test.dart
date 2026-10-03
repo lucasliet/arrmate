@@ -157,10 +157,7 @@ void main() {
       ..add(ArchiveFile.string('arrmate.exe', 'MZ'))
       ..add(ArchiveFile.string('flutter_windows.dll', 'MZ'))
       ..add(
-        ArchiveFile.string(
-          'data/flutter_assets/version.json',
-          '{"version":"2.1.0"}',
-        ),
+        ArchiveFile.string('data/flutter_assets/AssetManifest.bin', 'manifest'),
       );
     test('accepts a complete Windows bundle', () {
       validateDesktopArchive(windowsArchive(), TargetPlatform.windows);
@@ -242,12 +239,26 @@ void main() {
       ).create();
       final String executable;
       if (Platform.isWindows) {
-        archive.add(ArchiveFile.string('arrmate.exe', 'MZ'));
+        final source = File(path.join(root.path, 'version_fixture.cs'));
+        final binary = File(path.join(root.path, 'version_fixture.exe'));
+        await source.writeAsString(
+          'using System.Reflection; [assembly: AssemblyInformationalVersion("2.1.0+71")] public class Fixture { public static void Main() {} }',
+        );
+        final compiled = await Process.run('powershell.exe', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          "Add-Type -Path '${source.path.replaceAll("'", "''")}' -OutputAssembly '${binary.path.replaceAll("'", "''")}' -OutputType ConsoleApplication",
+        ]);
+        expect(compiled.exitCode, 0, reason: '${compiled.stderr}');
+        archive.add(
+          ArchiveFile.bytes('arrmate.exe', await binary.readAsBytes()),
+        );
         archive.add(ArchiveFile.string('flutter_windows.dll', 'MZ'));
         archive.add(
           ArchiveFile.string(
-            'data/flutter_assets/version.json',
-            '{"version":"2.1.0"}',
+            'data/flutter_assets/AssetManifest.bin',
+            'manifest',
           ),
         );
         await Directory(
@@ -306,6 +317,20 @@ void main() {
         FileSystemEntityType.directory,
       );
       expect(plan.workDirectory.parent.path, path.dirname(plan.targetPath));
+      final wrongVersion = AppUpdateInfo(
+        version: '2.2.0',
+        changelog: info.changelog,
+        publishedAt: info.publishedAt,
+        downloadUrl: info.downloadUrl.replaceFirst('/v2.1.0/', '/v2.2.0/'),
+        assetName: info.assetName,
+        sizeBytes: info.sizeBytes,
+        sha256Digest: info.sha256Digest,
+      );
+      await expectLater(
+        service.prepareUpdate(wrongVersion, onProgress: (_, total) {}),
+        throwsStateError,
+      );
+      expect(await File(executable).readAsString(), 'previous application');
     },
     skip: Platform.isLinux,
   );
@@ -378,6 +403,15 @@ void main() {
         ).writeAsString(
           '<?xml version="1.0"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Arrmate</string><key>CFBundleIdentifier</key><string>br.com.lucasliet.arrmate.updater.fixture</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>',
         );
+        final signing = await Process.run('/usr/bin/codesign', [
+          '--force',
+          '--sign',
+          '-',
+          '--entitlements',
+          path.absolute('macos', 'Runner', 'Release.entitlements'),
+          appDirectory,
+        ]);
+        expect(signing.exitCode, 0, reason: '${signing.stderr}');
       }
       return appDirectory;
     }

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
@@ -234,19 +233,14 @@ class DesktopUpdateService {
             'Expand-Archive -LiteralPath ${_powershellQuote(download.path)} -DestinationPath ${_powershellQuote(extracted.path)}',
           ]);
           staged = extracted.path;
-          final metadata =
-              jsonDecode(
-                    await File(
-                      path.join(
-                        staged,
-                        'data',
-                        'flutter_assets',
-                        'version.json',
-                      ),
-                    ).readAsString(),
-                  )
-                  as Map<String, dynamic>;
-          if (metadata['version'] != info.version) {
+          final version = await _run('powershell.exe', [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            '(Get-Item -LiteralPath ${_powershellQuote(path.join(staged, 'arrmate.exe'))}).VersionInfo.ProductVersion',
+          ]);
+          if (version.stdout.toString().trim().split('+').first !=
+              info.version) {
             throw StateError(
               'The downloaded application version does not match the release.',
             );
@@ -365,7 +359,7 @@ void validateDesktopArchive(Archive archive, TargetPlatform platform) {
       ? [
           'arrmate.exe',
           'flutter_windows.dll',
-          'data/flutter_assets/version.json',
+          'data/flutter_assets/AssetManifest.bin',
         ]
       : [
           'Arrmate.app/Contents/Info.plist',

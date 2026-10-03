@@ -291,7 +291,13 @@ jobs:
       - name: Package Windows application
         if: matrix.platform == 'windows'
         shell: pwsh
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
         run: |
+          $version = (Get-Item -LiteralPath build/windows/x64/runner/Release/arrmate.exe).VersionInfo.ProductVersion
+          if ($version.Split('+')[0] -ne $env:BUILD_VERSION) {
+            throw "Windows executable version does not match the release tag."
+          }
           New-Item -ItemType Directory -Force -Path build/release | Out-Null
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/release/arrmate-windows-x64.zip
 
