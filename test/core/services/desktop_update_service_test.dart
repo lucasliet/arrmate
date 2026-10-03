@@ -41,6 +41,7 @@ void main() {
   late Directory root;
   setUp(() async {
     root = await Directory.systemTemp.createTemp('arrmate update ');
+    root = Directory(await root.resolveSymbolicLinks());
   });
   tearDown(() async {
     if (await root.exists()) await root.delete(recursive: true);
