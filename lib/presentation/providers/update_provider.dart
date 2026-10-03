@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ota_update/ota_update.dart';
 import '../../core/services/update_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/services/desktop_update_service.dart';
+import '../../core/platform/platform_capabilities.dart';
 
-// ... (UpdateStatus and UpdateState same as before)
+/// Provides the native desktop package installer.
+final desktopUpdateServiceProvider = Provider((ref) => DesktopUpdateService());
 
 /// Enumerates the possible statuses of the update process.
 enum UpdateStatus {
@@ -53,10 +57,12 @@ final updateProvider = NotifierProvider<UpdateNotifier, UpdateState>(() {
 
 class UpdateNotifier extends Notifier<UpdateState> {
   StreamSubscription<OtaEvent>? _otaSubscription;
+  bool _disposed = false;
 
   @override
   UpdateState build() {
     ref.onDispose(() {
+      _disposed = true;
       _otaSubscription?.cancel();
     });
     return UpdateState();
@@ -65,10 +71,31 @@ class UpdateNotifier extends Notifier<UpdateState> {
   /// Checks for updates from GitHub.
   /// [force] if true, ignores the daily check limit.
   Future<void> checkForUpdate({bool force = false}) async {
+    if (!ref.read(platformCapabilitiesProvider).supportsAppUpdates ||
+        {
+          UpdateStatus.checking,
+          UpdateStatus.downloading,
+          UpdateStatus.installing,
+        }.contains(state.status)) {
+      return;
+    }
     state = state.copyWith(status: UpdateStatus.checking);
 
     final updateService = ref.read(updateServiceProvider);
-    final info = await updateService.checkForUpdate(force: force);
+    final AppUpdateInfo? info;
+    try {
+      info = await updateService.checkForUpdate(force: force);
+    } catch (error, stack) {
+      logger.error('[UpdateNotifier] Update check failed', error, stack);
+      if (!_disposed) {
+        state = state.copyWith(
+          status: UpdateStatus.error,
+          errorMessage: 'Could not check for updates. Please try again.',
+        );
+      }
+      return;
+    }
+    if (_disposed) return;
 
     if (info != null) {
       state = state.copyWith(status: UpdateStatus.available, info: info);
@@ -81,7 +108,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
       if (force) {
         // Reset to idle after a moment if it was a manual check
         Future.delayed(const Duration(seconds: 3), () {
-          if (state.status == statusAfterCheck) {
+          if (!_disposed && state.status == statusAfterCheck) {
             state = state.copyWith(status: UpdateStatus.idle);
           }
         });
@@ -90,7 +117,12 @@ class UpdateNotifier extends Notifier<UpdateState> {
   }
 
   /// Starts the update process.
-  void startUpdate() {
+  Future<void> startUpdate() async {
+    if (!ref.read(platformCapabilitiesProvider).supportsAppUpdates) return;
+    if (state.status != UpdateStatus.available &&
+        state.status != UpdateStatus.error) {
+      return;
+    }
     logger.info('UpdateNotifier: startUpdate() called');
     logger.info('UpdateNotifier: startUpdate() triggered');
     final info = state.info;
@@ -106,6 +138,31 @@ class UpdateNotifier extends Notifier<UpdateState> {
     state = state.copyWith(status: UpdateStatus.downloading, progress: 0);
 
     try {
+      if (!kIsWeb &&
+          {
+            TargetPlatform.windows,
+            TargetPlatform.linux,
+            TargetPlatform.macOS,
+          }.contains(defaultTargetPlatform)) {
+        await ref
+            .read(desktopUpdateServiceProvider)
+            .installUpdate(
+              info,
+              onProgress: (received, total) {
+                if (!_disposed) {
+                  state = state.copyWith(
+                    progress: total > 0 ? received / total * 100 : 0,
+                  );
+                }
+              },
+              onInstalling: () {
+                if (!_disposed) {
+                  state = state.copyWith(status: UpdateStatus.installing);
+                }
+              },
+            );
+        return;
+      }
       logger.info('UpdateNotifier: Calling OtaUpdate().execute()...');
       _otaSubscription = OtaUpdate()
           .execute(info.downloadUrl, destinationFilename: 'arrmate_update.apk')
@@ -158,6 +215,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
             },
           );
     } catch (e) {
+      if (_disposed) return;
       state = state.copyWith(
         status: UpdateStatus.error,
         errorMessage: e.toString(),

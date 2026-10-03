@@ -174,6 +174,20 @@ Define um limite de segurança antes de apagar torrents que ainda estão cumprin
 
 ## Outras telas do System Management
 
+### Application updates
+
+- Release builds check for newer versions at startup, at most once per day.
+  Settings → About → Version forces a check on Android, Windows, Linux, and macOS.
+- Android installs the matching APK. Desktop offers **Atualizar e reiniciar**:
+  it verifies the release package, closes Arrmate, replaces the application, and
+  restarts it while preserving settings and credentials.
+- Linux updates require the AppImage release, not a bare Flutter build directory.
+  Make it executable with `chmod +x`; use `--appimage-extract-and-run` without FUSE.
+- Desktop installation folders must be writable by the current user. A read-only
+  or macOS translocated app must be moved to a writable location first.
+- Older desktop releases without an updater need one manual upgrade. iOS updates
+  remain managed by AltStore, and the web version follows its hosted deployment.
+
 A tela **System Management** também reúne ferramentas de diagnóstico e sistema (documentadas em `diagnostics.md`):
 
 - **Connection Diagnostics** (`/settings/diagnostics`): teste de reachability/latência de cada endpoint, traces de requisições recentes e export de relatório sanitizado (sem credenciais). Útil para investigar erros de conexão.

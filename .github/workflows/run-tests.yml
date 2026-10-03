@@ -46,3 +46,27 @@ jobs:
 
       - name: Generate Icons
         run: flutter pub run flutter_launcher_icons
+
+  desktop-updater:
+    name: Test ${{ matrix.platform }} updater
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-2022
+          - platform: macos
+            os: macos-15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.2'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Verify native replacement and recovery
+        run: flutter test test/core/services/desktop_update_service_test.dart

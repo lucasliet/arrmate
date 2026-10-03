@@ -17,11 +17,23 @@ class AppUpdateInfo {
   final String downloadUrl;
   final DateTime publishedAt;
 
+  /// Published asset name, used to choose the native installer.
+  final String? assetName;
+
+  /// SHA-256 supplied by GitHub for the published asset.
+  final String? sha256Digest;
+
+  /// Expected download size in bytes.
+  final int? sizeBytes;
+
   AppUpdateInfo({
     required this.version,
     required this.changelog,
     required this.downloadUrl,
     required this.publishedAt,
+    this.assetName,
+    this.sha256Digest,
+    this.sizeBytes,
   });
 }
 
@@ -45,6 +57,8 @@ final updateServiceProvider = Provider((ref) => UpdateService(Dio()));
 /// Service for checking and retrieving application updates from GitHub Releases.
 class UpdateService {
   final Dio _dio;
+  final TargetPlatform? _targetPlatform;
+  final Future<List<String>> Function()? _androidAbis;
   static const _lastCheckKey = 'last_update_check';
   static const _seenVersionKey = 'last_seen_version';
   static const _repoUrl =
@@ -52,7 +66,12 @@ class UpdateService {
   static const _releasesUrl =
       'https://api.github.com/repos/lucasliet/arrmate/releases?per_page=30';
 
-  UpdateService(this._dio);
+  UpdateService(
+    this._dio, {
+    TargetPlatform? targetPlatform,
+    Future<List<String>> Function()? androidAbis,
+  }) : _targetPlatform = targetPlatform,
+       _androidAbis = androidAbis;
 
   /// Strips a single leading `v` or `V` from a version tag (e.g. `v1.2.3`
   /// -> `1.2.3`), preserving any other `v` characters inside the version
@@ -70,6 +89,12 @@ class UpdateService {
   /// Returns [AppUpdateInfo] if an update is available, null otherwise.
   Future<AppUpdateInfo?> checkForUpdate({bool force = false}) async {
     logger.debug('[UpdateService] Starting update check (force: $force)');
+    final platform = _targetPlatform ?? defaultTargetPlatform;
+    if (kIsWeb ||
+        platform == TargetPlatform.iOS ||
+        platform == TargetPlatform.fuchsia) {
+      return null;
+    }
 
     if (!force && !await _shouldCheckForUpdate()) {
       logger.debug(
@@ -95,7 +120,9 @@ class UpdateService {
         logger.warning(
           '[UpdateService] GitHub API returned status ${response.statusCode}',
         );
-        return null;
+        throw StateError(
+          'GitHub returned ${response.statusCode} while checking for updates.',
+        );
       }
 
       final data = response.data;
@@ -107,14 +134,23 @@ class UpdateService {
         '[UpdateService] Latest version (parsed): "$latestVersionStr"',
       );
 
-      final changelog = data['body'] as String;
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = Version.parse(
+        stripVersionPrefix(packageInfo.version),
+      );
+      final latestVersion = Version.parse(latestVersionStr);
+      if (latestVersion <= currentVersion) {
+        await _updateLastCheckTime();
+        return null;
+      }
+      final changelog = data['body'] as String? ?? '';
       final assets = data['assets'] as List;
 
       String? architecture;
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        final deviceInfo = DeviceInfoPlugin();
-        final androidInfo = await deviceInfo.androidInfo;
-        final abis = androidInfo.supportedAbis;
+      if (platform == TargetPlatform.android) {
+        final abis = _androidAbis != null
+            ? await _androidAbis()
+            : (await DeviceInfoPlugin().androidInfo).supportedAbis;
         logger.debug('[UpdateService] Supported ABIs: $abis');
 
         if (abis.contains('arm64-v8a')) {
@@ -125,49 +161,43 @@ class UpdateService {
         logger.debug('[UpdateService] Selected architecture: $architecture');
       }
 
-      // Look for a matching APK asset
-      final apkAsset =
-          assets.firstWhereOrNull((asset) {
-            final name = (asset['name'] as String).toLowerCase();
-            if (!name.endsWith('.apk')) return false;
+      final desktopName = switch (platform) {
+        TargetPlatform.windows => 'arrmate-windows-x64.zip',
+        TargetPlatform.linux => 'arrmate-linux-x64.AppImage',
+        TargetPlatform.macOS => 'arrmate-macos.zip',
+        _ => null,
+      };
+      final asset = assets.firstWhereOrNull((asset) {
+        if (desktopName != null) return asset['name'] == desktopName;
+        final name = (asset['name'] as String).toLowerCase();
+        if (!name.endsWith('.apk')) return false;
+        if (architecture != null) {
+          return name.contains(architecture);
+        }
+        return true;
+      });
 
-            // If we detected an architecture, try to find a match in the filename
-            if (architecture != null) {
-              return name.contains(architecture);
-            }
-            return true;
-          }) ??
-          assets.firstWhereOrNull(
-            (asset) => (asset['name'] as String).endsWith('.apk'),
-          );
-
-      if (apkAsset == null) {
-        logger.warning(
-          '[UpdateService] No matching APK asset found in release',
+      if (asset == null) {
+        throw StateError(
+          'This release has no update package for ${platform.name}.',
         );
-        return null;
       }
 
-      logger.info(
-        '[UpdateService] Selected APK: ${apkAsset['name']} for architecture: $architecture',
-      );
+      logger.info('[UpdateService] Selected package: ${asset['name']}');
 
-      final downloadUrl = apkAsset['browser_download_url'] as String;
+      final downloadUrl = asset['browser_download_url'] as String;
+      final digest = asset['digest'] as String?;
+      final checksum =
+          digest != null && RegExp(r'^sha256:[a-fA-F0-9]{64}$').hasMatch(digest)
+          ? digest.substring(7).toLowerCase()
+          : null;
+      if (desktopName != null && checksum == null) {
+        throw StateError('The desktop update package has no SHA-256 checksum.');
+      }
       final publishedAtStr = data['published_at'] as String?;
       final publishedAt = publishedAtStr != null
           ? DateTime.tryParse(publishedAtStr) ?? DateTime.now()
           : DateTime.now();
-
-      final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersionStr = packageInfo.version;
-      logger.debug(
-        '[UpdateService] Current app version (raw): "$currentVersionStr"',
-      );
-
-      final currentVersion = Version.parse(
-        stripVersionPrefix(currentVersionStr),
-      );
-      final latestVersion = Version.parse(latestVersionStr);
 
       logger.debug(
         '[UpdateService] Version comparison: Current: $currentVersion | Latest: $latestVersion',
@@ -175,22 +205,20 @@ class UpdateService {
 
       await _updateLastCheckTime();
 
-      if (latestVersion > currentVersion) {
-        logger.info('[UpdateService] Update available!');
-        return AppUpdateInfo(
-          version: latestVersionStr,
-          changelog: changelog,
-          downloadUrl: downloadUrl,
-          publishedAt: publishedAt,
-        );
-      } else {
-        logger.info('[UpdateService] No update needed - app is up to date');
-      }
+      logger.info('[UpdateService] Update available!');
+      return AppUpdateInfo(
+        version: latestVersionStr,
+        changelog: changelog,
+        downloadUrl: downloadUrl,
+        publishedAt: publishedAt,
+        assetName: asset['name'] as String,
+        sha256Digest: checksum,
+        sizeBytes: asset['size'] as int?,
+      );
     } catch (e, stack) {
       logger.error('[UpdateService] Auto-check update failed', e, stack);
+      rethrow;
     }
-
-    return null;
   }
 
   Future<bool> _shouldCheckForUpdate() async {

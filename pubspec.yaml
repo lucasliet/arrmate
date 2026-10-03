@@ -7,6 +7,8 @@ environment:
   sdk: ^3.10.4
 
 dependencies:
+  archive: ^4.3.0
+  crypto: ^3.0.7
   app_links: ^7.0.0
   cached_network_image: ^3.4.1
   collection: ^1.19.1

@@ -4,8 +4,8 @@ Arrmate includes Flutter runners for Windows, Linux, and macOS, generated
 with Flutter 3.41.2, the version pinned in CI. These targets execute the
 existing Dart application natively. They do not embed a browser or load the
 web build. Tagged releases package the complete desktop bundles alongside
-Android and iOS. Installers, signing, and automatic desktop updates remain
-separate work.
+Android and iOS. Desktop releases include an in-app updater; Linux is distributed
+as an AppImage. Installers and distribution signing remain separate work.
 
 ## Build and run
 
@@ -84,8 +84,8 @@ rejections described in [Web deployment](web-deployment.md).
 
 On-device LiteRT-LM inference is currently Android-only because the vendored
 plugin implements only Android. Desktop must retain the online assistant
-without offering unsupported local inference. The Android APK updater also
-remains Android-only. In-app notifications and ntfy operate while the process
+without offering unsupported local inference. Android updates install APKs;
+desktop updates use their platform-specific release packages. In-app notifications and ntfy operate while the process
 is running; closed-app background delivery is not added by generating runners.
 
 The macOS URL scheme is registered. Windows protocol registration and Linux
@@ -94,12 +94,11 @@ desktop-file/URI activation still require platform packaging integration.
 ## Verification
 
 `build.yml` builds Android, iOS, Windows, Linux, and macOS in parallel on their
-respective GitHub Actions hosts for pull requests, pushes to `main`, and manual
-runs. Each target uploads its application bundle. Android checks use debug
-signing; the release keystore is used only when building a version tag.
-The existing test workflow continues to analyze Dart and run the test suite.
-These checks verify compilation and do not establish interactive runtime
-parity.
+respective GitHub Actions hosts when called by the release workflow or manually
+with an existing version tag. It has no push or pull-request trigger. Each target
+uploads its package; Android uses the release keystore. Pull requests and pushes
+to `main` run analysis, the test suite, and native updater replacement/recovery
+tests on Windows and macOS without compiling application packages.
 
 ## Release packaging
 
@@ -115,12 +114,16 @@ source, and publishes the complete release together.
 | Android | `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk` |
 | iOS | `arrmate.ipa`, `altstore.json` |
 | Windows x64 | `arrmate-windows-x64.zip` |
-| Linux x64 | `arrmate-linux-x64.tar.gz` |
+| Linux x64 | `arrmate-linux-x64.AppImage` |
 | macOS | `arrmate-macos.zip` |
 
-Desktop archives include Flutter assets and libraries. Extract the complete
-archive before launching the executable or app bundle. Linux still requires
-the runtime libraries and Secret Service session described above.
+Desktop packages include Flutter assets and libraries. Extract the complete
+Windows/macOS archive before launching the executable or app bundle. On Linux,
+make the AppImage executable and launch it directly. `tool/build_appimage.sh`
+uses checksum-pinned linuxdeploy and appimagetool versions to bundle GTK,
+libsecret, and their non-system dependencies. The host still needs a graphical
+session, compatible system libraries, and a Secret Service provider. The
+AppImage runtime normally uses FUSE; `--appimage-extract-and-run` works without it.
 Tagged Linux builds update the bundled `version.json` before packaging because
 Flutter 3.41.2 leaves it at the `pubspec.yaml` version despite build overrides.
 
@@ -128,6 +131,34 @@ To rebuild an existing version after changing the release workflow, run the
 **Release** workflow manually from `main` and supply its existing tag in the
 `tag` input. The workflow builds that tag's source and updates its release;
 it does not release the current `main` application code.
+
+## Desktop updates
+
+![Desktop update dialog](screenshots/desktop-updater/update-dialog.png)
+
+Release builds check GitHub at startup, at most once a day. The Version tile in
+Settings forces a check. Windows selects `arrmate-windows-x64.zip`, Linux selects
+`arrmate-linux-x64.AppImage`, and macOS selects `arrmate-macos.zip`; none falls back
+to an Android APK. **Update and restart** downloads the package, verifies its
+published size and SHA-256, and stages it beside the installed application.
+
+A detached helper waits for Arrmate to exit before replacing the complete app.
+Windows retries while DLL handles are released; macOS preserves framework
+symlinks through `ditto`; Linux replaces the AppImage named by `APPIMAGE`, never
+the runner inside a temporary mount. Linux restarts in extract-and-run mode so
+updates also work on hosts without FUSE. A failed replacement restores and restarts
+the previous version. Windows/Linux also recover if the replacement exits during
+the initial launch check. macOS verifies that Launch Services accepts the launch;
+later application crashes are not automatically rolled back.
+
+The installation directory must be writable by the current user. The updater
+does not elevate privileges or modify the user-data directories holding settings,
+credentials, and caches. Move a read-only or translocated app to a writable
+location before updating. Failed installations retain `install.log` in their
+`.arrmate-update-*` staging directory for diagnosis. ZIP paths, extraction sizes,
+and symlinks are validated before extraction. Existing desktop releases predating
+this updater need one manual upgrade; bare Linux build bundles must migrate to
+the AppImage before they can update automatically.
 
 Before declaring a desktop target ready for distribution, check startup,
 persisted credentials after a restart, an HTTP LAN server connection,

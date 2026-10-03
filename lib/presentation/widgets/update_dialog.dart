@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/update_provider.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/platform/platform_capabilities.dart';
 
 /// Dialog displayed when an application update is available.
 class UpdateDialog extends ConsumerWidget {
@@ -18,6 +20,9 @@ class UpdateDialog extends ConsumerWidget {
     final info = updateState.info!;
     final isDownloading = updateState.status == UpdateStatus.downloading;
     final isInstalling = updateState.status == UpdateStatus.installing;
+    final desktopUpdate =
+        ref.watch(platformCapabilitiesProvider).supportsAppUpdates &&
+        defaultTargetPlatform != TargetPlatform.android;
 
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -41,7 +46,7 @@ class UpdateDialog extends ConsumerWidget {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Aguarde enquanto a instalação inicia...'),
+                    Text('Preparando a atualização...'),
                   ],
                 ),
               ),
@@ -60,6 +65,12 @@ class UpdateDialog extends ConsumerWidget {
                 ),
               ),
             ] else ...[
+              if (desktopUpdate) ...[
+                const Text(
+                  'O aplicativo será fechado e reiniciado para concluir a atualização.',
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(
                 'Versão: ${info.version}',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -89,13 +100,6 @@ class UpdateDialog extends ConsumerWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 8),
-            Text(
-              'Status: ${updateState.status.name}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.outline,
-              ),
-            ),
           ],
         ),
       ),
@@ -108,12 +112,12 @@ class UpdateDialog extends ConsumerWidget {
               ),
               FilledButton(
                 onPressed: () {
-                  logger.info(
-                    'UpdateDialog: Button "Atualizar Agora" clicked. Current status: ${updateState.status.name}',
-                  );
+                  logger.info('[UpdateDialog] Update requested');
                   ref.read(updateProvider.notifier).startUpdate();
                 },
-                child: const Text('Atualizar Agora'),
+                child: Text(
+                  desktopUpdate ? 'Atualizar e reiniciar' : 'Atualizar Agora',
+                ),
               ),
             ],
     );

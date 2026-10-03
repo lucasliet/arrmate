@@ -23,7 +23,14 @@ class PlatformCapabilities {
     required TargetPlatform targetPlatform,
   }) => PlatformCapabilities(
     isWeb: isWeb,
-    supportsAppUpdates: !isWeb && targetPlatform == TargetPlatform.android,
+    supportsAppUpdates:
+        !isWeb &&
+        {
+          TargetPlatform.android,
+          TargetPlatform.windows,
+          TargetPlatform.linux,
+          TargetPlatform.macOS,
+        }.contains(targetPlatform),
     supportsBackgroundNotifications: !isWeb,
     supportsLocalAssistant: !isWeb && targetPlatform == TargetPlatform.android,
     supportsFileSystemCache: !isWeb,
