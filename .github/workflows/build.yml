@@ -1,10 +1,6 @@
 name: Build Applications
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_call:
     inputs:
       release_tag:
@@ -68,9 +64,8 @@ jobs:
               exit 1
             fi
             git show-ref --verify "refs/tags/$RELEASE_TAG"
-          elif [ "$GITHUB_EVENT_NAME" != "pull_request" ] && \
-            { [ "$GITHUB_EVENT_NAME" != "push" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; }; then
-            echo "::error::Manual and release builds require a version tag."
+          else
+            echo "::error::Application builds require a version tag."
             exit 1
           fi
           REVISION=$(git rev-parse HEAD)
@@ -278,17 +273,31 @@ jobs:
           path.write_text(json.dumps(metadata, indent=2) + "\n")
           PY
 
-      - name: Package Linux application
+      - name: Get Linux packaging tool from workflow revision
+        if: matrix.platform == 'linux'
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.workflow_sha }}
+          path: .ci-packaging
+          sparse-checkout: tool/build_appimage.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Package Linux AppImage
         if: matrix.platform == 'linux'
         run: |
-          mkdir -p build/release/arrmate-linux-x64
-          cp -a build/linux/x64/release/bundle/. build/release/arrmate-linux-x64/
-          tar -C build/release -czf build/release/arrmate-linux-x64.tar.gz arrmate-linux-x64
+          bash .ci-packaging/tool/build_appimage.sh "$GITHUB_WORKSPACE"
 
       - name: Package Windows application
         if: matrix.platform == 'windows'
         shell: pwsh
+        env:
+          BUILD_VERSION: ${{ needs.resolve-build.outputs.version }}
         run: |
+          $version = (Get-Item -LiteralPath build/windows/x64/runner/Release/arrmate.exe).VersionInfo.ProductVersion
+          if ($version.Split('+')[0] -ne $env:BUILD_VERSION) {
+            throw "Windows executable version does not match the release tag."
+          }
           New-Item -ItemType Directory -Force -Path build/release | Out-Null
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/release/arrmate-windows-x64.zip
 
@@ -305,6 +314,6 @@ jobs:
           name: release-${{ matrix.platform }}
           path: |
             build/release/arrmate-*.zip
-            build/release/arrmate-*.tar.gz
+            build/release/arrmate-*.AppImage
           if-no-files-found: error
           retention-days: 7

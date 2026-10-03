@@ -45,10 +45,17 @@ Arrmate also runs in the browser, served from
 ### Desktop
 
 Tagged releases include native Windows, Linux, and macOS bundles. Download
-`arrmate-windows-x64.zip`, `arrmate-linux-x64.tar.gz`, or `arrmate-macos.zip`
-from [Releases](https://github.com/lucasliet/arrmate/releases), extract the
-archive, and run the application. These bundles do not include installers,
+`arrmate-windows-x64.zip`, `arrmate-linux-x64.AppImage`, or `arrmate-macos.zip`
+from [Releases](https://github.com/lucasliet/arrmate/releases). Extract the
+Windows/macOS archive and run the application. On Linux, make the AppImage
+executable with `chmod +x arrmate-linux-x64.AppImage` and run it; without FUSE,
+pass `--appimage-extract-and-run`. These packages do not include installers,
 distribution signing, or macOS notarization.
+
+Desktop releases check for updates at startup and offer **Update and restart**.
+The updater verifies the package's GitHub SHA-256, replaces the complete app,
+and restarts it. Keep the app in a directory writable by your user. Existing
+desktop versions without this updater require one manual upgrade first.
 
 To build from source, use the corresponding operating system; see
 [Desktop development](docs/desktop-development.md) for dependencies and commands.

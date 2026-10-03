@@ -468,6 +468,18 @@ class SettingsScreen extends ConsumerWidget {
                           const SnackBar(content: Text('App is up to date')),
                         );
                       }
+                      if (context.mounted &&
+                          ref.read(updateProvider).status ==
+                              UpdateStatus.error) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              ref.read(updateProvider).errorMessage ??
+                                  'Could not check for updates',
+                            ),
+                          ),
+                        );
+                      }
                     },
             );
           },

@@ -26,7 +26,10 @@ void main() {
 
         expect(
           capabilities.supportsAppUpdates,
-          platform == TargetPlatform.android,
+          platform == TargetPlatform.android ||
+              platform == TargetPlatform.windows ||
+              platform == TargetPlatform.linux ||
+              platform == TargetPlatform.macOS,
         );
         expect(capabilities.supportsBackgroundNotifications, isTrue);
         expect(

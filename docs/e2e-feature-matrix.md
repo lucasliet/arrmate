@@ -373,7 +373,7 @@ Shared by movies, seasons, and episodes.
 | SET-06 | Assistant tile | Tap | Opens ASI screen | Not run |
 | SET-07 | Notification Settings / Center tiles | Tap | Open NTF screens; subtitles reflect state | Not run |
 | SET-08 | Getting Started | Tap | Tour starts (TOU) | Not run |
-| SET-09 | Version | Tap | Update check (Android release builds); “App is up to date” | Not run |
+| SET-09 | Version | Tap | Update check (Android and native desktop release builds); “App is up to date” or an available update | Not run |
 | SET-10 | Source Code | Tap | GitHub repository in browser | Not run |
 
 ## Instances (INS)
@@ -458,6 +458,7 @@ Shared by movies, seasons, and episodes.
 | --- | --- | --- | --- | --- |
 | UPD-01 | Update dialog | Android release build older than latest | “Nova Versão Disponível”, Mais Tarde / Atualizar Agora, download progress | Not run |
 | UPD-02 | What's New | First launch after update | “What's New in v…”, Dismiss / View All Versions | Not run |
+| UPD-03 | Desktop update | Windows, Linux AppImage, or macOS release older than latest | Platform package, checksum verification, update and restart, replacement recovery | Native installer fixtures automated; full application upgrade not run |
 
 ---
 

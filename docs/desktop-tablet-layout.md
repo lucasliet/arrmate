@@ -117,4 +117,5 @@ multi-window, iPad portrait/landscape and Split View, Windows/macOS startup,
 secure credentials after restart, actual server and assistant requests,
 file selection, trackpad gestures, and OS notification behavior. Screenshots
 of representative compact, tablet, and desktop layouts should accompany UI
-reviews. No installer, signing, notarization, or desktop updater is included.
+reviews. Desktop packages include an in-app updater and Linux AppImage; installers,
+distribution signing, and notarization remain separate work.

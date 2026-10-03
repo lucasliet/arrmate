@@ -221,7 +221,7 @@ jobs:
       - name: Require every platform artifact
         run: |
           for ASSET in app-arm64-v8a-release.apk app-armeabi-v7a-release.apk \
-            arrmate.ipa arrmate-windows-x64.zip arrmate-linux-x64.tar.gz \
+            arrmate.ipa arrmate-windows-x64.zip arrmate-linux-x64.AppImage \
             arrmate-macos.zip altstore.json; do
             test -s "dist/$ASSET" || { echo "::error::Missing release artifact: $ASSET"; exit 1; }
           done
@@ -237,14 +237,14 @@ jobs:
           - iOS: instale o `arrmate.ipa` usando AltStore ou Sideloadly.
           - AltStore source: https://github.com/lucasliet/arrmate/releases/latest/download/altstore.json
           - Windows: extraia `arrmate-windows-x64.zip` e execute `arrmate.exe`.
-          - Linux: extraia `arrmate-linux-x64.tar.gz` e execute `arrmate-linux-x64/arrmate`.
+          - Linux: dê permissão de execução ao `arrmate-linux-x64.AppImage` (`chmod +x`) e abra o arquivo. Sem FUSE, use `--appimage-extract-and-run`.
           - macOS: extraia `arrmate-macos.zip` e abra `Arrmate.app`.
           EOF
 
       - name: Publish all platforms together
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/app-arm64-v8a-release.apk,dist/app-armeabi-v7a-release.apk,dist/arrmate.ipa,dist/altstore.json,dist/arrmate-windows-x64.zip,dist/arrmate-linux-x64.tar.gz,dist/arrmate-macos.zip
+          artifacts: dist/app-arm64-v8a-release.apk,dist/app-armeabi-v7a-release.apk,dist/arrmate.ipa,dist/altstore.json,dist/arrmate-windows-x64.zip,dist/arrmate-linux-x64.AppImage,dist/arrmate-macos.zip
           tag: ${{ needs.prepare-release.outputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
