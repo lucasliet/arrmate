@@ -563,6 +563,34 @@ class QBittorrentService {
     }
   }
 
+  /// Gets the announce trackers for a specific torrent.
+  ///
+  /// Calls `GET /api/v2/torrents/trackers`. The list also includes the DHT,
+  /// PeX, and LSD rows qBittorrent reports alongside real announce URLs.
+  /// Tracker URLs are not logged: private announce links can embed a passkey.
+  Future<List<TorrentTracker>> getTorrentTrackers(String hash) async {
+    try {
+      final response = await _request<List>(
+        '/api/v2/torrents/trackers',
+        queryParameters: {'hash': hash},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return [
+          for (final entry in response.data!)
+            if (entry is Map<String, dynamic>)
+              TorrentTracker.fromJson(entry)
+            else if (entry is Map)
+              TorrentTracker.fromJson(Map<String, dynamic>.from(entry)),
+        ];
+      }
+      return [];
+    } catch (e) {
+      logger.error('[QBittorrentService] Failed to get torrent trackers', e);
+      rethrow;
+    }
+  }
+
   /// Gets the list of peers connected to a specific torrent.
   ///
   /// Calls `GET /api/v2/sync/torrentPeers`, whose response nests a `peers` map

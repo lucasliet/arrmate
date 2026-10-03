@@ -72,6 +72,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - Botão "Recheck" (ícone de sync) para verificar integridade.
     - Botão "Files" (ícone de pasta) para listar e gerenciar arquivos.
     - Botão "Move" (ícone de seta) para mudar localização no disco.
+    - Botão "Trackers" abre um sheet com os announce URLs do torrent (host, status, seeds/leechers/peers, tier e mensagem de erro) e as linhas DHT, PeX e LSD. A URL completa pode ser selecionada para copiar.
     - Se 100% completo: botão "Import to Media Library" (para importar para Radarr/Sonarr).
     - Botão "Remove Torrent" (texto em vermelho, destrutivo).
 
