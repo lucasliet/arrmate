@@ -1,38 +1,27 @@
 name: Build Applications
+run-name: Build Applications ${{ inputs.release_tag }} ${{ inputs.request_id || github.run_id }}
 
 on:
-  workflow_call:
-    inputs:
-      release_tag:
-        description: Existing version tag to build
-        type: string
-        required: true
-      checkout_ref:
-        description: Expected immutable source revision of the tag
-        type: string
-        required: false
-        default: ''
-    secrets:
-      ANDROID_KEYSTORE_BASE64:
-        required: true
-      ANDROID_KEYSTORE_PASSWORD:
-        required: true
-      ANDROID_KEY_PASSWORD:
-        required: true
-      ANDROID_KEY_ALIAS:
-        required: true
   workflow_dispatch:
     inputs:
       release_tag:
         description: Existing version tag to build (for example v2.0.0)
         type: string
         required: true
+      checkout_ref:
+        description: Expected immutable source revision of the tag
+        type: string
+        required: false
+      request_id:
+        description: Identifier for the release workflow that dispatched this build
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: arrmate-build-${{ github.workflow }}-${{ inputs.release_tag || github.ref }}
+  group: arrmate-build-${{ github.workflow }}-${{ inputs.release_tag || github.ref }}-${{ inputs.request_id || 'manual' }}
   cancel-in-progress: true
 
 env:
@@ -115,6 +104,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+            pubspec.lock
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -122,6 +116,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
+      - name: Restore Gradle task outputs
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.gradle/caches/build-cache-1
+          key: android-gradle-build-${{ runner.os }}-${{ runner.arch }}-${{ env.FLUTTER_VERSION }}-${{ github.run_id }}
+          restore-keys: |
+            android-gradle-build-${{ runner.os }}-${{ runner.arch }}-${{ env.FLUTTER_VERSION }}-
 
       - name: Get dependencies
         run: flutter pub get
@@ -139,6 +141,12 @@ jobs:
             BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
           fi
           flutter build apk "${BUILD_ARGS[@]}"
+
+      - name: Save Gradle task outputs
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.gradle/caches/build-cache-1
+          key: android-gradle-build-${{ runner.os }}-${{ runner.arch }}-${{ env.FLUTTER_VERSION }}-${{ github.run_id }}
 
       - name: Upload Android release artifacts
         uses: actions/upload-artifact@v4
