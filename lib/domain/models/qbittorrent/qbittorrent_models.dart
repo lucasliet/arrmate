@@ -6,3 +6,4 @@ export 'torrent_link.dart';
 export 'torrent_peer.dart';
 export 'torrent_query.dart';
 export 'torrent_status.dart';
+export 'torrent_tracker.dart';

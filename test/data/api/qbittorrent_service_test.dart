@@ -217,6 +217,40 @@ void main() {
       ]);
     });
   });
+
+  group('QBittorrentService trackers', () {
+    test('should parse torrent trackers from the trackers endpoint', () async {
+      final adapter = _RecordingAdapter(
+        pathBodies: {
+          '/api/v2/torrents/trackers': jsonEncode([
+            {
+              'url': 'https://tracker.example/announce/secret',
+              'status': 2,
+              'tier': 0,
+              'num_peers': 4,
+              'num_seeds': 3,
+              'num_leeches': 1,
+              'num_downloaded': 9,
+              'msg': '',
+            },
+            {'url': '** [DHT] **', 'status': 2},
+          ]),
+        },
+      );
+      final service = _service(adapter);
+
+      final trackers = await service.getTorrentTrackers('abc');
+
+      expect(trackers.map((tracker) => tracker.displayName), [
+        'tracker.example',
+        'DHT',
+      ]);
+      expect(trackers.first.status, TorrentTrackerStatus.working);
+      expect(trackers.first.numSeeds, 3);
+      expect(adapter.requests.last.path, '/api/v2/torrents/trackers');
+      expect(adapter.requests.last.queryParameters['hash'], 'abc');
+    });
+  });
 }
 
 QBittorrentService _service(_RecordingAdapter adapter) {
@@ -259,6 +293,9 @@ class _RecordingAdapter implements HttpClientAdapter {
   /// the API surface.
   final Map<String, int> pathStatusCodes;
 
+  /// Response bodies keyed by request path.
+  final Map<String, String> pathBodies;
+
   final List<Uri> requests = [];
   final List<String> methods = [];
 
@@ -266,9 +303,11 @@ class _RecordingAdapter implements HttpClientAdapter {
     Set<String>? unavailableHosts,
     Map<String, int>? statusCodes,
     Map<String, int>? pathStatusCodes,
+    Map<String, String>? pathBodies,
   }) : unavailableHosts = unavailableHosts ?? {},
        statusCodes = statusCodes ?? {},
-       pathStatusCodes = pathStatusCodes ?? {};
+       pathStatusCodes = pathStatusCodes ?? {},
+       pathBodies = pathBodies ?? {};
 
   @override
   Future<ResponseBody> fetch(
@@ -302,11 +341,13 @@ class _RecordingAdapter implements HttpClientAdapter {
       );
     }
 
-    final body = uri.path.endsWith('/api/v2/torrents/info')
-        ? jsonEncode([
-            {'hash': 'abc', 'name': 'Movie 2024', 'size': 1000},
-          ])
-        : jsonEncode({'ok': uri.host});
+    final body =
+        pathBodies[uri.path] ??
+        (uri.path.endsWith('/api/v2/torrents/info')
+            ? jsonEncode([
+                {'hash': 'abc', 'name': 'Movie 2024', 'size': 1000},
+              ])
+            : jsonEncode({'ok': uri.host}));
 
     return ResponseBody.fromString(
       body,

@@ -1,4 +1,6 @@
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/screens/activity/providers/torrent_file_providers.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +23,39 @@ void main() {
       expect(find.text('3d 4h'), findsOneWidget);
     });
 
+    testWidgets('should open the trackers sheet from the details actions', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _torrent(),
+        overrides: [
+          qbittorrentServiceProvider.overrideWithValue(null),
+          torrentTrackersProvider.overrideWith(
+            (ref, hash) async => [
+              TorrentTracker(
+                url: 'https://tracker.example/announce',
+                status: TorrentTrackerStatus.working,
+                tier: 0,
+                numPeers: 4,
+                numSeeds: 3,
+                numLeeches: 1,
+                numDownloaded: 0,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.scrollUntilVisible(find.text('Trackers'), 200);
+      await tester.tap(find.byKey(const ValueKey('torrent-trackers-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('tracker.example'), findsOneWidget);
+      expect(find.text('Working'), findsOneWidget);
+      expect(find.text('3 seeds · 1 leecher · 4 peers'), findsOneWidget);
+    });
+
     testWidgets('should omit the seed time when the torrent never seeded', (
       tester,
     ) async {
@@ -37,9 +72,14 @@ void main() {
   });
 }
 
-Future<void> _pump(WidgetTester tester, Torrent torrent) async {
+Future<void> _pump(
+  WidgetTester tester,
+  Torrent torrent, {
+  List<Override> overrides = const [],
+}) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: overrides,
       child: MaterialApp(
         home: Scaffold(body: TorrentDetailsSheet(torrent: torrent)),
       ),
