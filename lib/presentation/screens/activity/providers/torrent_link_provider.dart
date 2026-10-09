@@ -22,8 +22,9 @@ const int _maxHistoryPages = 25;
 const int _maxQueuePages = 5;
 
 /// Page size used for the history scan. Larger than the activity screen's page
-/// size because this scan is a one-shot sweep, not an interactive list.
-const int _historyPageSize = 100;
+/// size because this scan is a one-shot sweep whose wall time is bound by the
+/// number of sequential requests, not by the size of each response.
+const int _historyPageSize = 250;
 
 /// Slack applied to the "stop when older than the oldest torrent" rule, so
 /// clock skew between the device, the *arr instance and the download client
@@ -142,13 +143,12 @@ final torrentLinkIndexProvider = FutureProvider.autoDispose<TorrentLinkIndex>((
   );
   final hasInstances = radarrInstances.isNotEmpty || sonarrInstances.isNotEmpty;
 
+  // Torrents not loaded yet (or none at all): the scan cannot run. Returning
+  // the empty index keeps every link unknown while the real scan is in flight
+  // — claiming instances here would read every torrent as "not in library"
+  // until the scan finishes.
   if (fingerprint.isEmpty || !hasInstances) {
-    return TorrentLinkIndex(
-      linksByHash: const {},
-      managedCategories: const {},
-      failures: const [],
-      hasInstances: hasInstances,
-    );
+    return TorrentLinkIndex.empty;
   }
 
   final torrents =

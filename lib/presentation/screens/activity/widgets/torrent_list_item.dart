@@ -71,29 +71,6 @@ class TorrentListItem extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            if (torrent.hasCategory) ...[
-                              Text(
-                                torrent.category!,
-                                style: context.textTheme.labelMedium?.copyWith(
-                                  color: context.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                child: Text(
-                                  '·',
-                                  style: context.textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: context
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                              ),
-                            ],
                             Icon(
                               Icons.people_outline,
                               size: 14,
@@ -124,6 +101,10 @@ class TorrentListItem extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (torrent.hasCategory || torrent.tags.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          _buildChips(context),
+                        ],
                         if (_showsLinkBadge) ...[
                           const SizedBox(height: 4),
                           _buildLinkBadge(context),
@@ -303,6 +284,36 @@ class TorrentListItem extends StatelessWidget {
   bool get _showsLinkBadge =>
       link != null && link!.status != TorrentLinkStatus.unknown;
 
+  /// The qBittorrent category and tags carried by the torrent, one chip each.
+  ///
+  /// Both render as neutral chips so color stays reserved for the status and
+  /// library link badges; the icons tell category and tag apart.
+  Widget _buildChips(BuildContext context) {
+    final color = context.colorScheme.onSurfaceVariant;
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        if (torrent.hasCategory)
+          _buildBadgeChip(
+            context,
+            key: ValueKey('torrent-category-${torrent.category}'),
+            icon: Icons.folder_outlined,
+            label: torrent.category!,
+            color: color,
+          ),
+        for (final tag in torrent.tags)
+          _buildBadgeChip(
+            context,
+            key: ValueKey('torrent-tag-$tag'),
+            icon: Icons.label_outline,
+            label: tag,
+            color: color,
+          ),
+      ],
+    );
+  }
+
   /// Badge telling whether the torrent backs something in the media library.
   ///
   /// A relation inherited from a cross-seed sibling gets a second badge, so the
@@ -322,19 +333,22 @@ class TorrentListItem extends StatelessWidget {
           label: link!.displayLabel,
           color: color,
         ),
+        // The inherited-relation marker is metadata about the link, not the
+        // link itself, so it stays neutral and the status color reads as one
+        // badge only.
         if (link!.isCrossSeed)
           _buildBadgeChip(
             context,
             key: const ValueKey('torrent-cross-seed-badge'),
             icon: Icons.content_copy,
             label: 'Cross-seed',
-            color: color,
+            color: context.colorScheme.onSurfaceVariant,
           ),
       ],
     );
   }
 
-  /// Compact icon + label chip shared by the library badges.
+  /// Compact icon + label chip shared by the card badges.
   Widget _buildBadgeChip(
     BuildContext context, {
     required Key key,

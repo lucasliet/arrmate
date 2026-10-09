@@ -232,13 +232,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                           : 'None',
                     ),
                     _buildInfoRow(context, 'Save Path', torrent.savePath),
-                    _buildInfoRow(
-                      context,
-                      'Tags',
-                      torrent.tags.isNotEmpty
-                          ? torrent.tags.join(', ')
-                          : 'None',
-                    ),
+                    _buildTagsRow(context),
                     _buildInfoRow(context, 'Hash', torrent.hash),
 
                     if (link != null &&
@@ -715,6 +709,72 @@ class TorrentDetailsSheet extends ConsumerWidget {
             ),
           ),
           Expanded(child: Text(value, style: context.textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+
+  /// The tags info row, rendered as chips to mirror the torrent card.
+  Widget _buildTagsRow(BuildContext context) {
+    if (torrent.tags.isEmpty) {
+      return _buildInfoRow(context, 'Tags', 'None');
+    }
+
+    final color = context.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              'Tags',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final tag in torrent.tags)
+                  Container(
+                    key: ValueKey('torrent-details-tag-$tag'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: color.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.label_outline, size: 12, color: color),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            tag,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );

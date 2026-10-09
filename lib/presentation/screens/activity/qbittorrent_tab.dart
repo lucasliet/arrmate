@@ -74,6 +74,31 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     _updateQuery(_query.clearFilters());
   }
 
+  /// Tag names carried by the current torrent list, offered as filter chips.
+  List<String> _collectAvailableTags() {
+    final torrents =
+        ref.read(qbittorrentTorrentsProvider).valueOrNull ?? const <Torrent>[];
+    final tags = torrents.expand((torrent) => torrent.tags).toSet().toList()
+      ..sort();
+    return tags;
+  }
+
+  /// Category names carried by the current torrent list, offered as filter
+  /// chips.
+  List<String> _collectAvailableCategories() {
+    final torrents =
+        ref.read(qbittorrentTorrentsProvider).valueOrNull ?? const <Torrent>[];
+    final categories =
+        torrents
+            .map((torrent) => torrent.category)
+            .whereType<String>()
+            .where((category) => category.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+    return categories;
+  }
+
   /// Reloads both the torrent list and the library link index.
   Future<void> _refreshAll() async {
     ref.invalidate(torrentLinkIndexProvider);
@@ -81,6 +106,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
   }
 
   Future<void> _showFilters({required bool showLinkFilters}) async {
+    final availableCategories = _collectAvailableCategories();
+    final availableTags = _collectAvailableTags();
     final result = await showModalBottomSheet<TorrentFilterResult>(
       context: context,
       isScrollControlled: true,
@@ -89,6 +116,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
         query: _query,
         rememberFilters: _rememberFilters,
         showLinkFilters: showLinkFilters,
+        availableCategories: availableCategories,
+        availableTags: availableTags,
       ),
     );
     if (result == null || !mounted) return;

@@ -22,6 +22,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 - **Botão de filtros** (ícone de funil; ganha um badge quando há filtro ativo): abre o sheet **"Torrent filters"** com:
   - **Status** (chips de seleção única): **All** — todos os torrents; **Downloading** — downloads ativos; **Seeding** — 100% completos fazendo upload; **Paused** — pausados; **Error** — com erro.
   - **Library link** (só aparece se houver Radarr/Sonarr configurado): **All**, **Orphan** (baixado pelo Radarr/Sonarr mas o item saiu do catálogo), **File removed** (item no catálogo, arquivo apagado), **In library** (sustenta um filme/episódio da biblioteca), **Not in library** (baixado por fora).
+  - **Category** (chips de múltipla seleção; só aparece quando algum torrent da lista tem categoria): mostra torrents pertencentes a pelo menos uma das categorias selecionadas do qBittorrent.
+  - **Tags** (chips de múltipla seleção; só aparece quando algum torrent da lista tem tag): mostra torrents que carreguem pelo menos uma das tags selecionadas.
   - **Remember filters** (toggle): mantém busca, filtros e ordenação salvos para as próximas sessões.
   - Botões **"Clear filters"** (limpa sem fechar) e **"Apply"** (aplica e fecha).
 - **Clear**: botão de texto que aparece ao lado do funil quando há busca ou filtro ativo; limpa busca e filtros (a ordenação é mantida).
@@ -36,7 +38,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Barra de progresso linear** mostrando % de conclusão (ex: 45% completed).
   - **Status** em badge colorido (Downloading, Seeding, Paused, Error).
   - **Badge de vínculo com a biblioteca** (quando há Radarr/Sonarr configurado): mostra o título do filme/episódio vinculado (ex: "Severance · S01E05"), ou "File removed", "Orphan", "Not in library". Torrents **órfãos** ganham borda e fundo em vermelho para destacar que só o torrent sobrou.
-  - **Badge "Cross-seed"** ao lado do badge de vínculo quando a relação foi herdada de um torrent irmão com o mesmo nome de release.
+  - **Badge "Cross-seed"** ao lado do badge de vínculo quando a relação foi herdada de um torrent irmão com o mesmo nome de release (chip neutra em cinza; a cor do vínculo fica só no badge de status da biblioteca).
+  - **Chips de categoria e tags** (quando o torrent tem categoria ou tags no qBittorrent): chips neutras em cinza — a categoria com ícone de pasta e cada tag com ícone de etiqueta — exibidas entre o status e o badge de vínculo. A cor fica reservada para os badges de status e vínculo com a biblioteca.
   - **Seed time** (⏱, quando o torrent já semeou): há quanto tempo está semeando (ex: "2d 5h").
   - **Velocidades** (se ativo):
     - ⬇️ Download speed (ex: "2.5 MB/s").
@@ -60,7 +63,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - "Seeds", "Leechers" (peers conectados).
     - "Seed Time" (quando o torrent já semeou): tempo acumulado de seeding (ex: "3d 4h"), útil para conferir a regra de dias mínimos de seeding antes de remover.
   - **Information section:**
-    - "Added On", "Category", "Save Path", "Tags", "Hash".
+    - "Added On", "Category", "Save Path", "Hash".
+    - "Tags": as tags do torrent como chips (ou "None").
   - **Media Library section** (se o vínculo for conhecido):
     - Faixa colorida com o status do vínculo e a explicação (órfão aparece em vermelho).
     - Nota em itálico quando o vínculo veio de um cross-seed (mesmo nome de release, infohash diferente).
@@ -179,6 +183,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
   - **Paused** — torrents pausados (inclui downloads pausados e seeds pausadas).
   - **Error** — torrents com erro ("Error", "Missing Files").
 - **Library link** (só com Radarr/Sonarr configurado): All, Orphan, File removed, In library, Not in library.
+- **Category** (múltipla seleção): chips com as categorias do qBittorrent presentes nos torrents carregados; um torrent passa no filtro se pertencer a **qualquer uma** das categorias selecionadas. A seção fica oculta quando nenhum torrent tem categoria.
+- **Tags** (múltipla seleção): chips com as tags presentes nos torrents carregados; um torrent passa no filtro se tiver **qualquer uma** das tags selecionadas. A seção fica oculta quando nenhum torrent tem tag.
 - **Remember filters** — salva a configuração (busca, filtros e ordenação) para as próximas sessões.
 - Toque em **Apply** para aplicar e fechar; **Clear filters** limpa sem fechar.
 

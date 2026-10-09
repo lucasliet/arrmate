@@ -12,6 +12,8 @@ void main() {
         search: 'ubuntu',
         status: TorrentStatusFilter.paused,
         linkFilter: TorrentLinkFilter.orphan,
+        categories: {'movies'},
+        tags: {'cross-seed', 'movies'},
         sortOption: TorrentSortOption.size,
         sortAscending: true,
       );
@@ -38,12 +40,27 @@ void main() {
       expect(restored, const TorrentQuery());
     });
 
+    test('should ignore non-string tag entries when restoring', () {
+      // Given
+      final json = {
+        'tags': ['movies', 42, null],
+      };
+
+      // When
+      final restored = TorrentQuery.fromJson(json);
+
+      // Then
+      expect(restored.tags, {'movies'});
+    });
+
     test('should clear filters while preserving the sorting', () {
       // Given
       const query = TorrentQuery(
         search: 'ubuntu',
         status: TorrentStatusFilter.seeding,
         linkFilter: TorrentLinkFilter.linked,
+        categories: {'movies'},
+        tags: {'movies'},
         sortOption: TorrentSortOption.ratio,
         sortAscending: true,
       );
@@ -55,9 +72,102 @@ void main() {
       expect(cleared.search, isEmpty);
       expect(cleared.status, TorrentStatusFilter.all);
       expect(cleared.linkFilter, TorrentLinkFilter.all);
+      expect(cleared.categories, isEmpty);
+      expect(cleared.tags, isEmpty);
       expect(cleared.sortOption, TorrentSortOption.ratio);
       expect(cleared.sortAscending, isTrue);
       expect(cleared.hasActiveFilters, isFalse);
+    });
+
+    test('should match torrents carrying any of the selected tags', () {
+      // Given
+      final tagged = _torrent(name: 'Tagged', tags: ['movies', '4k']);
+      final otherTag = _torrent(name: 'OtherTag', tags: ['series']);
+      final overlapping = _torrent(name: 'Overlapping', tags: ['series', '4k']);
+      final untagged = _torrent(name: 'Untagged');
+      const query = TorrentQuery(tags: {'movies', 'series'});
+
+      // When
+      final results = applyTorrentQuery([
+        tagged,
+        otherTag,
+        overlapping,
+        untagged,
+      ], query);
+
+      // Then
+      expect(
+        results.map((torrent) => torrent.name),
+        unorderedEquals(['Tagged', 'OtherTag', 'Overlapping']),
+      );
+    });
+
+    test('should match torrents in any selected category', () {
+      // Given
+      final movies = _torrent(name: 'Movies', category: 'movies');
+      final series = _torrent(name: 'Series', category: 'series');
+      final uncategorized = _torrent(name: 'Uncategorized');
+      const query = TorrentQuery(categories: {'movies', 'series'});
+
+      // When
+      final results = applyTorrentQuery([movies, series, uncategorized], query);
+
+      // Then
+      expect(
+        results.map((torrent) => torrent.name),
+        unorderedEquals(['Movies', 'Series']),
+      );
+    });
+
+    test('should combine the category filter with the tag filter', () {
+      // Given
+      final matching = _torrent(
+        name: 'Matching',
+        category: 'movies',
+        tags: ['4k'],
+      );
+      final wrongCategory = _torrent(
+        name: 'WrongCategory',
+        category: 'series',
+        tags: ['4k'],
+      );
+      final wrongTag = _torrent(name: 'WrongTag', category: 'movies');
+      const query = TorrentQuery(categories: {'movies'}, tags: {'4k'});
+
+      // When
+      final results = applyTorrentQuery([
+        matching,
+        wrongCategory,
+        wrongTag,
+      ], query);
+
+      // Then
+      expect(results, [matching]);
+    });
+
+    test('should combine the tag filter with status and search', () {
+      // Given
+      final matching = _torrent(
+        name: 'Ubuntu.Iso',
+        status: TorrentStatus.pausedDL,
+        tags: ['movies'],
+      );
+      final wrongTag = _torrent(
+        name: 'Ubuntu.Mini',
+        status: TorrentStatus.pausedDL,
+        tags: ['series'],
+      );
+      const query = TorrentQuery(
+        search: 'ubuntu',
+        status: TorrentStatusFilter.paused,
+        tags: {'movies'},
+      );
+
+      // When
+      final results = applyTorrentQuery([matching, wrongTag], query);
+
+      // Then
+      expect(results, [matching]);
     });
 
     test('should combine status, link and search filters', () {
@@ -296,6 +406,8 @@ Torrent _torrent({
   int dlspeed = 0,
   double ratio = 0,
   int seedingTime = 0,
+  String? category,
+  List<String> tags = const [],
 }) {
   return Torrent(
     hash: name,
@@ -308,7 +420,8 @@ Torrent _torrent({
     ratio: ratio,
     status: status,
     state: status.name,
-    tags: const [],
+    category: category,
+    tags: tags,
     savePath: '',
     numSeeds: 0,
     numLeechs: 0,

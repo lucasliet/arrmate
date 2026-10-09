@@ -90,6 +90,91 @@ void main() {
     expect(find.byKey(const Key('clearTorrentFiltersButton')), findsOneWidget);
   });
 
+  testWidgets('should apply the tag filter from the filters sheet', (
+    tester,
+  ) async {
+    // Given
+    final torrents = [
+      _torrent(name: 'Alpha', status: TorrentStatus.pausedDL, tags: ['movies']),
+      _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+      _torrent(
+        name: 'Charlie',
+        status: TorrentStatus.downloading,
+        tags: ['series'],
+      ),
+    ];
+    await _pumpTab(tester, torrents);
+
+    // When
+    await tester.tap(find.byKey(const Key('torrentFilterButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'movies'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('applyTorrentFiltersButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(_renderedNames(tester), ['Alpha']);
+    expect(find.text('1 torrents · 2 hidden'), findsOneWidget);
+    expect(find.byKey(const Key('clearTorrentFiltersButton')), findsOneWidget);
+  });
+
+  testWidgets('should apply the category filter from the filters sheet', (
+    tester,
+  ) async {
+    // Given
+    final torrents = [
+      _torrent(
+        name: 'Alpha',
+        status: TorrentStatus.pausedDL,
+        category: 'movies',
+      ),
+      _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+      _torrent(
+        name: 'Charlie',
+        status: TorrentStatus.downloading,
+        category: 'series',
+      ),
+    ];
+    await _pumpTab(tester, torrents);
+
+    // When
+    await tester.tap(find.byKey(const Key('torrentFilterButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'movies'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('applyTorrentFiltersButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(_renderedNames(tester), ['Alpha']);
+    expect(find.text('1 torrents · 2 hidden'), findsOneWidget);
+    expect(find.byKey(const Key('clearTorrentFiltersButton')), findsOneWidget);
+  });
+
+  testWidgets('should show category and tag chips on the torrent card', (
+    tester,
+  ) async {
+    // Given
+    final torrents = [
+      _torrent(
+        name: 'Alpha',
+        status: TorrentStatus.pausedDL,
+        category: 'radarr',
+        tags: ['movies', '4k'],
+      ),
+      _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+    ];
+
+    // When
+    await _pumpTab(tester, torrents);
+
+    // Then
+    expect(find.byKey(const Key('torrent-category-radarr')), findsOneWidget);
+    expect(find.byKey(const Key('torrent-tag-movies')), findsOneWidget);
+    expect(find.byKey(const Key('torrent-tag-4k')), findsOneWidget);
+  });
+
   testWidgets('should restore every torrent when filters are cleared', (
     tester,
   ) async {
@@ -185,7 +270,12 @@ List<String> _renderedNames(WidgetTester tester) {
       .toList();
 }
 
-Torrent _torrent({required String name, required TorrentStatus status}) {
+Torrent _torrent({
+  required String name,
+  required TorrentStatus status,
+  String? category,
+  List<String> tags = const [],
+}) {
   return Torrent(
     hash: name,
     name: name,
@@ -197,7 +287,8 @@ Torrent _torrent({required String name, required TorrentStatus status}) {
     ratio: 1,
     status: status,
     state: status.name,
-    tags: const [],
+    category: category,
+    tags: tags,
     savePath: '',
     numSeeds: 0,
     numLeechs: 0,

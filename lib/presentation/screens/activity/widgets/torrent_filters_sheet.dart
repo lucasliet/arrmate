@@ -23,11 +23,20 @@ class TorrentFiltersSheet extends StatefulWidget {
   /// Radarr/Sonarr instance to be configured.
   final bool showLinkFilters;
 
+  /// Category names available on the current torrent list, offered as filter
+  /// chips.
+  final List<String> availableCategories;
+
+  /// Tag names available on the current torrent list, offered as filter chips.
+  final List<String> availableTags;
+
   const TorrentFiltersSheet({
     super.key,
     required this.query,
     required this.rememberFilters,
     required this.showLinkFilters,
+    this.availableCategories = const [],
+    this.availableTags = const [],
   });
 
   @override
@@ -86,6 +95,21 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                           () => _query = _query.copyWith(linkFilter: value),
                         ),
                       ),
+                    FilterSection(
+                      title: 'Category',
+                      values: widget.availableCategories,
+                      selected: _query.categories,
+                      onChanged: (value) => setState(
+                        () => _query = _query.copyWith(categories: value),
+                      ),
+                    ),
+                    FilterSection(
+                      title: 'Tags',
+                      values: widget.availableTags,
+                      selected: _query.tags,
+                      onChanged: (value) =>
+                          setState(() => _query = _query.copyWith(tags: value)),
+                    ),
                     const Divider(),
                     SwitchListTile(
                       key: const Key('rememberTorrentFiltersSwitch'),

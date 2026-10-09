@@ -82,6 +82,13 @@ class TorrentQuery extends Equatable {
   final String search;
   final TorrentStatusFilter status;
   final TorrentLinkFilter linkFilter;
+
+  /// Category names a torrent must belong to at least one of, or empty for no
+  /// filter.
+  final Set<String> categories;
+
+  /// Tag names a torrent must carry at least one of, or empty for no filter.
+  final Set<String> tags;
   final TorrentSortOption sortOption;
   final bool sortAscending;
 
@@ -89,6 +96,8 @@ class TorrentQuery extends Equatable {
     this.search = '',
     this.status = TorrentStatusFilter.all,
     this.linkFilter = TorrentLinkFilter.all,
+    this.categories = const {},
+    this.tags = const {},
     this.sortOption = TorrentSortOption.activity,
     this.sortAscending = false,
   });
@@ -97,13 +106,17 @@ class TorrentQuery extends Equatable {
   bool get hasActiveFilters =>
       search.trim().isNotEmpty ||
       status != TorrentStatusFilter.all ||
-      linkFilter != TorrentLinkFilter.all;
+      linkFilter != TorrentLinkFilter.all ||
+      categories.isNotEmpty ||
+      tags.isNotEmpty;
 
   /// Creates a copy with selected values replaced.
   TorrentQuery copyWith({
     String? search,
     TorrentStatusFilter? status,
     TorrentLinkFilter? linkFilter,
+    Set<String>? categories,
+    Set<String>? tags,
     TorrentSortOption? sortOption,
     bool? sortAscending,
   }) {
@@ -111,6 +124,8 @@ class TorrentQuery extends Equatable {
       search: search ?? this.search,
       status: status ?? this.status,
       linkFilter: linkFilter ?? this.linkFilter,
+      categories: categories ?? this.categories,
+      tags: tags ?? this.tags,
       sortOption: sortOption ?? this.sortOption,
       sortAscending: sortAscending ?? this.sortAscending,
     );
@@ -127,6 +142,8 @@ class TorrentQuery extends Equatable {
       'search': search,
       'status': status.name,
       'linkFilter': linkFilter.name,
+      'categories': categories.toList(),
+      'tags': tags.toList(),
       'sortOption': sortOption.name,
       'sortAscending': sortAscending,
     };
@@ -146,6 +163,8 @@ class TorrentQuery extends Equatable {
         json['linkFilter'],
         TorrentLinkFilter.all,
       ),
+      categories: _parseStringSet(json['categories']),
+      tags: _parseStringSet(json['tags']),
       sortOption: _parseEnum(
         TorrentSortOption.values,
         json['sortOption'],
@@ -160,6 +179,8 @@ class TorrentQuery extends Equatable {
     search,
     status,
     linkFilter,
+    categories,
+    tags,
     sortOption,
     sortAscending,
   ];
@@ -194,6 +215,13 @@ bool _matchesTorrent(
   required TorrentLinkStatus? Function(Torrent torrent)? linkResolver,
 }) {
   if (!_matchesStatus(torrent, query.status)) return false;
+  if (query.categories.isNotEmpty &&
+      (!torrent.hasCategory || !query.categories.contains(torrent.category))) {
+    return false;
+  }
+  if (query.tags.isNotEmpty && !torrent.tags.any(query.tags.contains)) {
+    return false;
+  }
   final expectedLinkStatus = query.linkFilter.status;
   if (expectedLinkStatus != null && linkResolver != null) {
     if (linkResolver(torrent) != expectedLinkStatus) return false;
@@ -249,4 +277,9 @@ T _parseEnum<T extends Enum>(List<T> values, Object? value, T fallback) {
     if (item.name == value) return item;
   }
   return fallback;
+}
+
+Set<String> _parseStringSet(Object? value) {
+  if (value is! List<Object?>) return const <String>{};
+  return value.whereType<String>().toSet();
 }

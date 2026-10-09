@@ -601,6 +601,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Header Name'),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: valueCtrl,
               decoration: const InputDecoration(labelText: 'Header Value'),
@@ -647,6 +648,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               controller: userCtrl,
               decoration: const InputDecoration(labelText: 'Username'),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: passCtrl,
               decoration: const InputDecoration(labelText: 'Password'),

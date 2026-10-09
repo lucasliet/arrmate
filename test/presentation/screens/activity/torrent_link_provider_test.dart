@@ -293,6 +293,30 @@ void main() {
       },
     );
 
+    test(
+      'should keep every link unknown while the torrent list has not loaded',
+      () async {
+        // Given a configured Radarr whose torrents are not loaded yet
+        final radarr = _instance('radarr-home', InstanceType.radarr);
+        final repository = MockMovieRepository();
+
+        // When
+        final index = await _resolveIndex(
+          torrents: const [],
+          radarrInstances: [radarr],
+          movieRepositories: {radarr: repository},
+        );
+
+        // Then
+        expect(index.canClassifyMisses, isFalse);
+        expect(
+          index.resolve(_torrent(hash: 'aabb', category: 'radarr')).status,
+          TorrentLinkStatus.unknown,
+        );
+        verifyNever(repository.getDownloadClients);
+      },
+    );
+
     test('should fall back to categories of linked torrents', () async {
       // Given a Radarr that does not expose its download clients
       final radarr = _instance('radarr-home', InstanceType.radarr);

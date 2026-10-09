@@ -22,6 +22,7 @@ void main() {
     const query = TorrentQuery(
       search: 'ubuntu',
       status: TorrentStatusFilter.paused,
+      tags: {'movies'},
       sortOption: TorrentSortOption.size,
     );
 
