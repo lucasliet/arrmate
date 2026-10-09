@@ -11,6 +11,7 @@ import '../providers/qbittorrent_provider.dart';
 import '../qbittorrent/change_location_sheet.dart';
 import '../qbittorrent/torrent_files_sheet.dart';
 import '../qbittorrent/torrent_peers_sheet.dart';
+import '../qbittorrent/torrent_trackers_sheet.dart';
 import 'torrent_import_target_sheet.dart';
 
 class TorrentDetailsSheet extends ConsumerWidget {
@@ -338,6 +339,16 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('torrent-trackers-button'),
+                        onPressed: () => _showTrackersSheet(context),
+                        icon: const Icon(Icons.podcasts_outlined),
+                        label: const Text('Trackers'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     if (torrent.isComplete)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -377,6 +388,15 @@ class TorrentDetailsSheet extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => TorrentImportTargetSheet(torrent: torrent),
+    );
+  }
+
+  void _showTrackersSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TorrentTrackersSheet(torrent: torrent),
     );
   }
 
