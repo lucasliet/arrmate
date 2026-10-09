@@ -90,7 +90,7 @@ class GoogleDriveService {
       final response = await _send(
         (token) => _dio.patch<dynamic>(
           '$_baseUrl/upload/drive/v3/files/${existing.id}',
-          queryParameters: {'uploadType': 'media'},
+          queryParameters: {'uploadType': 'media', 'fields': 'id,modifiedTime'},
           data: content,
           options: _authorizedOptions(token, contentType: 'application/json'),
         ),
@@ -103,7 +103,10 @@ class GoogleDriveService {
     final response = await _send(
       (token) => _dio.post<dynamic>(
         '$_baseUrl/upload/drive/v3/files',
-        queryParameters: {'uploadType': 'multipart'},
+        queryParameters: {
+          'uploadType': 'multipart',
+          'fields': 'id,modifiedTime',
+        },
         data: _multipartUpload(content),
         options: _authorizedOptions(token),
       ),
@@ -134,6 +137,11 @@ class GoogleDriveService {
     return response.data as String;
   }
 
+  /// Builds the multipart body Drive accepts for `uploadType=multipart`.
+  ///
+  /// Drive documents a `multipart/related` contract, yet its endpoint also
+  /// accepts the standard `multipart/form-data` that Dio's [FormData] emits,
+  /// with the metadata part first.
   FormData _multipartUpload(String content) {
     return FormData.fromMap({
       'metadata': MultipartFile.fromString(
@@ -156,11 +164,12 @@ class GoogleDriveService {
     String? contentType,
     ResponseType? responseType,
   }) {
+    final headers = <String, String>{'Authorization': 'Bearer $token'};
+    if (contentType != null) {
+      headers[Headers.contentTypeHeader] = contentType;
+    }
     return Options(
-      headers: {
-        'Authorization': 'Bearer $token',
-        if (contentType != null) Headers.contentTypeHeader: contentType,
-      },
+      headers: headers,
       validateStatus: (status) => status != null && status < 500,
       responseType: responseType,
     );

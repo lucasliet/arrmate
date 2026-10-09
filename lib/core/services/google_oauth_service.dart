@@ -44,6 +44,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
   static const String _accessTokenExpiryKey = 'access_token_expiry';
   static const String _pendingVerifierKey = 'pending_verifier';
   static const String _pendingStateKey = 'pending_state';
+  static const String _consumedCodeKey = 'consumed_code';
 
   static const Duration _tokenExpiryMargin = Duration(seconds: 60);
 
@@ -182,9 +183,14 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
         options: Options(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (error, stackTrace) {
-      if (error.response?.statusCode == 400) {
+      final rejection = error.response?.data;
+      final rejectionError = rejection is Map
+          ? rejection['error'] as String?
+          : null;
+      if (error.response?.statusCode == 400 &&
+          rejectionError == 'invalid_grant') {
         logger.warning(
-          '[GoogleOAuth] Refresh token rejected, clearing the session',
+          '[GoogleOAuth] Refresh token revoked or expired, clearing the session',
         );
         await _clearSession();
         return null;
@@ -257,6 +263,12 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
         verifier == null ||
         verifier.isEmpty ||
         currentParams['state'] != pendingState) {
+      // The code stays in the URL after a completed sign-in; once consumed it
+      // must not be exchanged again nor warn on every reload.
+      if (code == stored[_consumedCodeKey]) {
+        logger.debug('[GoogleOAuth] Skipping already consumed web redirect');
+        return null;
+      }
       logger.warning(
         '[GoogleOAuth] Ignoring web redirect with missing or mismatched state',
       );
@@ -273,6 +285,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
       await _tokenStore.save(<String, String>{
         _pendingVerifierKey: '',
         _pendingStateKey: '',
+        _consumedCodeKey: code,
       });
       return _completeSignIn(tokenData);
     } catch (error, stackTrace) {

@@ -25,12 +25,8 @@ class WebRedirectCodeListener implements GoogleCodeListener {
   @override
   Future<String> prepareRedirect() async {
     final base = Uri.base;
-    return Uri(
-      scheme: base.scheme,
-      host: base.host,
-      port: base.hasPort ? base.port : 0,
-      path: base.path,
-    ).toString();
+    final port = base.hasPort && base.port != 0 ? ':${base.port}' : '';
+    return '${base.scheme}://${base.host}$port${base.path}';
   }
 
   @override

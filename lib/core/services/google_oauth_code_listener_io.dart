@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -130,8 +131,10 @@ class LoopbackCodeListener implements GoogleCodeListener {
     await response.close();
   }
 
-  String _failurePage(String message) =>
-      '<html><body><h2>Arrmate</h2><p>$message</p></body></html>';
+  String _failurePage(String message) {
+    final safe = const HtmlEscape().convert(message);
+    return '<html><body><h2>Arrmate</h2><p>$safe</p></body></html>';
+  }
 
   Future<void> _closeServer() async {
     final server = _server;

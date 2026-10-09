@@ -309,6 +309,40 @@ void main() {
       expect(token, isNull);
       verify(() => tokenStore.clear()).called(1);
     });
+
+    test('shouldKeepSession_whenRefreshFailsForOtherReasons', () async {
+      // Given
+      when(() => tokenStore.readAll()).thenAnswer(
+        (_) async => <String, String>{'refresh_token': 'stored-refresh'},
+      );
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/token'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/token'),
+            statusCode: 400,
+            data: {'error': 'invalid_request'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      final service = createService(
+        FakeGoogleCodeListener(result: 'auth-code'),
+      );
+
+      // When
+      final token = await service.getValidAccessToken();
+
+      // Then
+      expect(token, isNull);
+      verifyNever(() => tokenStore.clear());
+    });
   });
 
   group('GoogleOAuthServiceImpl signOut', () {

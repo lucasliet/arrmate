@@ -23,6 +23,11 @@ GoogleTokenStore createDefaultGoogleTokenStore() =>
 /// [GoogleTokenStore] backed by [SharedPreferences], used by the web build
 /// where no encrypted keyring exists. All values are kept as a single JSON
 /// map under one string key.
+///
+/// Browser storage is readable by any script running on the same origin, so
+/// tokens here are protected only by the platform's same-origin policy — an
+/// accepted tradeoff for this client-only app, which is why the session can
+/// also be revoked from the account at any time.
 class PreferencesGoogleTokenStore implements GoogleTokenStore {
   static const String _storageKey = 'google_oauth_tokens';
 

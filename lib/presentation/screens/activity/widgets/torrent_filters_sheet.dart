@@ -50,8 +50,20 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
   @override
   void initState() {
     super.initState();
-    _query = widget.query;
+    _query = _dropSelectionsWithoutChips(widget.query);
     _rememberFilters = widget.rememberFilters;
+  }
+
+  /// Drops persisted category/tag selections that no longer exist on the
+  /// current torrent list, so every active selection keeps a visible chip to
+  /// untap instead of silently hiding the whole list.
+  TorrentQuery _dropSelectionsWithoutChips(TorrentQuery query) {
+    return query.copyWith(
+      categories: query.categories.intersection(
+        widget.availableCategories.toSet(),
+      ),
+      tags: query.tags.intersection(widget.availableTags.toSet()),
+    );
   }
 
   @override

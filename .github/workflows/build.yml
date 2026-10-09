@@ -149,6 +149,8 @@ jobs:
           if [ -n "$BUILD_VERSION" ]; then
             BUILD_ARGS+=(--build-number="$BUILD_NUMBER" --build-name="$BUILD_VERSION")
           fi
+          # OAuth credentials compiled in: installed-app secrets are treated as
+          # public by Google's guidance, so this is configuration, not secrecy.
           BUILD_ARGS+=(--dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}" --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}")
           flutter build apk "${BUILD_ARGS[@]}"
 
