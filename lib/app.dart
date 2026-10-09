@@ -10,6 +10,7 @@ import 'presentation/widgets/whats_new_dialog.dart';
 import 'presentation/widgets/deep_link_listener.dart';
 import 'presentation/providers/onboarding_provider.dart';
 import 'presentation/providers/app_providers.dart';
+import 'presentation/providers/backup_provider.dart';
 import 'presentation/providers/update_provider.dart';
 import 'presentation/router/app_router.dart';
 import 'presentation/theme/app_scroll_behavior.dart';
@@ -83,6 +84,7 @@ class _ArrmateAppState extends ConsumerState<ArrmateApp> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    ref.watch(automaticBackupListenerProvider);
 
     final capabilities = ref.watch(platformCapabilitiesProvider);
     final application = MaterialApp.router(

@@ -390,6 +390,13 @@ class SettingsScreen extends ConsumerWidget {
           onTap: () => context.push('/settings/system-management'),
         ),
         ListTile(
+          leading: const Icon(Icons.cloud_sync_outlined),
+          title: const Text('Backup & Restore'),
+          subtitle: const Text('Google Drive'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/backup'),
+        ),
+        ListTile(
           leading: const Icon(Icons.smart_toy_outlined),
           title: const Text('Assistant'),
           subtitle: const Text('Ask how the app works'),

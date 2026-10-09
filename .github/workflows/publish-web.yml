@@ -38,7 +38,12 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Build web app
-        run: flutter build web --release --base-href /arrmate/
+        run: >
+          flutter build web --release --base-href /arrmate/
+          --dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+          --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}"
+          --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}"
 
       - name: Add GitHub Pages SPA fallback
         run: cp build/web/index.html build/web/404.html

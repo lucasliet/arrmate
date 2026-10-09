@@ -82,6 +82,10 @@ and **qBittorrent** (for downloads).
     step has a visible target; the samples are never persisted and disappear
     when the tour finishes or is skipped.
   - **Auto-Updater**: Automatic and manual in-app updates via GitHub Releases.
+  - **Cloud Backup**: Backup and restore of settings, preferences and configured
+    instances to the user's Google Drive (private appDataFolder). OAuth via
+    loopback redirect on native platforms and web-origin redirect on the web,
+    with manual and debounced automatic backups (~30s after changes).
 - **Target Audience**: Home lab enthusiasts and media server maintainers who
   value a native mobile experience.
 

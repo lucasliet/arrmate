@@ -149,6 +149,7 @@ jobs:
           if [ -n "$BUILD_VERSION" ]; then
             BUILD_ARGS+=(--build-number="$BUILD_NUMBER" --build-name="$BUILD_VERSION")
           fi
+          BUILD_ARGS+=(--dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}" --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}")
           flutter build apk "${BUILD_ARGS[@]}"
 
       - name: Save Gradle task outputs
@@ -202,6 +203,7 @@ jobs:
           if [ -n "$BUILD_VERSION" ]; then
             BUILD_ARGS+=(--build-number="$BUILD_NUMBER" --build-name="$BUILD_VERSION")
           fi
+          BUILD_ARGS+=(--dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}" --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}")
           flutter build ios "${BUILD_ARGS[@]}"
 
       - name: Verify Apple Intelligence linking
@@ -280,6 +282,7 @@ jobs:
           if [ -n "$BUILD_VERSION" ]; then
             BUILD_ARGS+=(--build-name="$BUILD_VERSION" --build-number="$BUILD_NUMBER")
           fi
+          BUILD_ARGS+=(--dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}" --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}")
           flutter build "$TARGET_PLATFORM" "${BUILD_ARGS[@]}"
 
       - name: Verify Apple Intelligence linking
