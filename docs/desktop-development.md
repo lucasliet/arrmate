@@ -82,9 +82,13 @@ only for browser CORS. Provider authentication, availability, and free-tier
 policies still apply; removing browser restrictions does not fix provider
 rejections described in [Web deployment](web-deployment.md).
 
-On-device LiteRT-LM inference is currently Android-only because the vendored
-plugin implements only Android. Desktop must retain the online assistant
-without offering unsupported local inference. Android updates install APKs;
+On-device inference depends on the platform. Android runs LiteRT-LM models
+through the vendored plugin, which implements only Android. iOS, iPadOS and
+macOS use the Apple Intelligence system model through the local
+`packages/apple_foundation_models` plugin, which needs iOS 26 / macOS 26 at
+runtime and an Xcode 26 or later SDK at build time; older systems and SDKs
+report the model as unavailable. Windows, Linux and web keep only the online
+assistant. Android updates install APKs;
 desktop updates use their platform-specific release packages. In-app notifications and ntfy operate while the process
 is running; closed-app background delivery is not added by generating runners.
 

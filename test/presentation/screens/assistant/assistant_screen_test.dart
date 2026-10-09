@@ -1,4 +1,6 @@
+import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:arrmate/core/platform/platform_capabilities.dart';
+import 'package:arrmate/core/services/assistant_apple_intelligence_service.dart';
 import 'package:arrmate/core/services/assistant_model_service.dart';
 import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
@@ -11,17 +13,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _AssistantNotifier extends AssistantNotifier {
-  _AssistantNotifier({this.onlineModels = const [], this.isGenerating = false});
+  _AssistantNotifier({
+    this.onlineModels = const [],
+    this.isGenerating = false,
+    this.mode = AssistantModelMode.online,
+    this.appleIntelligenceAvailability,
+  });
 
   final List<String> onlineModels;
   final bool isGenerating;
+  final AssistantModelMode mode;
+  final AppleFoundationModelsAvailability? appleIntelligenceAvailability;
   String? lastSelectedOnlineModel;
   String? lastMessage;
+  int appleIntelligenceRequests = 0;
 
   @override
   AssistantState build() => AssistantState(
     isLoading: false,
     isGenerating: isGenerating,
+    mode: mode,
+    appleIntelligenceAvailability: appleIntelligenceAvailability,
     selectedOnlineModelId: AssistantOnlineChatService.defaultModelId,
     onlineModels: onlineModels,
     installedModels: [
@@ -39,6 +51,11 @@ class _AssistantNotifier extends AssistantNotifier {
   @override
   Future<void> selectOnlineModel(String modelId) async {
     lastSelectedOnlineModel = modelId;
+  }
+
+  @override
+  Future<void> useAppleIntelligence() async {
+    appleIntelligenceRequests++;
   }
 
   @override
@@ -97,6 +114,12 @@ void main() {
         expect(
           find.text('Import'),
           platform == TargetPlatform.android ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.text('Apple Intelligence'),
+          platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
+              ? findsOneWidget
+              : findsNothing,
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
@@ -194,7 +217,7 @@ void main() {
           isWeb: true,
           supportsAppUpdates: false,
           supportsBackgroundNotifications: false,
-          supportsLocalAssistant: false,
+          localAssistantRuntime: LocalAssistantRuntime.none,
           supportsFileSystemCache: false,
           supportsBrowserFileInput: true,
         ),
@@ -210,6 +233,7 @@ void main() {
     expect(find.text('Download'), findsNothing);
     expect(find.text('Import'), findsNothing);
     expect(find.text('Local Models'), findsNothing);
+    expect(find.text('Apple Intelligence'), findsNothing);
   });
 
   testWidgets(
@@ -221,7 +245,7 @@ void main() {
             isWeb: false,
             supportsAppUpdates: false,
             supportsBackgroundNotifications: false,
-            supportsLocalAssistant: false,
+            localAssistantRuntime: LocalAssistantRuntime.none,
             supportsFileSystemCache: false,
             supportsBrowserFileInput: false,
           ),
@@ -237,6 +261,7 @@ void main() {
       expect(find.text('Download'), findsNothing);
       expect(find.text('Import'), findsNothing);
       expect(find.text('Local Models'), findsNothing);
+      expect(find.text('Apple Intelligence'), findsNothing);
     },
   );
 
@@ -249,7 +274,7 @@ void main() {
           isWeb: false,
           supportsAppUpdates: true,
           supportsBackgroundNotifications: true,
-          supportsLocalAssistant: true,
+          localAssistantRuntime: LocalAssistantRuntime.liteRt,
           supportsFileSystemCache: true,
           supportsBrowserFileInput: false,
         ),
@@ -265,6 +290,74 @@ void main() {
     expect(find.text('Download'), findsOneWidget);
     expect(find.text('Import'), findsOneWidget);
     expect(find.text('Local Models'), findsOneWidget);
+    expect(find.text('Apple Intelligence'), findsNothing);
+  });
+
+  testWidgets('offers Apple Intelligence with its unavailable reason', (
+    tester,
+  ) async {
+    final notifier = _AssistantNotifier(
+      appleIntelligenceAvailability:
+          AppleFoundationModelsAvailability.appleIntelligenceNotEnabled,
+    );
+    await tester.pumpWidget(
+      _assistantApp(
+        PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: TargetPlatform.iOS,
+        ),
+        notifier: notifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Download'), findsNothing);
+    expect(find.text('Import'), findsNothing);
+    expect(
+      find.text(
+        AppleFoundationModelsAvailability
+            .appleIntelligenceNotEnabled
+            .unavailableReason!,
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Apple Intelligence'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.appleIntelligenceRequests, 1);
+  });
+
+  testWidgets('shows the active Apple Intelligence model', (tester) async {
+    final notifier = _AssistantNotifier(
+      mode: AssistantModelMode.appleIntelligence,
+      appleIntelligenceAvailability:
+          AppleFoundationModelsAvailability.available,
+    );
+    await tester.pumpWidget(
+      _assistantApp(
+        PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: TargetPlatform.macOS,
+        ),
+        notifier: notifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apple Intelligence'), findsOneWidget);
+    expect(find.text('On-device model'), findsOneWidget);
+    expect(find.byIcon(Icons.apple), findsOneWidget);
+    expect(find.text('Ask about the app'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Como uso?');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+
+    expect(notifier.lastMessage, 'Como uso?');
   });
 
   testWidgets('selects the last online model from the sheet', (tester) async {
@@ -283,7 +376,7 @@ void main() {
           isWeb: false,
           supportsAppUpdates: false,
           supportsBackgroundNotifications: false,
-          supportsLocalAssistant: false,
+          localAssistantRuntime: LocalAssistantRuntime.none,
           supportsFileSystemCache: false,
           supportsBrowserFileInput: false,
         ),

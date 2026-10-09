@@ -158,6 +158,11 @@ jobs:
           ref: ${{ needs.resolve-build.outputs.commit }}
           persist-credentials: false
 
+      - name: Select iOS build SDK
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -181,6 +186,10 @@ jobs:
             BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
           fi
           flutter build ios "${BUILD_ARGS[@]}"
+
+      - name: Verify Apple Intelligence linking
+        if: hashFiles('tool/verify_foundation_models_linking.sh') != ''
+        run: bash tool/verify_foundation_models_linking.sh build/ios/iphoneos/Runner.app
 
       - name: Package unsigned IPA
         run: |
@@ -255,6 +264,10 @@ jobs:
             BUILD_ARGS+=(--build-name="$BUILD_VERSION" --build-number="$GITHUB_RUN_NUMBER")
           fi
           flutter build "$TARGET_PLATFORM" "${BUILD_ARGS[@]}"
+
+      - name: Verify Apple Intelligence linking
+        if: matrix.platform == 'macos' && hashFiles('tool/verify_foundation_models_linking.sh') != ''
+        run: bash tool/verify_foundation_models_linking.sh build/macos/Build/Products/Release/Arrmate.app
 
       - name: Set Linux release version metadata
         if: matrix.platform == 'linux' && needs.resolve-build.outputs.tag != ''

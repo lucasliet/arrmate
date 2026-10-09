@@ -72,6 +72,10 @@ and **qBittorrent** (for downloads).
   - **Slow Instance Mode**: Configurable extended timeout (90s) for slow or
     remote server connections.
   - **System Status**: Enhanced instance status and version checks.
+  - **AI Assistant**: Answers questions about the app from the Markdown skills.
+    OpenCode Zen cloud models are available everywhere; on-device inference
+    uses LiteRT-LM models on Android and Apple Intelligence (Foundation Models,
+    iOS/macOS 26+) on Apple platforms. Windows, Linux and web are cloud-only.
   - **Guided Onboarding**: First-run coach mark tour, replayable from Settings
     → About → Getting Started. While it runs and a service has no instance
     yet, the screens backed by that service paint inert sample cards so every
@@ -93,6 +97,8 @@ and **qBittorrent** (for downloads).
   `/shared`, `/theme`, `/tour`), Riverpod state in `/providers`, and router
   configuration in `/router`. `/tour` holds the guided onboarding — coach mark
   targets, the sample content shown while it runs, and the providers gating it.
+- `packages`: Local Flutter plugins — the vendored `flutter_litert_lm`
+  (Android) and `apple_foundation_models` (iOS/macOS Apple Intelligence).
 - `assets/images`: Static image assets and icons.
 - `assets/assistant/skills`: Markdown skills consumed by the in-app AI
   assistant — keep them in sync whenever a user-facing flow changes.
