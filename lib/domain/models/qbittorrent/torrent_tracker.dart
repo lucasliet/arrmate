@@ -150,6 +150,14 @@ class TorrentTracker extends Equatable {
     numDownloaded,
     message,
   ];
+
+  /// Describes the tracker by host only.
+  ///
+  /// Announce URLs usually carry a private passkey, so the default
+  /// [Equatable] output, which prints every prop, must not reach the logs.
+  @override
+  String toString() =>
+      'TorrentTracker($displayName, ${status.label}, tier: $tier)';
 }
 
 int _asInt(dynamic value) {

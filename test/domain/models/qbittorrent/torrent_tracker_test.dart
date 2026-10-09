@@ -25,6 +25,17 @@ void main() {
       expect(tracker.isSpecial, isFalse);
     });
 
+    test('should keep the announce passkey out of toString', () {
+      final tracker = TorrentTracker.fromJson({
+        'url': 'https://tracker.example/announce/secret-passkey',
+        'status': 2,
+        'tier': 1,
+      });
+
+      expect(tracker.toString(), isNot(contains('secret-passkey')));
+      expect(tracker.toString(), contains('tracker.example'));
+    });
+
     test('should recognize DHT, PeX, and LSD rows', () {
       final dht = TorrentTracker.fromJson({'url': '** [DHT] **', 'status': 2});
       final pex = TorrentTracker.fromJson({'url': '** [PeX] **', 'status': 0});
