@@ -52,8 +52,10 @@ enum FoundationModelsBridge {
 }
 
 #if canImport(FoundationModels)
+/// Calls into the Foundation Models framework once the OS is known to have it.
 @available(iOS 26.0, macOS 26.0, *)
 private enum SystemModel {
+  /// Maps the system model availability to the Dart enum name.
   static func availability() -> String {
     switch SystemLanguageModel.default.availability {
     case .available:
@@ -69,6 +71,8 @@ private enum SystemModel {
     }
   }
 
+  /// Answers `prompt` in a new session, rethrowing failures as
+  /// `FoundationModelsBridgeError`s with a stable code.
   static func respond(
     instructions: String,
     prompt: String,
@@ -91,6 +95,7 @@ private enum SystemModel {
     }
   }
 
+  /// Returns the stable code shared with Dart for a generation failure.
   private static func errorCode(for error: Error) -> String {
     if let generationError = error as? LanguageModelSession.GenerationError {
       switch generationError {

@@ -211,6 +211,10 @@ description: Erros de conexão, autenticação API key, notificações, app desa
 - **"Apple Intelligence does not support this language on this device."** — o idioma do sistema não é suportado pela Apple Intelligence; use o OpenCode Zen.
 - **"Apple Intelligence declined to answer."** — os filtros de segurança da Apple bloquearam a pergunta ou a resposta; reformule a pergunta.
 - **"The question is too long for Apple Intelligence."** — o modelo da Apple tem contexto curto; faça uma pergunta mais curta ou use o OpenCode Zen.
+- **"Apple Intelligence is unavailable on this device."** — o sistema não informou um motivo específico (ou a verificação falhou); reinicie o app e tente de novo, ou use o OpenCode Zen.
+- **"The Apple Intelligence model is not ready yet. Try again later."** — os recursos do modelo ficaram indisponíveis durante a resposta (por exemplo, atualização do modelo em andamento); aguarde alguns minutos e pergunte de novo.
+- **"Apple Intelligence is busy. Try again in a moment."** — o sistema limitou as requisições (comum com o app em segundo plano); espere alguns segundos e envie de novo.
+- **"Apple Intelligence failed to generate a response."** — falha inesperada do modelo; envie a pergunta de novo ou troque para o OpenCode Zen.
 
 **Observações:**
 - A Apple Intelligence **não aparece** no Android, Windows, Linux nem Web; no Android a IA local usa modelos LiteRT (Gemma).

@@ -196,14 +196,25 @@ final assistantProvider = NotifierProvider<AssistantNotifier, AssistantState>(
 
 /// Coordinates model selection, downloads, imports, and chat generation.
 class AssistantNotifier extends Notifier<AssistantState> {
+  /// Creates the notifier, optionally replacing the runtime services.
+  AssistantNotifier({
+    AssistantOnlineChatService? onlineChatService,
+    AssistantAppleIntelligenceService? appleIntelligenceService,
+  }) : _onlineChatService = onlineChatService ?? AssistantOnlineChatService(),
+       _appleIntelligenceService =
+           appleIntelligenceService ?? AssistantAppleIntelligenceService();
+
   final AssistantModelService _modelService = AssistantModelService();
   final AssistantKnowledgeService _knowledgeService =
       AssistantKnowledgeService();
   final AssistantChatService _chatService = AssistantChatService();
-  final AssistantOnlineChatService _onlineChatService =
-      AssistantOnlineChatService();
-  final AssistantAppleIntelligenceService _appleIntelligenceService =
-      AssistantAppleIntelligenceService();
+  final AssistantOnlineChatService _onlineChatService;
+  final AssistantAppleIntelligenceService _appleIntelligenceService;
+
+  /// Incremented by every runtime selection so that a slower, older selection
+  /// never overrides a newer one, for example by moving the conversation from
+  /// an on-device model back to the cloud.
+  int _selectionGeneration = 0;
 
   @override
   AssistantState build() {
@@ -370,8 +381,10 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
   /// Selects the online OpenCode Zen mode.
   Future<void> useOnlineMode() async {
+    final generation = ++_selectionGeneration;
     try {
       final selection = await _onlineChatService.initialize();
+      if (!_isLatestSelection(generation)) return;
       await _chatService.dispose();
       state = state.copyWith(
         mode: AssistantModelMode.online,
@@ -381,14 +394,17 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
+      if (!_isLatestSelection(generation)) return;
       state = state.copyWith(error: 'Failed to enable online model.');
     }
   }
 
   /// Selects an online OpenCode Zen model by id.
   Future<void> selectOnlineModel(String modelId) async {
+    final generation = ++_selectionGeneration;
     try {
       final selectedModelId = await _onlineChatService.selectModel(modelId);
+      if (!_isLatestSelection(generation)) return;
       await _chatService.dispose();
       state = state.copyWith(
         mode: AssistantModelMode.online,
@@ -397,6 +413,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to select online model', e, st);
+      if (!_isLatestSelection(generation)) return;
       state = state.copyWith(error: 'Failed to select online model.');
     }
   }
@@ -407,7 +424,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
   /// Intelligence on, or the model may have finished downloading, since the
   /// assistant opened.
   Future<void> useAppleIntelligence() async {
+    final generation = ++_selectionGeneration;
     final availability = await _appleIntelligenceService.checkAvailability();
+    if (!_isLatestSelection(generation)) return;
     if (availability != AppleFoundationModelsAvailability.available) {
       logger.info(
         '[AssistantNotifier] Apple Intelligence unavailable: ${availability.name}',
@@ -552,6 +571,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
   }
 
   Future<bool> _selectModel(AssistantInstalledModel model) async {
+    final generation = ++_selectionGeneration;
     try {
       final toolCalling = _modelService.supportsToolCallingForInstalledModel(
         model,
@@ -564,6 +584,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       }
       _chatService.setKnowledgeService(_knowledgeService);
       await _chatService.loadModel(model.path);
+      if (!_isLatestSelection(generation)) return false;
       await _modelService.setSelectedModelId(model.id);
       state = state.copyWith(
         mode: AssistantModelMode.local,
@@ -574,9 +595,20 @@ class AssistantNotifier extends Notifier<AssistantState> {
       return true;
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to select model', e, st);
+      if (!_isLatestSelection(generation)) return false;
       state = state.copyWith(error: 'Failed to load the selected model.');
       return false;
     }
+  }
+
+  bool _isLatestSelection(int generation) {
+    final isLatest = generation == _selectionGeneration;
+    if (!isLatest) {
+      logger.debug(
+        '[AssistantNotifier] Discarding selection superseded by a newer one',
+      );
+    }
+    return isLatest;
   }
 }
 

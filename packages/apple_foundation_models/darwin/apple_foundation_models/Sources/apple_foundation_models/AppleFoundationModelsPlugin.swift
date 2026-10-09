@@ -8,6 +8,7 @@ import FlutterMacOS
 
 /// Exposes the Apple Intelligence system language model to Dart.
 public final class AppleFoundationModelsPlugin: NSObject, FlutterPlugin {
+  /// Registers the `apple_foundation_models` method channel with Flutter.
   public static func register(with registrar: FlutterPluginRegistrar) {
     #if os(iOS)
     let messenger = registrar.messenger()
@@ -21,6 +22,7 @@ public final class AppleFoundationModelsPlugin: NSObject, FlutterPlugin {
     registrar.addMethodCallDelegate(AppleFoundationModelsPlugin(), channel: channel)
   }
 
+  /// Dispatches `availability` and `respond` calls coming from Dart.
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "availability":
@@ -32,6 +34,8 @@ public final class AppleFoundationModelsPlugin: NSObject, FlutterPlugin {
     }
   }
 
+  /// Validates the `respond` arguments and answers asynchronously, reporting
+  /// failures as `FlutterError`s whose codes the Dart side maps to errors.
   private func respond(arguments: Any?, result: @escaping FlutterResult) {
     guard
       let arguments = arguments as? [String: Any],
