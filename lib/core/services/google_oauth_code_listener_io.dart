@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'google_oauth_service.dart';
@@ -25,11 +26,29 @@ GoogleCodeListener createDefaultGoogleCodeListener() => LoopbackCodeListener();
 class LoopbackCodeListener implements GoogleCodeListener {
   static const Duration _flowTimeout = Duration(minutes: 5);
 
-  static const String _successPage =
-      '<html><body><h2>Arrmate</h2>'
-      '<p>Sign-in complete. You can return to the app.</p></body></html>';
+  static const String _appScheme = 'arrmate';
 
   HttpServer? _server;
+
+  /// Success page shown in the browser after consent.
+  ///
+  /// On iOS and Android a meta refresh bounces straight back into the app
+  /// through its registered custom scheme; on desktop browsers the scheme is
+  /// not registered, so the page stays put and asks the user to return
+  /// manually instead of landing on an OS "unknown protocol" error.
+  String get _successPage {
+    final isMobile =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+    final autoReturn = isMobile
+        ? '<meta http-equiv="refresh" content="1;url=$_appScheme://oauth-callback">'
+        : '';
+    return '<html><head><meta charset="utf-8">$autoReturn</head>'
+        '<body><h2>Arrmate</h2>'
+        '<p>Sign-in complete. '
+        '${isMobile ? 'Returning to the app…' : 'You can return to the app.'}'
+        '</p></body></html>';
+  }
 
   @override
   Future<String> prepareRedirect() async {
