@@ -68,7 +68,7 @@ wide layouts. Runtime capabilities remain independent:
 | Images, logs, preferences, and credentials | Existing native persistence, cache, and secure-storage implementations |
 | Torrent-file selection | Native file picker and file access |
 | Assistant model catalog | Native online availability, including models filtered only in browsers |
-| Local assistant inference | Android only; the vendored LiteRT plugin has no desktop or iPad backend |
+| Local assistant inference | LiteRT-LM on Android; Apple Intelligence on iOS, iPadOS and macOS 26 or later; cloud only on Windows, Linux and web |
 | App installation updates | Existing Android APK updater only |
 | Notifications | Existing in-app/ntfy behavior; desktop closed-app background integration is separate |
 

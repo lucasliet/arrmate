@@ -47,6 +47,29 @@ jobs:
       - name: Generate Icons
         run: flutter pub run flutter_launcher_icons
 
+  apple-intelligence-bridge:
+    name: Type-check Apple Intelligence bridge
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Type-check against the iOS and macOS deployment targets
+        run: |
+          BRIDGE=packages/apple_foundation_models/darwin/apple_foundation_models/Sources/apple_foundation_models/FoundationModelsBridge.swift
+          for SDK in macosx iphoneos; do
+            SDK_PATH=$(xcrun --sdk "$SDK" --show-sdk-path)
+            test -d "$SDK_PATH/System/Library/Frameworks/FoundationModels.framework" || {
+              echo "::error::The $SDK SDK lacks FoundationModels; select Xcode 26 or later."
+              exit 1
+            }
+          done
+          xcrun --sdk macosx swiftc -typecheck -parse-as-library -target arm64-apple-macos10.15 "$BRIDGE"
+          xcrun --sdk iphoneos swiftc -typecheck -parse-as-library -target arm64-apple-ios15.0 "$BRIDGE"
+
   desktop-updater:
     name: Test ${{ matrix.platform }} updater
     runs-on: ${{ matrix.os }}

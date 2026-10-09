@@ -441,6 +441,7 @@ Shared by movies, seasons, and episodes.
 | ASI-02 | Ask | “How do I add a movie?” | Answer grounded on the movies skill | Not run |
 | ASI-03 | Local models | Download / Import / Local Models | Android native only; hidden elsewhere | Not run |
 | ASI-04 | Send disabled | No model / while generating | Send disabled | Not run |
+| ASI-05 | Apple Intelligence | Menu → Apple Intelligence on iOS/macOS 26+ | On-device answer; unavailable reason shown otherwise; hidden on other platforms | Not run |
 
 ## Guided tour (TOU)
 

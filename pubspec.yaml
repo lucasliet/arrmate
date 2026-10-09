@@ -7,6 +7,8 @@ environment:
   sdk: ^3.10.4
 
 dependencies:
+  apple_foundation_models:
+    path: packages/apple_foundation_models
   archive: ^4.3.0
   crypto: ^3.0.7
   app_links: ^7.0.0
