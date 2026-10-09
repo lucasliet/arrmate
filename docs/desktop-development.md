@@ -98,7 +98,7 @@ desktop-file/URI activation still require platform packaging integration.
 ## Verification
 
 `build.yml` builds Android, iOS, Windows, Linux, and macOS in parallel on their
-respective GitHub Actions hosts when called by the release workflow or manually
+respective GitHub Actions hosts when dispatched by the release workflow or manually
 with an existing version tag. It has no push or pull-request trigger. Each target
 uploads its package; Android uses the release keystore. Pull requests and pushes
 to `main` run analysis, the test suite, and native updater replacement/recovery
@@ -107,11 +107,15 @@ tests on Windows and macOS without compiling application packages.
 ## Release packaging
 
 `release.yml` publishes versions when a `v*` tag is pushed. After resolving the
-tag to an immutable source revision, it calls the reusable `build.yml`
-workflow while release notes are generated independently. That build workflow
-runs Android, iOS, and its desktop matrix in parallel. A single publication
-job waits for every build, downloads their artifacts, creates the AltStore
-source, and publishes the complete release together.
+tag to an immutable source revision, it dispatches `build.yml` on `main` and
+waits for that run while release notes are generated independently. Running
+the build from `main` lets every release share the Android Gradle build cache.
+The release passes its own run number as the build number, so Android
+`versionCode`, the iOS bundle version, and the AltStore source stay in step
+and keep rising. That build workflow runs Android, iOS, and its desktop matrix
+in parallel. A single publication job waits for the build run, downloads its
+artifacts, creates the AltStore source, and publishes the complete release
+together.
 
 | Platform | Release asset |
 | --- | --- |

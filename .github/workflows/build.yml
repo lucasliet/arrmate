@@ -16,6 +16,10 @@ on:
         description: Identifier for the release workflow that dispatched this build
         type: string
         required: false
+      build_number:
+        description: Platform build number; release passes its own run number so it keeps rising across versions
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -27,6 +31,7 @@ concurrency:
 env:
   FLUTTER_VERSION: '3.41.2'
   RELEASE_TAG: ${{ inputs.release_tag }}
+  BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
 
 jobs:
   resolve-build:
@@ -55,6 +60,10 @@ jobs:
             git show-ref --verify "refs/tags/$RELEASE_TAG"
           else
             echo "::error::Application builds require a version tag."
+            exit 1
+          fi
+          if [[ ! "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Build number must be a positive integer."
             exit 1
           fi
           REVISION=$(git rev-parse HEAD)
@@ -138,7 +147,7 @@ jobs:
         run: |
           BUILD_ARGS=(--release --split-per-abi)
           if [ -n "$BUILD_VERSION" ]; then
-            BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
+            BUILD_ARGS+=(--build-number="$BUILD_NUMBER" --build-name="$BUILD_VERSION")
           fi
           flutter build apk "${BUILD_ARGS[@]}"
 
@@ -191,7 +200,7 @@ jobs:
         run: |
           BUILD_ARGS=(--release --no-codesign)
           if [ -n "$BUILD_VERSION" ]; then
-            BUILD_ARGS+=(--build-number="$GITHUB_RUN_NUMBER" --build-name="$BUILD_VERSION")
+            BUILD_ARGS+=(--build-number="$BUILD_NUMBER" --build-name="$BUILD_VERSION")
           fi
           flutter build ios "${BUILD_ARGS[@]}"
 
@@ -269,7 +278,7 @@ jobs:
         run: |
           BUILD_ARGS=(--release)
           if [ -n "$BUILD_VERSION" ]; then
-            BUILD_ARGS+=(--build-name="$BUILD_VERSION" --build-number="$GITHUB_RUN_NUMBER")
+            BUILD_ARGS+=(--build-name="$BUILD_VERSION" --build-number="$BUILD_NUMBER")
           fi
           flutter build "$TARGET_PLATFORM" "${BUILD_ARGS[@]}"
 
@@ -290,7 +299,7 @@ jobs:
           path = Path("build/linux/x64/release/bundle/data/flutter_assets/version.json")
           metadata = json.loads(path.read_text())
           metadata["version"] = os.environ["BUILD_VERSION"]
-          metadata["build_number"] = os.environ["GITHUB_RUN_NUMBER"]
+          metadata["build_number"] = os.environ["BUILD_NUMBER"]
           path.write_text(json.dumps(metadata, indent=2) + "\n")
           PY
 
