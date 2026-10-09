@@ -1,6 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// On-device assistant runtimes a platform can host.
+enum LocalAssistantRuntime {
+  /// No on-device runtime; only the cloud assistant is offered.
+  none,
+
+  /// LiteRT-LM models downloaded or imported by the user.
+  liteRt,
+
+  /// The Apple Intelligence system language model.
+  appleIntelligence,
+}
+
 /// Describes platform features that may be unavailable in the current runtime.
 @immutable
 class PlatformCapabilities {
@@ -9,7 +21,7 @@ class PlatformCapabilities {
     required this.isWeb,
     required this.supportsAppUpdates,
     required this.supportsBackgroundNotifications,
-    required this.supportsLocalAssistant,
+    required this.localAssistantRuntime,
     required this.supportsFileSystemCache,
     required this.supportsBrowserFileInput,
   });
@@ -32,7 +44,14 @@ class PlatformCapabilities {
           TargetPlatform.macOS,
         }.contains(targetPlatform),
     supportsBackgroundNotifications: !isWeb,
-    supportsLocalAssistant: !isWeb && targetPlatform == TargetPlatform.android,
+    localAssistantRuntime: isWeb
+        ? LocalAssistantRuntime.none
+        : switch (targetPlatform) {
+            TargetPlatform.android => LocalAssistantRuntime.liteRt,
+            TargetPlatform.iOS ||
+            TargetPlatform.macOS => LocalAssistantRuntime.appleIntelligence,
+            _ => LocalAssistantRuntime.none,
+          },
     supportsFileSystemCache: !isWeb,
     supportsBrowserFileInput: isWeb,
   );
@@ -52,8 +71,8 @@ class PlatformCapabilities {
   /// Whether notifications can be processed while the application is closed.
   final bool supportsBackgroundNotifications;
 
-  /// Whether an on-device assistant runtime is available.
-  final bool supportsLocalAssistant;
+  /// On-device assistant runtime offered next to the cloud assistant.
+  final LocalAssistantRuntime localAssistantRuntime;
 
   /// Whether persistent file-system image caching is available.
   final bool supportsFileSystemCache;

@@ -147,8 +147,10 @@ do not apply to native requests.
   simultaneously.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
   quality profiles.
-- **AI Assistant**: On-device AI assistant powered by local LLMs (Gemma, Qwen)
-  for help with app features, troubleshooting, and navigation guidance.
+- **AI Assistant**: Help with app features, troubleshooting, and navigation
+  guidance using free OpenCode Zen cloud models on every platform, plus
+  on-device AI: LiteRT-LM models (Gemma) on Android and Apple Intelligence on
+  iOS, iPadOS and macOS.
 - **Auto-Updater**: Support for automatic and manual in-app updates via GitHub
   Releases.
 
@@ -167,8 +169,8 @@ do not apply to native requests.
   and system events.
 - **Go Router**: Utilizes a declarative routing system for smooth navigation
   between features.
-- **MediaPipe LLM Inference**: Powers the on-device AI assistant with local
-  model execution.
+- **LiteRT-LM & Apple Foundation Models**: Power the on-device AI assistant on
+  Android and on Apple platforms, respectively.
 - **Package Info Plus & OTA Update**: Powering the automated in-app update
   system.
 

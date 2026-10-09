@@ -1,6 +1,6 @@
 ---
 name: troubleshooting
-description: Erros de conexão, autenticação API key, notificações, app desatualizado, modelo Assistant, itens de exemplo do tour inicial
+description: Erros de conexão, autenticação API key, notificações, app desatualizado, modelo Assistant, Apple Intelligence indisponível, itens de exemplo do tour inicial
 ---
 
 # Solução de Problemas
@@ -196,6 +196,29 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - Se trava constantemente, upgrade dispositivo não é viável; use Assistant em dispositivo mais potente.
 
 **Dica:** Para melhor experiência, use **Gemma 4 E2B** em qualquer dispositivo (mais rápido, mesma qualidade razoável).
+
+## Apple Intelligence indisponível no Assistant (iPhone, iPad e Mac)
+
+**Sintomas:**
+- O item **"Apple Intelligence"** do menu ⋮ mostra um aviso abaixo do nome.
+- Ao tocar em "Apple Intelligence", aparece uma mensagem de erro e o Assistant continua no modo anterior.
+
+**Causas e soluções por mensagem:**
+- **"Apple Intelligence requires iOS 26 or macOS 26."** — atualize o sistema para iOS 26 / iPadOS 26 / macOS 26 ou mais recente.
+- **"This device does not support Apple Intelligence."** — o aparelho não é compatível; use o **OpenCode Zen** online.
+- **"Turn on Apple Intelligence in the system settings."** — ative em **Ajustes → Apple Intelligence e Siri** (no Mac, **Ajustes do Sistema → Apple Intelligence e Siri**) e toque de novo em "Apple Intelligence".
+- **"The Apple Intelligence model is still downloading."** — o sistema ainda está baixando o modelo; mantenha o aparelho no Wi-Fi e carregando e tente mais tarde.
+- **"Apple Intelligence does not support this language on this device."** — o idioma do sistema não é suportado pela Apple Intelligence; use o OpenCode Zen.
+- **"Apple Intelligence declined to answer."** — os filtros de segurança da Apple bloquearam a pergunta ou a resposta; reformule a pergunta.
+- **"The question is too long for Apple Intelligence."** — o modelo da Apple tem contexto curto; faça uma pergunta mais curta ou use o OpenCode Zen.
+- **"Apple Intelligence is unavailable on this device."** — o sistema não informou um motivo específico (ou a verificação falhou); reinicie o app e tente de novo, ou use o OpenCode Zen.
+- **"The Apple Intelligence model is not ready yet. Try again later."** — os recursos do modelo ficaram indisponíveis durante a resposta (por exemplo, atualização do modelo em andamento); aguarde alguns minutos e pergunte de novo.
+- **"Apple Intelligence is busy. Try again in a moment."** — o sistema limitou as requisições (comum com o app em segundo plano); espere alguns segundos e envie de novo.
+- **"Apple Intelligence failed to generate a response."** — falha inesperada do modelo; envie a pergunta de novo ou troque para o OpenCode Zen.
+
+**Observações:**
+- A Apple Intelligence **não aparece** no Android, Windows, Linux nem Web; no Android a IA local usa modelos LiteRT (Gemma).
+- Não há download nem import de modelos no iPhone, iPad ou Mac: o modelo é gerenciado pelo sistema.
 
 ## Aparecem filmes, séries, downloads ou torrents que eu não adicionei
 
