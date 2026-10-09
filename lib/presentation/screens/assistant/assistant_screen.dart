@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
+import '../../../core/services/assistant_apple_intelligence_service.dart';
 import '../../../core/services/assistant_model_service.dart';
 import '../../../core/services/assistant_online_chat_service.dart';
 import '../../../core/utils/formatters.dart';
@@ -134,18 +135,38 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   ) {
     final theme = Theme.of(context);
     final hasModel = state.hasModel;
-    final capabilities = ref.watch(platformCapabilitiesProvider);
-    final showLocalAssistantOptions = capabilities.supportsLocalAssistant;
-    final title = state.isOnlineMode
-        ? 'OpenCode Zen'
-        : state.selectedModel?.label ?? 'No local model selected';
-    final subtitle = state.isOnlineMode
-        ? 'Online model: ${state.selectedOnlineModelId ?? AssistantOnlineChatService.defaultModelId}'
-        : hasModel
-        ? _formatModelSize(state.selectedModel!.sizeBytes)
-        : showLocalAssistantOptions
-        ? 'Use OpenCode Zen or import/download a local model'
-        : 'Use OpenCode Zen';
+    final runtime = ref
+        .watch(platformCapabilitiesProvider)
+        .localAssistantRuntime;
+    final showLocalAssistantOptions = runtime == LocalAssistantRuntime.liteRt;
+    final showAppleIntelligence =
+        runtime == LocalAssistantRuntime.appleIntelligence;
+    final appleIntelligenceReason =
+        state.appleIntelligenceAvailability?.unavailableReason;
+    final title = switch (state.mode) {
+      AssistantModelMode.online => 'OpenCode Zen',
+      AssistantModelMode.local =>
+        state.selectedModel?.label ?? 'No local model selected',
+      AssistantModelMode.appleIntelligence => 'Apple Intelligence',
+    };
+    final subtitle = switch (state.mode) {
+      AssistantModelMode.online =>
+        'Online model: ${state.selectedOnlineModelId ?? AssistantOnlineChatService.defaultModelId}',
+      AssistantModelMode.appleIntelligence =>
+        appleIntelligenceReason ?? 'On-device model',
+      AssistantModelMode.local when hasModel => _formatModelSize(
+        state.selectedModel!.sizeBytes,
+      ),
+      AssistantModelMode.local when showLocalAssistantOptions =>
+        'Use OpenCode Zen or import/download a local model',
+      AssistantModelMode.local => 'Use OpenCode Zen',
+    };
+    final icon = switch (state.mode) {
+      AssistantModelMode.online => Icons.cloud_outlined,
+      AssistantModelMode.appleIntelligence => Icons.apple,
+      AssistantModelMode.local when hasModel => Icons.smart_toy,
+      AssistantModelMode.local => Icons.smart_toy_outlined,
+    };
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -155,11 +176,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              state.isOnlineMode
-                  ? Icons.cloud_outlined
-                  : hasModel
-                  ? Icons.smart_toy
-                  : Icons.smart_toy_outlined,
+              icon,
               color: hasModel ? theme.colorScheme.primary : null,
             ),
             title: Text(title, style: theme.textTheme.titleSmall),
@@ -170,6 +187,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   notifier.useOnlineMode();
                 } else if (value == 'online_models') {
                   _showOnlineModels(context, notifier, state);
+                } else if (value == 'apple_intelligence') {
+                  notifier.useAppleIntelligence();
                 } else if (value == 'download') {
                   _showCatalog(context, notifier, state);
                 } else if (value == 'import') {
@@ -201,6 +220,36 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                     ),
                   ),
                 ];
+
+                if (showAppleIntelligence) {
+                  items.add(
+                    PopupMenuItem(
+                      value: 'apple_intelligence',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.apple),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Apple Intelligence'),
+                                if (appleIntelligenceReason != null)
+                                  Text(
+                                    appleIntelligenceReason,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
 
                 if (showLocalAssistantOptions) {
                   items.addAll([

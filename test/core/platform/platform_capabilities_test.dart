@@ -12,7 +12,7 @@ void main() {
 
       expect(capabilities.supportsAppUpdates, isFalse);
       expect(capabilities.supportsBackgroundNotifications, isFalse);
-      expect(capabilities.supportsLocalAssistant, isFalse);
+      expect(capabilities.localAssistantRuntime, LocalAssistantRuntime.none);
       expect(capabilities.supportsFileSystemCache, isFalse);
       expect(capabilities.supportsBrowserFileInput, isTrue);
     });
@@ -32,10 +32,12 @@ void main() {
               platform == TargetPlatform.macOS,
         );
         expect(capabilities.supportsBackgroundNotifications, isTrue);
-        expect(
-          capabilities.supportsLocalAssistant,
-          platform == TargetPlatform.android,
-        );
+        expect(capabilities.localAssistantRuntime, switch (platform) {
+          TargetPlatform.android => LocalAssistantRuntime.liteRt,
+          TargetPlatform.iOS ||
+          TargetPlatform.macOS => LocalAssistantRuntime.appleIntelligence,
+          _ => LocalAssistantRuntime.none,
+        });
         expect(capabilities.supportsFileSystemCache, isTrue);
         expect(capabilities.supportsBrowserFileInput, isFalse);
       }
