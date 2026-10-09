@@ -99,11 +99,11 @@ jobs:
         id: set-model
         run: |
           if [ "${{ steps.check-previous-review.outcome }}" == "success" ]; then
-            echo "AI_MODEL=claude-sonnet-4-6" >> $GITHUB_OUTPUT
-            echo "Usando claude-sonnet-4-6 (review de acompanhamento)"
+            echo "AI_MODEL=sonnet" >> $GITHUB_OUTPUT
+            echo "Usando sonnet (review de acompanhamento)"
           else
-            echo "AI_MODEL=claude-opus-5" >> $GITHUB_OUTPUT
-            echo "Usando claude-opus-5 (primeira review ou fallback)"
+            echo "AI_MODEL=opus" >> $GITHUB_OUTPUT
+            echo "Usando opus (primeira review ou fallback)"
           fi
 
       # claude-code-action refuses to run when this file differs from the version
