@@ -47,6 +47,14 @@ class BackupState {
   /// When the last backup finished, persisted across sessions.
   final DateTime? lastBackupAt;
 
+  /// When the backup stored in Google Drive was last modified, or null when
+  /// none exists or it has not been checked yet.
+  final DateTime? remoteBackupAt;
+
+  /// Drive modification time of the backup this device last uploaded or
+  /// restored, persisted across sessions.
+  final DateTime? syncedRemoteAt;
+
   /// Whether a long-running action (sign-in, backup, restore) is running.
   final bool isWorking;
 
@@ -61,10 +69,25 @@ class BackupState {
     this.isSignedIn = false,
     this.accountEmail,
     this.lastBackupAt,
+    this.remoteBackupAt,
+    this.syncedRemoteAt,
     this.isWorking = false,
     this.errorMessage,
     this.statusMessage,
   });
+
+  /// Whether Google Drive holds a backup this device has neither uploaded nor
+  /// restored, for example one made from another device.
+  ///
+  /// A device that has backed up before the sync time was tracked counts as in
+  /// sync, so an upgrade does not raise a false prompt.
+  bool get hasRemoteBackupToRestore {
+    final remote = remoteBackupAt;
+    if (remote == null) return false;
+    final synced = syncedRemoteAt;
+    if (synced != null) return remote.isAfter(synced);
+    return lastBackupAt == null;
+  }
 
   /// Returns a copy of this state with the given fields replaced.
   BackupState copyWith({
@@ -72,6 +95,8 @@ class BackupState {
     bool? isSignedIn,
     String? accountEmail,
     DateTime? lastBackupAt,
+    DateTime? remoteBackupAt,
+    DateTime? syncedRemoteAt,
     bool? isWorking,
     String? errorMessage,
     String? statusMessage,
@@ -81,6 +106,8 @@ class BackupState {
       isSignedIn: isSignedIn ?? this.isSignedIn,
       accountEmail: accountEmail ?? this.accountEmail,
       lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+      remoteBackupAt: remoteBackupAt ?? this.remoteBackupAt,
+      syncedRemoteAt: syncedRemoteAt ?? this.syncedRemoteAt,
       isWorking: isWorking ?? this.isWorking,
       errorMessage: errorMessage ?? this.errorMessage,
       statusMessage: statusMessage ?? this.statusMessage,
@@ -92,6 +119,10 @@ class BackupState {
 class BackupNotifier extends Notifier<BackupState> {
   /// SharedPreferences key holding the last successful backup timestamp.
   static const String lastBackupKey = 'last_backup_at';
+
+  /// SharedPreferences key holding the Drive modification time of the backup
+  /// this device last uploaded or restored.
+  static const String syncedRemoteBackupKey = 'last_backup_remote_at';
 
   static const String _sessionExpiredMessage =
       'Google session expired. Sign in again.';
@@ -127,11 +158,15 @@ class BackupNotifier extends Notifier<BackupState> {
       final isConfigured = ref.read(backupConfiguredProvider);
       final prefs = await SharedPreferences.getInstance();
       final lastBackupRaw = prefs.getString(lastBackupKey);
+      final syncedRemoteRaw = prefs.getString(syncedRemoteBackupKey);
       var nextState = state.copyWith(
         isConfigured: isConfigured,
         lastBackupAt: lastBackupRaw == null
             ? null
             : DateTime.tryParse(lastBackupRaw),
+        syncedRemoteAt: syncedRemoteRaw == null
+            ? null
+            : DateTime.tryParse(syncedRemoteRaw),
       );
       if (isConfigured) {
         try {
@@ -151,8 +186,32 @@ class BackupNotifier extends Notifier<BackupState> {
       }
       if (_disposed) return;
       state = nextState;
+      if (nextState.isSignedIn) await refreshRemoteBackup();
     } catch (error, stackTrace) {
       logger.warning('[Backup] Initialization failed', error, stackTrace);
+    }
+  }
+
+  /// Looks up the backup stored in Google Drive so the screen can show when it
+  /// was made and offer to restore a backup created on another device.
+  ///
+  /// Failures other than an expired session are logged and leave the state
+  /// untouched, since this check is informational.
+  Future<void> refreshRemoteBackup() async {
+    if (!state.isSignedIn) return;
+    try {
+      final info = await ref.read(googleDriveServiceProvider).findBackupFile();
+      if (_disposed) return;
+      state = state.copyWith(remoteBackupAt: info?.modifiedTime);
+      logger.info(
+        '[Backup] Remote backup: ${info?.modifiedTime.toIso8601String() ?? 'none'}',
+      );
+    } on DriveAuthException {
+      logger.warning('[Backup] Session expired while checking the backup');
+      if (_disposed) return;
+      state = _sessionExpiredState();
+    } catch (error, stackTrace) {
+      logger.warning('[Backup] Remote backup check failed', error, stackTrace);
     }
   }
 
@@ -170,6 +229,7 @@ class BackupNotifier extends Notifier<BackupState> {
         isWorking: false,
       );
       logger.info('[Backup] Signed in as ${account.email}');
+      await refreshRemoteBackup();
     } on GoogleOAuthRedirectPending {
       logger.info('[Backup] Sign-in continues in the browser');
       state = state.copyWith(
@@ -198,6 +258,7 @@ class BackupNotifier extends Notifier<BackupState> {
         state = BackupState(
           isConfigured: state.isConfigured,
           lastBackupAt: state.lastBackupAt,
+          syncedRemoteAt: state.syncedRemoteAt,
         );
       }
     }
@@ -218,12 +279,13 @@ class BackupNotifier extends Notifier<BackupState> {
       final backup = await ref
           .read(googleDriveServiceProvider)
           .uploadBackup(payload.toEncodedJson());
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(lastBackupKey, payload.createdAt.toIso8601String());
+      await _recordSync(payload.createdAt, backup.modifiedTime);
       if (_disposed) return;
       state = state.copyWith(
         isWorking: false,
         lastBackupAt: payload.createdAt,
+        remoteBackupAt: backup.modifiedTime,
+        syncedRemoteAt: backup.modifiedTime,
         statusMessage: _backupCompletedMessage,
       );
       logger.info('[Backup] Backup uploaded as ${backup.id}');
@@ -249,15 +311,25 @@ class BackupNotifier extends Notifier<BackupState> {
   Future<void> runAutoBackup() async {
     final suppressed = ref.read(backupAutoBackupSuppressedProvider);
     if (suppressed || !state.isSignedIn || state.isWorking) return;
+    if (state.hasRemoteBackupToRestore) {
+      logger.info(
+        '[Backup] Automatic backup skipped: Drive holds a backup this device '
+        'has not restored',
+      );
+      return;
+    }
     try {
       final payload = await ref.read(backupServiceProvider).createPayload();
-      await ref
+      final backup = await ref
           .read(googleDriveServiceProvider)
           .uploadBackup(payload.toEncodedJson());
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(lastBackupKey, payload.createdAt.toIso8601String());
+      await _recordSync(payload.createdAt, backup.modifiedTime);
       if (_disposed) return;
-      state = state.copyWith(lastBackupAt: payload.createdAt);
+      state = state.copyWith(
+        lastBackupAt: payload.createdAt,
+        remoteBackupAt: backup.modifiedTime,
+        syncedRemoteAt: backup.modifiedTime,
+      );
       logger.info('[Backup] Automatic backup completed');
     } catch (error, stackTrace) {
       logger.warning('[Backup] Automatic backup failed', error, stackTrace);
@@ -318,11 +390,15 @@ class BackupNotifier extends Notifier<BackupState> {
     ref.read(backupAutoBackupSuppressedProvider.notifier).state = true;
     try {
       final summary = await ref.read(backupServiceProvider).restore(payload);
+      final restoredRemoteAt = state.remoteBackupAt;
+      await _recordSync(payload.createdAt, restoredRemoteAt);
       ref.invalidate(instancesProvider);
       ref.invalidate(settingsProvider);
       if (!_disposed) {
         state = state.copyWith(
           isWorking: false,
+          lastBackupAt: payload.createdAt,
+          syncedRemoteAt: restoredRemoteAt,
           statusMessage:
               'Restored ${summary.restoredKeys} settings and '
               '${summary.instanceCount} instances.',
@@ -341,6 +417,22 @@ class BackupNotifier extends Notifier<BackupState> {
         );
       }
       return false;
+    }
+  }
+
+  /// Persists that this device is in sync with the backup made at [createdAt],
+  /// whose Drive modification time was [remoteModifiedAt] when known.
+  Future<void> _recordSync(
+    DateTime createdAt,
+    DateTime? remoteModifiedAt,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(lastBackupKey, createdAt.toIso8601String());
+    if (remoteModifiedAt != null) {
+      await prefs.setString(
+        syncedRemoteBackupKey,
+        remoteModifiedAt.toIso8601String(),
+      );
     }
   }
 
@@ -371,6 +463,8 @@ class BackupNotifier extends Notifier<BackupState> {
       isSignedIn: state.isSignedIn,
       accountEmail: state.accountEmail,
       lastBackupAt: state.lastBackupAt,
+      remoteBackupAt: state.remoteBackupAt,
+      syncedRemoteAt: state.syncedRemoteAt,
       isWorking: true,
     );
   }
@@ -381,6 +475,7 @@ class BackupNotifier extends Notifier<BackupState> {
     return BackupState(
       isConfigured: state.isConfigured,
       lastBackupAt: state.lastBackupAt,
+      syncedRemoteAt: state.syncedRemoteAt,
       errorMessage: _sessionExpiredMessage,
     );
   }

@@ -175,6 +175,72 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('shouldOfferRestore_whenDriveHoldsUnrestoredBackup', (
+    tester,
+  ) async {
+    // Given
+    final remoteBackupAt = DateTime.utc(2026, 4, 2, 9, 30);
+    final payload = BackupPayload(
+      schema: 1,
+      appVersion: '2.3.3',
+      platform: 'ios',
+      createdAt: remoteBackupAt,
+      preferences: const <String, Object?>{},
+    );
+    final notifier = FakeBackupNotifier(
+      BackupState(
+        isConfigured: true,
+        isSignedIn: true,
+        accountEmail: 'user@mail',
+        remoteBackupAt: remoteBackupAt,
+      ),
+    );
+    notifier.previewPayload = payload;
+
+    // When
+    await _pumpScreen(tester, notifier.fakeState, notifier: notifier);
+
+    // Then
+    expect(find.byKey(const Key('backupRemoteBackupCard')), findsOneWidget);
+    expect(find.textContaining('never'), findsNothing);
+    final expected = DateFormat('d MMM y HH:mm').format(remoteBackupAt);
+    expect(find.textContaining(expected), findsWidgets);
+
+    // When
+    await tester.ensureVisible(
+      find.byKey(const Key('backupRemoteRestoreButton')),
+    );
+    await tester.tap(find.byKey(const Key('backupRemoteRestoreButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backupRestoreConfirmButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(notifier.restoreFromCalled, isTrue);
+    expect(notifier.restoredPayload, same(payload));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('shouldHideRestoreOffer_whenDeviceIsInSync', (tester) async {
+    // Given
+    final backupAt = DateTime.utc(2026, 4, 2, 9, 30);
+    final state = BackupState(
+      isConfigured: true,
+      isSignedIn: true,
+      accountEmail: 'user@mail',
+      lastBackupAt: backupAt,
+      remoteBackupAt: backupAt,
+      syncedRemoteAt: backupAt,
+    );
+
+    // When
+    await _pumpScreen(tester, state);
+
+    // Then
+    expect(find.byKey(const Key('backupRemoteBackupCard')), findsNothing);
+  });
+
   testWidgets('shouldShowErrorMessage_inline', (tester) async {
     // Given
     await _pumpScreen(tester, _signedInState(errorMessage: 'Boom'));

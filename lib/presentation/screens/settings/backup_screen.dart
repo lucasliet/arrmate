@@ -23,6 +23,8 @@ class BackupScreen extends ConsumerWidget {
           else ...[
             if (state.isSignedIn) ...[
               _buildAccountCard(context, state),
+              if (state.hasRemoteBackupToRestore)
+                _buildRemoteBackupCard(context, ref, state),
               _buildActionsCard(context, ref, state),
             ] else
               _buildSignInCard(context, ref),
@@ -123,9 +125,10 @@ class BackupScreen extends ConsumerWidget {
   }
 
   Widget _buildAccountCard(BuildContext context, BackupState state) {
-    final lastBackup = state.lastBackupAt == null
+    final lastBackupAt = state.lastBackupAt ?? state.remoteBackupAt;
+    final lastBackup = lastBackupAt == null
         ? 'never'
-        : _formatTimestamp(state.lastBackupAt!);
+        : _formatTimestamp(lastBackupAt);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -184,6 +187,62 @@ class BackupScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRemoteBackupCard(
+    BuildContext context,
+    WidgetRef ref,
+    BackupState state,
+  ) {
+    return Card(
+      key: const Key('backupRemoteBackupCard'),
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 12),
+      color: context.colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.cloud_download_outlined,
+                  color: context.colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Backup found in your Google Drive',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: context.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Saved ${_formatTimestamp(state.remoteBackupAt!)}. Restore it to '
+              'bring its settings and instances to this device. Automatic '
+              'backups stay paused until you restore or back up manually.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const Key('backupRemoteRestoreButton'),
+              onPressed: state.isWorking
+                  ? null
+                  : () => _startRestore(context, ref),
+              icon: const Icon(Icons.restore),
+              label: const Text('Restore'),
+            ),
           ],
         ),
       ),

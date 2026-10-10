@@ -41,6 +41,7 @@ void main() {
     oauthService = _MockGoogleOAuthService();
     driveService = _MockGoogleDriveService();
     backupService = _MockBackupService();
+    when(() => driveService.findBackupFile()).thenAnswer((_) async => null);
   });
 
   tearDown(() {
@@ -256,6 +257,241 @@ void main() {
       // Then
       verifyNever(() => backupService.createPayload());
       verifyNever(() => driveService.uploadBackup(any()));
+    });
+
+    group('remote backup', () {
+      final remoteModifiedAt = DateTime.utc(2026, 4, 2, 9, 0);
+
+      void stubRemoteBackup(DateTime? modifiedTime) {
+        when(() => driveService.findBackupFile()).thenAnswer(
+          (_) async => modifiedTime == null
+              ? null
+              : DriveBackupInfo(id: 'remote-1', modifiedTime: modifiedTime),
+        );
+      }
+
+      void stubSignIn() {
+        when(
+          () => oauthService.signIn(),
+        ).thenAnswer((_) async => const GoogleAccount(email: 'user@mail.com'));
+      }
+
+      BackupPayload buildPayload(DateTime createdAt) => BackupPayload(
+        schema: 1,
+        appVersion: '1.0.0',
+        platform: 'ios',
+        createdAt: createdAt,
+        preferences: const {},
+      );
+
+      test('shouldOfferRestore_whenSignInFindsBackupOnFreshDevice', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        stubRemoteBackup(remoteModifiedAt);
+
+        // When
+        await container.read(backupProvider.notifier).signIn();
+
+        // Then
+        final state = container.read(backupProvider);
+        expect(state.remoteBackupAt, remoteModifiedAt);
+        expect(state.lastBackupAt, isNull);
+        expect(state.hasRemoteBackupToRestore, isTrue);
+      });
+
+      test('shouldNotOfferRestore_whenDriveHasNoBackup', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        stubRemoteBackup(null);
+
+        // When
+        await container.read(backupProvider.notifier).signIn();
+
+        // Then
+        final state = container.read(backupProvider);
+        expect(state.remoteBackupAt, isNull);
+        expect(state.hasRemoteBackupToRestore, isFalse);
+      });
+
+      test(
+        'shouldNotOfferRestore_whenDeviceBackedUpBeforeTrackingSync',
+        () async {
+          // Given
+          SharedPreferences.setMockInitialValues({
+            BackupNotifier.lastBackupKey: DateTime.utc(
+              2026,
+              4,
+              1,
+            ).toIso8601String(),
+          });
+          createContainer(
+            overrides: [backupConfiguredProvider.overrideWithValue(true)],
+          );
+          when(() => oauthService.restoreSession()).thenAnswer(
+            (_) async => const GoogleAccount(email: 'user@mail.com'),
+          );
+          stubRemoteBackup(remoteModifiedAt);
+
+          // When
+          container.read(backupProvider);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // Then
+          final state = container.read(backupProvider);
+          expect(state.remoteBackupAt, remoteModifiedAt);
+          expect(state.hasRemoteBackupToRestore, isFalse);
+        },
+      );
+
+      test('shouldOfferRestore_whenAnotherDeviceBackedUpAfterSync', () async {
+        // Given
+        SharedPreferences.setMockInitialValues({
+          BackupNotifier.lastBackupKey: DateTime.utc(
+            2026,
+            4,
+            1,
+          ).toIso8601String(),
+          BackupNotifier.syncedRemoteBackupKey: DateTime.utc(
+            2026,
+            4,
+            1,
+            0,
+            0,
+            5,
+          ).toIso8601String(),
+        });
+        createContainer(
+          overrides: [backupConfiguredProvider.overrideWithValue(true)],
+        );
+        when(
+          () => oauthService.restoreSession(),
+        ).thenAnswer((_) async => const GoogleAccount(email: 'user@mail.com'));
+        stubRemoteBackup(remoteModifiedAt);
+
+        // When
+        container.read(backupProvider);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Then
+        expect(container.read(backupProvider).hasRemoteBackupToRestore, isTrue);
+      });
+
+      test('shouldSkipAutoBackup_whenRemoteBackupIsNotRestored', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        stubRemoteBackup(remoteModifiedAt);
+        await container.read(backupProvider.notifier).signIn();
+
+        // When
+        await container.read(backupProvider.notifier).runAutoBackup();
+
+        // Then
+        verifyNever(() => backupService.createPayload());
+        verifyNever(() => driveService.uploadBackup(any()));
+      });
+
+      test('shouldMarkSynced_andPersist_afterRestoreFrom', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        stubRemoteBackup(remoteModifiedAt);
+        await container.read(backupProvider.notifier).signIn();
+        final payload = buildPayload(DateTime.utc(2026, 4, 2, 8, 59));
+        when(() => backupService.restore(payload)).thenAnswer(
+          (_) async => const BackupRestoreSummary(
+            restoredKeys: 3,
+            removedKeys: 0,
+            instanceCount: 1,
+          ),
+        );
+
+        // When
+        final restored = await container
+            .read(backupProvider.notifier)
+            .restoreFrom(payload);
+
+        // Then
+        expect(restored, isTrue);
+        final state = container.read(backupProvider);
+        expect(state.hasRemoteBackupToRestore, isFalse);
+        expect(state.lastBackupAt, payload.createdAt);
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString(BackupNotifier.syncedRemoteBackupKey),
+          remoteModifiedAt.toIso8601String(),
+        );
+      });
+
+      test('shouldMarkSynced_afterBackupNow', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        stubRemoteBackup(remoteModifiedAt);
+        await container.read(backupProvider.notifier).signIn();
+        final payload = buildPayload(DateTime.utc(2026, 4, 3, 10, 0));
+        final uploadedAt = DateTime.utc(2026, 4, 3, 10, 0, 2);
+        when(
+          () => backupService.createPayload(),
+        ).thenAnswer((_) async => payload);
+        when(() => driveService.uploadBackup(any())).thenAnswer(
+          (_) async =>
+              DriveBackupInfo(id: 'remote-1', modifiedTime: uploadedAt),
+        );
+
+        // When
+        await container.read(backupProvider.notifier).backupNow();
+
+        // Then
+        final state = container.read(backupProvider);
+        expect(state.remoteBackupAt, uploadedAt);
+        expect(state.hasRemoteBackupToRestore, isFalse);
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString(BackupNotifier.syncedRemoteBackupKey),
+          uploadedAt.toIso8601String(),
+        );
+      });
+
+      test('shouldKeepSignedIn_whenRemoteCheckFailsUnexpectedly', () async {
+        // Given
+        createContainer();
+        stubSignIn();
+        when(() => driveService.findBackupFile()).thenThrow(Exception('boom'));
+
+        // When
+        await container.read(backupProvider.notifier).signIn();
+
+        // Then
+        final state = container.read(backupProvider);
+        expect(state.isSignedIn, isTrue);
+        expect(state.errorMessage, isNull);
+        expect(state.hasRemoteBackupToRestore, isFalse);
+      });
+
+      test(
+        'shouldReportExpiredSession_whenRemoteCheckIsUnauthorized',
+        () async {
+          // Given
+          createContainer();
+          stubSignIn();
+          when(
+            () => driveService.findBackupFile(),
+          ).thenThrow(const DriveAuthException());
+
+          // When
+          await container.read(backupProvider.notifier).signIn();
+
+          // Then
+          final state = container.read(backupProvider);
+          expect(state.isSignedIn, isFalse);
+          expect(state.errorMessage, 'Google session expired. Sign in again.');
+        },
+      );
     });
   });
 }
