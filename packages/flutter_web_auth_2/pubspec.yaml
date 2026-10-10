@@ -1,0 +1,31 @@
+name: flutter_web_auth_2
+description: Vendored, mobile-only trim of flutter_web_auth_2 5.1.0 for the Google sign-in.
+version: 5.1.0+arrmate.1
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_auth_2_platform_interface: ^5.0.0
+  flutter_web_plugins:
+    sdk: flutter
+  url_launcher: ^6.1.6
+  web: ">=0.5.0 <2.0.0"
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.linusu.flutter_web_auth_2
+        pluginClass: FlutterWebAuth2Plugin
+      ios:
+        pluginClass: FlutterWebAuth2Plugin
+      macos:
+        pluginClass: FlutterWebAuth2Plugin
+      web:
+        pluginClass: FlutterWebAuth2WebPlugin
+        fileName: src/web.dart
