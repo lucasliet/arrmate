@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -112,7 +113,9 @@ void main() {
         usesAuthenticationSession: true,
         sessionRunner: (url, scheme) async {
           final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
-          response = await _get(Uri.parse('$redirect/?error=access_denied'));
+          response = await _get(
+            Uri.parse('$redirect/?error=access_denied&state=state-1'),
+          );
           return response.location!;
         },
       );
@@ -133,16 +136,43 @@ void main() {
       expect(response.location, startsWith('$kGoogleOAuthCallbackScheme://'));
     });
 
-    test('rejects a redirect with a mismatched state', () async {
+    test('ignores stray requests and keeps waiting for the callback', () async {
+      final statuses = <int>[];
+      late _LoopbackResponse response;
       final listener = LoopbackCodeListener(
         usesAuthenticationSession: true,
         sessionRunner: (url, scheme) async {
           final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
-          final response = await _get(
-            Uri.parse('$redirect/?code=auth-code&state=forged'),
+          statuses
+            ..add((await _get(Uri.parse('$redirect/favicon.ico'))).status)
+            ..add(
+              (await _get(
+                Uri.parse('$redirect/?code=auth-code&state=forged'),
+              )).status,
+            )
+            ..add(
+              (await _get(Uri.parse('$redirect/?error=access_denied'))).status,
+            );
+          response = await _get(
+            Uri.parse('$redirect/?code=auth-code&state=state-1'),
           );
           return response.location!;
         },
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      final code = await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(code, 'auth-code');
+      expect(statuses, everyElement(HttpStatus.notFound));
+      expect(response.status, HttpStatus.found);
+    });
+
+    test('times out when the redirect never arrives', () async {
+      final listener = LoopbackCodeListener(
+        usesAuthenticationSession: true,
+        flowTimeout: const Duration(milliseconds: 100),
+        sessionRunner: (url, scheme) => Completer<String>().future,
       );
 
       final redirectUri = await listener.prepareRedirect();
@@ -153,7 +183,7 @@ void main() {
           isA<GoogleOAuthException>().having(
             (e) => e.message,
             'message',
-            contains('could not be verified'),
+            contains('timed out'),
           ),
         ),
       );
@@ -185,6 +215,27 @@ void main() {
       expect(response.status, HttpStatus.ok);
       expect(response.location, isNull);
       expect(response.body, contains('You can return to the app'));
+    });
+
+    test('times out when the redirect never arrives', () async {
+      final listener = LoopbackCodeListener(
+        usesAuthenticationSession: false,
+        flowTimeout: const Duration(milliseconds: 100),
+        browserLauncher: (url) async => true,
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+
+      await expectLater(
+        listener.waitForCode(_authorizationUrl(redirectUri)),
+        throwsA(
+          isA<GoogleOAuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('timed out'),
+          ),
+        ),
+      );
     });
 
     test('fails when the browser cannot be opened', () async {

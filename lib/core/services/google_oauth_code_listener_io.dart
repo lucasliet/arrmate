@@ -53,14 +53,13 @@ Future<bool> _launchExternalBrowser(Uri url) =>
 /// app. Desktop platforms open the system browser and keep the manual-return
 /// success page.
 class LoopbackCodeListener implements GoogleCodeListener {
-  static const Duration _flowTimeout = Duration(minutes: 5);
-
   /// How long to wait for the authentication session to close on its own once
   /// the callback was answered.
   static const Duration _sessionCloseGrace = Duration(seconds: 3);
 
   static const String _appCallbackUrl = '$kGoogleOAuthCallbackScheme://done';
 
+  final Duration _flowTimeout;
   final AuthenticationSessionRunner _sessionRunner;
   final ExternalBrowserLauncher _browserLauncher;
   final bool _usesAuthenticationSession;
@@ -69,14 +68,16 @@ class LoopbackCodeListener implements GoogleCodeListener {
 
   /// Creates the listener.
   ///
-  /// [sessionRunner], [browserLauncher] and [usesAuthenticationSession] exist
-  /// for tests; by default the authentication session is used on iOS and
+  /// [sessionRunner], [browserLauncher], [usesAuthenticationSession] and
+  /// [flowTimeout] exist for tests; by default the authentication session is used on iOS and
   /// Android and the system browser everywhere else.
   LoopbackCodeListener({
     AuthenticationSessionRunner? sessionRunner,
     ExternalBrowserLauncher? browserLauncher,
     bool? usesAuthenticationSession,
-  }) : _sessionRunner = sessionRunner ?? _runAuthenticationSession,
+    Duration flowTimeout = const Duration(minutes: 5),
+  }) : _flowTimeout = flowTimeout,
+       _sessionRunner = sessionRunner ?? _runAuthenticationSession,
        _browserLauncher = browserLauncher ?? _launchExternalBrowser,
        _usesAuthenticationSession =
            usesAuthenticationSession ??
@@ -123,6 +124,30 @@ class LoopbackCodeListener implements GoogleCodeListener {
     }
   }
 
+  /// Resolves with the first request carrying the `state` of
+  /// [authorizationUrl], answering every other request with 404.
+  ///
+  /// Anything else that reaches the loopback port (a stray local request, a
+  /// browser probe) must not end the sign-in, and Google echoes `state` on its
+  /// error redirects too, so denied consent is still delivered.
+  Future<HttpRequest> _firstCallback(
+    HttpServer server,
+    String authorizationUrl,
+  ) {
+    final expectedState = Uri.parse(authorizationUrl).queryParameters['state'];
+    return server.firstWhere((request) {
+      final matches =
+          expectedState != null &&
+          expectedState.isNotEmpty &&
+          request.uri.queryParameters['state'] == expectedState;
+      if (!matches) {
+        request.response.statusCode = HttpStatus.notFound;
+        unawaited(request.response.close());
+      }
+      return matches;
+    });
+  }
+
   Future<HttpRequest> _awaitRequestInBrowser(
     HttpServer server,
     String authorizationUrl,
@@ -135,7 +160,10 @@ class LoopbackCodeListener implements GoogleCodeListener {
     }
     logger.debug('[GoogleOAuth] Browser opened, waiting for the redirect');
     try {
-      return await server.first.timeout(_flowTimeout);
+      return await _firstCallback(
+        server,
+        authorizationUrl,
+      ).timeout(_flowTimeout);
     } on TimeoutException {
       throw const GoogleOAuthException(
         'Google sign-in timed out. Please try again.',
@@ -165,7 +193,7 @@ class LoopbackCodeListener implements GoogleCodeListener {
       final HttpRequest? request;
       try {
         request = await Future.any<HttpRequest?>([
-          server.first,
+          _firstCallback(server, authorizationUrl),
           sessionClosed.then((_) => null),
         ]).timeout(_flowTimeout);
       } on TimeoutException {
