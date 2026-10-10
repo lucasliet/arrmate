@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +7,8 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/google_oauth_config.dart';
+import 'app_foreground_service.dart';
+import 'google_oauth_result_page.dart';
 import 'google_oauth_service.dart';
 import 'logger_service.dart';
 
@@ -63,32 +64,32 @@ class LoopbackCodeListener implements GoogleCodeListener {
   final AuthenticationSessionRunner _sessionRunner;
   final ExternalBrowserLauncher _browserLauncher;
   final bool _usesAuthenticationSession;
+  final Future<void> Function() _bringAppToFront;
 
   HttpServer? _server;
 
   /// Creates the listener.
   ///
-  /// [sessionRunner], [browserLauncher], [usesAuthenticationSession] and
-  /// [flowTimeout] exist for tests; by default the authentication session is
-  /// used on iOS and Android and the system browser everywhere else.
+  /// [sessionRunner], [browserLauncher], [usesAuthenticationSession],
+  /// [bringAppToFront] and [flowTimeout] exist for tests; by default the
+  /// authentication session is used on iOS and Android, the system browser
+  /// everywhere else, and the app pulls itself forward through
+  /// [AppForegroundService].
   LoopbackCodeListener({
     AuthenticationSessionRunner? sessionRunner,
     ExternalBrowserLauncher? browserLauncher,
     bool? usesAuthenticationSession,
+    Future<void> Function()? bringAppToFront,
     Duration flowTimeout = const Duration(minutes: 5),
   }) : _flowTimeout = flowTimeout,
        _sessionRunner = sessionRunner ?? _runAuthenticationSession,
        _browserLauncher = browserLauncher ?? _launchExternalBrowser,
+       _bringAppToFront =
+           bringAppToFront ?? AppForegroundService().bringToFront,
        _usesAuthenticationSession =
            usesAuthenticationSession ??
            (defaultTargetPlatform == TargetPlatform.iOS ||
                defaultTargetPlatform == TargetPlatform.android);
-
-  /// Success page shown in the desktop browser after consent.
-  static const String _successPage =
-      '<html><head><meta charset="utf-8"></head>'
-      '<body><h2>Arrmate</h2>'
-      '<p>Sign-in complete. You can return to the app.</p></body></html>';
 
   @override
   Future<String> prepareRedirect() async {
@@ -231,11 +232,28 @@ class LoopbackCodeListener implements GoogleCodeListener {
     final failure = _validateCallback(params, expectedState);
     if (failure != null) {
       await _respond(request, _failurePage(failure.message));
+      await _returnToApp();
       throw failure;
     }
-    await _respond(request, _successPage);
+    await _respond(request, _successPage());
     logger.debug('[GoogleOAuth] Authorization code received');
+    await _returnToApp();
     return params['code']!;
+  }
+
+  /// Pulls the app back in front of the browser, which is not guaranteed to
+  /// follow the redirect to [kGoogleOAuthCallbackScheme] on its own.
+  Future<void> _returnToApp() async {
+    if (!_usesAuthenticationSession) return;
+    try {
+      await _bringAppToFront();
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[GoogleOAuth] Could not bring the app to the front',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   GoogleOAuthException? _validateCallback(
@@ -283,19 +301,24 @@ class LoopbackCodeListener implements GoogleCodeListener {
     if (_usesAuthenticationSession) {
       response.statusCode = HttpStatus.found;
       response.headers.set(HttpHeaders.locationHeader, _appCallbackUrl);
-      response.write(page);
-      response.write('<p><a href="$_appCallbackUrl">Return to Arrmate</a></p>');
     } else {
       response.statusCode = HttpStatus.ok;
-      response.write(page);
     }
+    response.write(page);
     await response.close();
   }
 
-  String _failurePage(String message) {
-    final safe = const HtmlEscape().convert(message);
-    return '<html><body><h2>Arrmate</h2><p>$safe</p></body></html>';
-  }
+  String _successPage() => buildOAuthResultPage(
+    success: true,
+    message: 'Sign-in complete. You can return to the app.',
+    returnUrl: _usesAuthenticationSession ? _appCallbackUrl : null,
+  );
+
+  String _failurePage(String message) => buildOAuthResultPage(
+    success: false,
+    message: message,
+    returnUrl: _usesAuthenticationSession ? _appCallbackUrl : null,
+  );
 
   Future<void> _closeServer() async {
     final server = _server;

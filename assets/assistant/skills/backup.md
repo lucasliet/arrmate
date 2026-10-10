@@ -36,10 +36,11 @@ E também as **instâncias configuradas** — Radarr, Sonarr e qBittorrent — *
 3. O **browser abre** para autorizar o Arrmate com a conta Google (permissões `drive.appdata` + e-mail/perfil).
 4. Autorize na página do Google.
 5. O app detecta o retorno do browser e você volta logado à tela de backup.
+6. Se o Google Drive já tiver um backup que este aparelho ainda não restaurou (por exemplo, feito em outro aparelho), a tela mostra o cartão **"Backup found in your Google Drive"** com o botão **"Restore"** e a data do backup em "Last backup". Enquanto esse backup não for restaurado, os backups automáticos ficam pausados para não sobrescrevê-lo; **"Back up now"** continua disponível.
 
 **Comportamento:**
-- **No Android e no iOS**: a autorização abre em uma janela de login do sistema por cima do app (Chrome Custom Tab / sessão de autenticação do Safari). Ao concluir, a janela fecha sozinha e você volta ao Arrmate já logado; fechar a janela antes cancela o login.
-- **No desktop**: o app escuta o redirect em `http://localhost:<porta>` enquanto a autorização acontece no browser, e a página final pede para voltar ao app manualmente.
+- **No Android e no iOS**: a autorização abre em uma janela de login do sistema por cima do app (Chrome Custom Tab / sessão de autenticação do Safari). Ao concluir, a janela fecha sozinha e você volta ao Arrmate já logado, mesmo em navegadores que não seguem o redirecionamento; fechar a janela antes cancela o login.
+- **No desktop**: o app escuta o redirect em `http://localhost:<porta>` enquanto a autorização acontece no browser, e a página final, no tema do app, avisa que o login terminou e que você pode voltar ao app.
 - **Na web**: após autorizar, o Google redireciona de volta para a própria página do app.
 
 ## Fazer backup agora — "Back up now"

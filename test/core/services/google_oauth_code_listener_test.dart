@@ -252,4 +252,109 @@ void main() {
       );
     });
   });
+
+  group('LoopbackCodeListener returning to the app', () {
+    LoopbackCodeListener buildListener({
+      required bool usesSession,
+      required Future<void> Function() bringAppToFront,
+      String query = 'code=auth-code&state=state-1',
+    }) {
+      Future<void> hitCallback(String url) async {
+        final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
+        await _get(Uri.parse('$redirect/?$query'));
+      }
+
+      return LoopbackCodeListener(
+        usesAuthenticationSession: usesSession,
+        bringAppToFront: bringAppToFront,
+        sessionRunner: (url, scheme) async {
+          await hitCallback(url);
+          return '$scheme://done';
+        },
+        browserLauncher: (url) async {
+          Future<void>(() => hitCallback(url.toString()));
+          return true;
+        },
+      );
+    }
+
+    test('pulls the app forward once the code arrives in a session', () async {
+      var calls = 0;
+      final listener = buildListener(
+        usesSession: true,
+        bringAppToFront: () async => calls++,
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      final code = await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(code, 'auth-code');
+      expect(calls, 1);
+    });
+
+    test('pulls the app forward when consent is denied', () async {
+      var calls = 0;
+      final listener = buildListener(
+        usesSession: true,
+        bringAppToFront: () async => calls++,
+        query: 'error=access_denied&state=state-1',
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+
+      await expectLater(
+        listener.waitForCode(_authorizationUrl(redirectUri)),
+        throwsA(isA<GoogleOAuthException>()),
+      );
+      expect(calls, 1);
+    });
+
+    test('leaves the foreground alone when using the system browser', () async {
+      var calls = 0;
+      final listener = buildListener(
+        usesSession: false,
+        bringAppToFront: () async => calls++,
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      final code = await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(code, 'auth-code');
+      expect(calls, 0);
+    });
+
+    test('still returns the code when pulling the app forward fails', () async {
+      final listener = buildListener(
+        usesSession: true,
+        bringAppToFront: () async => throw PlatformException(code: 'boom'),
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      final code = await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(code, 'auth-code');
+    });
+
+    test('shows a themed page with a way back inside a session', () async {
+      late _LoopbackResponse response;
+      final listener = LoopbackCodeListener(
+        usesAuthenticationSession: true,
+        bringAppToFront: () async {},
+        sessionRunner: (url, scheme) async {
+          final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
+          response = await _get(
+            Uri.parse('$redirect/?code=auth-code&state=state-1'),
+          );
+          return '$scheme://done';
+        },
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(response.body, contains('<style>'));
+      expect(response.body, contains('Return to Arrmate'));
+      expect(response.body, contains('prefers-color-scheme: dark'));
+    });
+  });
 }
