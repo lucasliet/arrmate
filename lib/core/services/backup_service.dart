@@ -11,8 +11,8 @@ class BackupRestoreSummary {
   /// Number of preference keys written from the payload.
   final int restoredKeys;
 
-  /// Number of stale preference keys removed because the payload did not
-  /// contain them.
+  /// Number of allowlisted preference keys removed because the payload did
+  /// not contain them.
   final int removedKeys;
 
   /// Number of instances present in the restored payload.
@@ -180,7 +180,41 @@ class BackupPayload {
 
 /// Creates and restores versioned snapshots of the app's SharedPreferences.
 class BackupService {
-  static const _frameworkKeyPrefix = 'flutter.';
+  /// Preference names a backup is allowed to carry.
+  ///
+  /// These are the settings, remembered filters and configured instances the
+  /// backup is meant to move between devices. Session material, including the
+  /// web OAuth token `google_oauth_tokens`, is intentionally absent.
+  static const _allowlistedKeys = <String>{
+    'appearance',
+    'color_scheme',
+    'home_tab',
+    'instances',
+    'minimum_seeding_days',
+    'movie_release_query',
+    'movie_sort',
+    'notification_settings',
+    'remember_movie_release_query',
+    'remember_series_release_query',
+    'remember_torrent_query',
+    'selected_qbittorrent_instance_id',
+    'selected_radarr_instance_id',
+    'selected_sonarr_instance_id',
+    'series_release_query',
+    'series_sort',
+    'torrent_query',
+    'view_mode',
+  };
+
+  /// Prefixes for per-instance preference names that belong in a backup.
+  ///
+  /// Media-add defaults append the instance id, so they cannot be listed as
+  /// exact keys.
+  static const _allowlistedKeyPrefixes = <String>[
+    'movie_add_defaults_',
+    'series_add_defaults_',
+  ];
+
   static const _schemaVersion = 1;
 
   final Future<SharedPreferences> _preferences;
@@ -198,14 +232,14 @@ class BackupService {
           ? Future.value(packageInfo)
           : PackageInfo.fromPlatform();
 
-  /// Snapshots every non-framework preference into a [BackupPayload].
+  /// Snapshots the allowlisted preferences into a [BackupPayload].
   Future<BackupPayload> createPayload() async {
     final prefs = await _preferences;
     final packageInfo = await _packageInfo;
 
     final preferences = <String, Object?>{};
     for (final key in prefs.getKeys()) {
-      if (key.startsWith(_frameworkKeyPrefix)) continue;
+      if (!_isAllowlisted(key)) continue;
       final entry = _encodeEntry(prefs.get(key));
       if (entry == null) continue;
       preferences[key] = entry;
@@ -225,16 +259,17 @@ class BackupService {
     return payload;
   }
 
-  /// Restores [payload] with replace semantics.
+  /// Restores the allowlisted entries in [payload].
   ///
-  /// Current keys absent from the payload are removed, and every well-formed
-  /// payload entry is written back, returning a [BackupRestoreSummary].
+  /// Allowlisted keys absent from the payload are removed. Every other key is
+  /// left untouched, and payload entries outside the allowlist are not
+  /// written. Returns a [BackupRestoreSummary].
   Future<BackupRestoreSummary> restore(BackupPayload payload) async {
     final prefs = await _preferences;
 
     var removedKeys = 0;
     for (final key in prefs.getKeys()) {
-      if (key.startsWith(_frameworkKeyPrefix)) continue;
+      if (!_isAllowlisted(key)) continue;
       if (payload.preferences.containsKey(key)) continue;
       await prefs.remove(key);
       removedKeys++;
@@ -242,6 +277,7 @@ class BackupService {
 
     var restoredKeys = 0;
     for (final entry in payload.preferences.entries) {
+      if (!_isAllowlisted(entry.key)) continue;
       if (!await _writeEntry(prefs, entry.key, entry.value)) continue;
       restoredKeys++;
     }
@@ -262,6 +298,15 @@ class BackupService {
   /// Parses [encodedJson] so callers can preview a backup before restoring.
   Future<BackupPayload?> loadBackupPreview(String encodedJson) async {
     return BackupPayload.fromEncodedJson(encodedJson);
+  }
+
+  /// Whether [key] is a preference the backup is allowed to carry.
+  static bool _isAllowlisted(String key) {
+    if (_allowlistedKeys.contains(key)) return true;
+    for (final prefix in _allowlistedKeyPrefixes) {
+      if (key.startsWith(prefix)) return true;
+    }
+    return false;
   }
 
   Map<String, Object?>? _encodeEntry(Object? value) {
