@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:arrmate/core/constants/google_oauth_config.dart';
 import 'package:arrmate/core/services/google_oauth_code_listener_io.dart';
 import 'package:arrmate/core/services/google_oauth_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -333,6 +334,61 @@ void main() {
       final code = await listener.waitForCode(_authorizationUrl(redirectUri));
 
       expect(code, 'auth-code');
+    });
+
+    test('links to the app with an Android intent on Android', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      late _LoopbackResponse response;
+      final listener = LoopbackCodeListener(
+        usesAuthenticationSession: true,
+        bringAppToFront: () async {},
+        packageName: () async => 'br.com.lucasliet.arrmate',
+        sessionRunner: (url, scheme) async {
+          final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
+          response = await _get(
+            Uri.parse('$redirect/?code=auth-code&state=state-1'),
+          );
+          return '$scheme://done';
+        },
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(
+        response.body,
+        contains(
+          'href="intent://done#Intent;scheme=arrmate;'
+          'package=br.com.lucasliet.arrmate;end"',
+        ),
+      );
+    });
+
+    test('falls back to the custom scheme if the package is unknown', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      late _LoopbackResponse response;
+      final listener = LoopbackCodeListener(
+        usesAuthenticationSession: true,
+        bringAppToFront: () async {},
+        packageName: () async => throw StateError('no package info'),
+        sessionRunner: (url, scheme) async {
+          final redirect = Uri.parse(url).queryParameters['redirect_uri']!;
+          response = await _get(
+            Uri.parse('$redirect/?code=auth-code&state=state-1'),
+          );
+          return '$scheme://done';
+        },
+      );
+
+      final redirectUri = await listener.prepareRedirect();
+      await listener.waitForCode(_authorizationUrl(redirectUri));
+
+      expect(
+        response.body,
+        contains('href="$kGoogleOAuthCallbackScheme://done"'),
+      );
     });
 
     test('shows a themed page with a way back inside a session', () async {

@@ -1,5 +1,13 @@
 import 'dart:convert';
 
+/// Builds an Android `intent:` link that opens the app's `arrmate://` deep
+/// link, bringing the running task to the front.
+///
+/// [packageName] pins the intent to this app, so a debug build and a release
+/// build with different application ids never open each other.
+String buildAndroidIntentLink(String packageName) =>
+    'intent://done#Intent;scheme=arrmate;package=$packageName;end';
+
 /// Builds the self-contained HTML page shown in the browser at the end of the
 /// Google sign-in redirect, styled after the app's Material 3 theme.
 ///

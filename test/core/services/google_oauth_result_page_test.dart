@@ -2,6 +2,18 @@ import 'package:arrmate/core/services/google_oauth_result_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('shouldBuildAndroidIntentLinkPinnedToPackage', () {
+    // When
+    final link = buildAndroidIntentLink('br.com.lucasliet.arrmate.debug');
+
+    // Then
+    expect(
+      link,
+      'intent://done#Intent;scheme=arrmate;'
+      'package=br.com.lucasliet.arrmate.debug;end',
+    );
+  });
+
   group('buildOAuthResultPage', () {
     test('shouldShowSignedInTitleAndReturnButton_whenSuccessWithReturnUrl', () {
       // Given

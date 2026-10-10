@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/google_oauth_config.dart';
@@ -38,6 +39,9 @@ typedef ExternalBrowserLauncher = Future<bool> Function(Uri url);
 Future<String> _runAuthenticationSession(String url, String callbackScheme) =>
     FlutterWebAuth2.authenticate(url: url, callbackUrlScheme: callbackScheme);
 
+Future<String> _readPackageName() async =>
+    (await PackageInfo.fromPlatform()).packageName;
+
 Future<bool> _launchExternalBrowser(Uri url) =>
     launchUrl(url, mode: LaunchMode.externalApplication);
 
@@ -65,13 +69,14 @@ class LoopbackCodeListener implements GoogleCodeListener {
   final ExternalBrowserLauncher _browserLauncher;
   final bool _usesAuthenticationSession;
   final Future<void> Function() _bringAppToFront;
+  final Future<String> Function() _packageName;
 
   HttpServer? _server;
 
   /// Creates the listener.
   ///
   /// [sessionRunner], [browserLauncher], [usesAuthenticationSession],
-  /// [bringAppToFront] and [flowTimeout] exist for tests; by default the
+  /// [bringAppToFront], [packageName] and [flowTimeout] exist for tests; by default the
   /// authentication session is used on iOS and Android, the system browser
   /// everywhere else, and the app pulls itself forward through
   /// [AppForegroundService].
@@ -80,12 +85,14 @@ class LoopbackCodeListener implements GoogleCodeListener {
     ExternalBrowserLauncher? browserLauncher,
     bool? usesAuthenticationSession,
     Future<void> Function()? bringAppToFront,
+    Future<String> Function()? packageName,
     Duration flowTimeout = const Duration(minutes: 5),
   }) : _flowTimeout = flowTimeout,
        _sessionRunner = sessionRunner ?? _runAuthenticationSession,
        _browserLauncher = browserLauncher ?? _launchExternalBrowser,
        _bringAppToFront =
            bringAppToFront ?? AppForegroundService().bringToFront,
+       _packageName = packageName ?? _readPackageName,
        _usesAuthenticationSession =
            usesAuthenticationSession ??
            (defaultTargetPlatform == TargetPlatform.iOS ||
@@ -230,12 +237,13 @@ class LoopbackCodeListener implements GoogleCodeListener {
   ) async {
     final params = request.uri.queryParameters;
     final failure = _validateCallback(params, expectedState);
+    final returnLink = await _returnLink();
     if (failure != null) {
-      await _respond(request, _failurePage(failure.message));
+      await _respond(request, _failurePage(failure.message, returnLink));
       await _returnToApp();
       throw failure;
     }
-    await _respond(request, _successPage());
+    await _respond(request, _successPage(returnLink));
     logger.debug('[GoogleOAuth] Authorization code received');
     await _returnToApp();
     return params['code']!;
@@ -308,17 +316,40 @@ class LoopbackCodeListener implements GoogleCodeListener {
     await response.close();
   }
 
-  String _successPage() => buildOAuthResultPage(
+  String _successPage(String? returnLink) => buildOAuthResultPage(
     success: true,
     message: 'Sign-in complete. You can return to the app.',
-    returnUrl: _usesAuthenticationSession ? _appCallbackUrl : null,
+    returnUrl: returnLink,
   );
 
-  String _failurePage(String message) => buildOAuthResultPage(
-    success: false,
-    message: message,
-    returnUrl: _usesAuthenticationSession ? _appCallbackUrl : null,
-  );
+  String _failurePage(String message, String? returnLink) =>
+      buildOAuthResultPage(
+        success: false,
+        message: message,
+        returnUrl: returnLink,
+      );
+
+  /// The link behind the page's return button, or null on desktop.
+  ///
+  /// Android gets an `intent:` link, which Chrome, Samsung Internet and
+  /// Firefox open straight into the app on a tap, instead of relying on the
+  /// browser to resolve the custom scheme. Other platforms use the scheme.
+  Future<String?> _returnLink() async {
+    if (!_usesAuthenticationSession) return null;
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return _appCallbackUrl;
+    }
+    try {
+      return buildAndroidIntentLink(await _packageName());
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[GoogleOAuth] Could not build the Android intent link',
+        error,
+        stackTrace,
+      );
+      return _appCallbackUrl;
+    }
+  }
 
   Future<void> _closeServer() async {
     final server = _server;
