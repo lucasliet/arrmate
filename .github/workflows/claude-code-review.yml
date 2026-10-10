@@ -25,6 +25,10 @@ jobs:
     # denials and may end green without posting anything.
     env:
       ZAI_MODEL: glm-5.3
+      # Bots whose pushes may trigger a review. claude-code-action refuses runs
+      # started by any other bot, which left the check red when a Cursor agent
+      # pushed to a PR branch.
+      REVIEW_ALLOWED_BOTS: 'cursor,cursor[bot]'
       REVIEW_TOOLS: 'Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)'
       REVIEW_PROMPT: |
         /code-review:code-review
@@ -143,6 +147,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: ${{ env.REVIEW_ALLOWED_BOTS }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: ${{ env.REVIEW_PROMPT }}
@@ -185,6 +190,7 @@ jobs:
           API_TIMEOUT_MS: "3000000"
         with:
           anthropic_api_key: ${{ secrets.ZAI_API_KEY }}
+          allowed_bots: ${{ env.REVIEW_ALLOWED_BOTS }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: ${{ env.REVIEW_PROMPT }}
