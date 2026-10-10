@@ -1,0 +1,58 @@
+---
+name: overview
+description: Sobre o Arrmate, navegação principal (5 abas), aba inicial, tour de onboarding
+---
+
+# Visão geral do Arrmate
+
+## Sobre o Arrmate — o que o app faz
+
+Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes), **Sonarr** (séries) e **qBittorrent** (downloads).
+
+Funcionalidades principais:
+- Biblioteca de filmes e séries: navegar, buscar, filtrar, ordenar, selecionar em lote, monitorar/desmonitorar e deletar.
+- **Discover:** Open with **"Add movie"** / **"Add series"** in wide toolbars or **"+"** in compact layouts. It starts in the originating media type and supports titles, TMDB/IMDb/TVDB IDs, URLs, debounced search, sorting, and "Hide already added".
+- Adicionar novos filmes e séries via busca online no Radarr/Sonarr.
+- Busca manual de releases (grab interativo) com filtro e seleção.
+- Calendário de próximos lançamentos e episódios, com **filtros** (instância, tipo, monitorados, estreias, ocultar especiais).
+- Monitoramento de fila de downloads e histórico de atividade.
+- Cliente qBittorrent integrado: listar, pausar, retomar, remover, adicionar torrents.
+- **System Management:** tela única (Configurações → System → System Management) que reúne Logs, Health, Connection Diagnostics, System Overview, Quality Profiles, dias mínimos de seeding, Version History, limpar cache de imagens e resetar configurações.
+- **Connection Diagnostics:** teste de endpoints, latência, traces de requisições e export de relatório sanitizado (System Management → Server → Connection Diagnostics).
+- **System Overview:** armazenamento/disco, tamanho da biblioteca e versão por instância (System Management → Server → System Overview).
+- **Version History e What's New:** changelog do GitHub e popup pós-atualização.
+- **Deep links:** abrir o app direto num filme, série, temporada, episódio, calendário, atividade, busca ou tela de configurações via `arrmate://`.
+- **Banner offline:** indicador de offline com timestamp da última conexão online.
+- Notificações push via ntfy.sh com sincronização multi-dispositivo e central in-app (incluindo eventos de purge).
+- Onboarding guiado com tour inicial e replay em Configurações → seção "About" → "Getting Started". Enquanto o tour roda sem instância configurada, as telas de biblioteca, calendário, fila e torrents mostram **cards de exemplo** para o tour ter o que apontar; eles são apenas visuais e somem ao concluir ou pular o tour.
+- Multi-instância: conectar vários servidores Radarr, Sonarr e qBittorrent ao mesmo tempo.
+- Assistente de IA on-device para dúvidas sobre o próprio app.
+- Atualização automática do app via GitHub Releases.
+
+O app é feito em Flutter, roda totalmente no dispositivo e não envia dados pessoais para servidores externos.
+
+## Navegação principal — abas Filmes Séries Calendário Atividade Configurações
+
+Arrmate uses bottom navigation below 600 logical pixels, an icon sidebar from 600, and a labeled sidebar from 900. The same five destinations are available on web, desktop, and tablets:
+
+1. **Filmes** — Biblioteca de filmes do Radarr.
+2. **Séries** — Biblioteca de séries do Sonarr.
+3. **Calendário** — Próximos lançamentos e episódios organizados por data.
+4. **Atividade** — Fila de downloads, histórico e torrents do qBittorrent.
+5. **Configurações** — seções Instances, Appearance, System (System Management + Assistant), Notifications e About.
+
+A aba ativa é destacada com ícone preenchido e cor de destaque. Tocar em qualquer aba navega diretamente.
+
+A maioria das telas possui ícone de sino no topo para acessar a central de notificações.
+
+## Aba inicial — escolher qual abre ao iniciar o app
+
+**Onde fica:** Configurações → seção "Appearance" → "Home Tab".
+
+**Passo a passo:**
+1. Abrir a aba Configurações.
+2. Tocar em "Appearance".
+3. Tocar em "Home Tab".
+4. Selecionar qual aba abre ao iniciar: Filmes, Séries, Calendário ou Atividade.
+
+**Observações:** O padrão é Filmes.
