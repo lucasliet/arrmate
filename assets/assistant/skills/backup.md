@@ -38,7 +38,8 @@ E também as **instâncias configuradas** — Radarr, Sonarr e qBittorrent — *
 5. O app detecta o retorno do browser e você volta logado à tela de backup.
 
 **Comportamento:**
-- **No nativo** (Android/iOS/desktop): o app escuta o redirect em `http://localhost:<porta>` enquanto a autorização acontece no browser.
+- **No Android e no iOS**: a autorização abre em uma janela de login do sistema por cima do app (Chrome Custom Tab / sessão de autenticação do Safari). Ao concluir, a janela fecha sozinha e você volta ao Arrmate já logado; fechar a janela antes cancela o login.
+- **No desktop**: o app escuta o redirect em `http://localhost:<porta>` enquanto a autorização acontece no browser, e a página final pede para voltar ao app manualmente.
 - **Na web**: após autorizar, o Google redireciona de volta para a própria página do app.
 
 ## Fazer backup agora — "Back up now"
