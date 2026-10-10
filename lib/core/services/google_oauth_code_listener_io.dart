@@ -69,8 +69,8 @@ class LoopbackCodeListener implements GoogleCodeListener {
   /// Creates the listener.
   ///
   /// [sessionRunner], [browserLauncher], [usesAuthenticationSession] and
-  /// [flowTimeout] exist for tests; by default the authentication session is used on iOS and
-  /// Android and the system browser everywhere else.
+  /// [flowTimeout] exist for tests; by default the authentication session is
+  /// used on iOS and Android and the system browser everywhere else.
   LoopbackCodeListener({
     AuthenticationSessionRunner? sessionRunner,
     ExternalBrowserLauncher? browserLauncher,

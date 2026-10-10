@@ -607,23 +607,27 @@ void main() {
         isNot(FileSystemEntityType.notFound),
       );
     });
-    test('recovers when the new AppImage immediately fails to start', () async {
-      final marker = File(path.join(root.path, 'launched'));
-      final installed = await makeApp(
-        path.join(root.path, 'installed'),
-        'old',
-        marker,
-      );
-      final work = await Directory(path.join(root.path, 'work')).create();
-      final staged = await makeApp(
-        path.join(work.path, 'new'),
-        'new',
-        marker,
-        broken: true,
-      );
-      final result = await runHelper(installed, staged, work, marker);
-      expect(result.exitCode, 1);
-      expect(await launchedVersion(marker), 'old');
-    }, skip: !Platform.isLinux);
+    test(
+      'recovers when the new AppImage immediately fails to start',
+      () async {
+        final marker = File(path.join(root.path, 'launched'));
+        final installed = await makeApp(
+          path.join(root.path, 'installed'),
+          'old',
+          marker,
+        );
+        final work = await Directory(path.join(root.path, 'work')).create();
+        final staged = await makeApp(
+          path.join(work.path, 'new'),
+          'new',
+          marker,
+          broken: true,
+        );
+        final result = await runHelper(installed, staged, work, marker);
+        expect(result.exitCode, 1);
+        expect(await launchedVersion(marker), 'old');
+      },
+      skip: !Platform.isLinux,
+    );
   });
 }
