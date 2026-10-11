@@ -38,12 +38,19 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Build web app
-        run: >
-          flutter build web --release --base-href /arrmate/
-          --dart-define=GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
-          --dart-define=GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          --dart-define=GOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID_WEB }}"
-          --dart-define=GOOGLE_WEB_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET_WEB }}"
+        run: flutter build web --release --base-href /arrmate/
+
+      - name: Reject Google credentials in the web bundle
+        run: |
+          bundle="build/web/main.dart.js"
+          if [ ! -f "$bundle" ]; then
+            echo "::error::Missing $bundle"
+            exit 1
+          fi
+          if grep -R -E -n 'apps\.googleusercontent\.com|GOCSPX-' build/web --include='*.js'; then
+            echo "::error::Web bundle contains a Google OAuth client id or secret"
+            exit 1
+          fi
 
       - name: Add GitHub Pages SPA fallback
         run: cp build/web/index.html build/web/404.html

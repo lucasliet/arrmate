@@ -9,8 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/google_oauth_config.dart';
 import 'app_foreground_service.dart';
+import 'google_auth.dart';
 import 'google_oauth_result_page.dart';
-import 'google_oauth_service.dart';
 import 'logger_service.dart';
 
 /// Runs the authorization-code leg of the OAuth flow.

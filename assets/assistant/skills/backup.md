@@ -1,11 +1,11 @@
 ---
 name: backup
-description: Backup e restauração no Google Drive e via arquivo local JSON, backup de configurações e instâncias com API keys, backup automático, restore, exportar arquivo, importar arquivo, appDataFolder, sign in Google, sessão expirada, backup not available
+description: Backup e restauração no Google Drive nos apps nativos e via arquivo local JSON. Na web só existe importar e exportar arquivo local, sem login Google. Backup de configurações e instâncias com API keys, backup automático, restore, exportar arquivo, importar arquivo, appDataFolder, sign in Google, sessão expirada, backup not available
 ---
 
 # Backup & Restore (Google Drive e arquivo local)
 
-> **Onde tudo fica:** o backup fica em uma tela própria, a **Backup & Restore** (Configurações → seção "System" → "Backup & Restore", rota `/settings/backup`). Ele guarda as configurações do app e as instâncias configuradas de duas formas: na **pasta privada do app no Google Drive** do próprio usuário (com login Google) ou em um **arquivo JSON local** que você mesmo exporta e importa (sem precisar de login).
+> **Onde tudo fica:** o backup fica em uma tela própria, a **Backup & Restore** (Configurações → seção "System" → "Backup & Restore", rota `/settings/backup`). Nos apps nativos (Android, iOS, macOS, Windows e Linux) ele guarda as configurações e as instâncias de duas formas: na **pasta privada do app no Google Drive** do próprio usuário (com login Google) ou em um **arquivo JSON local**. Na **versão web** só existe o arquivo local — não há login Google, backup no Drive nem backup automático.
 
 ## O que entra no backup — configurações e instâncias
 
@@ -65,7 +65,7 @@ E também as **instâncias configuradas** — Radarr, Sonarr e qBittorrent — *
 **Comportamento:**
 - **No Android e no iOS**: a autorização abre em uma janela de login do sistema por cima do app (Chrome Custom Tab / sessão de autenticação do Safari). Ao concluir, a janela fecha sozinha e você volta ao Arrmate já logado, mesmo em navegadores que não seguem o redirecionamento; fechar a janela antes cancela o login.
 - **No desktop**: o app escuta o redirect em `http://localhost:<porta>` enquanto a autorização acontece no browser, e a página final, no tema do app, avisa que o login terminou e que você pode voltar ao app.
-- **Na web**: após autorizar, o Google redireciona de volta para a própria página do app.
+- **Na web**: não há **"Sign in with Google"**, cartão de conta, **"Back up now"** nem texto de backup automático. A tela mostra apenas **"Export backup to file"** e **"Restore from file…"**.
 
 ## Fazer backup agora — "Back up now"
 

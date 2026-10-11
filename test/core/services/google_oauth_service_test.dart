@@ -209,20 +209,6 @@ void main() {
         ),
       );
     });
-
-    test('shouldRethrowRedirectPending_onWebRedirect', () async {
-      // Given
-      final listener = FakeGoogleCodeListener(
-        result: const GoogleOAuthRedirectPending(),
-      );
-      final service = createService(listener);
-
-      // When
-      final signInCall = service.signIn();
-
-      // Then
-      await expectLater(signInCall, throwsA(isA<GoogleOAuthRedirectPending>()));
-    });
   });
 
   group('GoogleOAuthServiceImpl access tokens', () {
