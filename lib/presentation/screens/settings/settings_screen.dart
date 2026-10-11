@@ -367,6 +367,8 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSystemSection(BuildContext context, WidgetRef ref) {
+    final capabilities = ref.watch(platformCapabilitiesProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -392,7 +394,11 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.cloud_sync_outlined),
           title: const Text('Backup & Restore'),
-          subtitle: const Text('Google Drive'),
+          subtitle: Text(
+            capabilities.isWeb
+                ? 'Import or export a local file'
+                : 'Google Drive',
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/backup'),
         ),
