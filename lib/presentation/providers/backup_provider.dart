@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/google_oauth_config.dart';
+import '../../core/services/backup_file_service.dart';
 import '../../core/services/backup_scheduler.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/google_auth.dart';
@@ -15,6 +16,11 @@ import 'settings_provider.dart';
 
 /// Exposes the [BackupService] that snapshots and restores preferences.
 final backupServiceProvider = Provider<BackupService>((ref) => BackupService());
+
+/// Exposes the local backup file helper used by export and import.
+final backupFileServiceProvider = Provider<BackupFileService>(
+  (ref) => BackupFileService(),
+);
 
 /// Exposes the Google Drive client wired to the shared OAuth session.
 final googleDriveServiceProvider = Provider<GoogleDriveService>(
@@ -132,6 +138,7 @@ class BackupNotifier extends Notifier<BackupState> {
   static const String _backupCompletedMessage = 'Backup completed.';
   static const String _noBackupMessage =
       'No backup found in your Google Drive.';
+  static const String _exportCompletedMessage = 'Backup exported to file.';
   static const String _corruptBackupMessage =
       'The backup file is corrupted or from an unsupported version.';
   static const Duration _suppressionDuration = Duration(minutes: 2);
@@ -375,6 +382,84 @@ class BackupNotifier extends Notifier<BackupState> {
       state = state.copyWith(
         isWorking: false,
         errorMessage: 'Could not load the backup: ${_describe(error)}',
+      );
+      return null;
+    }
+  }
+
+  /// Creates a fresh payload and saves it to a local file chosen by the user.
+  ///
+  /// Available regardless of the Google session; local exports never update
+  /// the Drive sync bookkeeping. Returns the exported file name, or null when
+  /// the dialog was aborted or the export failed, in which case
+  /// [BackupState.errorMessage] describes the failure.
+  Future<String?> exportToFile() async {
+    if (state.isWorking) return null;
+    state = _workingState();
+    try {
+      final payload = await ref.read(backupServiceProvider).createPayload();
+      final fileName = await ref
+          .read(backupFileServiceProvider)
+          .exportBackup(payload.toEncodedJson());
+      if (_disposed) return null;
+      state = state.copyWith(
+        isWorking: false,
+        statusMessage: fileName == null ? null : _exportCompletedMessage,
+      );
+      return fileName;
+    } catch (error, stackTrace) {
+      logger.error('[Backup] Local backup export failed', error, stackTrace);
+      if (_disposed) return null;
+      state = state.copyWith(
+        isWorking: false,
+        errorMessage: 'Backup export failed: ${_describe(error)}',
+      );
+      return null;
+    }
+  }
+
+  /// Picks a local backup file and parses it for a restore preview.
+  ///
+  /// Returns the parsed payload, or null when nothing was picked or the file
+  /// is not a readable backup, in which case [BackupState.errorMessage]
+  /// describes the failure.
+  Future<BackupPayload?> importFilePreview() async {
+    if (state.isWorking) return null;
+    state = _workingState();
+    try {
+      final encoded = await ref.read(backupFileServiceProvider).importBackup();
+      if (_disposed) return null;
+      if (encoded == null) {
+        state = state.copyWith(isWorking: false);
+        return null;
+      }
+      final payload = await ref
+          .read(backupServiceProvider)
+          .loadBackupPreview(encoded);
+      if (!_disposed) state = state.copyWith(isWorking: false);
+      return payload;
+    } on BackupFormatException catch (error) {
+      logger.warning('[Backup] Local backup file rejected: $error');
+      if (_disposed) return null;
+      state = state.copyWith(
+        isWorking: false,
+        errorMessage: _corruptBackupMessage,
+      );
+      return null;
+    } on FormatException {
+      logger.warning('[Backup] Local backup file is not readable text');
+      if (_disposed) return null;
+      state = state.copyWith(
+        isWorking: false,
+        errorMessage: _corruptBackupMessage,
+      );
+      return null;
+    } catch (error, stackTrace) {
+      logger.error('[Backup] Local backup import failed', error, stackTrace);
+      if (_disposed) return null;
+      state = state.copyWith(
+        isWorking: false,
+        errorMessage: 'Could not read the backup file: ${_describe(error)}',
       );
       return null;
     }

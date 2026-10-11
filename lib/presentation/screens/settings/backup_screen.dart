@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/extensions/context_extensions.dart';
+import '../../../core/services/backup_service.dart';
 import '../../providers/backup_provider.dart';
 
-/// Settings screen for Google Drive backup and restore of app data.
+/// Settings screen for backup and restore of app data, through Google Drive
+/// or a local JSON file.
 class BackupScreen extends ConsumerWidget {
   const BackupScreen({super.key});
 
@@ -18,9 +20,10 @@ class BackupScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (!state.isConfigured)
-            _buildNotConfiguredCard(context)
-          else ...[
+          if (!state.isConfigured) ...[
+            _buildNotConfiguredCard(context),
+            const SizedBox(height: 12),
+          ] else ...[
             if (state.isSignedIn) ...[
               _buildAccountCard(context, state),
               if (state.hasRemoteBackupToRestore)
@@ -37,7 +40,9 @@ class BackupScreen extends ConsumerWidget {
                 color: context.colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 12),
           ],
+          _buildLocalBackupCard(context, ref, state),
         ],
       ),
     );
@@ -64,7 +69,7 @@ class BackupScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Backup not available',
+                    'Google Drive backup not available',
                     style: context.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
@@ -72,7 +77,7 @@ class BackupScreen extends ConsumerWidget {
                     'This build was compiled without Google credentials. '
                     'Ask the developer to build with the Google OAuth '
                     'configuration, or run locally with the --dart-define '
-                    'flags.',
+                    'flags. Use the local file backup below instead.',
                     style: context.textTheme.bodyMedium?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
@@ -89,7 +94,7 @@ class BackupScreen extends ConsumerWidget {
   Widget _buildSignInCard(BuildContext context, WidgetRef ref) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      margin: EdgeInsets.zero,
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -290,12 +295,78 @@ class BackupScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildLocalBackupCard(
+    BuildContext context,
+    WidgetRef ref,
+    BackupState state,
+  ) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      child: Column(
+        children: [
+          ListTile(
+            key: const Key('backupExportFileButton'),
+            leading: const Icon(Icons.ios_share),
+            title: const Text('Export backup to file'),
+            subtitle: const Text('Save a .json copy on this device'),
+            onTap: state.isWorking ? null : () => _exportToFile(context, ref),
+          ),
+          ListTile(
+            key: const Key('backupImportFileButton'),
+            leading: const Icon(Icons.folder_open),
+            title: const Text('Restore from file…'),
+            onTap: state.isWorking
+                ? null
+                : () => _startFileRestore(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startRestore(BuildContext context, WidgetRef ref) async {
     final payload = await ref
         .read(backupProvider.notifier)
         .fetchBackupPreview();
     if (!context.mounted || payload == null) return;
+    final confirmed = await _confirmRestore(context, payload);
+    if (!confirmed || !context.mounted) return;
+    await _restoreConfirmed(context, ref, payload);
+  }
 
+  Future<void> _startFileRestore(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(backupProvider.notifier);
+    final payload = await notifier.importFilePreview();
+    if (!context.mounted) return;
+    if (payload == null) {
+      _showErrorSnackBar(context, ref);
+      return;
+    }
+    final confirmed = await _confirmRestore(context, payload);
+    if (!confirmed || !context.mounted) return;
+    await _restoreConfirmed(context, ref, payload);
+  }
+
+  Future<void> _exportToFile(BuildContext context, WidgetRef ref) async {
+    final fileName = await ref.read(backupProvider.notifier).exportToFile();
+    if (!context.mounted) return;
+    if (fileName != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Backup exported to $fileName'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+    _showErrorSnackBar(context, ref);
+  }
+
+  Future<bool> _confirmRestore(
+    BuildContext context,
+    BackupPayload payload,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -335,8 +406,14 @@ class BackupScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed != true) return;
+    return confirmed == true;
+  }
 
+  Future<void> _restoreConfirmed(
+    BuildContext context,
+    WidgetRef ref,
+    BackupPayload payload,
+  ) async {
     final restored = await ref
         .read(backupProvider.notifier)
         .restoreFrom(payload);
@@ -345,6 +422,17 @@ class BackupScreen extends ConsumerWidget {
       SnackBar(
         content: Text(restored ? 'Backup restored' : 'Restore failed'),
         backgroundColor: restored ? Colors.green : context.colorScheme.error,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, WidgetRef ref) {
+    final error = ref.read(backupProvider).errorMessage;
+    if (error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error),
+        backgroundColor: context.colorScheme.error,
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:arrmate/core/services/backup_file_service.dart';
 import 'package:arrmate/core/services/backup_service.dart';
 import 'package:arrmate/core/services/google_auth.dart';
 import 'package:arrmate/core/services/google_drive_service.dart';
@@ -15,6 +16,8 @@ class _MockGoogleDriveService extends Mock implements GoogleDriveService {}
 
 class _MockBackupService extends Mock implements BackupService {}
 
+class _MockBackupFileService extends Mock implements BackupFileService {}
+
 class _CountingInstancesNotifier extends InstancesNotifier {
   static int buildCount = 0;
 
@@ -29,6 +32,7 @@ void main() {
   late _MockGoogleOAuthService oauthService;
   late _MockGoogleDriveService driveService;
   late _MockBackupService backupService;
+  late _MockBackupFileService fileService;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -41,6 +45,7 @@ void main() {
     oauthService = _MockGoogleOAuthService();
     driveService = _MockGoogleDriveService();
     backupService = _MockBackupService();
+    fileService = _MockBackupFileService();
     when(() => driveService.findBackupFile()).thenAnswer((_) async => null);
   });
 
@@ -54,6 +59,7 @@ void main() {
         googleOAuthServiceProvider.overrideWithValue(oauthService),
         googleDriveServiceProvider.overrideWithValue(driveService),
         backupServiceProvider.overrideWithValue(backupService),
+        backupFileServiceProvider.overrideWithValue(fileService),
         ...overrides,
       ],
     );
@@ -257,6 +263,149 @@ void main() {
       // Then
       verifyNever(() => backupService.createPayload());
       verifyNever(() => driveService.uploadBackup(any()));
+    });
+
+    group('local file backup', () {
+      BackupPayload buildPayload() => BackupPayload(
+        schema: 1,
+        appVersion: '1.0.0',
+        platform: 'android',
+        createdAt: DateTime.utc(2026, 10, 11, 8, 0),
+        preferences: const {},
+      );
+
+      test('shouldExportPayloadToLocalFile_whenSignedOut', () async {
+        // Given
+        createContainer();
+        final payload = buildPayload();
+        const fileName = 'arrmate-backup-2026-10-11.json';
+        when(
+          () => backupService.createPayload(),
+        ).thenAnswer((_) async => payload);
+        when(
+          () => fileService.exportBackup(payload.toEncodedJson()),
+        ).thenAnswer((_) async => fileName);
+
+        // When
+        final exported = await container
+            .read(backupProvider.notifier)
+            .exportToFile();
+
+        // Then
+        expect(exported, fileName);
+        final state = container.read(backupProvider);
+        expect(state.statusMessage, 'Backup exported to file.');
+        expect(state.errorMessage, isNull);
+        expect(state.isWorking, isFalse);
+        expect(state.lastBackupAt, isNull);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(BackupNotifier.lastBackupKey), isNull);
+        verifyNever(() => driveService.uploadBackup(any()));
+      });
+
+      test('shouldClearWorking_whenExportAborted', () async {
+        // Given
+        createContainer();
+        when(
+          () => backupService.createPayload(),
+        ).thenAnswer((_) async => buildPayload());
+        when(
+          () => fileService.exportBackup(any()),
+        ).thenAnswer((_) async => null);
+
+        // When
+        final exported = await container
+            .read(backupProvider.notifier)
+            .exportToFile();
+
+        // Then
+        expect(exported, isNull);
+        final state = container.read(backupProvider);
+        expect(state.errorMessage, isNull);
+        expect(state.statusMessage, isNull);
+        expect(state.isWorking, isFalse);
+      });
+
+      test('shouldSetError_whenExportFails', () async {
+        // Given
+        createContainer();
+        when(() => backupService.createPayload()).thenThrow(Exception('boom'));
+
+        // When
+        final exported = await container
+            .read(backupProvider.notifier)
+            .exportToFile();
+
+        // Then
+        expect(exported, isNull);
+        final state = container.read(backupProvider);
+        expect(state.errorMessage, contains('Backup export failed'));
+        expect(state.isWorking, isFalse);
+      });
+
+      test('shouldReturnParsedPreview_whenLocalFileIsValid', () async {
+        // Given
+        createContainer();
+        final payload = buildPayload();
+        final encoded = payload.toEncodedJson();
+        when(() => fileService.importBackup()).thenAnswer((_) async => encoded);
+        when(
+          () => backupService.loadBackupPreview(encoded),
+        ).thenAnswer((_) async => payload);
+
+        // When
+        final preview = await container
+            .read(backupProvider.notifier)
+            .importFilePreview();
+
+        // Then
+        expect(preview, same(payload));
+        final state = container.read(backupProvider);
+        expect(state.isWorking, isFalse);
+        expect(state.errorMessage, isNull);
+      });
+
+      test('shouldRejectCorruptLocalFile', () async {
+        // Given
+        createContainer();
+        when(
+          () => fileService.importBackup(),
+        ).thenAnswer((_) async => '{not json');
+        when(() => backupService.loadBackupPreview('{not json')).thenThrow(
+          const BackupFormatException('Backup file is not valid JSON.'),
+        );
+
+        // When
+        final preview = await container
+            .read(backupProvider.notifier)
+            .importFilePreview();
+
+        // Then
+        expect(preview, isNull);
+        final state = container.read(backupProvider);
+        expect(
+          state.errorMessage,
+          'The backup file is corrupted or from an unsupported version.',
+        );
+        expect(state.isWorking, isFalse);
+      });
+
+      test('shouldStaySilent_whenLocalImportCancelled', () async {
+        // Given
+        createContainer();
+        when(() => fileService.importBackup()).thenAnswer((_) async => null);
+
+        // When
+        final preview = await container
+            .read(backupProvider.notifier)
+            .importFilePreview();
+
+        // Then
+        expect(preview, isNull);
+        final state = container.read(backupProvider);
+        expect(state.errorMessage, isNull);
+        expect(state.isWorking, isFalse);
+      });
     });
 
     group('remote backup', () {

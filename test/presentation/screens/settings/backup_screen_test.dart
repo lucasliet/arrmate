@@ -10,6 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FakeBackupNotifier extends BackupNotifier {
   BackupState fakeState;
   BackupPayload? previewPayload;
+  BackupPayload? filePreviewPayload;
+  String? exportResult;
+  String? importError;
   bool signInCalled = false;
   bool signOutCalled = false;
   bool backupNowCalled = false;
@@ -49,6 +52,17 @@ class FakeBackupNotifier extends BackupNotifier {
 
   @override
   Future<BackupPayload?> fetchBackupPreview() async => previewPayload;
+
+  @override
+  Future<String?> exportToFile() async => exportResult;
+
+  @override
+  Future<BackupPayload?> importFilePreview() async {
+    if (importError != null) {
+      emit(fakeState.copyWith(errorMessage: importError));
+    }
+    return filePreviewPayload;
+  }
 
   @override
   Future<bool> restoreFrom(BackupPayload payload) async {
@@ -248,6 +262,100 @@ void main() {
     // Then
     expect(find.byKey(const Key('backupErrorMessage')), findsOneWidget);
     expect(find.text('Boom'), findsOneWidget);
+  });
+
+  testWidgets('shouldShowLocalBackupActions_whenBuildLacksCredentials', (
+    tester,
+  ) async {
+    // Given
+    const state = BackupState(isConfigured: false);
+
+    // When
+    await _pumpScreen(tester, state);
+
+    // Then
+    expect(find.byKey(const Key('backupExportFileButton')), findsOneWidget);
+    expect(find.byKey(const Key('backupImportFileButton')), findsOneWidget);
+  });
+
+  testWidgets('shouldShowExportedSnackbar_whenExportToFileTapped', (
+    tester,
+  ) async {
+    // Given
+    final notifier = FakeBackupNotifier(_signedInState());
+    notifier.exportResult = 'arrmate-backup-2026-10-11.json';
+    await _pumpScreen(tester, notifier.fakeState, notifier: notifier);
+
+    // When
+    await tester.ensureVisible(find.byKey(const Key('backupExportFileButton')));
+    await tester.tap(find.byKey(const Key('backupExportFileButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.text('Backup exported to arrmate-backup-2026-10-11.json'),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('shouldConfirmBeforeRestoreFromFile_andCallRestoreFrom', (
+    tester,
+  ) async {
+    // Given
+    final payload = BackupPayload(
+      schema: 1,
+      appVersion: '2.3.0',
+      platform: 'android',
+      createdAt: DateTime.utc(2026, 10, 11, 9),
+      preferences: const <String, Object?>{},
+    );
+    final notifier = FakeBackupNotifier(_signedInState());
+    notifier.filePreviewPayload = payload;
+    await _pumpScreen(tester, notifier.fakeState, notifier: notifier);
+
+    // When
+    await tester.ensureVisible(find.byKey(const Key('backupImportFileButton')));
+    await tester.tap(find.byKey(const Key('backupImportFileButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.byKey(const Key('backupRestoreConfirmDialog')), findsOneWidget);
+    expect(find.text('Platform: android'), findsOneWidget);
+
+    // When
+    await tester.tap(find.byKey(const Key('backupRestoreConfirmButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(notifier.restoreFromCalled, isTrue);
+    expect(notifier.restoredPayload, same(payload));
+    expect(find.text('Backup restored'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('shouldShowErrorSnackbar_whenLocalFileInvalid', (tester) async {
+    // Given
+    final notifier = FakeBackupNotifier(const BackupState(isConfigured: false));
+    notifier.importError =
+        'The backup file is corrupted or from an unsupported version.';
+    await _pumpScreen(tester, notifier.fakeState, notifier: notifier);
+
+    // When
+    await tester.ensureVisible(find.byKey(const Key('backupImportFileButton')));
+    await tester.tap(find.byKey(const Key('backupImportFileButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.text('The backup file is corrupted or from an unsupported version.'),
+      findsOneWidget,
+    );
+    expect(notifier.restoreFromCalled, isFalse);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 }
 

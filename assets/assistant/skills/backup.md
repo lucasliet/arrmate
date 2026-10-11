@@ -1,11 +1,11 @@
 ---
 name: backup
-description: Backup e restauração no Google Drive, backup de configurações e instâncias com API keys, backup automático, restore, appDataFolder, sign in Google, sessão expirada, backup not available
+description: Backup e restauração no Google Drive e via arquivo local JSON, backup de configurações e instâncias com API keys, backup automático, restore, exportar arquivo, importar arquivo, appDataFolder, sign in Google, sessão expirada, backup not available
 ---
 
-# Backup & Restore (Google Drive)
+# Backup & Restore (Google Drive e arquivo local)
 
-> **Onde tudo fica:** o backup fica em uma tela própria, a **Backup & Restore** (Configurações → seção "System" → "Backup & Restore", rota `/settings/backup`). Ele guarda as configurações do app e as instâncias configuradas na **pasta privada do app no Google Drive** do próprio usuário.
+> **Onde tudo fica:** o backup fica em uma tela própria, a **Backup & Restore** (Configurações → seção "System" → "Backup & Restore", rota `/settings/backup`). Ele guarda as configurações do app e as instâncias configuradas de duas formas: na **pasta privada do app no Google Drive** do próprio usuário (com login Google) ou em um **arquivo JSON local** que você mesmo exporta e importa (sem precisar de login).
 
 ## O que entra no backup — configurações e instâncias
 
@@ -25,6 +25,30 @@ E também as **instâncias configuradas** — Radarr, Sonarr e qBittorrent — *
 **Onde é armazenado:**
 - Pasta **privada do app no Google Drive** (`appDataFolder`): invisível para outros apps e não aparece em "Meu Drive" do usuário.
 - O arquivo de backup se chama `arrmate-backup.json`.
+- Alternativamente, **um arquivo JSON local** exportado pela própria tela — ver seção abaixo.
+
+## Backup em arquivo local — "Export backup to file" e "Restore from file…"
+
+**Onde fica:** Configurações → seção "System" → "Backup & Restore", cartão na parte de baixo da tela.
+
+**Exportar:**
+1. Tocar em **"Export backup to file"**.
+2. O app abre o **dialog de salvamento** do sistema (no web, baixa o arquivo direto).
+3. O arquivo sugerido se chama `arrmate-backup-AAAA-MM-DD.json` (com a data do dia).
+4. Uma confirmação verde aparece com o nome do arquivo salvo.
+
+**Restaurar:**
+1. Tocar em **"Restore from file…"**.
+2. Escolher um arquivo de backup `.json` no seletor de arquivos.
+3. Abre a **mesma confirmação** do restore do Drive (data, versão, plataforma, número de instâncias e aviso de substituição).
+4. Confirmar para restaurar.
+
+**Comportamento:**
+- **Não precisa de login Google** — funciona até em builds sem a configuração do Google (quando o Drive aparece como "Google Drive backup not available").
+- O arquivo local tem o **mesmo formato** do backup do Drive: um backup exportado pode ser restaurado no Drive e vice-versa.
+- O restore **substitui** as configurações e instâncias atuais, igual ao restore do Drive.
+- Exportar para arquivo **não altera** a data de "Last backup" nem o controle de sincronização do Drive.
+- **Atenção**: o arquivo é **texto puro com as API keys das instâncias** — guarde em local seguro.
 
 ## Fazer login com a conta Google — sign in
 
@@ -83,11 +107,14 @@ E também as **instâncias configuradas** — Radarr, Sonarr e qBittorrent — *
 
 ## Estados e problemas comuns
 
-- **"Backup not available"**: build sem os dart-defines do Google (ex.: debug local sem as flags) — a função não foi compilada neste build.
+- **"Google Drive backup not available"**: build sem os dart-defines do Google (ex.: debug local sem as flags) — o backup por **Drive** não foi compilado neste build; o **arquivo local continua disponível** no cartão de baixo.
 - **Sessão expirada**: o app pede para fazer **"Sign in again"** — basta entrar de novo com a conta Google.
 - **"No backup found"**: a conta Google logada nunca fez backup nesta tela — faça o primeiro "Back up now".
+- **"The backup file is corrupted or from an unsupported version"**: o arquivo escolhido em "Restore from file…" não é um backup válido do Arrmate ou foi gerado por versão incompatível.
 
 **Ações da tela (resumo):**
-- **"Back up now"** — upload imediato; atualiza a data do último backup.
-- **"Restore backup…"** — baixa e restaura com confirmação.
+- **"Back up now"** — upload imediato para o Drive; atualiza a data do último backup.
+- **"Restore backup…"** — baixa do Drive e restaura com confirmação.
+- **"Export backup to file"** — salva um `.json` local (funciona sem login).
+- **"Restore from file…"** — restaura a partir de um `.json` local, com confirmação.
 - **"Sign out"** — desconecta a conta Google (o backup automático para).
