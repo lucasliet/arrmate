@@ -25,7 +25,9 @@ class BackupFileService {
   ///
   /// Returns the exported file name, or null when the dialog was aborted. On
   /// the web the download starts immediately and the chosen name is returned
-  /// even though no path exists.
+  /// even though no path exists. Android and iOS write the picked document
+  /// themselves from the given bytes, so only desktop builds need to fill the
+  /// returned plain path.
   Future<String?> exportBackup(String encodedJson) async {
     final fileName = buildFileName(DateTime.now());
     final bytes = Uint8List.fromList(utf8.encode(encodedJson));
@@ -36,7 +38,11 @@ class BackupFileService {
       bytes: bytes,
     );
     if (path == null && !kIsWeb) return null;
-    if (path != null) await writeBackupFile(path, bytes);
+    final writesNativeFile =
+        !kIsWeb &&
+        defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS;
+    if (path != null && writesNativeFile) await writeBackupFile(path, bytes);
     logger.info(
       '[BackupFileService] Backup exported to ${path ?? fileName} '
       '(${bytes.length} bytes)',

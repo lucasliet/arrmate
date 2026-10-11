@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:arrmate/core/services/backup_file_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeFilePicker extends FilePicker {
@@ -66,6 +66,8 @@ void main() {
     group('exportBackup', () {
       test('shouldWriteBackupToChosenPath_whenSaveDialogConfirmed', () async {
         // Given
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
         final directory = await Directory.systemTemp.createTemp('arrmate');
         addTearDown(() => directory.delete(recursive: true));
         final path = '${directory.path}/chosen.json';
@@ -106,6 +108,43 @@ void main() {
 
         // Then
         expect(fileName, isNull);
+      });
+
+      test('shouldNotWritePluginPath_whenExportingOnAndroid', () async {
+        // Given
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        final picker = _FakeFilePicker(
+          saveFileResult: '/document/primary:Download/arrmate-backup.json',
+        );
+        FilePicker.platform = picker;
+
+        // When
+        final fileName = await BackupFileService().exportBackup('{"schema":1}');
+
+        // Then
+        expect(fileName, isNotNull);
+        expect(
+          File('/document/primary:Download/arrmate-backup.json').existsSync(),
+          isFalse,
+        );
+      });
+
+      test('shouldNotWritePluginPath_whenExportingOnIOS', () async {
+        // Given
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        final picker = _FakeFilePicker(
+          saveFileResult: '/tmp/inbox/backup.json',
+        );
+        FilePicker.platform = picker;
+
+        // When
+        final fileName = await BackupFileService().exportBackup('{"schema":1}');
+
+        // Then
+        expect(fileName, isNotNull);
+        expect(File('/tmp/inbox/backup.json').existsSync(), isFalse);
       });
     });
 
