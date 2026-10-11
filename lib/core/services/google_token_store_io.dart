@@ -17,13 +17,21 @@ GoogleTokenStore createDefaultGoogleTokenStore() => SecureGoogleTokenStore();
 
 /// [GoogleTokenStore] backed by the platform's encrypted secure storage,
 /// used by every native build.
+///
+/// On macOS the legacy login keychain is used explicitly: the default
+/// data-protection keychain requires a `keychain-access-groups` entitlement,
+/// which ad-hoc signed builds cannot carry (keychain error -34018).
 class SecureGoogleTokenStore implements GoogleTokenStore {
   final FlutterSecureStorage _storage;
 
   /// Creates the store, optionally injecting the underlying secure
   /// [storage] for tests.
   SecureGoogleTokenStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            mOptions: MacOsOptions(usesDataProtectionKeychain: false),
+          );
 
   @override
   Future<Map<String, String>> readAll() => _storage.readAll();
