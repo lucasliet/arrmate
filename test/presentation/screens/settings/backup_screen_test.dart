@@ -108,6 +108,22 @@ void main() {
     expect(notifier.signInCalled, isTrue);
   });
 
+  testWidgets('shouldShowSignInError_whenSignedOut', (tester) async {
+    // Given
+    const state = BackupState(
+      isConfigured: true,
+      isSignedIn: false,
+      errorMessage: 'Sign-in failed. Check your connection and try again.',
+    );
+
+    // When
+    await _pumpScreen(tester, state);
+
+    // Then
+    expect(find.byKey(const Key('backupSignInButton')), findsOneWidget);
+    expect(find.byKey(const Key('backupErrorMessage')), findsOneWidget);
+  });
+
   testWidgets('shouldShowAccountAndActions_whenSignedIn', (tester) async {
     // Given
     final lastBackupAt = DateTime.utc(2026, 3, 4, 5, 6);

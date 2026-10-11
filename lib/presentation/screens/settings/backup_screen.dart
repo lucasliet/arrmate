@@ -30,7 +30,7 @@ class BackupScreen extends ConsumerWidget {
                 _buildRemoteBackupCard(context, ref, state),
               _buildActionsCard(context, ref, state),
             ] else
-              _buildSignInCard(context, ref),
+              _buildSignInCard(context, ref, state),
             const SizedBox(height: 8),
             Text(
               'Automatic backups run about 30 seconds after you change '
@@ -91,7 +91,11 @@ class BackupScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSignInCard(BuildContext context, WidgetRef ref) {
+  Widget _buildSignInCard(
+    BuildContext context,
+    WidgetRef ref,
+    BackupState state,
+  ) {
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 12),
@@ -123,6 +127,16 @@ class BackupScreen extends ConsumerWidget {
               icon: const Icon(Icons.login),
               label: const Text('Sign in with Google'),
             ),
+            if (state.errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                state.errorMessage!,
+                key: const Key('backupErrorMessage'),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.error,
+                ),
+              ),
+            ],
           ],
         ),
       ),
