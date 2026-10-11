@@ -1,6 +1,7 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <glib/gstdio.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -13,6 +14,84 @@ struct _MyApplication {
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+// Frames narrower or shorter than this are unusable states and must never be
+// persisted nor restored.
+constexpr gint kMinimumWindowWidth = 400;
+constexpr gint kMinimumWindowHeight = 300;
+
+// Returns the config file path holding the last window geometry, allocating
+// the config directory when missing.
+static gchar* window_geometry_path() {
+  gchar* config_dir =
+      g_build_filename(g_get_user_config_dir(), "arrmate", nullptr);
+  g_mkdir_with_parents(config_dir, 0755);
+  gchar* path = g_build_filename(config_dir, "window.conf", nullptr);
+  g_free(config_dir);
+  return path;
+}
+
+// Restores the geometry persisted by a previous session into |window|,
+// keeping the defaults when no valid geometry was stored. Position is
+// ignored by Wayland compositors, which own window placement.
+static void restore_window_geometry(GtkWindow* window) {
+  gint width = 1280;
+  gint height = 720;
+  gint x = 0;
+  gint y = 0;
+
+  g_autofree gchar* path = window_geometry_path();
+  GKeyFile* key_file = g_key_file_new();
+  if (g_key_file_load_from_file(key_file, path, G_KEY_FILE_NONE, nullptr)) {
+    gint saved_width =
+        g_key_file_get_integer(key_file, "Window", "width", nullptr);
+    gint saved_height =
+        g_key_file_get_integer(key_file, "Window", "height", nullptr);
+    if (saved_width >= kMinimumWindowWidth &&
+        saved_height >= kMinimumWindowHeight) {
+      width = saved_width;
+      height = saved_height;
+      x = g_key_file_get_integer(key_file, "Window", "x", nullptr);
+      y = g_key_file_get_integer(key_file, "Window", "y", nullptr);
+    }
+  }
+  g_key_file_free(key_file);
+
+  gtk_window_set_default_size(window, width, height);
+  gtk_window_move(window, x, y);
+}
+
+// Persists the current window geometry, ignoring unusable frames so a broken
+// size can never be remembered.
+static void save_window_geometry(GtkWindow* window) {
+  gint width = 0;
+  gint height = 0;
+  gtk_window_get_size(window, &width, &height);
+  if (width < kMinimumWindowWidth || height < kMinimumWindowHeight) {
+    return;
+  }
+
+  gint x = 0;
+  gint y = 0;
+  gtk_window_get_position(window, &x, &y);
+
+  GKeyFile* key_file = g_key_file_new();
+  g_key_file_set_integer(key_file, "Window", "x", x);
+  g_key_file_set_integer(key_file, "Window", "y", y);
+  g_key_file_set_integer(key_file, "Window", "width", width);
+  g_key_file_set_integer(key_file, "Window", "height", height);
+
+  g_autofree gchar* path = window_geometry_path();
+  g_key_file_save_to_file(key_file, path, nullptr);
+  g_key_file_free(key_file);
+}
+
+// Keeps the geometry saved before the window closes and lets it close.
+static gboolean window_delete_event_cb(GtkWidget* widget, GdkEvent* event,
+                                       gpointer user_data) {
+  save_window_geometry(GTK_WINDOW(widget));
+  return FALSE;
+}
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
@@ -52,7 +131,9 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "Arrmate");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  restore_window_geometry(window);
+  g_signal_connect(window, "delete-event", G_CALLBACK(window_delete_event_cb),
+                   nullptr);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   // Use Flutter's resolved asset directory so the bundle remains relocatable.

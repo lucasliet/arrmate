@@ -26,6 +26,15 @@ constexpr const wchar_t kGetPreferredBrightnessRegKey[] =
   L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 constexpr const wchar_t kGetPreferredBrightnessRegValue[] = L"AppsUseLightTheme";
 
+/// Registry location where the last window frame is persisted as a binary
+/// RECT, so the window reopens with the size and position the user left.
+constexpr const wchar_t kWindowFrameRegKey[] = L"Software\\Arrmate\\Window";
+constexpr const wchar_t kWindowFrameRegValue[] = L"Frame";
+
+/// Frames narrower than this are engine garbage (macOS-style collapses) or
+/// unusable states and must never be persisted nor restored.
+constexpr const LONG kMinimumSaneWindowWidth = 400;
+
 // The number of Win32Window objects that currently exist.
 static int g_active_window_count = 0;
 
@@ -35,6 +44,38 @@ using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 // scale factor
 int Scale(int source, double scale_factor) {
   return static_cast<int>(source * scale_factor);
+}
+
+// Reads the window frame persisted by a previous session. Returns false when
+// no valid frame was stored.
+bool ReadSavedWindowRect(RECT* rect) {
+  DWORD size = sizeof(RECT);
+  LSTATUS result = RegGetValue(HKEY_CURRENT_USER, kWindowFrameRegKey,
+                               kWindowFrameRegValue, RRF_RT_REG_BINARY, nullptr,
+                               rect, &size);
+  return result == ERROR_SUCCESS && size == sizeof(RECT);
+}
+
+// Returns whether the frame is sane and lands on a connected monitor.
+bool IsUsableWindowRect(const RECT& rect) {
+  if (rect.right - rect.left < kMinimumSaneWindowWidth) {
+    return false;
+  }
+  return MonitorFromRect(&rect, MONITOR_DEFAULTTONULL) != nullptr;
+}
+
+// Persists the current window frame, ignoring unusable frames so a broken
+// size can never be remembered.
+void WriteWindowFrame(HWND window) {
+  RECT rect;
+  if (!GetWindowRect(window, &rect)) {
+    return;
+  }
+  if (rect.right - rect.left < kMinimumSaneWindowWidth) {
+    return;
+  }
+  RegSetKeyValue(HKEY_CURRENT_USER, kWindowFrameRegKey, kWindowFrameRegValue,
+                 REG_BINARY, &rect, sizeof(rect));
 }
 
 // Dynamically loads the |EnableNonClientDpiScaling| from the User32 module.
@@ -134,10 +175,18 @@ bool Win32Window::Create(const std::wstring& title,
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
+  RECT saved_rect;
+  const bool has_saved_frame =
+      ReadSavedWindowRect(&saved_rect) && IsUsableWindowRect(saved_rect);
+
   HWND window = CreateWindow(
       window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
-      Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
-      Scale(size.width, scale_factor), Scale(size.height, scale_factor),
+      has_saved_frame ? saved_rect.left : Scale(origin.x, scale_factor),
+      has_saved_frame ? saved_rect.top : Scale(origin.y, scale_factor),
+      has_saved_frame ? saved_rect.right - saved_rect.left
+                      : Scale(size.width, scale_factor),
+      has_saved_frame ? saved_rect.bottom - saved_rect.top
+                      : Scale(size.height, scale_factor),
       nullptr, nullptr, GetModuleHandle(nullptr), this);
 
   if (!window) {
@@ -179,6 +228,10 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_CLOSE:
+      WriteWindowFrame(hwnd);
+      break;
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
