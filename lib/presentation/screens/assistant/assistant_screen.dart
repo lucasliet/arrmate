@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_apple_intelligence_service.dart';
@@ -353,14 +355,20 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                       : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Text(
-                  m.content,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isUser
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSurface,
-                  ),
-                ),
+                child: isUser
+                    ? Text(
+                        m.content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      )
+                    : GptMarkdown(
+                        m.content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        onLinkTap: (url, _) => _openAssistantLink(context, url),
+                      ),
               ),
             );
           },
@@ -425,6 +433,27 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     if (text.isEmpty) return;
     _controller.clear();
     notifier.sendMessage(text);
+  }
+
+  Future<void> _openAssistantLink(BuildContext context, String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.scheme != 'https') {
+        throw const FormatException('Only HTTPS links are supported');
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw StateError('Unable to open link');
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+    }
   }
 
   void _showDownloadDialog(BuildContext context) {

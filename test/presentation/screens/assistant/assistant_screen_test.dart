@@ -18,12 +18,14 @@ class _AssistantNotifier extends AssistantNotifier {
     this.isGenerating = false,
     this.mode = AssistantModelMode.online,
     this.appleIntelligenceAvailability,
+    this.messages = const [],
   });
 
   final List<String> onlineModels;
   final bool isGenerating;
   final AssistantModelMode mode;
   final AppleFoundationModelsAvailability? appleIntelligenceAvailability;
+  final List<AssistantMessage> messages;
   String? lastSelectedOnlineModel;
   String? lastMessage;
   int appleIntelligenceRequests = 0;
@@ -46,6 +48,7 @@ class _AssistantNotifier extends AssistantNotifier {
         modifiedAt: DateTime(2026),
       ),
     ],
+    messages: messages,
   );
 
   @override
@@ -400,4 +403,80 @@ void main() {
 
     expect(notifier.lastSelectedOnlineModel, lastModelId);
   });
+
+  testWidgets('renders assistant replies as markdown', (tester) async {
+    final notifier = _AssistantNotifier(
+      mode: AssistantModelMode.appleIntelligence,
+      messages: [
+        AssistantMessage(
+          id: 'm1',
+          role: AssistantMessageRole.assistant,
+          content:
+              'Open the **SeriesDetailsScreen** and toggle the monitor flag.',
+          createdAt: DateTime(2026),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _assistantApp(
+        PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: TargetPlatform.linux,
+        ),
+        notifier: notifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('**'), findsNothing);
+
+    final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+    final hasBoldPhrase = richTexts.any(
+      (rich) => _containsBoldText(rich.text, 'SeriesDetailsScreen'),
+    );
+    expect(hasBoldPhrase, isTrue);
+    expect(find.textContaining('toggle the monitor flag'), findsOneWidget);
+  });
+
+  testWidgets('keeps user messages as plain text', (tester) async {
+    final notifier = _AssistantNotifier(
+      mode: AssistantModelMode.appleIntelligence,
+      messages: [
+        AssistantMessage(
+          id: 'm1',
+          role: AssistantMessageRole.user,
+          content: 'Does **bold** work here?',
+          createdAt: DateTime(2026),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _assistantApp(
+        PlatformCapabilities.forPlatform(
+          isWeb: false,
+          targetPlatform: TargetPlatform.linux,
+        ),
+        notifier: notifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Does **bold** work here?'), findsOneWidget);
+  });
+}
+
+bool _containsBoldText(
+  InlineSpan span,
+  String phrase, {
+  bool inheritedBold = false,
+}) {
+  final isBold = inheritedBold || span.style?.fontWeight == FontWeight.bold;
+  if (span is TextSpan && span.text?.contains(phrase) == true && isBold) {
+    return true;
+  }
+  if (span is! TextSpan) return false;
+  return span.children?.any(
+        (child) => _containsBoldText(child, phrase, inheritedBold: isBold),
+      ) ??
+      false;
 }
