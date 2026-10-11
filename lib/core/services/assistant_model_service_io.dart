@@ -116,6 +116,7 @@ class AssistantModelService {
           );
 
   static const _selectedModelIdKey = 'assistant_selected_model_id';
+  static const _selectedModeKey = 'assistant_selected_mode';
 
   final Dio _dio;
   final Set<CancelToken> _activeCancelTokens = {};
@@ -156,6 +157,23 @@ class AssistantModelService {
       return;
     }
     await prefs.setString(_selectedModelIdKey, modelId);
+  }
+
+  /// Returns the persisted assistant mode name chosen by the user, or null
+  /// when the user never switched away from the platform default.
+  Future<String?> getSelectedModeName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_selectedModeKey);
+  }
+
+  /// Persists the assistant mode name explicitly chosen by the user.
+  Future<void> setSelectedModeName(String? modeName) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (modeName == null) {
+      await prefs.remove(_selectedModeKey);
+      return;
+    }
+    await prefs.setString(_selectedModeKey, modeName);
   }
 
   /// Returns the curated catalog.

@@ -9,7 +9,7 @@ description: Modelos disponíveis, OpenCode Zen, Apple Intelligence, LiteRT, dow
 
 **Location:** **Settings** in bottom navigation or the sidebar → "System" → "Assistant".
 
-O **Assistant** é uma funcionalidade de IA para responder dúvidas sobre o Arrmate. Por padrão ele usa o modelo online gratuito do **OpenCode Zen** sem API key. A IA local (on-device) depende da plataforma:
+O **Assistant** é uma funcionalidade de IA para responder dúvidas sobre o Arrmate. O modo inicial depende da plataforma: em **iPhone, iPad e Mac** com Apple Intelligence disponível, a **Apple Intelligence** vem pré-selecionada; nas demais situações o padrão é o modelo online gratuito do **OpenCode Zen**, sem API key. A escolha explícita do usuário é lembrada entre sessões. A IA local (on-device) depende da plataforma:
 
 | Plataforma | IA em nuvem | IA local |
 |---|---|---|
@@ -34,17 +34,19 @@ O **Assistant** é uma funcionalidade de IA para responder dúvidas sobre o Arrm
 **Ações disponíveis:**
 
 1. **Usar OpenCode Zen online:**
-   - O modo online é o padrão do Assistant.
+   - O modo online é o padrão do Assistant onde a Apple Intelligence não está disponível; onde ela está disponível, ela é o padrão pré-selecionado e o online fica a um toque de distância.
+   - Escolher o modo online explicitamente faz o app lembrar dessa escolha nas próximas sessões.
    - Ele busca os modelos em `https://opencode.ai/zen/v1/models`, usa apenas modelos terminados em `-free` e não exige API key.
    - O modelo padrão é `mimo-v2.6-flash-free`.
    - Se o modelo ativo falhar, o app tenta automaticamente o próximo modelo free da lista e mantém o primeiro que funcionar.
 
 2. **Usar Apple Intelligence (iPhone, iPad e Mac):**
-   - Tocar no **ícone ⋮** do model selector → tocar **"Apple Intelligence"**.
+   - É o modo **pré-selecionado** ao abrir o Assistant quando o sistema oferece Apple Intelligence; também pode ser ativado tocando no **ícone ⋮** do model selector → **"Apple Intelligence"**.
    - Requisitos: **iOS 26 / iPadOS 26 / macOS 26** ou mais recente, aparelho compatível com Apple Intelligence e Apple Intelligence **ativado** nos Ajustes do sistema.
    - Não há download nem import: o modelo é do próprio sistema.
    - Se algum requisito faltar, o app mostra o motivo (ex: "Turn on Apple Intelligence in the system settings.") e continua no modo atual.
    - Ao tocar na opção, o app verifica a disponibilidade de novo — útil depois de ativar a Apple Intelligence ou quando o modelo termina de baixar.
+   - Se a Apple Intelligence estava selecionada mas aparece indisponível ao abrir o app, a sessão começa no modo online e volta para a Apple Intelligence quando ela ficar disponível de novo (basta tocar na opção).
 
 3. **Download um modelo local novo (Android):**
    - Tocar no **ícone ⋮** do model selector → tocar **"Download"**.

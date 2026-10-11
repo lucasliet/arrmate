@@ -83,6 +83,12 @@ class AssistantModelService {
   /// Ignores local model selection on web.
   Future<void> setSelectedModelId(String? modelId) async {}
 
+  /// Returns no persisted mode choice on web, which only offers the cloud.
+  Future<String?> getSelectedModeName() async => null;
+
+  /// Ignores the mode choice on web, which only offers the cloud.
+  Future<void> setSelectedModeName(String? modeName) async {}
+
   /// Returns an empty local model catalog on web.
   Future<List<AssistantModelCatalogEntry>> loadCatalog() async => catalog;
 

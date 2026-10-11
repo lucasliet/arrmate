@@ -244,6 +244,10 @@ class AssistantNotifier extends Notifier<AssistantState> {
         await _modelService.setSelectedModelId(null);
       }
 
+      final persistedMode = _parseMode(
+        await _modelService.getSelectedModeName(),
+      );
+
       state = state.copyWith(
         catalog: catalog,
         installedModels: installedModels,
@@ -254,6 +258,11 @@ class AssistantNotifier extends Notifier<AssistantState> {
         selectedModelPath: selectedModel?.path,
         clearSelectedModelId: selectedModel == null,
         clearSelectedModelPath: selectedModel == null,
+        mode: _initialMode(
+          persistedMode,
+          selectedModel,
+          appleIntelligenceAvailability,
+        ),
         isLoading: false,
         clearError: true,
       );
@@ -264,6 +273,40 @@ class AssistantNotifier extends Notifier<AssistantState> {
         error: 'Failed to initialize assistant resources.',
       );
     }
+  }
+
+  /// Returns the mode the assistant starts in: the user's explicit choice
+  /// when it is still usable, otherwise Apple Intelligence when the system
+  /// offers it, otherwise the cloud.
+  AssistantModelMode _initialMode(
+    AssistantModelMode? persistedMode,
+    AssistantInstalledModel? selectedModel,
+    AppleFoundationModelsAvailability? appleIntelligenceAvailability,
+  ) {
+    final appleAvailable =
+        appleIntelligenceAvailability ==
+        AppleFoundationModelsAvailability.available;
+    final fallback = appleAvailable
+        ? AssistantModelMode.appleIntelligence
+        : AssistantModelMode.online;
+    return switch (persistedMode) {
+      AssistantModelMode.online => AssistantModelMode.online,
+      AssistantModelMode.appleIntelligence when appleAvailable =>
+        AssistantModelMode.appleIntelligence,
+      AssistantModelMode.local when selectedModel != null =>
+        AssistantModelMode.local,
+      _ => fallback,
+    };
+  }
+
+  /// Maps a persisted mode name back to the enum, null when unknown.
+  AssistantModelMode? _parseMode(String? name) {
+    for (final mode in AssistantModelMode.values) {
+      if (mode.name == name) {
+        return mode;
+      }
+    }
+    return null;
   }
 
   /// Refreshes installed models from disk.
@@ -386,6 +429,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       final selection = await _onlineChatService.initialize();
       if (!_isLatestSelection(generation)) return;
       await _chatService.dispose();
+      await _modelService.setSelectedModeName(AssistantModelMode.online.name);
       state = state.copyWith(
         mode: AssistantModelMode.online,
         onlineModels: selection.models,
@@ -406,6 +450,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       final selectedModelId = await _onlineChatService.selectModel(modelId);
       if (!_isLatestSelection(generation)) return;
       await _chatService.dispose();
+      await _modelService.setSelectedModeName(AssistantModelMode.online.name);
       state = state.copyWith(
         mode: AssistantModelMode.online,
         selectedOnlineModelId: selectedModelId,
@@ -439,6 +484,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
 
     await _chatService.dispose();
+    await _modelService.setSelectedModeName(
+      AssistantModelMode.appleIntelligence.name,
+    );
     state = state.copyWith(
       mode: AssistantModelMode.appleIntelligence,
       appleIntelligenceAvailability: availability,
@@ -586,6 +634,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       await _chatService.loadModel(model.path);
       if (!_isLatestSelection(generation)) return false;
       await _modelService.setSelectedModelId(model.id);
+      await _modelService.setSelectedModeName(AssistantModelMode.local.name);
       state = state.copyWith(
         mode: AssistantModelMode.local,
         selectedModelId: model.id,
