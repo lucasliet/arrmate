@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'google_token_keys.dart';
+
 /// Persists the Google OAuth tokens between sessions.
 abstract class GoogleTokenStore {
   /// Returns every persisted key/value pair, empty when nothing is stored.
@@ -21,6 +23,11 @@ GoogleTokenStore createDefaultGoogleTokenStore() => SecureGoogleTokenStore();
 /// On macOS the legacy login keychain is used explicitly: the default
 /// data-protection keychain requires a `keychain-access-groups` entitlement,
 /// which ad-hoc signed builds cannot carry (keychain error -34018).
+///
+/// Reads and deletes run per key against [GoogleTokenKeys.all] instead of the
+/// storage-wide `readAll`/`deleteAll`: the legacy keychain rejects bulk
+/// queries with `kSecMatchLimitAll` + `kSecReturnData` (error -50) and bulk
+/// deletes, while single-item operations always succeed.
 class SecureGoogleTokenStore implements GoogleTokenStore {
   final FlutterSecureStorage _storage;
 
@@ -34,7 +41,15 @@ class SecureGoogleTokenStore implements GoogleTokenStore {
           );
 
   @override
-  Future<Map<String, String>> readAll() => _storage.readAll();
+  Future<Map<String, String>> readAll() async {
+    final values = await Future.wait([
+      for (final key in GoogleTokenKeys.all) _storage.read(key: key),
+    ]);
+    return {
+      for (final (index, key) in GoogleTokenKeys.all.indexed)
+        if (values[index] != null) key: values[index]!,
+    };
+  }
 
   @override
   Future<void> save(Map<String, String> values) async {
@@ -45,5 +60,11 @@ class SecureGoogleTokenStore implements GoogleTokenStore {
   }
 
   @override
-  Future<void> clear() => _storage.deleteAll();
+  Future<void> clear() async {
+    for (final key in GoogleTokenKeys.all) {
+      if (await _storage.containsKey(key: key)) {
+        await _storage.delete(key: key);
+      }
+    }
+  }
 }

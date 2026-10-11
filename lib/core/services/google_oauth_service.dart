@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/google_oauth_config.dart';
 import 'google_auth.dart';
 import 'google_oauth_code_listener.dart';
+import 'google_token_keys.dart';
 import 'google_token_store.dart';
 import 'logger_service.dart';
 
@@ -38,13 +39,6 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
       'https://accounts.google.com/o/oauth2/v2/auth';
   static const String _userinfoEndpoint =
       'https://www.googleapis.com/oauth2/v3/userinfo';
-
-  static const String _refreshTokenKey = 'refresh_token';
-  static const String _accessTokenKey = 'access_token';
-  static const String _accessTokenExpiryKey = 'access_token_expiry';
-  static const String _pendingVerifierKey = 'pending_verifier';
-  static const String _pendingStateKey = 'pending_state';
-  static const String _consumedCodeKey = 'consumed_code';
 
   static const Duration _tokenExpiryMargin = Duration(seconds: 60);
 
@@ -121,8 +115,8 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
 
     logger.info('[GoogleOAuth] Starting interactive sign-in');
     await _tokenStore.save(<String, String>{
-      _pendingVerifierKey: verifier,
-      _pendingStateKey: state,
+      GoogleTokenKeys.pendingVerifier: verifier,
+      GoogleTokenKeys.pendingState: state,
     });
 
     final String code;
@@ -147,7 +141,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
   @override
   Future<String?> getValidAccessToken() async {
     final stored = await _tokenStore.readAll();
-    if ((stored[_refreshTokenKey] ?? '').isEmpty) {
+    if ((stored[GoogleTokenKeys.refreshToken] ?? '').isEmpty) {
       return null;
     }
     final cachedToken = _cachedAccessToken;
@@ -165,7 +159,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
   @override
   Future<String?> refreshAccessToken() async {
     final stored = await _tokenStore.readAll();
-    final refreshToken = stored[_refreshTokenKey];
+    final refreshToken = stored[GoogleTokenKeys.refreshToken];
     if (refreshToken == null || refreshToken.isEmpty) {
       return null;
     }
@@ -225,7 +219,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
   @override
   Future<void> signOut() async {
     final stored = await _tokenStore.readAll();
-    final refreshToken = stored[_refreshTokenKey];
+    final refreshToken = stored[GoogleTokenKeys.refreshToken];
     if (refreshToken != null && refreshToken.isNotEmpty) {
       try {
         await _dio.post(
@@ -256,8 +250,8 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
       return null;
     }
     final stored = await _tokenStore.readAll();
-    final pendingState = stored[_pendingStateKey];
-    final verifier = stored[_pendingVerifierKey];
+    final pendingState = stored[GoogleTokenKeys.pendingState];
+    final verifier = stored[GoogleTokenKeys.pendingVerifier];
     if (pendingState == null ||
         pendingState.isEmpty ||
         verifier == null ||
@@ -265,7 +259,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
         currentParams['state'] != pendingState) {
       // The code stays in the URL after a completed sign-in; once consumed it
       // must not be exchanged again nor warn on every reload.
-      if (code == stored[_consumedCodeKey]) {
+      if (code == stored[GoogleTokenKeys.consumedCode]) {
         logger.debug('[GoogleOAuth] Skipping already consumed web redirect');
         return null;
       }
@@ -283,9 +277,9 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
         redirectUri: await _codeListener.prepareRedirect(),
       );
       await _tokenStore.save(<String, String>{
-        _pendingVerifierKey: '',
-        _pendingStateKey: '',
-        _consumedCodeKey: code,
+        GoogleTokenKeys.pendingVerifier: '',
+        GoogleTokenKeys.pendingState: '',
+        GoogleTokenKeys.consumedCode: code,
       });
       return _completeSignIn(tokenData);
     } catch (error, stackTrace) {
@@ -397,10 +391,11 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
     _cachedAccessToken = accessToken;
     _cachedAccessTokenExpiry = expiry;
     await _tokenStore.save(<String, String>{
-      _accessTokenKey: accessToken,
-      _accessTokenExpiryKey: expiry.millisecondsSinceEpoch.toString(),
+      GoogleTokenKeys.accessToken: accessToken,
+      GoogleTokenKeys.accessTokenExpiry: expiry.millisecondsSinceEpoch
+          .toString(),
       if (refreshToken != null && refreshToken.isNotEmpty)
-        _refreshTokenKey: refreshToken,
+        GoogleTokenKeys.refreshToken: refreshToken,
     });
   }
 
