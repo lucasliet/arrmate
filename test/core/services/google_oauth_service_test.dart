@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:arrmate/core/services/google_auth.dart';
 import 'package:arrmate/core/services/google_oauth_code_listener.dart';
-import 'package:arrmate/core/services/google_oauth_service.dart';
+import 'package:arrmate/core/services/google_oauth_service_io.dart';
 import 'package:arrmate/core/services/google_token_store.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -208,20 +208,6 @@ void main() {
           options: any(named: 'options'),
         ),
       );
-    });
-
-    test('shouldRethrowRedirectPending_onWebRedirect', () async {
-      // Given
-      final listener = FakeGoogleCodeListener(
-        result: const GoogleOAuthRedirectPending(),
-      );
-      final service = createService(listener);
-
-      // When
-      final signInCall = service.signIn();
-
-      // Then
-      await expectLater(signInCall, throwsA(isA<GoogleOAuthRedirectPending>()));
     });
   });
 

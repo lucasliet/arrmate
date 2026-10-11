@@ -15,9 +15,6 @@ abstract final class GoogleTokenKeys {
   /// Anti-CSRF state saved between the authorization request and the redirect.
   static const String pendingState = 'pending_state';
 
-  /// Web redirect code already exchanged, ignored on later page reloads.
-  static const String consumedCode = 'consumed_code';
-
   /// Every persisted key, for stores that cannot enumerate entries.
   static const List<String> all = [
     refreshToken,
@@ -25,6 +22,5 @@ abstract final class GoogleTokenKeys {
     accessTokenExpiry,
     pendingVerifier,
     pendingState,
-    consumedCode,
   ];
 }

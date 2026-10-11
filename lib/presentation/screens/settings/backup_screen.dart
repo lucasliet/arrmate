@@ -6,24 +6,27 @@ import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/backup_service.dart';
 import '../../providers/backup_provider.dart';
 
-/// Settings screen for backup and restore of app data, through Google Drive
-/// or a local JSON file.
+/// Settings screen for backup and restore of app data.
+///
+/// Native platforms offer Google Drive and a local JSON file. The web build
+/// offers only the local file.
 class BackupScreen extends ConsumerWidget {
   const BackupScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(backupProvider);
+    final supportsGoogleDrive = ref.watch(googleDriveBackupSupportedProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Backup & Restore')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (!state.isConfigured) ...[
+          if (supportsGoogleDrive && !state.isConfigured) ...[
             _buildNotConfiguredCard(context),
             const SizedBox(height: 12),
-          ] else ...[
+          ] else if (supportsGoogleDrive) ...[
             if (state.isSignedIn) ...[
               _buildAccountCard(context, state),
               if (state.hasRemoteBackupToRestore)

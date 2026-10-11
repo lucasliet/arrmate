@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arrmate/core/constants/google_oauth_config.dart';
+import 'package:arrmate/core/services/google_auth.dart';
 import 'package:arrmate/core/services/google_oauth_code_listener_io.dart';
-import 'package:arrmate/core/services/google_oauth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

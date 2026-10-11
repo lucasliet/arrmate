@@ -111,24 +111,6 @@ void main() {
       expect(state.errorMessage, isNull);
     });
 
-    test('shouldSetRedirectStatus_whenWebRedirectPending', () async {
-      // Given
-      createContainer();
-      when(
-        () => oauthService.signIn(),
-      ).thenThrow(const GoogleOAuthRedirectPending());
-
-      // When
-      await container.read(backupProvider.notifier).signIn();
-
-      // Then
-      final state = container.read(backupProvider);
-      expect(state.statusMessage, isNotNull);
-      expect(state.isSignedIn, isFalse);
-      expect(state.errorMessage, isNull);
-      expect(state.isWorking, isFalse);
-    });
-
     test('shouldUploadPayloadAndPersistLastBackup_onBackupNow', () async {
       // Given
       createContainer();

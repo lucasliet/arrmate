@@ -9,6 +9,19 @@ class GoogleAccount {
   const GoogleAccount({required this.email, this.name});
 }
 
+/// Error thrown across the Google OAuth flow carrying a message that is safe
+/// to surface directly to the user.
+class GoogleOAuthException implements Exception {
+  /// Human-readable description of the failure.
+  final String message;
+
+  /// Creates the exception with the user-facing [message].
+  const GoogleOAuthException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 /// Supplies valid access tokens for Google API calls.
 abstract class GoogleAccessTokenProvider {
   /// Returns a non-expired access token, refreshing it when needed, or null
@@ -30,18 +43,8 @@ abstract class GoogleOAuthService implements GoogleAccessTokenProvider {
   Future<GoogleAccount?> restoreSession();
 
   /// Runs the interactive sign-in flow and returns the signed-in account.
-  ///
-  /// On the web this may throw [GoogleOAuthRedirectPending] after opening the
-  /// consent page: the browser navigates away and the returned code only
-  /// arrives when the app reloads back with `?code=` in the URL.
   Future<GoogleAccount> signIn();
 
   /// Revokes the granted access and clears the persisted session.
   Future<void> signOut();
-}
-
-/// Signals that the sign-in flow continues in the browser and finishes on the
-/// next app load, which only happens on the web redirect flow.
-class GoogleOAuthRedirectPending implements Exception {
-  const GoogleOAuthRedirectPending();
 }

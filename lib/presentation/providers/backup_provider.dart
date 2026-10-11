@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/constants/google_oauth_config.dart';
+import '../../core/constants/google_oauth_availability.dart';
 import '../../core/services/backup_file_service.dart';
 import '../../core/services/backup_scheduler.dart';
 import '../../core/services/backup_service.dart';
@@ -39,6 +40,13 @@ final backupConfiguredProvider = Provider<bool>(
   (ref) => isGoogleOAuthConfigured,
 );
 
+/// Whether the backup screen offers Google Drive.
+///
+/// Web builds never do, so a browser OAuth client is not compiled into the
+/// public bundle. Native platforms keep the Desktop OAuth client. Wrapped in
+/// a provider so tests can present the web screen.
+final googleDriveBackupSupportedProvider = Provider<bool>((ref) => !kIsWeb);
+
 /// State of the Google Drive backup feature.
 class BackupState {
   /// Whether this build carries the OAuth client configuration.
@@ -67,7 +75,7 @@ class BackupState {
   /// Last user-readable error, cleared when the next action starts.
   final String? errorMessage;
 
-  /// Transient hint for the user, e.g. the web sign-in redirect notice.
+  /// Transient hint for the user, such as a completed backup or export.
   final String? statusMessage;
 
   const BackupState({
@@ -132,8 +140,6 @@ class BackupNotifier extends Notifier<BackupState> {
 
   static const String _sessionExpiredMessage =
       'Google session expired. Sign in again.';
-  static const String _redirectPendingMessage =
-      'Finish signing in in the browser, then reopen Arrmate.';
   static const String _signedOutBackupMessage = 'Sign in to Google first.';
   static const String _backupCompletedMessage = 'Backup completed.';
   static const String _noBackupMessage =
@@ -223,9 +229,6 @@ class BackupNotifier extends Notifier<BackupState> {
   }
 
   /// Runs the interactive Google sign-in flow and updates the session state.
-  ///
-  /// A pending web redirect is surfaced through
-  /// [BackupState.statusMessage] instead of an error.
   Future<void> signIn() async {
     state = _workingState();
     try {
@@ -237,12 +240,6 @@ class BackupNotifier extends Notifier<BackupState> {
       );
       logger.info('[Backup] Signed in as ${account.email}');
       await refreshRemoteBackup();
-    } on GoogleOAuthRedirectPending {
-      logger.info('[Backup] Sign-in continues in the browser');
-      state = state.copyWith(
-        isWorking: false,
-        statusMessage: _redirectPendingMessage,
-      );
     } catch (error, stackTrace) {
       logger.error('[Backup] Sign-in failed', error, stackTrace);
       state = state.copyWith(
@@ -588,6 +585,10 @@ final backupProvider = NotifierProvider<BackupNotifier, BackupState>(
 /// Must be watched once from the app root (see `ArrmateApp`) so the internal
 /// listeners stay alive for the whole session.
 final automaticBackupListenerProvider = Provider<void>((ref) {
+  if (!ref.watch(googleDriveBackupSupportedProvider)) {
+    return;
+  }
+
   void schedule() {
     ref.read(backupSchedulerProvider).schedule(() {
       ref.read(backupProvider.notifier).runAutoBackup();

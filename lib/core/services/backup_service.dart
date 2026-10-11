@@ -184,7 +184,7 @@ class BackupService {
   ///
   /// These are the settings, remembered filters and configured instances the
   /// backup is meant to move between devices. Session material, including the
-  /// web OAuth token `google_oauth_tokens`, is intentionally absent.
+  /// legacy web OAuth token `google_oauth_tokens`, is intentionally absent.
   static const _allowlistedKeys = <String>{
     'appearance',
     'color_scheme',

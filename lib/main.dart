@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/services/legacy_web_google_token_cleanup.dart';
 import 'core/services/logger_service.dart';
 import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/notifications_provider.dart';
@@ -19,6 +20,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
+  if (kIsWeb) {
+    await clearLegacyWebGoogleOAuthTokens(prefs);
+  }
   final homeTabName = prefs.getString('home_tab');
   final homeTab = homeTabName != null
       ? AppTab.values.firstWhere(

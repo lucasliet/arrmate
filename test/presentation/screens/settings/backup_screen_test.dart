@@ -280,6 +280,64 @@ void main() {
     expect(find.text('Boom'), findsOneWidget);
   });
 
+  testWidgets('shouldShowOnlyFileBackup_whenGoogleDriveUnsupported', (
+    tester,
+  ) async {
+    // Given
+    final notifier = FakeBackupNotifier(const BackupState(isConfigured: false));
+    notifier.exportResult = 'arrmate-backup-2026-10-11.json';
+
+    // When
+    await _pumpScreen(
+      tester,
+      notifier.fakeState,
+      notifier: notifier,
+      overrides: [googleDriveBackupSupportedProvider.overrideWithValue(false)],
+    );
+
+    // Then
+    expect(find.byKey(const Key('backupExportFileButton')), findsOneWidget);
+    expect(find.byKey(const Key('backupImportFileButton')), findsOneWidget);
+    expect(find.byKey(const Key('backupNotConfiguredCard')), findsNothing);
+    expect(find.byKey(const Key('backupSignInButton')), findsNothing);
+    expect(find.byKey(const Key('backupNowButton')), findsNothing);
+    expect(find.byKey(const Key('backupRestoreButton')), findsNothing);
+    expect(find.byKey(const Key('backupRemoteBackupCard')), findsNothing);
+    expect(find.text('Google Drive backup'), findsNothing);
+    expect(find.text('Google Drive backup not available'), findsNothing);
+    expect(find.text('Sign in with Google'), findsNothing);
+    expect(find.textContaining('Automatic backups'), findsNothing);
+
+    // When
+    await tester.tap(find.byKey(const Key('backupExportFileButton')));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.text('Backup exported to arrmate-backup-2026-10-11.json'),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('shouldHideSignedInGoogleUi_whenGoogleDriveUnsupported', (
+    tester,
+  ) async {
+    // Given
+    await _pumpScreen(
+      tester,
+      _signedInState(),
+      overrides: [googleDriveBackupSupportedProvider.overrideWithValue(false)],
+    );
+
+    // Then
+    expect(find.text('user@mail'), findsNothing);
+    expect(find.byKey(const Key('backupNowButton')), findsNothing);
+    expect(find.byKey(const Key('backupExportFileButton')), findsOneWidget);
+    expect(find.byKey(const Key('backupImportFileButton')), findsOneWidget);
+  });
+
   testWidgets('shouldShowLocalBackupActions_whenBuildLacksCredentials', (
     tester,
   ) async {
@@ -396,6 +454,7 @@ Future<void> _pumpScreen(
   WidgetTester tester,
   BackupState state, {
   FakeBackupNotifier? notifier,
+  List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -403,6 +462,7 @@ Future<void> _pumpScreen(
         backupProvider.overrideWith(
           () => notifier ?? FakeBackupNotifier(state),
         ),
+        ...overrides,
       ],
       child: const MaterialApp(home: BackupScreen()),
     ),
