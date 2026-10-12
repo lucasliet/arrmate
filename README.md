@@ -148,7 +148,7 @@ do not apply to native requests.
 - **Advanced Monitoring**: View real-time system logs, health checks, and
   quality profiles.
 - **AI Assistant**: Help with app features, troubleshooting, and navigation
-  guidance using free OpenCode Zen cloud models on every platform, plus
+  guidance using a free cloud model on every platform, plus
   on-device AI: LiteRT-LM models (Gemma) on Android and Apple Intelligence on
   iOS, iPadOS and macOS.
 - **Auto-Updater**: Support for automatic and manual in-app updates via GitHub

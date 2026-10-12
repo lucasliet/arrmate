@@ -2,11 +2,9 @@ import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/core/services/assistant_apple_intelligence_service.dart';
 import 'package:arrmate/core/services/assistant_model_service.dart';
-import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
 import 'package:arrmate/presentation/screens/assistant/assistant_screen.dart';
 import 'package:arrmate/presentation/theme/app_theme.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,19 +12,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _AssistantNotifier extends AssistantNotifier {
   _AssistantNotifier({
-    this.onlineModels = const [],
     this.isGenerating = false,
     this.mode = AssistantModelMode.online,
     this.appleIntelligenceAvailability,
     this.messages = const [],
   });
 
-  final List<String> onlineModels;
   final bool isGenerating;
   final AssistantModelMode mode;
   final AppleFoundationModelsAvailability? appleIntelligenceAvailability;
   final List<AssistantMessage> messages;
-  String? lastSelectedOnlineModel;
   String? lastMessage;
   int appleIntelligenceRequests = 0;
 
@@ -36,8 +31,6 @@ class _AssistantNotifier extends AssistantNotifier {
     isGenerating: isGenerating,
     mode: mode,
     appleIntelligenceAvailability: appleIntelligenceAvailability,
-    selectedOnlineModelId: AssistantOnlineChatService.defaultModelId,
-    onlineModels: onlineModels,
     installedModels: [
       AssistantInstalledModel(
         id: 'local-model',
@@ -50,11 +43,6 @@ class _AssistantNotifier extends AssistantNotifier {
     ],
     messages: messages,
   );
-
-  @override
-  Future<void> selectOnlineModel(String modelId) async {
-    lastSelectedOnlineModel = modelId;
-  }
 
   @override
   Future<void> useAppleIntelligence() async {
@@ -113,7 +101,7 @@ void main() {
         );
         await tester.tap(find.byType(PopupMenuButton<String>));
         await tester.pumpAndSettle();
-        expect(find.text('Online Models'), findsOneWidget);
+        expect(find.text('Cloud'), findsNWidgets(2));
         expect(
           find.text('Import'),
           platform == TargetPlatform.android ? findsOneWidget : findsNothing,
@@ -126,7 +114,7 @@ void main() {
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
-        expect(find.text('Online Models'), findsNothing);
+        expect(find.text('Cloud'), findsOneWidget);
         await tester.enterText(
           find.byType(TextField),
           'Native online question',
@@ -168,49 +156,6 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets(
-    'desktop model sheet is bounded, scrolls with wheel, and closes with Escape',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1600, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(
-        _assistantApp(
-          PlatformCapabilities.forPlatform(
-            isWeb: false,
-            targetPlatform: TargetPlatform.linux,
-          ),
-          notifier: _AssistantNotifier(
-            onlineModels: List.generate(40, (index) => 'native-model-$index'),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(PopupMenuButton<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Online Models'));
-      await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(ListView)).width, 720);
-      final list = find.byType(ListView);
-      final scrollable = find.descendant(
-        of: list,
-        matching: find.byType(Scrollable),
-      );
-      final position = tester.state<ScrollableState>(scrollable).position;
-      await tester.sendEventToBinding(
-        PointerScrollEvent(
-          position: tester.getCenter(list),
-          scrollDelta: const Offset(0, 200),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(position.pixels, greaterThan(0));
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.byType(BottomSheet), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
   testWidgets('keeps online options when local assistant is unsupported', (
     tester,
   ) async {
@@ -231,8 +176,8 @@ void main() {
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
 
-    expect(find.text('OpenCode Zen'), findsNWidgets(2));
-    expect(find.text('Online Models'), findsOneWidget);
+    expect(find.text('Cloud'), findsNWidgets(2));
+    expect(find.text('Online Models'), findsNothing);
     expect(find.text('Download'), findsNothing);
     expect(find.text('Import'), findsNothing);
     expect(find.text('Local Models'), findsNothing);
@@ -259,8 +204,8 @@ void main() {
       await tester.tap(find.byType(PopupMenuButton<String>));
       await tester.pumpAndSettle();
 
-      expect(find.text('OpenCode Zen'), findsNWidgets(2));
-      expect(find.text('Online Models'), findsOneWidget);
+      expect(find.text('Cloud'), findsNWidgets(2));
+      expect(find.text('Online Models'), findsNothing);
       expect(find.text('Download'), findsNothing);
       expect(find.text('Import'), findsNothing);
       expect(find.text('Local Models'), findsNothing);
@@ -288,8 +233,8 @@ void main() {
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
 
-    expect(find.text('OpenCode Zen'), findsNWidgets(2));
-    expect(find.text('Online Models'), findsOneWidget);
+    expect(find.text('Cloud'), findsNWidgets(2));
+    expect(find.text('Online Models'), findsNothing);
     expect(find.text('Download'), findsOneWidget);
     expect(find.text('Import'), findsOneWidget);
     expect(find.text('Local Models'), findsOneWidget);
@@ -361,47 +306,6 @@ void main() {
     await tester.pump();
 
     expect(notifier.lastMessage, 'Como uso?');
-  });
-
-  testWidgets('selects the last online model from the sheet', (tester) async {
-    tester.view.physicalSize = const Size(400, 600);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    const lastModelId = 'test-model-11-free';
-    final notifier = _AssistantNotifier(
-      onlineModels: List.generate(12, (index) => 'test-model-$index-free'),
-    );
-
-    await tester.pumpWidget(
-      _assistantApp(
-        const PlatformCapabilities(
-          isWeb: false,
-          supportsAppUpdates: false,
-          supportsBackgroundNotifications: false,
-          localAssistantRuntime: LocalAssistantRuntime.none,
-          supportsFileSystemCache: false,
-          supportsBrowserFileInput: false,
-        ),
-        notifier: notifier,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Online Models'));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text(lastModelId),
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text(lastModelId));
-    await tester.pumpAndSettle();
-
-    expect(notifier.lastSelectedOnlineModel, lastModelId);
   });
 
   testWidgets('renders assistant replies as markdown', (tester) async {
