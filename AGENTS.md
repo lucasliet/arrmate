@@ -73,7 +73,7 @@ and **qBittorrent** (for downloads).
     remote server connections.
   - **System Status**: Enhanced instance status and version checks.
   - **AI Assistant**: Answers questions about the app from the Markdown skills.
-    OpenCode Zen cloud models are available everywhere; on-device inference
+    A free cloud model (shown as "Cloud") is available everywhere; on-device inference
     uses LiteRT-LM models on Android and Apple Intelligence (Foundation Models,
     iOS/macOS 26+) on Apple platforms. Windows, Linux and web are cloud-only.
   - **Guided Onboarding**: First-run coach mark tour, replayable from Settings

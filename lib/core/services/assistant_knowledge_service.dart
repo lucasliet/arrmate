@@ -101,7 +101,7 @@ class AssistantKnowledgeService {
       id: 'assistant',
       title: 'Assistant',
       description:
-          'Sobre o assistente, modelos disponíveis, IA local, Apple Intelligence, LiteRT, OpenCode Zen, como funciona',
+          'Sobre o assistente, modelos disponíveis, IA local, Apple Intelligence, LiteRT, Cloud, como funciona',
       assetPath: 'assets/assistant/skills/assistant.md',
     ),
     AssistantSkill(

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/core/services/assistant_apple_intelligence_service.dart';
+import 'package:arrmate/core/services/assistant_knowledge_service.dart';
 import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
 import 'package:flutter/services.dart';
@@ -219,17 +220,26 @@ void main() {
     },
   );
 
+  test('answers through the cloud without needing a model selection', () async {
+    await notifier().useOnlineMode();
+
+    await notifier().sendMessage('Como adiciono uma instância?');
+
+    expect(state().hasModel, isTrue);
+    expect(state().isGenerating, isFalse);
+    expect(state().messages.map((message) => message.content), [
+      'Como adiciono uma instância?',
+      'Cloud reply',
+    ]);
+  });
+
   test(
     'a slower cloud selection does not override Apple Intelligence',
     () async {
-      final pendingOnline = Completer<AssistantOnlineModelSelection>();
-      online.pending = pendingOnline;
-
       final onlineSelection = notifier().useOnlineMode();
       await notifier().useAppleIntelligence();
       expect(state().mode, AssistantModelMode.appleIntelligence);
 
-      pendingOnline.complete(_onlineSelection);
       await onlineSelection;
 
       expect(state().mode, AssistantModelMode.appleIntelligence);
@@ -254,19 +264,13 @@ void main() {
   );
 }
 
-const _onlineSelection = AssistantOnlineModelSelection(
-  models: ['test-free'],
-  selectedModelId: 'test-free',
-);
-
 class _FakeOnlineChatService extends AssistantOnlineChatService {
-  Completer<AssistantOnlineModelSelection>? pending;
-
   @override
-  Future<AssistantOnlineModelSelection> initialize() {
-    final completer = pending;
-    pending = null;
-    return completer?.future ?? Future.value(_onlineSelection);
+  Future<AssistantOnlineChatResult> sendMessage(
+    List<AssistantOnlineChatMessage> history,
+    AssistantKnowledgeService knowledgeService,
+  ) async {
+    return const AssistantOnlineChatResult(content: 'Cloud reply');
   }
 }
 

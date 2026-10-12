@@ -17,7 +17,7 @@ enum AssistantMessageRole { user, assistant }
 
 /// Model runtime options supported by the assistant.
 enum AssistantModelMode {
-  /// OpenCode Zen cloud models.
+  /// Cloud model served by the free LLM adapter.
   online,
 
   /// LiteRT-LM model stored on the device.
@@ -56,12 +56,10 @@ class AssistantState {
   const AssistantState({
     this.catalog = const [],
     this.installedModels = const [],
-    this.onlineModels = const [],
     this.messages = const [],
     this.mode = AssistantModelMode.online,
     this.selectedModelId,
     this.selectedModelPath,
-    this.selectedOnlineModelId,
     this.appleIntelligenceAvailability,
     this.isLoading = true,
     this.isGenerating = false,
@@ -77,9 +75,6 @@ class AssistantState {
   /// Installed local models.
   final List<AssistantInstalledModel> installedModels;
 
-  /// Available online OpenCode Zen models.
-  final List<String> onlineModels;
-
   /// Conversation messages.
   final List<AssistantMessage> messages;
 
@@ -91,9 +86,6 @@ class AssistantState {
 
   /// Selected local model absolute file path.
   final String? selectedModelPath;
-
-  /// Selected OpenCode Zen online model id.
-  final String? selectedOnlineModelId;
 
   /// Last known Apple Intelligence availability, or `null` when the platform
   /// does not offer it.
@@ -120,7 +112,7 @@ class AssistantState {
   /// Returns whether a model is ready to answer.
   bool get hasModel {
     return switch (mode) {
-      AssistantModelMode.online => selectedOnlineModelId != null,
+      AssistantModelMode.online => true,
       AssistantModelMode.local => selectedModelPath != null,
       AssistantModelMode.appleIntelligence =>
         appleIntelligenceAvailability ==
@@ -128,7 +120,7 @@ class AssistantState {
     };
   }
 
-  /// Returns whether the online OpenCode Zen model is active.
+  /// Returns whether the cloud model is active.
   bool get isOnlineMode => mode == AssistantModelMode.online;
 
   /// Returns the selected installed model, if any.
@@ -144,12 +136,10 @@ class AssistantState {
   AssistantState copyWith({
     List<AssistantModelCatalogEntry>? catalog,
     List<AssistantInstalledModel>? installedModels,
-    List<String>? onlineModels,
     List<AssistantMessage>? messages,
     AssistantModelMode? mode,
     String? selectedModelId,
     String? selectedModelPath,
-    String? selectedOnlineModelId,
     AppleFoundationModelsAvailability? appleIntelligenceAvailability,
     bool? isLoading,
     bool? isGenerating,
@@ -159,13 +149,11 @@ class AssistantState {
     String? error,
     bool clearSelectedModelId = false,
     bool clearSelectedModelPath = false,
-    bool clearSelectedOnlineModelId = false,
     bool clearError = false,
   }) {
     return AssistantState(
       catalog: catalog ?? this.catalog,
       installedModels: installedModels ?? this.installedModels,
-      onlineModels: onlineModels ?? this.onlineModels,
       messages: messages ?? this.messages,
       mode: mode ?? this.mode,
       selectedModelId: clearSelectedModelId
@@ -174,9 +162,6 @@ class AssistantState {
       selectedModelPath: clearSelectedModelPath
           ? null
           : selectedModelPath ?? this.selectedModelPath,
-      selectedOnlineModelId: clearSelectedOnlineModelId
-          ? null
-          : selectedOnlineModelId ?? this.selectedOnlineModelId,
       appleIntelligenceAvailability:
           appleIntelligenceAvailability ?? this.appleIntelligenceAvailability,
       isLoading: isLoading ?? this.isLoading,
@@ -229,7 +214,6 @@ class AssistantNotifier extends Notifier<AssistantState> {
     try {
       final catalog = await _modelService.loadCatalog();
       final installedModels = await _modelService.listInstalledModels();
-      final onlineSelection = await _onlineChatService.initialize();
       final appleIntelligenceAvailability =
           ref.read(platformCapabilitiesProvider).localAssistantRuntime ==
               LocalAssistantRuntime.appleIntelligence
@@ -251,8 +235,6 @@ class AssistantNotifier extends Notifier<AssistantState> {
       state = state.copyWith(
         catalog: catalog,
         installedModels: installedModels,
-        onlineModels: onlineSelection.models,
-        selectedOnlineModelId: onlineSelection.selectedModelId,
         appleIntelligenceAvailability: appleIntelligenceAvailability,
         selectedModelId: selectedModel?.id,
         selectedModelPath: selectedModel?.path,
@@ -422,44 +404,18 @@ class AssistantNotifier extends Notifier<AssistantState> {
     await _selectModel(model);
   }
 
-  /// Selects the online OpenCode Zen mode.
+  /// Selects the cloud mode.
   Future<void> useOnlineMode() async {
     final generation = ++_selectionGeneration;
     try {
-      final selection = await _onlineChatService.initialize();
-      if (!_isLatestSelection(generation)) return;
       await _chatService.dispose();
+      if (!_isLatestSelection(generation)) return;
       await _modelService.setSelectedModeName(AssistantModelMode.online.name);
-      state = state.copyWith(
-        mode: AssistantModelMode.online,
-        onlineModels: selection.models,
-        selectedOnlineModelId: selection.selectedModelId,
-        clearError: true,
-      );
+      state = state.copyWith(mode: AssistantModelMode.online, clearError: true);
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
       if (!_isLatestSelection(generation)) return;
       state = state.copyWith(error: 'Failed to enable online model.');
-    }
-  }
-
-  /// Selects an online OpenCode Zen model by id.
-  Future<void> selectOnlineModel(String modelId) async {
-    final generation = ++_selectionGeneration;
-    try {
-      final selectedModelId = await _onlineChatService.selectModel(modelId);
-      if (!_isLatestSelection(generation)) return;
-      await _chatService.dispose();
-      await _modelService.setSelectedModeName(AssistantModelMode.online.name);
-      state = state.copyWith(
-        mode: AssistantModelMode.online,
-        selectedOnlineModelId: selectedModelId,
-        clearError: true,
-      );
-    } catch (e, st) {
-      logger.error('[AssistantNotifier] Failed to select online model', e, st);
-      if (!_isLatestSelection(generation)) return;
-      state = state.copyWith(error: 'Failed to select online model.');
     }
   }
 
@@ -522,7 +478,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
     try {
       final currentMessages = state.messages;
       final result = switch (state.mode) {
-        AssistantModelMode.online => await _sendOnlineMessage(currentMessages),
+        AssistantModelMode.online => _AssistantSendResult(
+          content: await _sendOnlineMessage(currentMessages),
+        ),
         AssistantModelMode.local => _AssistantSendResult(
           content: await _chatService.sendMessage(trimmed),
         ),
@@ -542,7 +500,6 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
       state = state.copyWith(
         messages: [...state.messages, assistantMessage],
-        selectedOnlineModelId: result.onlineModelId,
         isGenerating: false,
       );
     } on AssistantAppleIntelligenceException catch (e) {
@@ -556,18 +513,13 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
   }
 
-  Future<_AssistantSendResult> _sendOnlineMessage(
-    List<AssistantMessage> messages,
-  ) async {
+  Future<String> _sendOnlineMessage(List<AssistantMessage> messages) async {
     final result = await _onlineChatService.sendMessage(
       messages.map(_toOnlineMessage).toList(growable: false),
       _knowledgeService,
     );
 
-    return _AssistantSendResult(
-      content: result.content,
-      onlineModelId: result.modelId,
-    );
+    return result.content;
   }
 
   AssistantOnlineChatMessage _toOnlineMessage(AssistantMessage message) {
@@ -662,8 +614,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
 }
 
 class _AssistantSendResult {
-  const _AssistantSendResult({required this.content, this.onlineModelId});
+  const _AssistantSendResult({required this.content});
 
   final String content;
-  final String? onlineModelId;
 }

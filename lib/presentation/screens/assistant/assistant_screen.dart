@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_apple_intelligence_service.dart';
 import '../../../core/services/assistant_model_service.dart';
-import '../../../core/services/assistant_online_chat_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../adaptive/content_layout.dart';
 import '../../providers/assistant_provider.dart';
@@ -146,22 +145,21 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final appleIntelligenceReason =
         state.appleIntelligenceAvailability?.unavailableReason;
     final title = switch (state.mode) {
-      AssistantModelMode.online => 'OpenCode Zen',
+      AssistantModelMode.online => 'Cloud',
       AssistantModelMode.local =>
         state.selectedModel?.label ?? 'No local model selected',
       AssistantModelMode.appleIntelligence => 'Apple Intelligence',
     };
     final subtitle = switch (state.mode) {
-      AssistantModelMode.online =>
-        'Online model: ${state.selectedOnlineModelId ?? AssistantOnlineChatService.defaultModelId}',
+      AssistantModelMode.online => 'Online model',
       AssistantModelMode.appleIntelligence =>
         appleIntelligenceReason ?? 'On-device model',
       AssistantModelMode.local when hasModel => _formatModelSize(
         state.selectedModel!.sizeBytes,
       ),
       AssistantModelMode.local when showLocalAssistantOptions =>
-        'Use OpenCode Zen or import/download a local model',
-      AssistantModelMode.local => 'Use OpenCode Zen',
+        'Use Cloud or import/download a local model',
+      AssistantModelMode.local => 'Use Cloud',
     };
     final icon = switch (state.mode) {
       AssistantModelMode.online => Icons.cloud_outlined,
@@ -187,8 +185,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               onSelected: (value) {
                 if (value == 'online') {
                   notifier.useOnlineMode();
-                } else if (value == 'online_models') {
-                  _showOnlineModels(context, notifier, state);
                 } else if (value == 'apple_intelligence') {
                   notifier.useAppleIntelligence();
                 } else if (value == 'download') {
@@ -207,17 +203,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                       children: [
                         Icon(Icons.cloud_outlined),
                         SizedBox(width: 12),
-                        Text('OpenCode Zen'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'online_models',
-                    child: Row(
-                      children: [
-                        Icon(Icons.cloud_queue),
-                        SizedBox(width: 12),
-                        Text('Online Models'),
+                        Text('Cloud'),
                       ],
                     ),
                   ),
@@ -461,78 +447,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const _DownloadProgressDialog(),
-    );
-  }
-
-  void _showOnlineModels(
-    BuildContext context,
-    AssistantNotifier notifier,
-    AssistantState state,
-  ) {
-    final theme = Theme.of(context);
-    final models = state.onlineModels.isEmpty
-        ? [AssistantOnlineChatService.defaultModelId]
-        : state.onlineModels;
-
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 32,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.4,
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Online Models', style: theme.textTheme.titleLarge),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  ...models.map((modelId) {
-                    final isSelected = modelId == state.selectedOnlineModelId;
-
-                    return ListTile(
-                      leading: Icon(
-                        isSelected
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: isSelected ? theme.colorScheme.primary : null,
-                      ),
-                      title: Text(modelId),
-                      subtitle: const Text('OpenCode Zen free model'),
-                      onTap: isSelected
-                          ? null
-                          : () {
-                              Navigator.pop(sheetContext);
-                              notifier.selectOnlineModel(modelId);
-                            },
-                    );
-                  }),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
     );
   }
 

@@ -5,129 +5,102 @@ import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AssistantOnlineChatService', () {
-    test('should present the official opencode client identity', () async {
-      SharedPreferences.setMockInitialValues({});
-      final adapter = _OpenCodeAdapter();
-      final service = AssistantOnlineChatService(
-        dio: Dio(BaseOptions(baseUrl: 'https://opencode.test/zen/v1'))
+    const history = [
+      AssistantOnlineChatMessage(
+        role: AssistantOnlineMessageRole.user,
+        content: 'Como adiciono uma instância?',
+      ),
+    ];
+
+    AssistantOnlineChatService buildService(_AdapterStub adapter) {
+      return AssistantOnlineChatService(
+        dio: Dio(BaseOptions(baseUrl: 'https://adapter.test'))
           ..httpClientAdapter = adapter,
       );
+    }
 
-      final history = const [
-        AssistantOnlineChatMessage(
+    test('should call chat completions with the auto model', () async {
+      final adapter = _AdapterStub();
+      final service = buildService(adapter);
+
+      final result = await service.sendMessage(
+        history,
+        _TestKnowledgeService(),
+      );
+
+      expect(result.content, 'Abra Settings e adicione a instância.');
+      expect(adapter.requests, hasLength(1));
+      final request = adapter.requests.single;
+      expect(request.path, '/chat/completions');
+      final body = request.data as Map<String, dynamic>;
+      expect(body['model'], 'auto');
+      final messages = body['messages'] as List;
+      expect(messages.first['role'], 'system');
+      expect(messages.last, {
+        'role': 'user',
+        'content': 'Como adiciono uma instância?',
+      });
+    });
+
+    test('should keep only the most recent history messages', () async {
+      final adapter = _AdapterStub();
+      final service = buildService(adapter);
+      final longHistory = List.generate(
+        20,
+        (index) => AssistantOnlineChatMessage(
           role: AssistantOnlineMessageRole.user,
-          content: 'Como adiciono uma instância?',
+          content: 'message $index',
         ),
-      ];
-      final knowledgeService = _TestKnowledgeService();
+      );
 
-      await service.initialize();
-      final result = await service.sendMessage(history, knowledgeService);
-      await service.sendMessage(history, knowledgeService);
-      final otherService = AssistantOnlineChatService(
-        dio: Dio(BaseOptions(baseUrl: 'https://opencode.test/zen/v1'))
-          ..httpClientAdapter = adapter,
-      );
-      await otherService.sendMessage(history, knowledgeService);
+      await service.sendMessage(longHistory, _TestKnowledgeService());
 
-      expect(result.modelId, 'fallback-free');
-      expect(adapter.modelRequests, hasLength(2));
-      expect(adapter.chatRequests, hasLength(4));
+      final body = adapter.requests.single.data as Map<String, dynamic>;
+      final messages = body['messages'] as List;
+      expect(messages, hasLength(13));
+      expect(messages[1]['content'], 'message 8');
+    });
 
-      final allRequests = [...adapter.modelRequests, ...adapter.chatRequests];
-      expect(
-        allRequests.every(
-          (request) =>
-              request.headers['user-agent'] == 'opencode/latest/2.0.18/cli',
-        ),
-        isTrue,
+    test('should join text parts when content is a list', () async {
+      final adapter = _AdapterStub(
+        content: [
+          {'type': 'text', 'text': 'Primeira parte.'},
+          {'type': 'text', 'text': 'Segunda parte.'},
+        ],
       );
-      expect(
-        allRequests.every(
-          (request) => request.headers['x-opencode-client'] == 'cli',
-        ),
-        isTrue,
+      final service = buildService(adapter);
+
+      final result = await service.sendMessage(
+        history,
+        _TestKnowledgeService(),
       );
+
+      expect(result.content, 'Primeira parte.\nSegunda parte.');
+    });
+
+    test('should throw when the adapter returns an empty response', () async {
+      final adapter = _AdapterStub(content: '');
+      final service = buildService(adapter);
+
       expect(
-        allRequests.every(
-          (request) =>
-              request.headers['x-opencode-session'] is String &&
-              (request.headers['x-opencode-session'] as String).startsWith(
-                'ses_',
-              ),
-        ),
-        isTrue,
-      );
-      expect(
-        adapter.chatRequests.first.headers['x-opencode-session'],
-        adapter.chatRequests[1].headers['x-opencode-session'],
-      );
-      expect(
-        adapter.chatRequests[2].headers['x-opencode-session'],
-        adapter.chatRequests.first.headers['x-opencode-session'],
-      );
-      expect(
-        adapter.chatRequests[3].headers['x-opencode-session'],
-        isNot(adapter.chatRequests.first.headers['x-opencode-session']),
+        service.sendMessage(history, _TestKnowledgeService()),
+        throwsA(isA<StateError>()),
       );
     });
 
-    test('should exclude blacklisted free models on every platform', () async {
-      final adapter = _OpenCodeAdapter(
-        modelIds: const [
-          'deepseek-v4-flash-free',
-          'jev-1.13-free',
-          AssistantOnlineChatService.defaultModelId,
-          'another-free',
-          'paid-model',
-        ],
-      );
-      final service = AssistantOnlineChatService(
-        dio: Dio(BaseOptions(baseUrl: 'https://opencode.test/zen/v1'))
-          ..httpClientAdapter = adapter,
-      );
-
-      final models = await service.loadFreeModels();
-
-      expect(models, [
-        AssistantOnlineChatService.defaultModelId,
-        'another-free',
-      ]);
-      expect(adapter.chatRequests, isEmpty);
-    });
-
-    test('should filter muse-spark models only on web', () async {
-      final adapter = _OpenCodeAdapter(
-        modelIds: const [
-          'muse-spark-1.3-contributor-free',
-          'muse-spark-1.2-contributor-free',
-          AssistantOnlineChatService.defaultModelId,
-        ],
-      );
-      final service = AssistantOnlineChatService(
-        dio: Dio(BaseOptions(baseUrl: 'https://opencode.test/zen/v1'))
-          ..httpClientAdapter = adapter,
-      );
-
-      final models = await service.loadFreeModels();
+    test('should propagate adapter HTTP errors', () async {
+      final adapter = _AdapterStub(statusCode: 500);
+      final service = buildService(adapter);
 
       expect(
-        models,
-        kIsWeb
-            ? [AssistantOnlineChatService.defaultModelId]
-            : [
-                'muse-spark-1.3-contributor-free',
-                'muse-spark-1.2-contributor-free',
-                AssistantOnlineChatService.defaultModelId,
-              ],
+        service.sendMessage(history, _TestKnowledgeService()),
+        throwsA(isA<DioException>()),
       );
-      expect(adapter.chatRequests, isEmpty);
     });
   });
 }
@@ -140,17 +113,15 @@ class _TestKnowledgeService extends AssistantKnowledgeService {
   Future<String> loadRelevantSkills(String question) async => 'Documentation';
 }
 
-class _OpenCodeAdapter implements HttpClientAdapter {
-  _OpenCodeAdapter({
-    this.modelIds = const [
-      AssistantOnlineChatService.defaultModelId,
-      'fallback-free',
-    ],
+class _AdapterStub implements HttpClientAdapter {
+  _AdapterStub({
+    this.content = 'Abra Settings e adicione a instância.',
+    this.statusCode = 200,
   });
 
-  final List<String> modelIds;
-  final List<RequestOptions> modelRequests = [];
-  final List<RequestOptions> chatRequests = [];
+  final Object content;
+  final int statusCode;
+  final List<RequestOptions> requests = [];
 
   @override
   Future<ResponseBody> fetch(
@@ -158,30 +129,19 @@ class _OpenCodeAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    if (options.path == '/models') {
-      modelRequests.add(options);
-      return _jsonResponse({
-        'data': modelIds.map((id) => {'id': id}).toList(),
-      });
-    }
+    requests.add(options);
+    final payload = statusCode == 200
+        ? {
+            'choices': [
+              {
+                'message': {'content': content},
+              },
+            ],
+          }
+        : {'error': 'adapter unavailable'};
 
-    chatRequests.add(options);
-    if (chatRequests.length == 1) {
-      return _jsonResponse({'error': 'model unavailable'}, statusCode: 500);
-    }
-
-    return _jsonResponse({
-      'choices': [
-        {
-          'message': {'content': 'Abra Settings e adicione a instância.'},
-        },
-      ],
-    });
-  }
-
-  ResponseBody _jsonResponse(Object data, {int statusCode = 200}) {
     return ResponseBody.fromString(
-      jsonEncode(data),
+      jsonEncode(payload),
       statusCode,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
