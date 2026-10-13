@@ -336,7 +336,8 @@ class InstancesNotifier extends Notifier<InstancesState> {
   /// Jellyfin `username:password` credentials are first exchanged for a
   /// session (see [JellyfinSessionService]) so the password is never
   /// persisted; a session created for an instance that then fails
-  /// validation is signed out again.
+  /// validation is signed out again. A stored session replaced by an API
+  /// key is signed out on the server only after the instance is saved.
   ///
   /// The [Instance.ownedApiKey] (and its [Instance.ownedApiKeyDevice])
   /// recorded by the connector setup is kept across edits, since the edit
@@ -368,6 +369,12 @@ class InstancesNotifier extends Notifier<InstancesState> {
 
     if (isEditing) {
       await updateInstance(validatedInstance);
+      final replaced = stored?.userSession;
+      if (replaced != null && validatedInstance.userSession == null) {
+        unawaited(
+          ref.read(jellyfinSessionServiceProvider).logoutQuietly(stored!),
+        );
+      }
     } else {
       await addInstance(validatedInstance);
     }

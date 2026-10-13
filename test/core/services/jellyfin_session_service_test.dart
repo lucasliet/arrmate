@@ -59,7 +59,7 @@ void main() {
       expect(exchanged.toJson().toString(), isNot(contains('YWRtaW46cGFzcw')));
     });
 
-    test('drops the stored session when an API key replaces it', () async {
+    test('drops the session locally when an API key replaces it', () async {
       // Given
       final services = <Instance, MockJellyfinService>{};
       MockJellyfinService serviceFor(Instance instance) =>
@@ -82,13 +82,9 @@ void main() {
       // Then
       expect(exchanged.apiKey, 'server-key');
       expect(exchanged.userSession, isNull);
-      final loggedOut = services.entries
-          .where(
-            (entry) =>
-                entry.key.userSession == session && entry.key.apiKey.isEmpty,
-          )
-          .single;
-      verify(() => loggedOut.value.logout()).called(1);
+      for (final service in services.values) {
+        verifyNever(() => service.logout());
+      }
     });
 
     test('keeps a stored session when no new credentials are given', () async {

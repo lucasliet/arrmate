@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/api/jellyfin_service.dart';
@@ -40,8 +38,8 @@ class JellyfinSessionService {
   ///   [Instance.userSession]; the API Key field is cleared and a Basic
   ///   credentials header is dropped. Signing in again reuses the stored
   ///   device id, so the server replaces the previous session.
-  /// - A plain API key replacing a stored session drops the session and
-  ///   signs it out on the server in the background.
+  /// - A plain API key replacing a stored session drops the session locally
+  ///   only; the caller signs it out once the new credentials are saved.
   /// - Anything else is returned unchanged.
   ///
   /// Throws the [JellyfinService.signIn] errors when the sign-in fails.
@@ -61,9 +59,8 @@ class JellyfinSessionService {
     if (instance.apiKey.isNotEmpty && instance.userSession != null) {
       logger.info(
         '[JellyfinSessionService] API key replaces the stored session; '
-        'signing it out',
+        'dropping it locally until the new key is saved',
       );
-      unawaited(logoutQuietly(instance));
       return instance.copyWith(clearUserSession: true);
     }
 

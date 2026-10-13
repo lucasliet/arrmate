@@ -149,6 +149,126 @@ void main() {
     expect(saved.ownedApiKeyDevice, 'a1b2c3d4');
   });
 
+  test('signs out a replaced session only after the key is saved', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final jellyfin = MockJellyfinService();
+    when(() => jellyfin.hasLoginCredentials).thenReturn(false);
+    late final ProviderContainer container;
+    final sessionsSeenOnLogout = <InstanceUserSession?>[];
+    when(() => jellyfin.logout()).thenAnswer((_) async {
+      sessionsSeenOnLogout.add(
+        container.read(instancesProvider).instances.single.userSession,
+      );
+    });
+    container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(
+          JellyfinSessionService(jellyfinServiceFactory: (_) => jellyfin),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(
+          Instance(
+            id: 'jellyfin-home',
+            type: InstanceType.jellyfin,
+            label: 'Home',
+            url: 'https://jellyfin.example.com',
+            apiKey: 'server-key',
+          ),
+        );
+    await pumpEventQueue();
+
+    // Then
+    expect(saved.apiKey, 'server-key');
+    expect(saved.userSession, isNull);
+    final stored = container.read(instancesProvider).instances.single;
+    expect(stored.apiKey, 'server-key');
+    expect(stored.userSession, isNull);
+    verify(() => jellyfin.logout()).called(1);
+    expect(sessionsSeenOnLogout, [null]);
+  });
+
+  test('keeps the stored session when validating the API key fails', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final jellyfin = MockJellyfinService();
+    when(() => jellyfin.hasLoginCredentials).thenReturn(false);
+    when(() => jellyfin.logout()).thenAnswer((_) async {});
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(
+          JellyfinSessionService(jellyfinServiceFactory: (_) => jellyfin),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(
+      () => repository.getSystemStatus(any()),
+    ).thenAnswer((_) async => throw Exception('server unreachable'));
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When
+    await expectLater(
+      container
+          .read(instancesProvider.notifier)
+          .validateAndSaveInstance(
+            Instance(
+              id: 'jellyfin-home',
+              type: InstanceType.jellyfin,
+              label: 'Home',
+              url: 'https://jellyfin.example.com',
+              apiKey: 'server-key',
+            ),
+          ),
+      throwsException,
+    );
+    await pumpEventQueue();
+
+    // Then
+    final stored = container.read(instancesProvider).instances.single;
+    expect(stored.apiKey, isEmpty);
+    expect(stored.userSession, _jellyfinSession);
+    verifyNever(() => jellyfin.logout());
+  });
+
   test('migrates a Jellyfin instance saved with a password on load', () async {
     // Given
     SharedPreferences.setMockInitialValues({
