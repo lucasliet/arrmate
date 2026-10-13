@@ -24,20 +24,27 @@ final jellyfinConnectSetupServiceProvider = Provider(
 class JellyfinConnectSetupService {
   static const _logPrefix = 'JellyfinConnectSetupService';
 
-  /// Fixed display name of the connector managed by this service.
-  static const _connectorName = 'Arrmate Jellyfin';
+  /// Base display name of the connector managed by this service; each device
+  /// appends its own tag (see [_deviceTag]).
+  static const _connectorBaseName = 'Arrmate Jellyfin';
+
+  /// Base name of the server API key minted for the connectors; each device
+  /// appends its own tag (see [_deviceTag]).
+  static const _apiKeyBaseName = 'Arrmate';
 
   final RadarrApi Function(Instance instance) _radarrApiFactory;
   final SonarrApi Function(Instance instance) _sonarrApiFactory;
   final List<Instance> Function() _instancesSource;
   final JellyfinService Function(Instance instance) _jellyfinServiceFactory;
   final Future<void> Function(Instance instance) _instanceUpdater;
+  final Future<String> Function() _installationIdSource;
 
   /// Creates the service.
   ///
   /// [radarrApiFactory], [sonarrApiFactory], [jellyfinServiceFactory],
-  /// [instancesSource] and [instanceUpdater] are injection points for tests;
-  /// production uses the real API clients and [instancesProvider].
+  /// [instancesSource], [instanceUpdater] and [installationIdSource] are
+  /// injection points for tests; production uses the real API clients,
+  /// [instancesProvider] and [JellyfinService.installationId].
   JellyfinConnectSetupService(
     Ref ref, {
     RadarrApi Function(Instance instance)? radarrApiFactory,
@@ -45,7 +52,10 @@ class JellyfinConnectSetupService {
     JellyfinService Function(Instance instance)? jellyfinServiceFactory,
     List<Instance> Function()? instancesSource,
     Future<void> Function(Instance instance)? instanceUpdater,
-  }) : _radarrApiFactory = radarrApiFactory ?? _defaultRadarrApi,
+    Future<String> Function()? installationIdSource,
+  }) : _installationIdSource =
+           installationIdSource ?? JellyfinService.installationId,
+       _radarrApiFactory = radarrApiFactory ?? _defaultRadarrApi,
        _sonarrApiFactory = sonarrApiFactory ?? _defaultSonarrApi,
        _jellyfinServiceFactory =
            jellyfinServiceFactory ?? ((instance) => JellyfinService(instance)),
@@ -116,12 +126,12 @@ class JellyfinConnectSetupService {
   /// Undoes what Arrmate set up for [jellyfinInstance] before it is removed.
   ///
   /// Runs every step even when an earlier one fails:
-  /// 1. Deletes the `Arrmate Jellyfin` connector pointing at this server from
-  ///    every configured Radarr/Sonarr instance.
-  /// 2. Revokes the API key Arrmate created for those connectors, recorded
-  ///    in [Instance.ownedApiKey]. Without a recorded key nothing is
-  ///    revoked: a reused or hand-configured key may serve other devices or
-  ///    integrations.
+  /// 1. Deletes this device's `Arrmate Jellyfin (<tag>)` connector pointing
+  ///    at this server from every configured Radarr/Sonarr instance; other
+  ///    devices' connectors carry another tag and are left alone.
+  /// 2. Revokes this device's API key for those connectors, recorded in
+  ///    [Instance.ownedApiKey]. Without a recorded key nothing is revoked: a
+  ///    hand-configured key may serve other integrations.
   /// 3. Signs the stored user session out — only when the instance holds a
   ///    session token from a `username:password` sign-in. Logging out with
   ///    an API key would revoke that key server-wide, including a key shared
@@ -140,17 +150,18 @@ class JellyfinConnectSetupService {
     );
     for (final arrInstance in arrInstances) {
       try {
+        final connectorName = await _connectorName();
         final notifications = await _getNotifications(arrInstance);
         for (final notification in notifications) {
           final id = notification.id;
           if (id == null ||
-              notification.name != _connectorName ||
+              notification.name != connectorName ||
               !_pointsAt(notification, endpoint)) {
             continue;
           }
           await _deleteNotification(arrInstance, id);
           logger.info(
-            '[$_logPrefix] Removed "$_connectorName" from '
+            '[$_logPrefix] Removed "$connectorName" from '
             '${_describe(arrInstance)}.',
           );
         }
@@ -257,14 +268,18 @@ class JellyfinConnectSetupService {
         '[$_logPrefix] Configuring ${_describe(arrInstance)} with Jellyfin at ${endpoint.url}',
       );
 
-      final existing = _findExisting(await _getNotifications(arrInstance));
+      final connectorName = await _connectorName();
+      final existing = _findExisting(
+        await _getNotifications(arrInstance),
+        connectorName,
+      );
 
       if (existing == null) {
         final schemas = await _getSchemas(arrInstance);
         final schema = _pickSchema(schemas, arrInstance);
 
         final created = schema.copyWith(
-          name: _connectorName,
+          name: connectorName,
           onGrab: false,
           onDownload: true,
           onUpgrade: true,
@@ -279,7 +294,7 @@ class JellyfinConnectSetupService {
         );
         await _createNotification(arrInstance, _withRenameTrigger(created));
         logger.info(
-          '[$_logPrefix] Created "$_connectorName" on ${_describe(arrInstance)}.',
+          '[$_logPrefix] Created "$connectorName" on ${_describe(arrInstance)}.',
         );
         return NotificationSetupResult.success(
           '${_describe(arrInstance)} configured successfully.',
@@ -287,7 +302,7 @@ class JellyfinConnectSetupService {
       }
 
       final updated = existing.copyWith(
-        name: _connectorName,
+        name: connectorName,
         onGrab: false,
         onDownload: true,
         onUpgrade: true,
@@ -302,7 +317,7 @@ class JellyfinConnectSetupService {
       );
       await _updateNotification(arrInstance, _withRenameTrigger(updated));
       logger.info(
-        '[$_logPrefix] Updated "$_connectorName" on ${_describe(arrInstance)}.',
+        '[$_logPrefix] Updated "$connectorName" on ${_describe(arrInstance)}.',
       );
       return NotificationSetupResult.success(
         '${_describe(arrInstance)} updated successfully.',
@@ -322,9 +337,11 @@ class JellyfinConnectSetupService {
   /// Resolves a server-scoped API key for the connector.
   ///
   /// A plain API key is used as-is. A stored user session (or legacy
-  /// `username:password` credentials) mints — or reuses — a single
-  /// `Arrmate` API key when the account is an administrator: the connector
-  /// outlives a user session, so it cannot rely on the user's access token.
+  /// `username:password` credentials) mints — or reuses — this device's
+  /// `Arrmate (<tag>)` API key when the account is an administrator: the
+  /// connector outlives a user session, so it cannot rely on the user's
+  /// access token. The tag keeps each device on its own key, so no device
+  /// ever adopts, and later revokes, another device's key.
   Future<_ApiKeyResolution> _resolveServerApiKey(
     Instance jellyfinInstance,
   ) async {
@@ -336,10 +353,10 @@ class JellyfinConnectSetupService {
       return _ApiKeyResolution(apiKey: credential);
     }
     final service = _jellyfinServiceFactory(jellyfinInstance);
-    final minted = await service.ensureApiKey();
+    final minted = await service.ensureApiKey(appName: await _apiKeyName());
     if (minted != null) {
-      if (minted.created) {
-        await _recordOwnedApiKey(jellyfinInstance, minted.key);
+      if (minted.key != jellyfinInstance.ownedApiKey) {
+        await _recordOwnedApiKey(jellyfinInstance, minted);
       }
       return _ApiKeyResolution(apiKey: minted.key);
     }
@@ -351,15 +368,16 @@ class JellyfinConnectSetupService {
     );
   }
 
-  /// Stores [key] as the API key Arrmate created for [jellyfinInstance], so
+  /// Stores [key] as this device's API key for [jellyfinInstance], so
   /// removing the instance revokes exactly that key and nothing else.
   ///
-  /// Recorded right after minting, before any connector is written, so a
-  /// failed setup still leaves the key traceable. Failures are logged: the
-  /// connector setup itself does not depend on the record.
+  /// The key name carries this device's tag, so a reused key is still this
+  /// device's own. Recorded right after minting, before any connector is
+  /// written, so a failed setup still leaves the key traceable. Failures are
+  /// logged: the connector setup itself does not depend on the record.
   Future<void> _recordOwnedApiKey(
     Instance jellyfinInstance,
-    String key,
+    JellyfinApiKey key,
   ) async {
     try {
       final saved = _instancesSource()
@@ -372,12 +390,33 @@ class JellyfinConnectSetupService {
         );
         return;
       }
-      await _instanceUpdater(saved.copyWith(ownedApiKey: key));
-      logger.debug('[$_logPrefix] Recorded the API key Arrmate created');
+      await _instanceUpdater(saved.copyWith(ownedApiKey: key.key));
+      logger.debug(
+        '[$_logPrefix] Recorded this device\'s API key '
+        '(${key.created ? 'created' : 'reused'})',
+      );
     } catch (e, st) {
       logger.error('[$_logPrefix] Could not record the created key', e, st);
     }
   }
+
+  /// Short tag identifying this app installation, appended to the names of
+  /// the per-device API key and connector.
+  Future<String> _deviceTag() async {
+    final id = (await _installationIdSource()).toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]'),
+      '',
+    );
+    return id.length > 8 ? id.substring(0, 8) : id;
+  }
+
+  /// Name of this device's connector, e.g. `Arrmate Jellyfin (1a2b3c4d)`.
+  Future<String> _connectorName() async =>
+      '$_connectorBaseName (${await _deviceTag()})';
+
+  /// Name of this device's server API key, e.g. `Arrmate (1a2b3c4d)`.
+  Future<String> _apiKeyName() async =>
+      '$_apiKeyBaseName (${await _deviceTag()})';
 
   /// Enables `onRename` when the implementation ships it.
   ///
@@ -465,18 +504,19 @@ class JellyfinConnectSetupService {
     );
   }
 
-  /// Finds an existing connector created by this service.
+  /// Finds this device's existing connector.
   ///
-  /// Matching is name-only: `Arrmate Jellyfin` is the name this service
-  /// manages, so only such connectors are adopted and updated. A connector
-  /// the user created manually — even a MediaBrowser/Emby one pointing at
-  /// the same Jellyfin server — is never adopted or renamed; a separate
-  /// `Arrmate Jellyfin` connector is created alongside it instead.
+  /// Matching is by the exact [connectorName], which carries this device's
+  /// tag: only the connector this device manages is adopted and updated. A
+  /// connector the user created manually, or another device's connector —
+  /// even one pointing at the same Jellyfin server — is never adopted or
+  /// renamed; this device's own connector is created alongside it instead.
   NotificationResource? _findExisting(
     List<NotificationResource> notifications,
+    String connectorName,
   ) {
     for (final notification in notifications) {
-      if (notification.name == _connectorName) {
+      if (notification.name == connectorName) {
         return notification;
       }
     }

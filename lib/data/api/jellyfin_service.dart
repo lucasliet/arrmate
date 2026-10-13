@@ -537,6 +537,15 @@ class JellyfinService {
     if (resolver != null) {
       return _injectedDeviceIdResolution ??= resolver();
     }
+    return installationId();
+  }
+
+  /// Returns the id of this app installation, resolving it once per process.
+  ///
+  /// Never copied by cloud backups, so two devices restored from the same
+  /// backup still get distinct ids. Used to scope per-device server
+  /// resources such as the library auto-update API key and connector.
+  static Future<String> installationId() {
     final cached = _sharedDeviceId;
     if (cached != null) return Future<String>.value(cached);
     return _sharedDeviceIdResolution ??= _defaultDeviceId().then((id) {

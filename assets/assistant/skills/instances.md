@@ -162,15 +162,15 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
 
 **Atualização automática da biblioteca (conector Radarr/Sonarr):**
 - Tela de **edição** de uma instância Jellyfin já salva → botão **"Set Up Library Auto-Update"**. O pareamento **só roda por essa ação explícita** — nunca automaticamente ao salvar.
-- Cria/atualiza um conector chamado **"Arrmate Jellyfin"** (implementação MediaBrowser/Emby) em **todos os Radarr/Sonarr configurados**, para o Jellyfin atualizar a biblioteca sempre que mídia for importada, substituída, renomeada ou deletada.
+- Cria/atualiza um conector chamado **"Arrmate Jellyfin (<id do aparelho>)"** (implementação MediaBrowser/Emby) em **todos os Radarr/Sonarr configurados**, um por aparelho — cada aparelho gerencia só o seu, para o Jellyfin atualizar a biblioteca sempre que mídia for importada, substituída, renomeada ou deletada.
 - Resultado aparece em um diálogo com uma linha por instância; sucesso ✓ verde, falha ✗ vermelha.
 - Sem Radarr/Sonarr configurados: mensagem "No Radarr or Sonarr instances configured".
-- Com **API key**, o conector usa essa chave. Com login de **administrador**, o app cria (ou reutiliza, sem duplicar) uma chave de API `Arrmate` no Jellyfin; quando é ele que cria, guarda essa chave na instância para revogá-la ao remover. Se o usuário não for administrador, o conector precisa de uma API key de servidor; o diálogo explica o motivo.
+- Com **API key**, o conector usa essa chave. Com login de **administrador**, o app cria (ou reutiliza, sem duplicar) a chave de API **deste aparelho**, `Arrmate (<id do aparelho>)`, no Jellyfin e guarda essa chave na instância para revogá-la ao remover. Um aparelho nunca reaproveita a chave de outro. Se o usuário não for administrador, o conector precisa de uma API key de servidor; o diálogo explica o motivo.
 
 **Observações:**
 - Somente o **token da sessão** é salvo no dispositivo — nunca a senha.
 - O conector é idempotente: rodar de novo atualiza o conector existente em vez de duplicar.
-- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin" (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate` que o próprio app criou no pareamento (guardada na instância — uma chave reaproveitada, que pode servir outro aparelho, ou configurada à mão nunca é revogada) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login `username:password`; com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
+- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin (<id do aparelho>)" **deste aparelho** (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate (<id do aparelho>)` deste aparelho (guardada na instância — chaves e conectores de outros aparelhos, ou uma chave configurada à mão, nunca são tocados) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login `username:password`; com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
 
 ## Editar ou remover instância existente
 

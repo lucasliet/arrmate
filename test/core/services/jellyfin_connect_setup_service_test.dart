@@ -18,6 +18,10 @@ class _MockRef extends Mock implements Ref {}
 
 const _jellyfinUrl = 'http://jellyfin.local:8096';
 const _jellyfinApiKey = 'jellyfin-secret-key';
+const _deviceA = 'A1B2C3D4-E5F6-4000-8000-000000000001';
+const _deviceB = 'b9c8d7e6-f5a4-4000-8000-000000000002';
+const _connectorA = 'Arrmate Jellyfin (a1b2c3d4)';
+const _connectorB = 'Arrmate Jellyfin (b9c8d7e6)';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -106,8 +110,10 @@ void main() {
     JellyfinService Function(Instance instance)? jellyfinServiceFactory,
     List<Instance> Function()? instancesSource,
     Future<void> Function(Instance instance)? instanceUpdater,
+    Future<String> Function()? installationIdSource,
   }) => JellyfinConnectSetupService(
     _MockRef(),
+    installationIdSource: installationIdSource ?? () async => _deviceA,
     radarrApiFactory: radarrApiFactory,
     sonarrApiFactory: sonarrApiFactory,
     jellyfinServiceFactory: jellyfinServiceFactory,
@@ -153,7 +159,7 @@ void main() {
     expect(created, hasLength(1));
 
     final connector = created.single;
-    expect(connector.name, 'Arrmate Jellyfin');
+    expect(connector.name, _connectorA);
 
     final body = connector.toJson();
     expect(body['onGrab'], isFalse);
@@ -234,7 +240,7 @@ void main() {
     final api = MockRadarrApi();
     final existing = NotificationResource(
       id: 7,
-      name: 'Arrmate Jellyfin',
+      name: _connectorA,
       implementation: 'MediaBrowser',
       configContract: 'MediaBrowserSettings',
       fields: [
@@ -271,7 +277,7 @@ void main() {
     expect(updated.single.id, 7);
 
     final body = updated.single.toJson();
-    expect(body['name'], 'Arrmate Jellyfin');
+    expect(body['name'], _connectorA);
     // Unknown extra fields survive the update.
     expect(body['customFlag'], 'keep');
 
@@ -321,7 +327,7 @@ void main() {
       // The user's connector is neither adopted nor renamed.
       verifyNever(() => api.updateNotification(any()));
       expect(created, hasLength(1));
-      expect(created.single.name, 'Arrmate Jellyfin');
+      expect(created.single.name, _connectorA);
       expect(created.single.id, isNull);
       expect(fieldsOf(created.single)['Host'], 'jellyfin.local');
     },
@@ -430,7 +436,9 @@ void main() {
       // Given
       final api = MockRadarrApi();
       final jellyfin = MockJellyfinService();
-      when(() => jellyfin.ensureApiKey()).thenAnswer((_) async => null);
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer((_) async => null);
       final service = serviceWith(
         radarrApiFactory: (_) => api,
         jellyfinServiceFactory: (_) => jellyfin,
@@ -538,7 +546,9 @@ void main() {
       final created = stubCreate(api, schemas: [mediaBrowserSchema()])();
 
       final jellyfin = MockJellyfinService();
-      when(() => jellyfin.ensureApiKey()).thenAnswer(
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer(
         (_) async => const JellyfinApiKey('minted-key', created: false),
       );
 
@@ -562,7 +572,9 @@ void main() {
 
       // Then
       expect(result.isSuccess, isTrue);
-      verify(() => jellyfin.ensureApiKey()).called(1);
+      verify(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).called(1);
       expect(fieldsOf(created.single)['ApiKey'], 'minted-key');
     },
   );
@@ -575,7 +587,9 @@ void main() {
       final created = stubCreate(api, schemas: [mediaBrowserSchema()])();
 
       final jellyfin = MockJellyfinService();
-      when(() => jellyfin.ensureApiKey()).thenAnswer(
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer(
         (_) async => const JellyfinApiKey('minted-key', created: false),
       );
 
@@ -604,7 +618,9 @@ void main() {
 
       // Then
       expect(result.isSuccess, isTrue);
-      verify(() => jellyfin.ensureApiKey()).called(1);
+      verify(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).called(1);
       expect(fieldsOf(created.single)['ApiKey'], 'minted-key');
     },
   );
@@ -614,7 +630,9 @@ void main() {
     final api = MockRadarrApi();
 
     final jellyfin = MockJellyfinService();
-    when(() => jellyfin.ensureApiKey()).thenAnswer((_) async => null);
+    when(
+      () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+    ).thenAnswer((_) async => null);
 
     final userPasswordJellyfin = Instance(
       id: 'jellyfin-1',
@@ -668,7 +686,9 @@ void main() {
       });
 
       final jellyfin = MockJellyfinService();
-      when(() => jellyfin.ensureApiKey()).thenAnswer(
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer(
         (_) async => const JellyfinApiKey('minted-key', created: false),
       );
 
@@ -691,7 +711,9 @@ void main() {
       // Then
       expect(results, hasLength(2));
       expect(results.every((r) => r.isSuccess), isTrue);
-      verify(() => jellyfin.ensureApiKey()).called(1);
+      verify(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).called(1);
       expect(fieldsOf(radarrCreated.single)['ApiKey'], 'minted-key');
       expect(fieldsOf(sonarrCreated.single)['ApiKey'], 'minted-key');
     },
@@ -700,7 +722,7 @@ void main() {
   group('disconnect', () {
     NotificationResource connector({
       required int id,
-      String name = 'Arrmate Jellyfin',
+      String name = _connectorA,
       String host = 'jellyfin.local',
     }) => NotificationResource(
       id: id,
@@ -864,7 +886,9 @@ void main() {
       final api = MockRadarrApi();
       stubCreate(api, schemas: [mediaBrowserSchema()]);
       final jellyfin = MockJellyfinService();
-      when(() => jellyfin.ensureApiKey()).thenAnswer((_) async => key);
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer((_) async => key);
       final updated = <Instance>[];
       await serviceWith(
         radarrApiFactory: (_) => api,
@@ -887,14 +911,197 @@ void main() {
       expect(updated.single.userSession, adminJellyfin().userSession);
     });
 
-    test('does not claim a reused key', () async {
+    test('records the device key it reuses when none is recorded', () async {
       // When
       final updated = await pairWith(
-        const JellyfinApiKey('shared-key', created: false),
+        const JellyfinApiKey('own-key', created: false),
       );
 
       // Then
-      expect(updated, isEmpty);
+      expect(updated.single.ownedApiKey, 'own-key');
+    });
+
+    test('asks for the API key named after this device', () async {
+      // Given
+      final api = MockRadarrApi();
+      stubCreate(api, schemas: [mediaBrowserSchema()]);
+      final jellyfin = MockJellyfinService();
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer((_) async => null);
+
+      // When
+      await serviceWith(
+        radarrApiFactory: (_) => api,
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => [radarrInstance(), adminJellyfin()],
+      ).configureForAllArrInstances(jellyfinInstance: adminJellyfin());
+
+      // Then
+      verify(
+        () => jellyfin.ensureApiKey(appName: 'Arrmate (a1b2c3d4)'),
+      ).called(1);
+    });
+  });
+  group('two devices on one Jellyfin server', () {
+    late Map<String, String> serverKeys;
+    late List<NotificationResource> radarrConnectors;
+    late int keysMinted;
+
+    MockJellyfinService jellyfinServer() {
+      final jellyfin = MockJellyfinService();
+      when(
+        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+      ).thenAnswer((invocation) async {
+        final appName = invocation.namedArguments[#appName] as String;
+        final existing = serverKeys[appName];
+        if (existing != null) {
+          return JellyfinApiKey(existing, created: false);
+        }
+        keysMinted++;
+        final key = 'key-$keysMinted';
+        serverKeys[appName] = key;
+        return JellyfinApiKey(key, created: true);
+      });
+      when(() => jellyfin.revokeApiKey(any())).thenAnswer((invocation) async {
+        final key = invocation.positionalArguments[0] as String;
+        serverKeys.removeWhere((_, value) => value == key);
+      });
+      when(() => jellyfin.logout()).thenAnswer((_) async {});
+      return jellyfin;
+    }
+
+    MockRadarrApi radarrServer() {
+      final api = MockRadarrApi();
+      when(
+        () => api.getNotificationSchemas(),
+      ).thenAnswer((_) async => [mediaBrowserSchema()]);
+      when(
+        () => api.getNotifications(),
+      ).thenAnswer((_) async => List.of(radarrConnectors));
+      when(() => api.createNotification(any())).thenAnswer((invocation) async {
+        final notification =
+            invocation.positionalArguments[0] as NotificationResource;
+        final created = notification.copyWith(id: radarrConnectors.length + 1);
+        radarrConnectors.add(created);
+        return created;
+      });
+      when(() => api.updateNotification(any())).thenAnswer((invocation) async {
+        final updated =
+            invocation.positionalArguments[0] as NotificationResource;
+        radarrConnectors = [
+          for (final connector in radarrConnectors)
+            connector.id == updated.id ? updated : connector,
+        ];
+        return updated;
+      });
+      when(() => api.deleteNotification(any())).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments[0] as int;
+        radarrConnectors.removeWhere((connector) => connector.id == id);
+      });
+      return api;
+    }
+
+    Instance signedIn(String id, {String? ownedApiKey}) => Instance(
+      id: id,
+      type: InstanceType.jellyfin,
+      label: 'Jellyfin',
+      url: _jellyfinUrl,
+      ownedApiKey: ownedApiKey,
+      userSession: const InstanceUserSession(
+        accessToken: 'session-token',
+        deviceId: 'arrmate-device',
+        isAdministrator: true,
+      ),
+    );
+
+    JellyfinConnectSetupService device(
+      String installationId,
+      Instance jellyfinInstance,
+      MockJellyfinService jellyfin,
+      MockRadarrApi radarr,
+      List<Instance> updated,
+    ) => serviceWith(
+      radarrApiFactory: (_) => radarr,
+      jellyfinServiceFactory: (_) => jellyfin,
+      instancesSource: () => [radarrInstance(), jellyfinInstance],
+      instanceUpdater: (instance) async => updated.add(instance),
+      installationIdSource: () async => installationId,
+    );
+
+    setUp(() {
+      serverKeys = {};
+      radarrConnectors = [];
+      keysMinted = 0;
+    });
+
+    test(
+      'each device pairs with its own key and connector, and removing one '
+      'leaves the other working',
+      () async {
+        // Given
+        final jellyfin = jellyfinServer();
+        final radarr = radarrServer();
+        final updatedA = <Instance>[];
+        final updatedB = <Instance>[];
+        final instanceA = signedIn('jellyfin-a');
+        final instanceB = signedIn('jellyfin-b');
+
+        // When
+        await device(
+          _deviceA,
+          instanceA,
+          jellyfin,
+          radarr,
+          updatedA,
+        ).configureForAllArrInstances(jellyfinInstance: instanceA);
+        await device(
+          _deviceB,
+          instanceB,
+          jellyfin,
+          radarr,
+          updatedB,
+        ).configureForAllArrInstances(jellyfinInstance: instanceB);
+        final keyA = updatedA.single.ownedApiKey!;
+        final keyB = updatedB.single.ownedApiKey!;
+        final pairedA = signedIn('jellyfin-a', ownedApiKey: keyA);
+        final failures = await device(
+          _deviceA,
+          pairedA,
+          jellyfin,
+          radarr,
+          [],
+        ).disconnect(pairedA);
+
+        // Then
+        expect(keyA, isNot(keyB));
+        expect(failures, isEmpty);
+        expect(serverKeys, {'Arrmate (b9c8d7e6)': keyB});
+        expect(radarrConnectors.map((c) => c.name), [_connectorB]);
+        expect(fieldsOf(radarrConnectors.single)['ApiKey'], keyB);
+      },
+    );
+
+    test('pairing again reuses the device key instead of a new one', () async {
+      // Given
+      final jellyfin = jellyfinServer();
+      final radarr = radarrServer();
+      final updated = <Instance>[];
+      final instanceA = signedIn('jellyfin-a');
+      final service = device(_deviceA, instanceA, jellyfin, radarr, updated);
+
+      // When
+      await service.configureForAllArrInstances(jellyfinInstance: instanceA);
+      final keyA = updated.single.ownedApiKey!;
+      await service.configureForAllArrInstances(
+        jellyfinInstance: signedIn('jellyfin-a', ownedApiKey: keyA),
+      );
+
+      // Then
+      expect(keysMinted, 1);
+      expect(serverKeys, {'Arrmate (a1b2c3d4)': keyA});
+      expect(radarrConnectors.map((c) => c.name), [_connectorA]);
+      expect(updated, hasLength(1));
     });
   });
 }
