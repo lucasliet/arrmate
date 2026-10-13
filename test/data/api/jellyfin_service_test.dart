@@ -575,19 +575,9 @@ void main() {
       expect(adapter.requests, isEmpty);
     });
 
-    test('revokeApiKey deletes the Arrmate key', () async {
+    test('revokeApiKey deletes exactly the given key', () async {
       // Given
-      final adapter = _RecordingAdapter((options) {
-        if (options.method == 'GET' && options.uri.path == '/Auth/Keys') {
-          return {
-            'Items': [
-              {'AppName': 'Other', 'AccessToken': 'other-key'},
-              {'AppName': 'Arrmate', 'AccessToken': 'arrmate-key'},
-            ],
-          };
-        }
-        return const _StatusBody(204, '');
-      });
+      final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));
       final service = _buildService(
         adapter,
         apiKey: '',
@@ -595,19 +585,16 @@ void main() {
       );
 
       // When
-      final revoked = await service.revokeApiKey();
+      await service.revokeApiKey('owned-key');
 
-      // Then
-      expect(revoked, isTrue);
-      expect(adapter.methods.last, 'DELETE');
-      expect(adapter.requests.last.path, '/Auth/Keys/arrmate-key');
+      // Then — no lookup by name: other "Arrmate" keys stay untouched.
+      expect(adapter.methods, ['DELETE']);
+      expect(adapter.requests.single.path, '/Auth/Keys/owned-key');
     });
 
-    test('revokeApiKey reports when there is no key to revoke', () async {
+    test('revokeApiKey explains a refused revocation', () async {
       // Given
-      final adapter = _RecordingAdapter(
-        (_) => {'Items': <Object>[]},
-      );
+      final adapter = _RecordingAdapter((_) => const _StatusBody(403, ''));
       final service = _buildService(
         adapter,
         apiKey: '',
@@ -615,24 +602,19 @@ void main() {
       );
 
       // When
-      final revoked = await service.revokeApiKey();
+      final call = service.revokeApiKey('owned-key');
 
       // Then
-      expect(revoked, isFalse);
-      expect(adapter.methods, ['GET']);
-    });
-
-    test('revokeApiKey never touches a hand-configured API key', () async {
-      // Given
-      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
-      final service = _serviceApiKey(adapter);
-
-      // When
-      final revoked = await service.revokeApiKey();
-
-      // Then
-      expect(revoked, isFalse);
-      expect(adapter.requests, isEmpty);
+      await expectLater(
+        call,
+        throwsA(
+          isA<UnauthorizedError>().having(
+            (e) => e.message,
+            'message',
+            contains('administrator'),
+          ),
+        ),
+      );
     });
 
     test('withoutBasicCredentials drops only the Basic credentials header', () {
@@ -1555,7 +1537,8 @@ void main() {
         final key = await service.ensureApiKey();
 
         // Then
-        expect(key, 'minted-key');
+        expect(key?.key, 'minted-key');
+        expect(key?.created, isTrue);
         final postKeysIndex = <int>[
           for (var i = 0; i < adapter.requests.length; i++)
             if (adapter.requests[i].path == '/Auth/Keys' &&
@@ -1602,7 +1585,8 @@ void main() {
       final key = await service.ensureApiKey();
 
       // Then
-      expect(key, 'existing-key');
+      expect(key?.key, 'existing-key');
+      expect(key?.created, isFalse);
       final authKeysIndexes = <int>[
         for (var i = 0; i < adapter.requests.length; i++)
           if (adapter.requests[i].path == '/Auth/Keys') i,

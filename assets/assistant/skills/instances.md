@@ -165,12 +165,12 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
 - Cria/atualiza um conector chamado **"Arrmate Jellyfin"** (implementação MediaBrowser/Emby) em **todos os Radarr/Sonarr configurados**, para o Jellyfin atualizar a biblioteca sempre que mídia for importada, substituída, renomeada ou deletada.
 - Resultado aparece em um diálogo com uma linha por instância; sucesso ✓ verde, falha ✗ vermelha.
 - Sem Radarr/Sonarr configurados: mensagem "No Radarr or Sonarr instances configured".
-- Com **API key**, o conector usa essa chave. Com login de **administrador**, o app cria (ou reutiliza, sem duplicar) uma chave de API `Arrmate` no Jellyfin. Se o usuário não for administrador, o conector precisa de uma API key de servidor; o diálogo explica o motivo.
+- Com **API key**, o conector usa essa chave. Com login de **administrador**, o app cria (ou reutiliza, sem duplicar) uma chave de API `Arrmate` no Jellyfin; quando é ele que cria, guarda essa chave na instância para revogá-la ao remover. Se o usuário não for administrador, o conector precisa de uma API key de servidor; o diálogo explica o motivo.
 
 **Observações:**
 - Somente o **token da sessão** é salvo no dispositivo — nunca a senha.
 - O conector é idempotente: rodar de novo atualiza o conector existente em vez de duplicar.
-- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin" (que aponta para esse servidor) de cada Radarr/Sonarr, revoga a chave `Arrmate` no Jellyfin (só quando foi criada pelo app via login de administrador) e encerra a sessão (`/Sessions/Logout`). Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
+- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin" (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate` que o próprio app criou no pareamento (guardada na instância — uma chave reaproveitada, que pode servir outro aparelho, ou configurada à mão nunca é revogada) e encerra a sessão (`/Sessions/Logout`). Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
 
 ## Editar ou remover instância existente
 

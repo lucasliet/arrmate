@@ -31,24 +31,30 @@ class JellyfinConnectSetupService {
   final SonarrApi Function(Instance instance) _sonarrApiFactory;
   final List<Instance> Function() _instancesSource;
   final JellyfinService Function(Instance instance) _jellyfinServiceFactory;
+  final Future<void> Function(Instance instance) _instanceUpdater;
 
   /// Creates the service.
   ///
-  /// [radarrApiFactory], [sonarrApiFactory], [jellyfinServiceFactory] and
-  /// [instancesSource] are injection points for tests; production uses the
-  /// real API clients and [instancesProvider].
+  /// [radarrApiFactory], [sonarrApiFactory], [jellyfinServiceFactory],
+  /// [instancesSource] and [instanceUpdater] are injection points for tests;
+  /// production uses the real API clients and [instancesProvider].
   JellyfinConnectSetupService(
     Ref ref, {
     RadarrApi Function(Instance instance)? radarrApiFactory,
     SonarrApi Function(Instance instance)? sonarrApiFactory,
     JellyfinService Function(Instance instance)? jellyfinServiceFactory,
     List<Instance> Function()? instancesSource,
+    Future<void> Function(Instance instance)? instanceUpdater,
   }) : _radarrApiFactory = radarrApiFactory ?? _defaultRadarrApi,
        _sonarrApiFactory = sonarrApiFactory ?? _defaultSonarrApi,
        _jellyfinServiceFactory =
            jellyfinServiceFactory ?? ((instance) => JellyfinService(instance)),
        _instancesSource =
-           instancesSource ?? (() => ref.read(instancesProvider).instances);
+           instancesSource ?? (() => ref.read(instancesProvider).instances),
+       _instanceUpdater =
+           instanceUpdater ??
+           ((instance) =>
+               ref.read(instancesProvider.notifier).updateInstance(instance));
 
   static RadarrApi _defaultRadarrApi(Instance instance) => RadarrApi(instance);
 
@@ -112,8 +118,10 @@ class JellyfinConnectSetupService {
   /// Runs every step even when an earlier one fails:
   /// 1. Deletes the `Arrmate Jellyfin` connector pointing at this server from
   ///    every configured Radarr/Sonarr instance.
-  /// 2. Revokes the `Arrmate` API key minted for those connectors (user
-  ///    sessions only — a hand-configured API key belongs to the user).
+  /// 2. Revokes the API key Arrmate created for those connectors, recorded
+  ///    in [Instance.ownedApiKey]. Without a recorded key nothing is
+  ///    revoked: a reused or hand-configured key may serve other devices or
+  ///    integrations.
   /// 3. Signs the stored user session out.
   ///
   /// Returns one user-facing message per failed step; an empty list means
@@ -158,11 +166,14 @@ class JellyfinConnectSetupService {
     }
 
     final service = _jellyfinServiceFactory(jellyfinInstance);
-    try {
-      await service.revokeApiKey();
-    } catch (e, st) {
-      logger.error('[$_logPrefix] Failed to revoke the Arrmate key', e, st);
-      failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
+    final ownedApiKey = jellyfinInstance.ownedApiKey;
+    if (ownedApiKey != null) {
+      try {
+        await service.revokeApiKey(ownedApiKey);
+      } catch (e, st) {
+        logger.error('[$_logPrefix] Failed to revoke the Arrmate key', e, st);
+        failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
+      }
     }
     try {
       await service.logout();
@@ -317,7 +328,10 @@ class JellyfinConnectSetupService {
     final service = _jellyfinServiceFactory(jellyfinInstance);
     final minted = await service.ensureApiKey();
     if (minted != null) {
-      return _ApiKeyResolution(apiKey: minted);
+      if (minted.created) {
+        await _recordOwnedApiKey(jellyfinInstance, minted.key);
+      }
+      return _ApiKeyResolution(apiKey: minted.key);
     }
     return _ApiKeyResolution(
       failure:
@@ -325,6 +339,34 @@ class JellyfinConnectSetupService {
           'API key in the field, or log in with an administrator account '
           '(API Key field as username:password, or Add Basic Auth)',
     );
+  }
+
+  /// Stores [key] as the API key Arrmate created for [jellyfinInstance], so
+  /// removing the instance revokes exactly that key and nothing else.
+  ///
+  /// Recorded right after minting, before any connector is written, so a
+  /// failed setup still leaves the key traceable. Failures are logged: the
+  /// connector setup itself does not depend on the record.
+  Future<void> _recordOwnedApiKey(
+    Instance jellyfinInstance,
+    String key,
+  ) async {
+    try {
+      final saved = _instancesSource()
+          .where((instance) => instance.id == jellyfinInstance.id)
+          .firstOrNull;
+      if (saved == null) {
+        logger.warning(
+          '[$_logPrefix] Created an API key for an unsaved Jellyfin '
+          'instance; it will not be revoked on removal',
+        );
+        return;
+      }
+      await _instanceUpdater(saved.copyWith(ownedApiKey: key));
+      logger.debug('[$_logPrefix] Recorded the API key Arrmate created');
+    } catch (e, st) {
+      logger.error('[$_logPrefix] Could not record the created key', e, st);
+    }
   }
 
   /// Enables `onRename` when the implementation ships it.

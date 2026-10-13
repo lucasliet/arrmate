@@ -201,6 +201,11 @@ class Instance extends Equatable {
 
   /// Signed-in user session that replaces a stored password (Jellyfin).
   final InstanceUserSession? userSession;
+
+  /// Server API key Arrmate created on this Jellyfin server for the
+  /// Radarr/Sonarr library auto-update connectors. Only this key is revoked
+  /// when the instance is removed; a reused key belongs to someone else.
+  final String? ownedApiKey;
   final List<RootFolder> rootFolders;
   final List<QualityProfile> qualityProfiles;
   final List<Tag> tags;
@@ -218,6 +223,7 @@ class Instance extends Equatable {
     this.apiKey = '',
     this.headers = const [],
     this.userSession,
+    this.ownedApiKey,
     this.rootFolders = const [],
     this.qualityProfiles = const [],
     this.tags = const [],
@@ -250,6 +256,7 @@ class Instance extends Equatable {
               json['userSession'] as Map<String, dynamic>,
             )
           : null,
+      ownedApiKey: json['ownedApiKey'] as String?,
       rootFolders:
           (json['rootFolders'] as List<dynamic>?)
               ?.map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
@@ -281,6 +288,7 @@ class Instance extends Equatable {
       'apiKey': apiKey,
       'headers': headers.map((e) => e.toJson()).toList(),
       'userSession': ?userSession?.toJson(),
+      'ownedApiKey': ?ownedApiKey,
       'rootFolders': rootFolders.map((e) => e.toJson()).toList(),
       'qualityProfiles': qualityProfiles.map((e) => e.toJson()).toList(),
       'tags': tags.map((e) => e.toJson()).toList(),
@@ -351,6 +359,7 @@ class Instance extends Equatable {
     List<InstanceHeader>? headers,
     InstanceUserSession? userSession,
     bool clearUserSession = false,
+    String? ownedApiKey,
     List<RootFolder>? rootFolders,
     List<QualityProfile>? qualityProfiles,
     List<Tag>? tags,
@@ -368,6 +377,7 @@ class Instance extends Equatable {
       apiKey: apiKey ?? this.apiKey,
       headers: headers ?? this.headers,
       userSession: clearUserSession ? null : userSession ?? this.userSession,
+      ownedApiKey: ownedApiKey ?? this.ownedApiKey,
       rootFolders: rootFolders ?? this.rootFolders,
       qualityProfiles: qualityProfiles ?? this.qualityProfiles,
       tags: tags ?? this.tags,
@@ -388,6 +398,7 @@ class Instance extends Equatable {
     apiKey,
     headers,
     userSession,
+    ownedApiKey,
     rootFolders,
     qualityProfiles,
     tags,

@@ -321,7 +321,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _testSuccess = false;
-          _testMessage = 'Delete failed: $error';
+          _testMessage = 'Delete failed: ${_describeError(error)}';
         });
       }
     } finally {

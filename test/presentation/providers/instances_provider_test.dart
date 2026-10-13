@@ -98,6 +98,55 @@ void main() {
     );
   });
 
+  test('keeps the owned Jellyfin API key when an edit is saved', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+      ownedApiKey: 'owned-key',
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When — the edit form never carries the owned key.
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(
+          Instance(
+            id: 'jellyfin-home',
+            type: InstanceType.jellyfin,
+            label: 'Renamed',
+            url: 'https://jellyfin.example.com',
+            userSession: _jellyfinSession,
+          ),
+        );
+
+    // Then
+    expect(saved.label, 'Renamed');
+    expect(saved.ownedApiKey, 'owned-key');
+  });
+
   test('migrates a Jellyfin instance saved with a password on load', () async {
     // Given
     SharedPreferences.setMockInitialValues({

@@ -47,7 +47,8 @@ and **qBittorrent** (for downloads).
     Jellyfin has not indexed a file yet. Radarr/Sonarr auto-connector keeps
     Jellyfin's catalog updated on import; it is only set up from the explicit
     "Set Up Library Auto-Update" action, and removing the Jellyfin instance
-    deletes the connector, revokes the minted `Arrmate` key and signs out.
+    deletes the connector, revokes only the `Arrmate` key it minted itself
+    (recorded on the instance; a reused key is never revoked) and signs out.
     Progress sync ('Continue Watching') requires a user login:
     username:password is exchanged once for a session token and only the
     token is stored (legacy password instances migrate on load); API-key mode

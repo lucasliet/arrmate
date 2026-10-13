@@ -25,6 +25,19 @@ const Duration defaultJellyfinPollTimeout = Duration(seconds: 20);
 /// pass a `maxBitrate` to [JellyfinService.getPlaybackSession].
 const int defaultJellyfinHlsMaxBitrate = 4000000;
 
+/// A server API key obtained through [JellyfinService.ensureApiKey].
+class JellyfinApiKey {
+  /// The key itself, sent by integrations as their access token.
+  final String key;
+
+  /// Whether the key was minted by that call rather than reused. Only keys
+  /// Arrmate created may later be revoked by it.
+  final bool created;
+
+  /// Creates a key result.
+  const JellyfinApiKey(this.key, {required this.created});
+}
+
 /// Service for interacting with the Jellyfin media server REST API.
 ///
 /// Supports these authentication modes, mirroring `QBittorrentService`:
@@ -446,37 +459,31 @@ class JellyfinService {
     }
   }
 
-  /// Revokes the [appName] API key minted by [ensureApiKey]
-  /// (`DELETE /Auth/Keys/{key}`).
+  /// Revokes the server API key [key] (`DELETE /Auth/Keys/{key}`).
   ///
-  /// Only user sessions can have minted the key — an API key configured by
-  /// hand belongs to the user and is never revoked. Returns true when a key
-  /// was revoked and false when there was none to revoke. Throws when key
-  /// management is refused (e.g. the user is not an administrator) or the
-  /// server cannot be reached.
-  Future<bool> revokeApiKey({String appName = 'Arrmate'}) async {
-    await _ensureAuthenticated();
-    if (!_isUserMode) return false;
-    if (!_isAdministrator) {
-      throw const UnauthorizedError(
-        'Revoking the Arrmate API key requires a Jellyfin administrator.',
-      );
-    }
-    final key = await _findApiKey(appName);
-    if (key == null) return false;
+  /// Callers pass only a key Arrmate itself created (see
+  /// [JellyfinApiKey.created] and [Instance.ownedApiKey]): keys are shared
+  /// server-wide, so revoking one by name could break another device or
+  /// integration that reuses it. Throws when key management is refused
+  /// (e.g. the account is not an administrator) or the server cannot be
+  /// reached.
+  Future<void> revokeApiKey(String key) async {
     final response = await _request<dynamic>(
       '/Auth/Keys/$key',
       method: 'DELETE',
     );
     final statusCode = response.statusCode ?? 0;
-    if (statusCode >= 300) {
-      throw ServerError(
-        'Jellyfin refused to revoke the "$appName" API key (HTTP '
-        '$statusCode).',
+    if (statusCode == 401 || statusCode == 403) {
+      throw const UnauthorizedError(
+        'Revoking the Arrmate API key requires a Jellyfin administrator.',
       );
     }
-    logger.info('[JellyfinService] Revoked the "$appName" API key');
-    return true;
+    if (statusCode >= 300) {
+      throw ServerError(
+        'Jellyfin refused to revoke the Arrmate API key (HTTP $statusCode).',
+      );
+    }
+    logger.info('[JellyfinService] Revoked the API key Arrmate created');
   }
 
   /// Returns [headers] without a Basic `Authorization` header that carries
@@ -1546,7 +1553,9 @@ class JellyfinService {
   ///
   /// Returns null outside user mode, for non-admin users, or when the server
   /// refuses key management — callers must then ask the user for a key.
-  Future<String?> ensureApiKey({String appName = 'Arrmate'}) async {
+  /// [JellyfinApiKey.created] tells a key minted by this call apart from a
+  /// reused one, so only the former is ever revoked by Arrmate.
+  Future<JellyfinApiKey?> ensureApiKey({String appName = 'Arrmate'}) async {
     await _ensureAuthenticated();
     if (!_isUserMode || !_isAdministrator) {
       logger.debug(
@@ -1561,7 +1570,7 @@ class JellyfinService {
         logger.debug(
           '[JellyfinService] Reusing the existing "$appName" API key',
         );
-        return existing;
+        return JellyfinApiKey(existing, created: false);
       }
       await _request<void>(
         '/Auth/Keys',
@@ -1569,7 +1578,8 @@ class JellyfinService {
         queryParameters: {'app': appName},
       );
       logger.info('[JellyfinService] Created the "$appName" API key');
-      return await _findApiKey(appName);
+      final created = await _findApiKey(appName);
+      return created == null ? null : JellyfinApiKey(created, created: true);
     } catch (e, st) {
       logger.warning('[JellyfinService] Could not ensure an API key', e, st);
       return null;

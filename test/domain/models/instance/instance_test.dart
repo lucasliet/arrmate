@@ -185,6 +185,7 @@ void main() {
         type: InstanceType.jellyfin,
         url: 'http://jellyfin.local:8096',
         userSession: session,
+        ownedApiKey: 'owned-key',
       );
 
       // When
@@ -194,6 +195,7 @@ void main() {
 
       // Then
       expect(restored.userSession, session);
+      expect(restored.ownedApiKey, 'owned-key');
       expect(restored, instance);
     });
 
