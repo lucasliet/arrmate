@@ -82,12 +82,18 @@ class InstanceUserSession extends Equatable {
   /// Whether the signed-in user is a server administrator.
   final bool isAdministrator;
 
+  /// Tag of the app installation that signed in. A backup restored on
+  /// another device carries the session but not this device's tag, so that
+  /// device never signs the session out on the server.
+  final String? deviceTag;
+
   const InstanceUserSession({
     required this.accessToken,
     required this.deviceId,
     this.userId,
     this.userName,
     this.isAdministrator = false,
+    this.deviceTag,
   });
 
   factory InstanceUserSession.fromJson(Map<String, dynamic> json) {
@@ -97,6 +103,7 @@ class InstanceUserSession extends Equatable {
       userId: json['userId'] as String?,
       userName: json['userName'] as String?,
       isAdministrator: json['isAdministrator'] as bool? ?? false,
+      deviceTag: json['deviceTag'] as String?,
     );
   }
 
@@ -107,6 +114,7 @@ class InstanceUserSession extends Equatable {
       'userId': ?userId,
       'userName': ?userName,
       'isAdministrator': isAdministrator,
+      'deviceTag': ?deviceTag,
     };
   }
 
@@ -117,6 +125,7 @@ class InstanceUserSession extends Equatable {
     userName,
     deviceId,
     isAdministrator,
+    deviceTag,
   ];
 
   /// Never includes [accessToken], so logging a session cannot leak it.

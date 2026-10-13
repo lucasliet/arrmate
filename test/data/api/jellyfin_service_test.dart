@@ -411,6 +411,16 @@ void main() {
       userId: 'user-9',
       userName: 'admin',
       isAdministrator: true,
+      deviceTag: 'installu',
+    );
+
+    final restoredSession = InstanceUserSession(
+      accessToken: storedSession.accessToken,
+      deviceId: storedSession.deviceId,
+      userId: storedSession.userId,
+      userName: storedSession.userName,
+      isAdministrator: true,
+      deviceTag: 'otherdev',
     );
 
     test('signIn returns a session with a per-instance device id', () async {
@@ -440,6 +450,7 @@ void main() {
       expect(session.isAdministrator, isTrue);
       expect(session.deviceId, startsWith('arrmate-'));
       expect(session.deviceId, isNot('install-user-1'));
+      expect(session.deviceTag, 'installu');
       expect(
         adapter.headers.single['Authorization'],
         contains('DeviceId="${session.deviceId}"'),
@@ -458,6 +469,7 @@ void main() {
         adapter,
         apiKey: 'admin:newpass',
         userSession: storedSession,
+        deviceId: 'install-user-1',
       );
 
       // When
@@ -467,6 +479,34 @@ void main() {
       expect(session.accessToken, 'token-456');
       expect(session.deviceId, 'arrmate-device-7');
     });
+
+    test(
+      'signing in over a session restored from another device uses a new '
+      'device id',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          return {
+            'AccessToken': 'token-789',
+            'User': {'Id': 'user-9', 'Name': 'admin'},
+          };
+        });
+        final service = _buildService(
+          adapter,
+          apiKey: 'admin:newpass',
+          userSession: restoredSession,
+          deviceId: 'install-user-1',
+        );
+
+        // When
+        final session = await service.signIn();
+
+        // Then
+        expect(session.deviceId, isNot('arrmate-device-7'));
+        expect(session.deviceId, startsWith('arrmate-'));
+        expect(session.deviceTag, 'installu');
+      },
+    );
 
     test('signIn without credentials asks for them', () async {
       // Given
@@ -549,6 +589,7 @@ void main() {
         adapter,
         apiKey: '',
         userSession: storedSession,
+        deviceId: 'install-user-1',
       );
 
       // When
@@ -561,6 +602,43 @@ void main() {
         adapter.headers.single['Authorization'],
         contains('Token="stored-token"'),
       );
+    });
+
+    test('logout keeps a session restored from another device', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: restoredSession,
+        deviceId: 'install-user-1',
+      );
+
+      // When
+      await service.logout();
+
+      // Then
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('logout keeps a session without a device tag', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: const InstanceUserSession(
+          accessToken: 'stored-token',
+          deviceId: 'arrmate-device-7',
+        ),
+        deviceId: 'install-user-1',
+      );
+
+      // When
+      await service.logout();
+
+      // Then
+      expect(adapter.requests, isEmpty);
     });
 
     test('logout is a no-op for an API key', () async {

@@ -409,10 +409,12 @@ class JellyfinService {
   /// Exchanges the configured `username:password` for a user session.
   ///
   /// The returned [InstanceUserSession] is meant to be persisted in place of
-  /// the password (see [Instance.userSession]). The device id is fixed per
-  /// instance: a previous session's id is reused, so the server replaces
-  /// that session instead of registering one more device, and a first
-  /// sign-in gets a fresh id of its own.
+  /// the password (see [Instance.userSession]) and carries this device's
+  /// [deviceTagOf] tag. The device id is fixed per instance on this device:
+  /// a previous session's id is reused, so the server replaces that session
+  /// instead of registering one more device. A first sign-in, or one over a
+  /// session restored from another device, gets a fresh id, so the other
+  /// device's session is never replaced.
   ///
   /// Throws a [MissingDataError] when no credentials are configured, and the
   /// errors of [authenticate] when the sign-in fails.
@@ -422,8 +424,11 @@ class JellyfinService {
         'Enter username:password in the API Key field to sign in.',
       );
     }
-    final deviceId =
-        instance.userSession?.deviceId ?? 'arrmate-${const Uuid().v4()}';
+    final deviceTag = await _currentDeviceTag();
+    final previous = instance.userSession;
+    final deviceId = previous != null && previous.deviceTag == deviceTag
+        ? previous.deviceId
+        : 'arrmate-${const Uuid().v4()}';
     await authenticate(deviceId: deviceId);
     logger.info('[JellyfinService] Signed in as $_userName');
     return InstanceUserSession(
@@ -432,19 +437,36 @@ class JellyfinService {
       userId: _userId,
       userName: _userName,
       isAdministrator: _isAdministrator,
+      deviceTag: deviceTag,
     );
   }
 
   /// Ends the stored user session on the server (`POST /Sessions/Logout`).
   ///
   /// No-op outside session mode: an API key is not a session, and a login
-  /// made only to run this call would end itself. Throws when the server
+  /// made only to run this call would end itself. Also a no-op for a
+  /// session another device signed in ([InstanceUserSession.deviceTag]
+  /// differs, e.g. after a backup restore): that session is only dropped
+  /// locally, so the other device stays signed in. Throws when the server
   /// refuses or cannot be reached.
   Future<void> logout() async {
     _resolveAuthMode();
     if (!_hasStoredSession) return;
+    if (!await ownsStoredSession()) {
+      logger.info(
+        '[JellyfinService] Keeping the stored session on the server: '
+        'another device signed it in',
+      );
+      return;
+    }
     await _endSession();
     logger.info('[JellyfinService] Signed out of the stored session');
+  }
+
+  /// Whether [Instance.userSession] was signed in on this installation.
+  Future<bool> ownsStoredSession() async {
+    final deviceTag = instance.userSession?.deviceTag;
+    return deviceTag != null && deviceTag == await _currentDeviceTag();
   }
 
   /// Ends the session behind the current access token.
@@ -538,6 +560,21 @@ class JellyfinService {
       return _injectedDeviceIdResolution ??= resolver();
     }
     return installationId();
+  }
+
+  /// Returns this installation's [deviceTagOf] tag.
+  Future<String> _currentDeviceTag() async =>
+      deviceTagOf(await _currentDeviceId());
+
+  /// Short tag identifying the installation with [installationId]: its
+  /// first 8 lowercase alphanumerics. Names per-device server resources and
+  /// marks the sessions and keys this device created.
+  static String deviceTagOf(String installationId) {
+    final id = installationId.toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]'),
+      '',
+    );
+    return id.length > 8 ? id.substring(0, 8) : id;
   }
 
   /// Returns the id of this app installation, resolving it once per process.

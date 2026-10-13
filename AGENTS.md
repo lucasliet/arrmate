@@ -50,7 +50,8 @@ and **qBittorrent** (for downloads).
     deletes the connector, revokes the API key and signs out. Key and
     connector are per device (`Arrmate (<device tag>)` and
     `Arrmate Jellyfin (<device tag>)`), so one device never reuses, deletes
-    or revokes another device's; logout only runs for session tokens.
+    or revokes another device's; logout only runs for session tokens this
+    device signed in (a session restored from a backup is dropped locally).
     Progress sync ('Continue Watching') requires a user login:
     username:password is exchanged once for a session token and only the
     token is stored (legacy password instances migrate on load); API-key mode

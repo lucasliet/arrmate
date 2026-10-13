@@ -176,6 +176,7 @@ void main() {
       userId: 'user-9',
       userName: 'admin',
       isAdministrator: true,
+      deviceTag: 'a1b2c3d4',
     );
 
     test('round-trips the session through JSON', () {

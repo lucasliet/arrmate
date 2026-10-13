@@ -136,9 +136,11 @@ class JellyfinConnectSetupService {
   ///    after a backup restore) is left alone too: its connectors still use
   ///    it.
   /// 3. Signs the stored user session out — only when the instance holds a
-  ///    session token from a `username:password` sign-in. Logging out with
-  ///    an API key would revoke that key server-wide, including a key shared
-  ///    with other devices, so API-key instances are never logged out.
+  ///    session token from a `username:password` sign-in on this device.
+  ///    Logging out with an API key would revoke that key server-wide,
+  ///    including a key shared with other devices, so API-key instances are
+  ///    never logged out; a session restored from another device
+  ///    ([InstanceUserSession.deviceTag] differs) is only dropped locally.
   ///
   /// Returns one user-facing message per failed step; an empty list means
   /// everything was cleaned up. Never throws, so a failure never blocks the
@@ -196,7 +198,9 @@ class JellyfinConnectSetupService {
     }
     if (_holdsSessionToken(jellyfinInstance)) {
       try {
-        await service.logout();
+        if (await _ownsSession(jellyfinInstance)) {
+          await service.logout();
+        }
       } catch (e, st) {
         logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
         failures.add('Could not sign out of Jellyfin: $e');
@@ -213,6 +217,19 @@ class JellyfinConnectSetupService {
     logger.info(
       '[$_logPrefix] Keeping the recorded API key: another device created '
       'it',
+    );
+    return false;
+  }
+
+  /// Whether the [Instance.userSession] of [jellyfinInstance] was signed in
+  /// on this installation. A session restored from another device is only
+  /// dropped locally, so that device stays signed in.
+  Future<bool> _ownsSession(Instance jellyfinInstance) async {
+    final device = jellyfinInstance.userSession?.deviceTag;
+    if (device != null && device == await _deviceTag()) return true;
+    logger.info(
+      '[$_logPrefix] Keeping the stored session on the server: another '
+      'device signed it in',
     );
     return false;
   }
@@ -425,13 +442,8 @@ class JellyfinConnectSetupService {
 
   /// Short tag identifying this app installation, appended to the names of
   /// the per-device API key and connector.
-  Future<String> _deviceTag() async {
-    final id = (await _installationIdSource()).toLowerCase().replaceAll(
-      RegExp('[^a-z0-9]'),
-      '',
-    );
-    return id.length > 8 ? id.substring(0, 8) : id;
-  }
+  Future<String> _deviceTag() async =>
+      JellyfinService.deviceTagOf(await _installationIdSource());
 
   /// Name of this device's connector, e.g. `Arrmate Jellyfin (1a2b3c4d)`.
   Future<String> _connectorName() async =>

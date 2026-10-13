@@ -751,6 +751,7 @@ void main() {
         accessToken: 'session-token',
         deviceId: 'arrmate-device',
         isAdministrator: true,
+        deviceTag: 'a1b2c3d4',
       ),
     );
 
@@ -867,6 +868,29 @@ void main() {
       // Then
       expect(failures, isEmpty);
       verifyNever(() => jellyfin.revokeApiKey(any()));
+    });
+
+    test('keeps a session another device signed in', () async {
+      // Given
+      final jellyfin = cleanJellyfin();
+      final restored = signedInJellyfin().copyWith(
+        userSession: const InstanceUserSession(
+          accessToken: 'session-token',
+          deviceId: 'arrmate-device',
+          isAdministrator: true,
+          deviceTag: 'b9c8d7e6',
+        ),
+      );
+
+      // When
+      final failures = await serviceWith(
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => const [],
+      ).disconnect(restored);
+
+      // Then
+      expect(failures, isEmpty);
+      verifyNever(() => jellyfin.logout());
     });
 
     test('revokes nothing without a key Arrmate created', () async {
@@ -1051,6 +1075,7 @@ void main() {
         accessToken: 'session-token',
         deviceId: 'arrmate-device',
         isAdministrator: true,
+        deviceTag: 'a1b2c3d4',
       ),
     );
 
@@ -1173,6 +1198,7 @@ void main() {
         // Then
         expect(failures, isEmpty);
         verifyNever(() => jellyfin.revokeApiKey(any()));
+        verifyNever(() => jellyfin.logout());
         expect(serverKeys, {'Arrmate (a1b2c3d4)': keyA});
         expect(radarrConnectors.map((c) => c.name), [_connectorA]);
       },
