@@ -720,8 +720,20 @@ void main() {
       return jellyfin;
     }
 
+    Instance signedInJellyfin() => Instance(
+      id: 'jellyfin-1',
+      type: InstanceType.jellyfin,
+      label: 'Jellyfin',
+      url: '$_jellyfinUrl/',
+      userSession: const InstanceUserSession(
+        accessToken: 'session-token',
+        deviceId: 'arrmate-device',
+        isAdministrator: true,
+      ),
+    );
+
     Instance pairedJellyfin() =>
-        jellyfinInstance().copyWith(ownedApiKey: 'owned-key');
+        signedInJellyfin().copyWith(ownedApiKey: 'owned-key');
 
     test(
       'removes only the Arrmate connector pointing at this server, revokes '
@@ -800,20 +812,39 @@ void main() {
     });
 
     test('revokes nothing without a key Arrmate created', () async {
-      // Given — a reused "Arrmate" key may serve another device.
+      // Given
       final jellyfin = cleanJellyfin();
 
       // When
       final failures = await serviceWith(
         jellyfinServiceFactory: (_) => jellyfin,
         instancesSource: () => const [],
-      ).disconnect(jellyfinInstance());
+      ).disconnect(signedInJellyfin());
 
       // Then
       expect(failures, isEmpty);
       verifyNever(() => jellyfin.revokeApiKey(any()));
       verify(() => jellyfin.logout()).called(1);
     });
+
+    test(
+      'never logs out or revokes keys for an instance using only an API key',
+      () async {
+        // Given
+        final jellyfin = cleanJellyfin();
+
+        // When
+        final failures = await serviceWith(
+          jellyfinServiceFactory: (_) => jellyfin,
+          instancesSource: () => const [],
+        ).disconnect(jellyfinInstance());
+
+        // Then
+        expect(failures, isEmpty);
+        verifyNever(() => jellyfin.logout());
+        verifyNever(() => jellyfin.revokeApiKey(any()));
+      },
+    );
   });
 
   group('owned API key', () {

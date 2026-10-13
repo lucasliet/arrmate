@@ -122,7 +122,10 @@ class JellyfinConnectSetupService {
   ///    in [Instance.ownedApiKey]. Without a recorded key nothing is
   ///    revoked: a reused or hand-configured key may serve other devices or
   ///    integrations.
-  /// 3. Signs the stored user session out.
+  /// 3. Signs the stored user session out — only when the instance holds a
+  ///    session token from a `username:password` sign-in. Logging out with
+  ///    an API key would revoke that key server-wide, including a key shared
+  ///    with other devices, so API-key instances are never logged out.
   ///
   /// Returns one user-facing message per failed step; an empty list means
   /// everything was cleaned up. Never throws, so a failure never blocks the
@@ -175,14 +178,21 @@ class JellyfinConnectSetupService {
         failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
       }
     }
-    try {
-      await service.logout();
-    } catch (e, st) {
-      logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
-      failures.add('Could not sign out of Jellyfin: $e');
+    if (_holdsSessionToken(jellyfinInstance)) {
+      try {
+        await service.logout();
+      } catch (e, st) {
+        logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
+        failures.add('Could not sign out of Jellyfin: $e');
+      }
     }
     return failures;
   }
+
+  /// Whether [jellyfinInstance] authenticates with a stored session token
+  /// from a `username:password` sign-in rather than an API key.
+  bool _holdsSessionToken(Instance jellyfinInstance) =>
+      jellyfinInstance.userSession != null && jellyfinInstance.apiKey.isEmpty;
 
   /// Whether [notification] targets the Jellyfin server at [endpoint],
   /// judged by its `Host` field or, on legacy schemas, its `Url` field.

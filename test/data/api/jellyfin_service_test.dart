@@ -575,6 +575,22 @@ void main() {
       expect(adapter.requests, isEmpty);
     });
 
+    test('logout never sends an API key named Arrmate', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final service = _buildService(adapter, apiKey: 'arrmate-shared-key');
+
+      // When
+      await service.logout();
+
+      // Then
+      expect(
+        adapter.requests.where((uri) => uri.path == '/Sessions/Logout'),
+        isEmpty,
+      );
+      expect(adapter.methods, isNot(contains('DELETE')));
+    });
+
     test('revokeApiKey deletes exactly the given key', () async {
       // Given
       final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));
