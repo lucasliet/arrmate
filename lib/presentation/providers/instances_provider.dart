@@ -39,6 +39,11 @@ final currentQBittorrentInstanceProvider = Provider<Instance?>((ref) {
   return ref.watch(currentInstanceProvider(InstanceType.qbittorrent));
 });
 
+/// Provider that returns the currently active Jellyfin instance.
+final currentJellyfinInstanceProvider = Provider<Instance?>((ref) {
+  return ref.watch(currentInstanceProvider(InstanceType.jellyfin));
+});
+
 /// Provider that returns all configured instances of [type].
 final instancesByTypeProvider = Provider.family<List<Instance>, InstanceType>((
   ref,
@@ -85,6 +90,7 @@ class InstancesState {
 
   bool get hasRadarr => instances.any((i) => i.type == InstanceType.radarr);
   bool get hasSonarr => instances.any((i) => i.type == InstanceType.sonarr);
+  bool get hasJellyfin => instances.any((i) => i.type == InstanceType.jellyfin);
   bool get isEmpty => instances.isEmpty;
 
   InstancesState copyWith({
@@ -107,6 +113,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
     InstanceType.radarr: 'selected_radarr_instance_id',
     InstanceType.sonarr: 'selected_sonarr_instance_id',
     InstanceType.qbittorrent: 'selected_qbittorrent_instance_id',
+    InstanceType.jellyfin: 'selected_jellyfin_instance_id',
   };
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   int _resolutionGeneration = 0;
@@ -170,7 +177,10 @@ class InstancesNotifier extends Notifier<InstancesState> {
   /// Adds a new instance to the list and persists it.
   ///
   /// If notifications are enabled in global settings, it automatically
-  /// triggers the auto-configuration for this new instance.
+  /// triggers the auto-configuration for this new instance. Only Radarr and
+  /// Sonarr instances are auto-configured: the ntfy webhook setup speaks the
+  /// *arr notifications API, and pointing it at another instance type would
+  /// send its credentials to a foreign host and always fail.
   Future<void> addInstance(Instance instance) async {
     logger.info(
       '[InstancesNotifier] Adding instance: ${instance.name ?? instance.id}',
@@ -181,23 +191,37 @@ class InstancesNotifier extends Notifier<InstancesState> {
 
     // Auto-configure notifications if enabled
     final settings = ref.read(settingsProvider);
-    if (settings.notifications.enabled &&
-        settings.notifications.ntfyTopic != null) {
-      logger.info(
-        '[InstancesNotifier] Auto-configuring notifications for new instance',
-      );
-      final notificationService = ref.read(remoteNotificationServiceProvider);
-      // We run this in background (no await) to not block the UI,
-      // but we log failures inside the service.
-      notificationService.configureInstance(instance).catchError((e, st) {
-        logger.error(
-          '[InstancesNotifier] Auto-config failed for new instance',
-          e,
-          st,
-        );
-        return NotificationSetupResult.failure(e.toString());
-      });
+    if (!settings.notifications.enabled ||
+        settings.notifications.ntfyTopic == null) {
+      return;
     }
+
+    final isArrInstance =
+        instance.type == InstanceType.radarr ||
+        instance.type == InstanceType.sonarr;
+    if (!isArrInstance) {
+      logger.debug(
+        '[InstancesNotifier] Skipping notification auto-config for '
+        '${instance.type.label} instance: only Radarr/Sonarr support ntfy '
+        'webhooks',
+      );
+      return;
+    }
+
+    logger.info(
+      '[InstancesNotifier] Auto-configuring notifications for new instance',
+    );
+    final notificationService = ref.read(remoteNotificationServiceProvider);
+    // We run this in background (no await) to not block the UI,
+    // but we log failures inside the service.
+    notificationService.configureInstance(instance).catchError((e, st) {
+      logger.error(
+        '[InstancesNotifier] Auto-config failed for new instance',
+        e,
+        st,
+      );
+      return NotificationSetupResult.failure(e.toString());
+    });
   }
 
   /// Updates an existing instance in the list.

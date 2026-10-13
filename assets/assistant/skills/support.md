@@ -45,6 +45,11 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
   - Mover torrent entre pastas.
   - Import torrent completo para Radarr/Sonarr.
 
+**Streaming (Jellyfin):**
+- Player de vídeo integrado para filmes e episódios do Jellyfin (trilhas de áudio/legenda, qualidade quando disponível, abrir em player externo).
+- Pareamento automático da biblioteca (caminho → provider IDs → scan/refresh sob demanda) e conector Radarr/Sonarr que mantém o catálogo do Jellyfin atualizado.
+- Sincronização de progresso ("Continue Watching") com `username:password`; com API key reproduz sem gravar estado de assistido.
+
 **Notificações:**
 - Push notifications via ntfy.sh.
 - Sincronização multi-dispositivo (mesma instância em vários devices recebe notificações).
@@ -52,7 +57,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 - Central de notificações (visualizar, marcar como lida, limpar).
 
 **Configuração & Sistema:**
-- Multi-instância (múltiplos Radarr, Sonarr, qBittorrent simultâneos).
+- Multi-instância (múltiplos Radarr, Sonarr, qBittorrent, Jellyfin simultâneos).
 - Perfis de qualidade (visualizar disponíveis em cada instância).
 - Logs (ARR logs do servidor + APP logs internos) com filtros.
 - Health checks (diagnóstico de problemas do servidor).
@@ -90,8 +95,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 ### ❌ NÃO SUPORTADO
 
 **Reprodução/Streaming:**
-- Reprodução ou streaming de arquivos de mídia (Arrmate não é um player).
-- Integração com Plex, Jellyfin, Emby (apenas Radarr/Sonarr/qBittorrent).
+- Integração com Plex e Emby — **apenas Jellyfin** é suportado para streaming (veja `instances.md`).
 
 **Gerenciamento Avançado (requer web):**
 - Adicionar/remover/editar indexadores (faça via interface web do Radarr/Sonarr).

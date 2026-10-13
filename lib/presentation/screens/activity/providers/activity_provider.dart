@@ -297,6 +297,8 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
             );
       case InstanceType.qbittorrent:
         throw StateError('qBittorrent items are not part of the Arr queue');
+      case InstanceType.jellyfin:
+        throw StateError('Jellyfin items are not part of the Arr queue');
     }
 
     await refresh();

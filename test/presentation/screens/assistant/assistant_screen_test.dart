@@ -168,6 +168,7 @@ void main() {
           localAssistantRuntime: LocalAssistantRuntime.none,
           supportsFileSystemCache: false,
           supportsBrowserFileInput: true,
+          supportsInternalVideoPlayer: false,
         ),
       ),
     );
@@ -196,6 +197,7 @@ void main() {
             localAssistantRuntime: LocalAssistantRuntime.none,
             supportsFileSystemCache: false,
             supportsBrowserFileInput: false,
+            supportsInternalVideoPlayer: true,
           ),
         ),
       );
@@ -225,6 +227,7 @@ void main() {
           localAssistantRuntime: LocalAssistantRuntime.liteRt,
           supportsFileSystemCache: true,
           supportsBrowserFileInput: false,
+          supportsInternalVideoPlayer: true,
         ),
       ),
     );

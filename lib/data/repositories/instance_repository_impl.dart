@@ -1,6 +1,7 @@
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/instance_repository.dart';
+import '../api/jellyfin_service.dart';
 import '../api/qbittorrent_service.dart';
 import '../api/radarr_api.dart';
 import '../api/sonarr_api.dart';
@@ -18,6 +19,7 @@ class InstanceRepositoryImpl implements InstanceRepository {
       InstanceType.qbittorrent => QBittorrentService(
         instance,
       ).getSystemStatus(),
+      InstanceType.jellyfin => JellyfinService(instance).getSystemStatus(),
     };
   }
 
@@ -32,6 +34,9 @@ class InstanceRepositoryImpl implements InstanceRepository {
       InstanceType.qbittorrent => throw UnsupportedError(
         'Disk space is not available for qBittorrent instances',
       ),
+      InstanceType.jellyfin => throw UnsupportedError(
+        'Disk space is not available for Jellyfin instances',
+      ),
     };
   }
 
@@ -43,15 +48,16 @@ class InstanceRepositoryImpl implements InstanceRepository {
     return switch (instance.type) {
       InstanceType.radarr => RadarrApi(instance).getTags(),
       InstanceType.sonarr => SonarrApi(instance).getTags(),
-      InstanceType.qbittorrent => _getQBittorrentDefaultTags(instance),
+      InstanceType.qbittorrent ||
+      InstanceType.jellyfin => _getUnsupportedTypeTags(instance),
     };
   }
 
-  Future<List<Tag>> _getQBittorrentDefaultTags(Instance instance) async {
+  Future<List<Tag>> _getUnsupportedTypeTags(Instance instance) async {
     // Design decision: Return empty list instead of throwing UnimplementedError
-    // to allow the UI to function without tag support for qBittorrent.
+    // to allow the UI to function without tag support for these instance types.
     logger.warning(
-      '[InstanceRepository] getTags not implemented for qBittorrent',
+      '[InstanceRepository] getTags not implemented for ${instance.type.name}',
     );
     return [];
   }

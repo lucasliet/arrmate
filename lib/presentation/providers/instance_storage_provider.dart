@@ -83,8 +83,12 @@ Future<InstanceLibraryStatistics> _loadLibraryStatistics(
     InstanceType.sonarr => InstanceLibraryStatistics.fromSeries(
       await seriesRepository!.getSeries(),
     ),
-    InstanceType.qbittorrent => throw UnsupportedError(
-      'Library statistics are not available for qBittorrent instances',
+    // Design decision: Throw UnsupportedError instead of returning empty data
+    // so the section loader reports the section as unavailable, mirroring
+    // qBittorrent. Jellyfin overviews are never requested upstream, but the
+    // switch must stay exhaustive over the instance types.
+    InstanceType.qbittorrent || InstanceType.jellyfin => throw UnsupportedError(
+      'Library statistics are not available for ${instance.type.label} instances',
     ),
   };
 }

@@ -8,7 +8,8 @@ import '../shared/root_folder.dart';
 enum InstanceType {
   radarr('Radarr'),
   sonarr('Sonarr'),
-  qbittorrent('qBittorrent');
+  qbittorrent('qBittorrent'),
+  jellyfin('Jellyfin');
 
   final String label;
   const InstanceType(this.label);

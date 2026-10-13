@@ -5,6 +5,8 @@ import '../../domain/models/models.dart';
 import '../screens/assistant/assistant_screen.dart';
 import '../screens/movies/movies_screen.dart';
 import '../screens/movies/movie_details_screen.dart';
+import '../screens/player/media_player_screen.dart';
+import '../screens/player/playback_request.dart';
 import '../screens/series/series_screen.dart';
 import '../screens/series/season_route_screen.dart';
 import '../screens/series/episode_route_screen.dart';
@@ -39,6 +41,25 @@ void initializeRouter(String initialLocation) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/player',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final request = state.extra;
+          if (request is PlaybackRequest) {
+            return MediaPlayerScreen(request: request);
+          }
+          return Scaffold(
+            appBar: AppBar(title: const Text('Player')),
+            body: const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No media was requested for playback.'),
+              ),
+            ),
+          );
+        },
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

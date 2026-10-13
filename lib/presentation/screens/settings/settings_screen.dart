@@ -124,6 +124,8 @@ class SettingsScreen extends ConsumerWidget {
                   ? Icons.movie
                   : (instance.type == InstanceType.sonarr
                         ? Icons.tv
+                        : instance.type == InstanceType.jellyfin
+                        ? Icons.dns
                         : Icons.download),
               color: Theme.of(context).colorScheme.primary,
             ),

@@ -41,6 +41,13 @@ and **qBittorrent** (for downloads).
     deleted) with filtering by event type.
   - **Queue Management**: View active downloads with detailed status, remove
     tasks with blocklist option.
+  - **Jellyfin Streaming**: In-app video player (media_kit) streaming directly
+    from Jellyfin with automatic library pairing — path-based matching first,
+    provider-id fallback, and on-demand library scan when
+    Jellyfin has not indexed a file yet. Radarr/Sonarr auto-connector keeps
+    Jellyfin's catalog updated on import. Progress sync ('Continue Watching')
+    requires username:password auth; API-key mode streams without watch-state
+    writes.
   - **Notifications**: Real-time push notifications via ntfy.sh integration with
     unique multi-device synchronization, automatic configuration for new
     instances, and background polling (every 30 min) with battery saver mode.

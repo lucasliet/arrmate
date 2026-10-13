@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/jellyfin_connect_setup_service.dart';
 import '../../../core/services/logger_service.dart';
+import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../data/api/api.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
 import '../../tour/app_tour_keys.dart';
 
-/// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent instances.
+/// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent/
+/// Jellyfin instances.
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
 
@@ -36,6 +39,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   bool _isTesting = false;
   bool _isSaving = false;
   bool _isDeleting = false;
+  bool _isConfiguringConnect = false;
   bool _obscureApiKey = true;
   bool _testSuccess = false;
   int _operationGeneration = 0;
@@ -111,6 +115,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _isTesting = false;
     _isSaving = false;
     _isDeleting = false;
+    _isConfiguringConnect = false;
     _testSuccess = false;
     _testMessage = null;
     _headers = [];
@@ -128,15 +133,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final tempInstance = Instance(
-      label: _nameController.text.trim(),
-      url: _urlController.text.trim(),
-      alternativeUrl: _alternativeUrl,
-      apiKey: _apiKeyController.text.trim(),
-      type: _type,
-      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
-      headers: _headers,
-    );
+    final tempInstance = _formInstance;
 
     try {
       if (_type == InstanceType.qbittorrent) {
@@ -204,22 +201,20 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final instance = Instance(
-      id: widget.instanceId,
-      label: _nameController.text.trim(),
-      url: _urlController.text.trim(),
-      alternativeUrl: _alternativeUrl,
-      apiKey: _apiKeyController.text.trim(),
-      type: _type,
-      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
-      headers: _headers,
-    );
+    final instance = _formInstance.copyWith(id: widget.instanceId);
 
     try {
-      await ref
+      final savedInstance = await ref
           .read(instancesProvider.notifier)
           .validateAndSaveInstance(instance);
       if (!mounted || operationGeneration != _operationGeneration) return;
+      // Fire-and-forget: keeps navigation instant, failures are logged.
+      // Create-only: re-running the setup on every edit would silently
+      // rewrite the Radarr/Sonarr connector each save; edits can still run it
+      // explicitly via the 'Set Up Library Auto-Update' button.
+      if (widget.instanceId == null) {
+        _autoConfigureJellyfinConnect(savedInstance);
+      }
       context.pop();
     } catch (e, stackTrace) {
       logger.warning(
@@ -250,6 +245,17 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     return value;
   }
 
+  /// Builds an [Instance] from the current form values, without an id.
+  Instance get _formInstance => Instance(
+    label: _nameController.text.trim(),
+    url: _urlController.text.trim(),
+    alternativeUrl: _alternativeUrl,
+    apiKey: _apiKeyController.text.trim(),
+    type: _type,
+    mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
+    headers: _headers,
+  );
+
   Future<void> _delete() async {
     final instanceId = widget.instanceId;
     if (instanceId == null || _isBusy) return;
@@ -279,7 +285,113 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
-  bool get _isBusy => _isTesting || _isSaving || _isDeleting;
+  bool get _isBusy =>
+      _isTesting || _isSaving || _isDeleting || _isConfiguringConnect;
+
+  /// Runs the Radarr/Sonarr → Jellyfin connector setup for the Jellyfin
+  /// instance currently in the form, then shows one result line per *arr
+  /// instance.
+  Future<void> _configureJellyfinConnect() async {
+    if (_isBusy || !_formKey.currentState!.validate()) return;
+    final operationGeneration = ++_operationGeneration;
+
+    setState(() => _isConfiguringConnect = true);
+
+    try {
+      final results = await ref
+          .read(jellyfinConnectSetupServiceProvider)
+          .configureForAllArrInstances(jellyfinInstance: _formInstance);
+      if (!mounted || operationGeneration != _operationGeneration) return;
+      if (results.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No Radarr or Sonarr instances configured'),
+          ),
+        );
+        return;
+      }
+      _showJellyfinConnectResults(results);
+    } catch (e, stackTrace) {
+      logger.error(
+        '[InstanceEditScreen] Jellyfin connector setup failed',
+        e,
+        stackTrace,
+      );
+      if (!mounted || operationGeneration != _operationGeneration) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Setup failed: $e')));
+    } finally {
+      if (mounted && operationGeneration == _operationGeneration) {
+        setState(() => _isConfiguringConnect = false);
+      }
+    }
+  }
+
+  /// Shows one dialog line per Radarr/Sonarr instance result, mirroring the
+  /// report dialog of the notification auto-config screen.
+  void _showJellyfinConnectResults(List<NotificationSetupResult> results) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Library Auto-Update Setup'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: results
+              .map(
+                (result) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    result.isSuccess ? Icons.check_circle : Icons.error,
+                    color: result.isSuccess ? Colors.green : Colors.red,
+                  ),
+                  title: Text(
+                    result.message,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  /// Auto-configures the Radarr/Sonarr → Jellyfin connector in the background
+  /// after a new Jellyfin instance is created.
+  ///
+  /// Invoked only on create ([_save] skips it when editing) so saving an
+  /// existing instance never silently rewrites the connector.
+  ///
+  /// Only credentials that can yield a server API key qualify: a plain key,
+  /// or a user login (field or Basic header) that can mint one when the
+  /// account is an administrator. Anything else skips silently (the manual
+  /// button surfaces the reason). Mirrors the ntfy auto-config in
+  /// [InstancesNotifier.addInstance]: never awaited, failures logged.
+  void _autoConfigureJellyfinConnect(Instance instance) {
+    if (instance.type != InstanceType.jellyfin) return;
+    final credential = instance.apiKey.trim();
+    if (credential.isEmpty && !_hasAuthorizationHeader) return;
+
+    logger.info(
+      '[InstanceEditScreen] Auto-configuring Jellyfin library updates '
+      'in background',
+    );
+    ref
+        .read(jellyfinConnectSetupServiceProvider)
+        .configureForAllArrInstances(jellyfinInstance: instance)
+        .catchError((e, st) {
+          logger.error(
+            '[InstanceEditScreen] Jellyfin auto-config failed',
+            e,
+            st,
+          );
+          return const <NotificationSetupResult>[];
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -377,6 +489,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                   label: Text('qBittorrent'),
                   icon: Icon(Icons.download),
                 ),
+                ButtonSegment(
+                  value: InstanceType.jellyfin,
+                  label: Text('Jellyfin'),
+                  icon: Icon(Icons.dns),
+                ),
               ],
               selected: {_type},
               onSelectionChanged: (Set<InstanceType> newSelection) {
@@ -464,6 +581,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 helperText: _type == InstanceType.qbittorrent
                     ? 'Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using '
                           '"Add Basic Auth" below for older versions.'
+                    : _type == InstanceType.jellyfin
+                    ? 'API key (Jellyfin dashboard → Advanced → API Keys). Leave empty if using '
+                          '"Add Basic Auth" below with your Jellyfin login.'
                     : null,
                 suffixIcon: IconButton(
                   tooltip: _obscureApiKey ? 'Show API key' : 'Hide API key',
@@ -478,7 +598,8 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               validator: (value) {
                 final isEmpty = value == null || value.isEmpty;
-                if (_type == InstanceType.qbittorrent) {
+                if (_type == InstanceType.qbittorrent ||
+                    _type == InstanceType.jellyfin) {
                   if (isEmpty && !_hasAuthorizationHeader) {
                     return 'Provide an API key or add Basic Auth below';
                   }
@@ -564,6 +685,21 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                   color: _testSuccess ? Colors.green : Colors.red,
                 ),
                 textAlign: TextAlign.center,
+              ),
+            ],
+
+            if (_type == InstanceType.jellyfin) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _isBusy ? null : _configureJellyfinConnect,
+                icon: _isConfiguringConnect
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                label: const Text('Set Up Library Auto-Update'),
               ),
             ],
 

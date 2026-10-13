@@ -9,11 +9,16 @@ class MediaFileCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
+  /// Optional play action; shows a play button next to the delete one when
+  /// set (e.g. "Watch in Jellyfin").
+  final VoidCallback? onPlay;
+
   const MediaFileCard({
     super.key,
     required this.file,
     this.onTap,
     this.onDelete,
+    this.onPlay,
   });
 
   @override
@@ -62,6 +67,14 @@ class MediaFileCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (onPlay != null)
+                    IconButton(
+                      icon: const Icon(Icons.play_circle_outline),
+                      tooltip: 'Play',
+                      onPressed: onPlay,
+                      color: theme.colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   if (onDelete != null)
                     IconButton(
                       icon: const Icon(Icons.delete_outline),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/media_external_links.dart';
@@ -131,6 +132,15 @@ class MovieDetailsScreen extends ConsumerWidget {
             ),
           ),
           actions: [
+            if (movie.hasFile == true &&
+                ref.watch(currentJellyfinInstanceProvider) != null)
+              IconButton(
+                icon: const Icon(Icons.play_circle_outline),
+                tooltip: 'Watch in Jellyfin',
+                onPressed: () => ref
+                    .read(playbackLaunchServiceProvider)
+                    .playMovie(context, ref, movie: movie),
+              ),
             IconButton(
               icon: const Icon(Icons.manage_search),
               tooltip: 'Refresh & Scan',

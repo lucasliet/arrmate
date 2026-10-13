@@ -76,9 +76,11 @@ class InstanceConnectionResolver {
     final basePath = baseUri.path.endsWith('/')
         ? baseUri.path.substring(0, baseUri.path.length - 1)
         : baseUri.path;
-    final probePath = instance.type == InstanceType.qbittorrent
-        ? '$basePath/api/v2/app/version'
-        : '$basePath/ping';
+    final probePath = switch (instance.type) {
+      InstanceType.qbittorrent => '$basePath/api/v2/app/version',
+      InstanceType.jellyfin => '$basePath/System/Info/Public',
+      _ => '$basePath/ping',
+    };
     return baseUri.replace(
       userInfo: '',
       path: probePath,
@@ -109,9 +111,14 @@ class InstanceConnectionResolver {
         }
         // qBittorrent's WebUI rejects unauthenticated requests with 403/401,
         // so any HTTP response proves the host is reachable. Radarr/Sonarr
-        // expose a public /ping that returns {"status": "OK"}.
+        // expose a public /ping that returns {"status": "OK"}; Jellyfin's
+        // public system info answers without auth, and any HTTP 200 proves
+        // reachability without inspecting the body.
         if (instance.type == InstanceType.qbittorrent) {
           return true;
+        }
+        if (instance.type == InstanceType.jellyfin) {
+          return response.statusCode == 200;
         }
         final status = response.data is Map
             ? (response.data as Map<dynamic, dynamic>)['status']?.toString()

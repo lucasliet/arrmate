@@ -67,6 +67,7 @@ final arrLogLoaderProvider = Provider<LogPageLoader?>((ref) {
         );
         return ({int page = 1}) => repository.getLogs(page: page);
       case InstanceType.qbittorrent:
+      case InstanceType.jellyfin:
         return null;
     }
   }

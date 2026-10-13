@@ -10,6 +10,9 @@ import 'package:arrmate/presentation/widgets/media/media_file_details_sheet.dart
 import 'package:arrmate/presentation/widgets/media/history_event_details_sheet.dart';
 import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
 import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart';
+import '../../../../core/services/playback_launch_service.dart';
+import '../../../providers/instances_provider.dart';
+import '../providers/movie_details_provider.dart';
 import '../providers/movie_metadata_provider.dart';
 
 /// A section widget displaying related files and history for a movie.
@@ -36,6 +39,10 @@ class MovieMetadataSection extends ConsumerWidget {
   Widget _buildFilesSection(BuildContext context, WidgetRef ref) {
     final filesState = ref.watch(movieFilesProvider(movieId));
     final extraFilesState = ref.watch(movieExtraFilesProvider(movieId));
+    final movieAsync = ref.watch(movieDetailsProvider(movieId));
+    final jellyfinConfigured =
+        ref.watch(currentJellyfinInstanceProvider) != null;
+    final movie = movieAsync.asData?.value;
     final theme = Theme.of(context);
 
     return Column(
@@ -62,6 +69,11 @@ class MovieMetadataSection extends ConsumerWidget {
                   .map(
                     (file) => MediaFileCard(
                       file: file,
+                      onPlay: jellyfinConfigured && movie != null
+                          ? () => ref
+                                .read(playbackLaunchServiceProvider)
+                                .playMovie(context, ref, movie: movie)
+                          : null,
                       onTap: () => context.showBottomSheet(
                         MediaFileDetailsSheet(
                           file: file,
