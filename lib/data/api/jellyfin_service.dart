@@ -522,7 +522,7 @@ class JellyfinService {
         method: method,
         headers: {
           ...(options.headers ?? {}),
-          if (retryAuthValue != null) 'Authorization': retryAuthValue,
+          'Authorization': ?retryAuthValue,
         },
       );
       return _dio.request<T>(
@@ -1064,8 +1064,8 @@ class JellyfinService {
       'IncludeItemTypes': includeItemTypes,
       'Fields': 'Path,MediaSources,ProviderIds',
       'Limit': '100',
-      if (searchTerm != null) 'SearchTerm': searchTerm,
-      if (years != null) 'years': years,
+      'SearchTerm': ?searchTerm,
+      'years': ?years,
     };
     final userId = _userId;
     if (userId != null) {
@@ -1185,7 +1185,7 @@ class JellyfinService {
     final token = _authToken;
     final streamQuery = <String, String>{
       'MediaSourceId': source.id,
-      if (token != null) 'ApiKey': token,
+      'ApiKey': ?token,
     };
 
     final streamUrl = _buildUri('/Videos/${item.id}/stream', {
@@ -1209,7 +1209,7 @@ class JellyfinService {
         // managed modes — see [_effectiveCustomHeaders]), then the managed
         // MediaBrowser authorization (with Token) so it wins on conflicts.
         ..._effectiveCustomHeaders,
-        if (_authorizationValue != null) 'Authorization': _authorizationValue!,
+        'Authorization': ?_authorizationValue,
       },
       // Resume position is per-user data: only report it when the session
       // belongs to an authenticated user, never for a scope-less admin key.
@@ -1247,9 +1247,9 @@ class JellyfinService {
       final response = await _request<Map<String, dynamic>>(
         '/Items/${item.id}/PlaybackInfo',
         method: 'POST',
-        queryParameters: {if (userId != null) 'userId': userId},
+        queryParameters: {'userId': ?userId},
         data: {
-          if (userId != null) 'UserId': userId,
+          'UserId': ?userId,
           'IsPlayback': true,
           'AutoOpenLiveStream': true,
           'DeviceProfile': _playbackDeviceProfile,
@@ -1418,13 +1418,13 @@ class JellyfinService {
       await _request(
         path,
         method: 'POST',
-        queryParameters: {if (userId != null) 'userId': userId},
+        queryParameters: {'userId': ?userId},
         data: {
           'ItemId': itemId,
           'MediaSourceId': mediaSourceId,
           if (position != null)
             'PositionTicks': position.inMilliseconds * 10000,
-          if (isPaused != null) 'IsPaused': isPaused,
+          'IsPaused': ?isPaused,
         },
       );
     } catch (e, stackTrace) {

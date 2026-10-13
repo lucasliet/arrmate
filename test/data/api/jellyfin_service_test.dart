@@ -1421,7 +1421,7 @@ Map<String, dynamic> _itemJson({
     'Name': 'Item $id',
     'Type': type,
     'Path': path,
-    if (providerIds != null) 'ProviderIds': providerIds,
+    'ProviderIds': ?providerIds,
     'MediaSources': [_mediaSourceJson(id: mediaSourceId, path: path)],
   };
 }
@@ -1429,7 +1429,7 @@ Map<String, dynamic> _itemJson({
 Map<String, dynamic> _mediaSourceJson({required String id, String? path}) {
   return {
     'Id': id,
-    if (path != null) 'Path': path,
+    'Path': ?path,
     'Container': 'mkv',
     'MediaStreams': [
       {'Index': 0, 'Type': 'Video', 'Codec': 'h264'},

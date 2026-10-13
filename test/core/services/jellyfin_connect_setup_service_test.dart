@@ -427,7 +427,12 @@ void main() {
     () async {
       // Given
       final api = MockRadarrApi();
-      final service = serviceWith(radarrApiFactory: (_) => api);
+      final jellyfin = MockJellyfinService();
+      when(() => jellyfin.ensureApiKey()).thenAnswer((_) async => null);
+      final service = serviceWith(
+        radarrApiFactory: (_) => api,
+        jellyfinServiceFactory: (_) => jellyfin,
+      );
 
       // When
       final result = await service.configureArrInstance(

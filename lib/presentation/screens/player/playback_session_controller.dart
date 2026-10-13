@@ -196,6 +196,7 @@ class PlaybackSessionController {
   bool _playing = false;
   bool _startReported = false;
   bool _stopReported = false;
+  bool _disposed = false;
 
   /// Last fatal error message, or `null` while playback is healthy.
   final ValueNotifier<String?> errorMessage = ValueNotifier<String?>(null);
@@ -212,6 +213,9 @@ class PlaybackSessionController {
   /// Starts the session: subscribes to engine streams, opens the media and
   /// begins progress reporting.
   Future<void> initialize() async {
+    if (_disposed) {
+      return;
+    }
     _lastPosition = request.resumePosition;
     _resetResumeState(request.resumePosition);
     final player = _player ??= _playerFactory();
@@ -282,6 +286,7 @@ class PlaybackSessionController {
   /// Cancels every subscription and timer, reports the final position and
   /// releases the engine.
   Future<void> dispose() async {
+    _disposed = true;
     _progressTimer?.cancel();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
@@ -377,6 +382,11 @@ class PlaybackSessionController {
         httpHeaders: request.httpHeaders,
         startPosition: _resumeTarget > Duration.zero ? _resumeTarget : null,
       );
+      // The screen may have been closed while the open was in flight: a
+      // late start report would recreate the session Jellyfin just stopped.
+      if (_disposed) {
+        return;
+      }
       // Never log the full URL: the query string carries the server API key.
       logger.info(
         '[PlaybackSessionController] Opened "${request.title}" '
@@ -384,6 +394,9 @@ class PlaybackSessionController {
       );
       _reportStartIfNeeded();
     } catch (error, stackTrace) {
+      if (_disposed) {
+        return;
+      }
       logger.error(
         '[PlaybackSessionController] Failed to open "${request.title}"',
         error,

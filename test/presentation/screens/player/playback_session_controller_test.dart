@@ -654,6 +654,32 @@ void main() {
       await controller.dispose();
     });
 
+    test(
+      'does not report start when disposed while the open is in flight',
+      () async {
+        // Given
+        final player = FakeStreamPlayer()..openGate = Completer<void>();
+        final reporter = FakeReporter();
+        final controller = PlaybackSessionController(
+          request: _buildRequest(reporter: reporter),
+          playerFactory: () => player,
+          progressInterval: const Duration(hours: 1),
+        );
+
+        // When
+        final initializing = controller.initialize();
+        await pumpEventQueue();
+        await controller.dispose();
+        player.openGate!.complete();
+        await initializing;
+        await pumpEventQueue();
+
+        // Then
+        expect(reporter.stops, hasLength(1));
+        expect(reporter.starts, isEmpty);
+      },
+    );
+
     test('skips reporting entirely when no reporter is provided', () async {
       // Given
       final player = FakeStreamPlayer();
