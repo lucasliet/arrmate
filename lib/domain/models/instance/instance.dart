@@ -57,6 +57,74 @@ class InstanceHeader extends Equatable {
   List<Object?> get props => [id, name, value];
 }
 
+/// A signed-in user session persisted in place of a password.
+///
+/// Jellyfin exchanges `username:password` for an access token that stays
+/// valid until it is logged out or its device is revoked; there is no
+/// refresh token. Arrmate stores only this token, never the password, so an
+/// expired session asks the user to sign in again instead of replaying a
+/// stored secret.
+class InstanceUserSession extends Equatable {
+  /// Access token returned by the sign-in request.
+  final String accessToken;
+
+  /// Id of the signed-in user, used to scope per-user requests.
+  final String? userId;
+
+  /// Name of the signed-in user, shown in the instance settings.
+  final String? userName;
+
+  /// Device id the token was issued to. Reused on every sign-in for this
+  /// instance so the server replaces the previous session instead of
+  /// registering a new device each time.
+  final String deviceId;
+
+  /// Whether the signed-in user is a server administrator.
+  final bool isAdministrator;
+
+  const InstanceUserSession({
+    required this.accessToken,
+    required this.deviceId,
+    this.userId,
+    this.userName,
+    this.isAdministrator = false,
+  });
+
+  factory InstanceUserSession.fromJson(Map<String, dynamic> json) {
+    return InstanceUserSession(
+      accessToken: json['accessToken'] as String,
+      deviceId: json['deviceId'] as String,
+      userId: json['userId'] as String?,
+      userName: json['userName'] as String?,
+      isAdministrator: json['isAdministrator'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'accessToken': accessToken,
+      'deviceId': deviceId,
+      'userId': ?userId,
+      'userName': ?userName,
+      'isAdministrator': isAdministrator,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    accessToken,
+    userId,
+    userName,
+    deviceId,
+    isAdministrator,
+  ];
+
+  /// Never includes [accessToken], so logging a session cannot leak it.
+  @override
+  String toString() =>
+      'InstanceUserSession(userName: $userName, deviceId: $deviceId)';
+}
+
 /// Represents the running status of an instance.
 class InstanceStatus extends Equatable {
   final String appName;
@@ -130,6 +198,9 @@ class Instance extends Equatable {
 
   /// Custom headers to include in requests.
   final List<InstanceHeader> headers;
+
+  /// Signed-in user session that replaces a stored password (Jellyfin).
+  final InstanceUserSession? userSession;
   final List<RootFolder> rootFolders;
   final List<QualityProfile> qualityProfiles;
   final List<Tag> tags;
@@ -146,6 +217,7 @@ class Instance extends Equatable {
     this.activeUrl,
     this.apiKey = '',
     this.headers = const [],
+    this.userSession,
     this.rootFolders = const [],
     this.qualityProfiles = const [],
     this.tags = const [],
@@ -173,6 +245,11 @@ class Instance extends Equatable {
               ?.map((e) => InstanceHeader.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      userSession: json['userSession'] is Map<String, dynamic>
+          ? InstanceUserSession.fromJson(
+              json['userSession'] as Map<String, dynamic>,
+            )
+          : null,
       rootFolders:
           (json['rootFolders'] as List<dynamic>?)
               ?.map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
@@ -203,6 +280,7 @@ class Instance extends Equatable {
       if (alternativeUrl != null) 'alternativeUrl': alternativeUrl,
       'apiKey': apiKey,
       'headers': headers.map((e) => e.toJson()).toList(),
+      'userSession': ?userSession?.toJson(),
       'rootFolders': rootFolders.map((e) => e.toJson()).toList(),
       'qualityProfiles': qualityProfiles.map((e) => e.toJson()).toList(),
       'tags': tags.map((e) => e.toJson()).toList(),
@@ -257,6 +335,10 @@ class Instance extends Equatable {
     }
   }
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// Set [clearUserSession] to drop the stored [userSession] (e.g. when the
+  /// credentials switch to an API key); it wins over [userSession].
   Instance copyWith({
     String? id,
     InstanceType? type,
@@ -267,6 +349,8 @@ class Instance extends Equatable {
     String? activeUrl,
     String? apiKey,
     List<InstanceHeader>? headers,
+    InstanceUserSession? userSession,
+    bool clearUserSession = false,
     List<RootFolder>? rootFolders,
     List<QualityProfile>? qualityProfiles,
     List<Tag>? tags,
@@ -283,6 +367,7 @@ class Instance extends Equatable {
       activeUrl: activeUrl ?? this.activeUrl,
       apiKey: apiKey ?? this.apiKey,
       headers: headers ?? this.headers,
+      userSession: clearUserSession ? null : userSession ?? this.userSession,
       rootFolders: rootFolders ?? this.rootFolders,
       qualityProfiles: qualityProfiles ?? this.qualityProfiles,
       tags: tags ?? this.tags,
@@ -302,6 +387,7 @@ class Instance extends Equatable {
     activeUrl,
     apiKey,
     headers,
+    userSession,
     rootFolders,
     qualityProfiles,
     tags,

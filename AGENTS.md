@@ -45,9 +45,13 @@ and **qBittorrent** (for downloads).
     from Jellyfin with automatic library pairing — path-based matching first,
     provider-id fallback, and on-demand library scan when
     Jellyfin has not indexed a file yet. Radarr/Sonarr auto-connector keeps
-    Jellyfin's catalog updated on import. Progress sync ('Continue Watching')
-    requires username:password auth; API-key mode streams without watch-state
-    writes.
+    Jellyfin's catalog updated on import; it is only set up from the explicit
+    "Set Up Library Auto-Update" action, and removing the Jellyfin instance
+    deletes the connector, revokes the minted `Arrmate` key and signs out.
+    Progress sync ('Continue Watching') requires a user login:
+    username:password is exchanged once for a session token and only the
+    token is stored (legacy password instances migrate on load); API-key mode
+    streams without watch-state writes.
   - **Notifications**: Real-time push notifications via ntfy.sh integration with
     unique multi-device synchronization, automatic configuration for new
     instances, and background polling (every 30 min) with battery saver mode.

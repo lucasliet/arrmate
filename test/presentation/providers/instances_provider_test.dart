@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:arrmate/core/network/instance_connection_resolver.dart';
+import 'package:arrmate/core/services/jellyfin_session_service.dart';
+import 'package:arrmate/data/api/jellyfin_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/instance_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
@@ -14,11 +16,125 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MockInstanceRepository extends Mock implements InstanceRepository {}
 
+class MockJellyfinService extends Mock implements JellyfinService {}
+
+const _jellyfinSession = InstanceUserSession(
+  accessToken: 'token-123',
+  deviceId: 'arrmate-device-1',
+  userId: 'user-9',
+  userName: 'admin',
+);
+
+/// Session service whose sign-in always succeeds with [_jellyfinSession]
+/// for instances carrying `username:password`.
+JellyfinSessionService _signingInSessions() {
+  return JellyfinSessionService(
+    jellyfinServiceFactory: (instance) {
+      final service = MockJellyfinService();
+      when(
+        () => service.hasLoginCredentials,
+      ).thenReturn(instance.apiKey.contains(':'));
+      when(() => service.signIn()).thenAnswer((_) async => _jellyfinSession);
+      when(() => service.logout()).thenAnswer((_) async {});
+      return service;
+    },
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    registerFallbackValue(Instance());
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  test('stores a Jellyfin session instead of the password on save', () async {
+    // Given
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      apiKey: 'admin:secret-password',
+    );
+
+    // When
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(instance);
+
+    // Then
+    expect(saved.apiKey, isEmpty);
+    expect(saved.userSession, _jellyfinSession);
+    final validated =
+        verify(() => repository.getSystemStatus(captureAny())).captured.single
+            as Instance;
+    expect(validated.apiKey, isEmpty);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('instances'),
+      isNot(contains('secret-password')),
+    );
+  });
+
+  test('migrates a Jellyfin instance saved with a password on load', () async {
+    // Given
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([
+        Instance(
+          id: 'jellyfin-legacy',
+          type: InstanceType.jellyfin,
+          label: 'Legacy',
+          url: 'https://jellyfin.example.com',
+          apiKey: 'admin:secret-password',
+        ).toJson(),
+      ]),
+    });
+    final container = ProviderContainer(
+      overrides: [
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // When
+    await _waitUntilLoaded(container);
+    await _waitUntil(
+      () =>
+          container.read(instancesProvider).instances.single.userSession !=
+          null,
+    );
+
+    // Then
+    final migrated = container.read(instancesProvider).instances.single;
+    expect(migrated.apiKey, isEmpty);
+    expect(migrated.userSession, _jellyfinSession);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('instances'),
+      isNot(contains('secret-password')),
+    );
   });
 
   test(

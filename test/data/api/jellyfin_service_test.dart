@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/data/api/jellyfin_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:dio/dio.dart';
@@ -256,10 +257,12 @@ void main() {
         final status = await service.getSystemStatus();
 
         // Then
+        // The login made only for the check is signed out afterwards.
         expect(adapter.requests.map((uri) => uri.path), [
           '/Users/AuthenticateByName',
           '/System/Info',
           '/System/Info/Public',
+          '/Sessions/Logout',
         ]);
         expect(status.instanceName, 'Public Jelly');
         expect(status.version, '10.8.0');
@@ -301,6 +304,346 @@ void main() {
         adapter.headers.first['Authorization'],
         contains('DeviceId="counted-device-1"'),
       );
+    });
+  });
+
+  group('JellyfinService credential validation', () {
+    test(
+      'rejects an API key whose /System/Info call fails at the transport '
+      'level while the public endpoint answers',
+      () async {
+        // Given — browsers surface a 401 without CORS headers this way.
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/System/Info':
+              return const _TransportFailure();
+            case '/System/Info/Public':
+              return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
+          }
+          return <String, dynamic>{};
+        });
+        final service = _buildService(adapter, apiKey: 'xyz');
+
+        // When
+        final call = service.getSystemStatus();
+
+        // Then
+        await expectLater(
+          call,
+          throwsA(
+            isA<UnauthorizedError>().having(
+              (e) => e.message,
+              'message',
+              contains('Invalid Jellyfin credentials'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('reports an unreachable server, not a raw error', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => const _TransportFailure());
+      final service = _buildService(adapter, apiKey: 'xyz');
+
+      // When
+      final call = service.getSystemStatus();
+
+      // Then
+      await expectLater(
+        call,
+        throwsA(
+          isA<ConnectionError>().having(
+            (e) => e.message,
+            'message',
+            contains('unreachable'),
+          ),
+        ),
+      );
+    });
+
+    test('maps a refused sign-in to invalid credentials', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/Users/AuthenticateByName') {
+          return const _StatusBody(401, 'Unauthorized');
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(adapter, apiKey: 'demo:wrong');
+
+      // When
+      final call = service.getSystemStatus();
+
+      // Then
+      await expectLater(call, throwsA(isA<UnauthorizedError>()));
+    });
+
+    test(
+      'maps a transport-level sign-in failure on a reachable server to '
+      'invalid credentials',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/Users/AuthenticateByName':
+              return const _TransportFailure();
+            case '/System/Info/Public':
+              return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
+          }
+          return <String, dynamic>{};
+        });
+        final service = _buildService(adapter, apiKey: 'demo:wrong');
+
+        // When
+        final call = service.getSystemStatus();
+
+        // Then
+        await expectLater(call, throwsA(isA<UnauthorizedError>()));
+      },
+    );
+  });
+
+  group('JellyfinService sessions', () {
+    const storedSession = InstanceUserSession(
+      accessToken: 'stored-token',
+      deviceId: 'arrmate-device-7',
+      userId: 'user-9',
+      userName: 'admin',
+      isAdministrator: true,
+    );
+
+    test('signIn returns a session with a per-instance device id', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/Users/AuthenticateByName') {
+          return {
+            'AccessToken': 'token-123',
+            'User': {
+              'Id': 'user-9',
+              'Name': 'admin',
+              'Policy': {'IsAdministrator': true},
+            },
+          };
+        }
+        return <String, dynamic>{};
+      });
+      final service = _serviceUserPassword(adapter);
+
+      // When
+      final session = await service.signIn();
+
+      // Then
+      expect(session.accessToken, 'token-123');
+      expect(session.userId, 'user-9');
+      expect(session.userName, 'admin');
+      expect(session.isAdministrator, isTrue);
+      expect(session.deviceId, startsWith('arrmate-'));
+      expect(session.deviceId, isNot('install-user-1'));
+      expect(
+        adapter.headers.single['Authorization'],
+        contains('DeviceId="${session.deviceId}"'),
+      );
+    });
+
+    test('signing in again reuses the stored session device id', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        return {
+          'AccessToken': 'token-456',
+          'User': {'Id': 'user-9', 'Name': 'admin'},
+        };
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: 'admin:newpass',
+        userSession: storedSession,
+      );
+
+      // When
+      final session = await service.signIn();
+
+      // Then
+      expect(session.accessToken, 'token-456');
+      expect(session.deviceId, 'arrmate-device-7');
+    });
+
+    test('signIn without credentials asks for them', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final service = _buildService(adapter, apiKey: 'plain-key');
+
+      // When
+      final call = service.signIn();
+
+      // Then
+      await expectLater(call, throwsA(isA<MissingDataError>()));
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('uses the stored session token without signing in', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/System/Info') {
+          return {'ServerName': 'Jelly', 'Version': '12.2.0'};
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final status = await service.getSystemStatus();
+
+      // Then
+      expect(adapter.requests.map((uri) => uri.path), ['/System/Info']);
+      expect(
+        adapter.headers.single['Authorization'],
+        allOf(
+          contains('Token="stored-token"'),
+          contains('DeviceId="arrmate-device-7"'),
+        ),
+      );
+      expect(service.supportsProgressSync, isTrue);
+      expect(status.authentication, 'Credentials');
+    });
+
+    test('asks to sign in again when the stored session is rejected', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        (_) => const _StatusBody(401, 'Unauthorized'),
+      );
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final call = service.getSystemStatus();
+
+      // Then — no password is stored, so nothing is replayed.
+      await expectLater(
+        call,
+        throwsA(
+          isA<UnauthorizedError>().having(
+            (e) => e.message,
+            'message',
+            contains('Sign in again'),
+          ),
+        ),
+      );
+      expect(
+        adapter.requests.any((uri) => uri.path == '/Users/AuthenticateByName'),
+        isFalse,
+      );
+    });
+
+    test('logout ends the stored session', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      await service.logout();
+
+      // Then
+      expect(adapter.requests.single.path, '/Sessions/Logout');
+      expect(adapter.methods.single, 'POST');
+      expect(
+        adapter.headers.single['Authorization'],
+        contains('Token="stored-token"'),
+      );
+    });
+
+    test('logout is a no-op for an API key', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final service = _serviceApiKey(adapter);
+
+      // When
+      await service.logout();
+
+      // Then
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('revokeApiKey deletes the Arrmate key', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.method == 'GET' && options.uri.path == '/Auth/Keys') {
+          return {
+            'Items': [
+              {'AppName': 'Other', 'AccessToken': 'other-key'},
+              {'AppName': 'Arrmate', 'AccessToken': 'arrmate-key'},
+            ],
+          };
+        }
+        return const _StatusBody(204, '');
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final revoked = await service.revokeApiKey();
+
+      // Then
+      expect(revoked, isTrue);
+      expect(adapter.methods.last, 'DELETE');
+      expect(adapter.requests.last.path, '/Auth/Keys/arrmate-key');
+    });
+
+    test('revokeApiKey reports when there is no key to revoke', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        (_) => {'Items': <Object>[]},
+      );
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final revoked = await service.revokeApiKey();
+
+      // Then
+      expect(revoked, isFalse);
+      expect(adapter.methods, ['GET']);
+    });
+
+    test('revokeApiKey never touches a hand-configured API key', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final service = _serviceApiKey(adapter);
+
+      // When
+      final revoked = await service.revokeApiKey();
+
+      // Then
+      expect(revoked, isFalse);
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('withoutBasicCredentials drops only the Basic credentials header', () {
+      // Given
+      final headers = _instanceWithBasicAuth(apiKey: '').headers;
+
+      // When
+      final filtered = JellyfinService.withoutBasicCredentials(headers);
+
+      // Then
+      expect(filtered.map((h) => h.name), ['X-Proxy']);
     });
   });
 
@@ -1529,6 +1872,7 @@ JellyfinService _buildService(
   String? deviceId,
   Future<String> Function()? deviceIdResolver,
   List<InstanceHeader> headers = const [],
+  InstanceUserSession? userSession,
 }) {
   final instance = Instance(
     id: 'jf-1',
@@ -1537,6 +1881,7 @@ JellyfinService _buildService(
     url: 'http://jf.test',
     apiKey: apiKey,
     headers: headers,
+    userSession: userSession,
   );
   final dio = Dio()
     ..httpClientAdapter = adapter
@@ -1556,6 +1901,12 @@ JellyfinService _buildService(
 /// loop fast while still exercising several iterations.
 const _testPollInterval = Duration(milliseconds: 1);
 const _testPollTimeout = Duration(milliseconds: 500);
+
+/// Request that never gets an HTTP answer, like a browser hiding a 401
+/// without CORS headers or an unreachable host.
+class _TransportFailure {
+  const _TransportFailure();
+}
 
 /// Response with a non-default status code.
 class _StatusBody {
@@ -1589,6 +1940,12 @@ class _RecordingAdapter implements HttpClientAdapter {
     bodies.add(_decodeBody(options.data));
 
     final result = handler(options);
+    if (result is _TransportFailure) {
+      throw DioException.connectionError(
+        requestOptions: options,
+        reason: 'XMLHttpRequest onError callback was called',
+      );
+    }
     if (result is _StatusBody) {
       final isPlainString = result.body is String;
       return ResponseBody.fromString(

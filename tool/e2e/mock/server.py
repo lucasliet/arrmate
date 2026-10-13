@@ -3143,17 +3143,21 @@ class Handler(BaseHTTPRequestHandler):
         legacy `X-Emby-Token` header and lowercase `api_key` query, so the
         lab stays usable while clients migrate.
         """
-        token = (
-            self.headers.get("X-Emby-Token")
-            or _jellyfin_bearer_token(self.headers.get("Authorization", ""))
-            or (query.get("ApiKey") or [None])[0]
-            or (query.get("api_key") or [None])[0]
-        )
+        token = self._jellyfin_request_token(query)
         if not token:
             return None
         if token == JELLYFIN_KEY or token in LAB.jellyfin_api_keys.values():
             return {"name": "API key", "userId": None, "admin": True}
         return LAB.jellyfin_sessions.get(token)
+
+    def _jellyfin_request_token(self, query: dict) -> str | None:
+        """Token carried by the request, from any accepted auth method."""
+        return (
+            self.headers.get("X-Emby-Token")
+            or _jellyfin_bearer_token(self.headers.get("Authorization", ""))
+            or (query.get("ApiKey") or [None])[0]
+            or (query.get("api_key") or [None])[0]
+        )
 
     def _jellyfin_login(self, body: bytes) -> None:
         """Handle `POST /Users/AuthenticateByName` for the two lab users."""
@@ -3323,6 +3327,21 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(204, b"", "text/plain")
                 else:
                     self._json(self._jellyfin_api_keys())
+                return
+            match = re.fullmatch(r"/Auth/Keys/([^/]+)", path)
+            if match and method == "DELETE":
+                if not principal["admin"]:
+                    self._json({}, 403)
+                    return
+                revoked = match.group(1)
+                for app, token in list(LAB.jellyfin_api_keys.items()):
+                    if token == revoked:
+                        del LAB.jellyfin_api_keys[app]
+                self._send(204, b"", "text/plain")
+                return
+            if method == "POST" and path == "/Sessions/Logout":
+                LAB.jellyfin_sessions.pop(self._jellyfin_request_token(query), None)
+                self._send(204, b"", "text/plain")
                 return
             if method == "GET" and path == "/Items":
                 self._json(self._jellyfin_items_envelope(query))

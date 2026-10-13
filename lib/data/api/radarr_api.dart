@@ -456,6 +456,11 @@ class RadarrApi {
     return NotificationResource.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Deletes the notification setting with [id].
+  Future<void> deleteNotification(int id) async {
+    await _client.delete('/notification/$id');
+  }
+
   Future<void> rescanMovie(int movieId) async {
     await sendCommand('RescanMovie', params: {'movieId': movieId});
   }

@@ -107,6 +107,94 @@ class JellyfinConnectSetupService {
     return results;
   }
 
+  /// Undoes what Arrmate set up for [jellyfinInstance] before it is removed.
+  ///
+  /// Runs every step even when an earlier one fails:
+  /// 1. Deletes the `Arrmate Jellyfin` connector pointing at this server from
+  ///    every configured Radarr/Sonarr instance.
+  /// 2. Revokes the `Arrmate` API key minted for those connectors (user
+  ///    sessions only — a hand-configured API key belongs to the user).
+  /// 3. Signs the stored user session out.
+  ///
+  /// Returns one user-facing message per failed step; an empty list means
+  /// everything was cleaned up. Never throws, so a failure never blocks the
+  /// local removal.
+  Future<List<String>> disconnect(Instance jellyfinInstance) async {
+    final failures = <String>[];
+    final endpoint = _JellyfinEndpoint.fromUrl(jellyfinInstance.url);
+    final arrInstances = _instancesSource().where(
+      (instance) =>
+          instance.type == InstanceType.radarr ||
+          instance.type == InstanceType.sonarr,
+    );
+    for (final arrInstance in arrInstances) {
+      try {
+        final notifications = await _getNotifications(arrInstance);
+        for (final notification in notifications) {
+          final id = notification.id;
+          if (id == null ||
+              notification.name != _connectorName ||
+              !_pointsAt(notification, endpoint)) {
+            continue;
+          }
+          await _deleteNotification(arrInstance, id);
+          logger.info(
+            '[$_logPrefix] Removed "$_connectorName" from '
+            '${_describe(arrInstance)}.',
+          );
+        }
+      } catch (e, st) {
+        logger.error(
+          '[$_logPrefix] Failed to remove the connector from '
+          '${_describe(arrInstance)}',
+          e,
+          st,
+        );
+        failures.add(
+          'Could not remove the Jellyfin connection from '
+          '${_describe(arrInstance)}: $e',
+        );
+      }
+    }
+
+    final service = _jellyfinServiceFactory(jellyfinInstance);
+    try {
+      await service.revokeApiKey();
+    } catch (e, st) {
+      logger.error('[$_logPrefix] Failed to revoke the Arrmate key', e, st);
+      failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
+    }
+    try {
+      await service.logout();
+    } catch (e, st) {
+      logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
+      failures.add('Could not sign out of Jellyfin: $e');
+    }
+    return failures;
+  }
+
+  /// Whether [notification] targets the Jellyfin server at [endpoint],
+  /// judged by its `Host` field or, on legacy schemas, its `Url` field.
+  bool _pointsAt(
+    NotificationResource notification,
+    _JellyfinEndpoint endpoint,
+  ) {
+    final target = endpoint.host.toLowerCase();
+    for (final field in notification.fields) {
+      final value = field.value?.toString().trim() ?? '';
+      switch (field.name.toLowerCase()) {
+        case 'host':
+          if (value.toLowerCase() == target) return true;
+        case 'url':
+          if (value.isNotEmpty &&
+              _JellyfinEndpoint.fromUrl(value).host.toLowerCase() == target) {
+            return true;
+          }
+      }
+    }
+    return false;
+  }
+
   /// Configures (creates or updates) the Jellyfin connector on [arrInstance].
   ///
   /// Returns a [NotificationSetupResult] describing success or the failure
@@ -212,10 +300,10 @@ class JellyfinConnectSetupService {
 
   /// Resolves a server-scoped API key for the connector.
   ///
-  /// A plain API key is used as-is. `username:password` credentials log in
-  /// as the user and mint (or reuse) an `Arrmate` API key when the account
-  /// is an administrator — the connector outlives a user session, so it
-  /// cannot rely on the in-memory access token.
+  /// A plain API key is used as-is. A stored user session (or legacy
+  /// `username:password` credentials) mints — or reuses — a single
+  /// `Arrmate` API key when the account is an administrator: the connector
+  /// outlives a user session, so it cannot rely on the user's access token.
   Future<_ApiKeyResolution> _resolveServerApiKey(
     Instance jellyfinInstance,
   ) async {
@@ -291,6 +379,15 @@ class JellyfinConnectSetupService {
       await _radarrApiFactory(instance).updateNotification(notification);
     } else {
       await _sonarrApiFactory(instance).updateNotification(notification);
+    }
+  }
+
+  /// Sends a request to delete the notification [id] from the instance.
+  Future<void> _deleteNotification(Instance instance, int id) async {
+    if (instance.type == InstanceType.radarr) {
+      await _radarrApiFactory(instance).deleteNotification(id);
+    } else {
+      await _sonarrApiFactory(instance).deleteNotification(id);
     }
   }
 

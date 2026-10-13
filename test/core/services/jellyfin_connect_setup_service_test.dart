@@ -688,4 +688,104 @@ void main() {
       expect(fieldsOf(sonarrCreated.single)['ApiKey'], 'minted-key');
     },
   );
+
+  group('disconnect', () {
+    NotificationResource connector({
+      required int id,
+      String name = 'Arrmate Jellyfin',
+      String host = 'jellyfin.local',
+    }) => NotificationResource(
+      id: id,
+      name: name,
+      implementation: 'MediaBrowser',
+      configContract: 'MediaBrowserSettings',
+      fields: [
+        NotificationField(name: 'Host', value: host),
+        NotificationField(name: 'Port', value: 8096),
+      ],
+    );
+
+    MockJellyfinService cleanJellyfin() {
+      final jellyfin = MockJellyfinService();
+      when(() => jellyfin.revokeApiKey()).thenAnswer((_) async => true);
+      when(() => jellyfin.logout()).thenAnswer((_) async {});
+      return jellyfin;
+    }
+
+    test(
+      'removes only the Arrmate connector pointing at this server, revokes '
+      'the key and signs out',
+      () async {
+        // Given
+        final radarrApi = MockRadarrApi();
+        when(() => radarrApi.getNotifications()).thenAnswer(
+          (_) async => [
+            connector(id: 1),
+            connector(id: 2, name: 'My Jellyfin'),
+            connector(id: 3, host: 'other-jellyfin.local'),
+          ],
+        );
+        when(
+          () => radarrApi.deleteNotification(any()),
+        ).thenAnswer((_) async {});
+        final sonarrApi = MockSonarrApi();
+        when(
+          () => sonarrApi.getNotifications(),
+        ).thenAnswer((_) async => [connector(id: 7)]);
+        when(
+          () => sonarrApi.deleteNotification(any()),
+        ).thenAnswer((_) async {});
+        final jellyfin = cleanJellyfin();
+
+        // When
+        final failures = await serviceWith(
+          radarrApiFactory: (_) => radarrApi,
+          sonarrApiFactory: (_) => sonarrApi,
+          jellyfinServiceFactory: (_) => jellyfin,
+          instancesSource: () => [
+            radarrInstance(),
+            sonarrInstance(),
+            qbittorrentInstance(),
+          ],
+        ).disconnect(jellyfinInstance());
+
+        // Then
+        expect(failures, isEmpty);
+        verify(() => radarrApi.deleteNotification(1)).called(1);
+        verifyNever(() => radarrApi.deleteNotification(2));
+        verifyNever(() => radarrApi.deleteNotification(3));
+        verify(() => sonarrApi.deleteNotification(7)).called(1);
+        verifyInOrder([
+          () => jellyfin.revokeApiKey(),
+          () => jellyfin.logout(),
+        ]);
+      },
+    );
+
+    test('reports each failed step and still runs the others', () async {
+      // Given
+      final radarrApi = MockRadarrApi();
+      when(
+        () => radarrApi.getNotifications(),
+      ).thenThrow(Exception('radarr down'));
+      final jellyfin = MockJellyfinService();
+      when(
+        () => jellyfin.revokeApiKey(),
+      ).thenThrow(Exception('not an administrator'));
+      when(() => jellyfin.logout()).thenAnswer((_) async {});
+
+      // When
+      final failures = await serviceWith(
+        radarrApiFactory: (_) => radarrApi,
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => [radarrInstance()],
+      ).disconnect(jellyfinInstance());
+
+      // Then
+      expect(failures, hasLength(2));
+      expect(failures[0], contains('radarr-1'));
+      expect(failures[1], contains('revoke'));
+      verify(() => jellyfin.logout()).called(1);
+    });
+  });
 }

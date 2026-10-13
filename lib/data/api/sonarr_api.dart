@@ -578,6 +578,11 @@ class SonarrApi {
     return NotificationResource.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Deletes the notification setting with [id].
+  Future<void> deleteNotification(int id) async {
+    await _client.delete('/notification/$id');
+  }
+
   Future<dynamic> sendCommand(
     String name, {
     Map<String, dynamic>? params,

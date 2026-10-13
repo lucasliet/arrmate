@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/network/api_error.dart';
 import '../../core/network/request_diagnostics.dart';
 import '../../core/network/secure_log_interceptor.dart';
 import '../../core/services/logger_service.dart';
@@ -26,11 +27,17 @@ const int defaultJellyfinHlsMaxBitrate = 4000000;
 
 /// Service for interacting with the Jellyfin media server REST API.
 ///
-/// Supports three authentication modes, mirroring `QBittorrentService`:
+/// Supports these authentication modes, mirroring `QBittorrentService`:
+/// - **Session mode**: a stored [Instance.userSession] (the access token a
+///   previous [signIn] returned) is sent as `Token`. The password is never
+///   persisted, so a rejected token is final: requests throw an
+///   [UnauthorizedError] asking the user to sign in again.
 /// - **User mode**: `username:password` in [Instance.apiKey], or decoded
 ///   from a custom `Authorization: Basic ...` header when the field is
-///   empty → `POST /Users/AuthenticateByName`; the returned access token
-///   and user id are kept in memory only.
+///   empty → `POST /Users/AuthenticateByName`. This is the sign-in step;
+///   callers persist the result of [signIn] as a session and drop the
+///   password. Instances saved before sessions existed keep working in this
+///   mode until they are migrated.
 /// - **API key mode**: any non-empty value without `:` (the admin-generated
 ///   key) → sent as `Token` in the `Authorization: MediaBrowser ...`
 ///   header. An admin API key has no user scope, so playback progress is
@@ -58,6 +65,13 @@ class JellyfinService {
 
   /// Authenticated user id (user mode only).
   String? _userId;
+
+  /// Authenticated user name (user mode only).
+  String? _userName;
+
+  /// Whether the access token comes from a stored [Instance.userSession]
+  /// rather than a login made by this service.
+  bool _hasStoredSession = false;
 
   /// Resolved per-installation device id, or null until it resolves (the
   /// authorization header then falls back to the [Instance.id]-derived
@@ -151,6 +165,7 @@ class JellyfinService {
   static Map<String, String> effectiveCustomHeaders(Instance instance) {
     final managed =
         instance.apiKey.isNotEmpty ||
+        instance.userSession != null ||
         decodeBasicCredentials(instance.headers) != null;
     return {
       for (final h in instance.headers)
@@ -201,23 +216,38 @@ class JellyfinService {
   /// key or `username:password`, and an empty field falls back to the
   /// custom headers — including Basic credentials for the login.
   ///
+  /// - `username:password` in the field → user mode (credentials via
+  ///   AuthenticateByName); typed credentials always win so the user can
+  ///   sign in again over an expired session.
   /// - Plain key → API key mode (no login request).
-  /// - `username:password` (field or Basic header) → user mode (credentials
-  ///   via AuthenticateByName).
+  /// - Stored [Instance.userSession] → session mode (stored token, no
+  ///   login request).
+  /// - Basic header credentials → user mode.
   /// - Empty without usable headers → custom headers only.
   void _resolveAuthMode() {
     _loginCredentials = null;
-    if (instance.apiKey.isEmpty) {
-      _loginCredentials = _decodedBasicCredentials();
-      _isUserMode = _loginCredentials != null;
-      _isApiKeyMode = false;
-    } else if (!instance.apiKey.contains(':')) {
-      _isApiKeyMode = true;
-      _isUserMode = false;
-    } else {
+    _hasStoredSession = false;
+    final session = instance.userSession;
+    if (instance.apiKey.contains(':')) {
       _isUserMode = true;
       _isApiKeyMode = false;
       _loginCredentials = instance.apiKey;
+    } else if (instance.apiKey.isNotEmpty) {
+      _isApiKeyMode = true;
+      _isUserMode = false;
+    } else if (session != null) {
+      _isUserMode = true;
+      _isApiKeyMode = false;
+      _hasStoredSession = true;
+      _accessToken = session.accessToken;
+      _userId = session.userId;
+      _userName = session.userName;
+      _deviceId = session.deviceId;
+      _isAdministrator = session.isAdministrator;
+    } else {
+      _loginCredentials = _decodedBasicCredentials();
+      _isUserMode = _loginCredentials != null;
+      _isApiKeyMode = false;
     }
     if ((_isUserMode || _isApiKeyMode) &&
         instance.headers.any((h) => h.name.toLowerCase() == 'authorization')) {
@@ -238,8 +268,19 @@ class JellyfinService {
   /// - `username:password` (field or Basic header) → `POST
   ///   /Users/AuthenticateByName`, storing the returned access token and
   ///   user id in memory.
-  Future<void> authenticate({String? baseUrl}) async {
+  ///
+  /// [deviceId] overrides the per-installation device id; [signIn] passes the
+  /// instance's own stable id so the persisted session is never replaced by
+  /// an unrelated login (a test connection, a legacy re-authentication).
+  ///
+  /// Throws an [UnauthorizedError] when the server rejects the credentials
+  /// and a [ConnectionError] when it cannot be reached.
+  Future<void> authenticate({String? baseUrl, String? deviceId}) async {
     _resolveAuthMode();
+    if (_hasStoredSession) {
+      logger.debug('[JellyfinService] Using the stored user session');
+      return;
+    }
     if (!_isUserMode) {
       logger.debug(
         _isApiKeyMode
@@ -258,15 +299,20 @@ class JellyfinService {
     // before logging in: devices restored from the same cloud backup would
     // otherwise share one id, and Jellyfin invalidates the sibling's session
     // on every login, killing stream tokens mid-play.
-    await _resolveDeviceId();
+    if (deviceId != null) {
+      _deviceId = deviceId;
+    } else {
+      await _resolveDeviceId();
+    }
 
     logger.debug('[JellyfinService] Authenticating as $username...');
 
+    final loginPath = baseUrl != null
+        ? _resolvePath('/Users/AuthenticateByName', baseUrl)
+        : '/Users/AuthenticateByName';
+    final Response<dynamic> response;
     try {
-      final loginPath = baseUrl != null
-          ? _resolvePath('/Users/AuthenticateByName', baseUrl)
-          : '/Users/AuthenticateByName';
-      final response = await _dio.post<dynamic>(
+      response = await _dio.post<dynamic>(
         loginPath,
         data: {'Username': username, 'Pw': password},
         options: Options(
@@ -274,28 +320,177 @@ class JellyfinService {
           validateStatus: (status) => true,
         ),
       );
-
-      final data = response.data;
-      if (response.statusCode == 200 && data is Map) {
-        final token = data['AccessToken']?.toString();
-        final user = data['User'];
-        _accessToken = (token != null && token.isNotEmpty) ? token : null;
-        _userId = user is Map ? user['Id']?.toString() : null;
-        _isAdministrator =
-            user is Map &&
-            user['Policy'] is Map &&
-            (user['Policy'] as Map)['IsAdministrator'] == true;
-        if (_accessToken != null) {
-          logger.debug('[JellyfinService] Authentication successful');
-          return;
-        }
-      }
-
-      throw Exception('Jellyfin authentication failed: ${response.statusCode}');
-    } catch (e) {
-      logger.error('[JellyfinService] Auth error', e);
-      rethrow;
+    } on DioException catch (e, stackTrace) {
+      logger.error('[JellyfinService] Auth request failed', e, stackTrace);
+      // Browsers hide a 401 that lacks CORS headers behind a transport
+      // error, so a reachable server means the sign-in itself was refused.
+      throw await _isServerReachable(baseUrl)
+          ? const UnauthorizedError(_invalidCredentialsMessage)
+          : const ConnectionError(_unreachableMessage);
     }
+
+    final data = response.data;
+    if (response.statusCode == 200 && data is Map) {
+      final token = data['AccessToken']?.toString();
+      final user = data['User'];
+      _accessToken = (token != null && token.isNotEmpty) ? token : null;
+      _userId = user is Map ? user['Id']?.toString() : null;
+      _userName = user is Map ? user['Name']?.toString() ?? username : username;
+      _isAdministrator =
+          user is Map &&
+          user['Policy'] is Map &&
+          (user['Policy'] as Map)['IsAdministrator'] == true;
+      if (_accessToken != null) {
+        logger.debug('[JellyfinService] Authentication successful');
+        return;
+      }
+    }
+
+    logger.error(
+      '[JellyfinService] Authentication failed (${response.statusCode})',
+    );
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode == 401 || statusCode == 403) {
+      throw const UnauthorizedError(_invalidCredentialsMessage);
+    }
+    throw ServerError(
+      'Jellyfin sign-in failed (HTTP $statusCode). Try again later.',
+    );
+  }
+
+  /// Shown when the server refuses the configured credentials.
+  static const _invalidCredentialsMessage =
+      'Invalid Jellyfin credentials. Check the username and password or the '
+      'API key.';
+
+  /// Shown when a stored session is no longer accepted.
+  static const _sessionExpiredMessage =
+      'Your Jellyfin session has expired. Sign in again in the instance '
+      'settings (API Key field as username:password).';
+
+  /// Shown when the server does not answer at all.
+  static const _unreachableMessage =
+      'Jellyfin server is unreachable. Check the URL and your network.';
+
+  /// Whether the unauthenticated `/System/Info/Public` endpoint answers,
+  /// telling a refused request apart from an unreachable server.
+  Future<bool> _isServerReachable([String? baseUrl]) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        _resolvePath('/System/Info/Public', baseUrl ?? _activeUrl),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      logger.debug('[JellyfinService] Public system info unreachable: $e');
+      return false;
+    }
+  }
+
+  /// Whether this service holds `username:password` credentials that
+  /// [signIn] can exchange for a session.
+  bool get hasLoginCredentials {
+    _resolveAuthMode();
+    return _loginCredentials != null;
+  }
+
+  /// Exchanges the configured `username:password` for a user session.
+  ///
+  /// The returned [InstanceUserSession] is meant to be persisted in place of
+  /// the password (see [Instance.userSession]). The device id is fixed per
+  /// instance: a previous session's id is reused, so the server replaces
+  /// that session instead of registering one more device, and a first
+  /// sign-in gets a fresh id of its own.
+  ///
+  /// Throws a [MissingDataError] when no credentials are configured, and the
+  /// errors of [authenticate] when the sign-in fails.
+  Future<InstanceUserSession> signIn() async {
+    if (!hasLoginCredentials) {
+      throw const MissingDataError(
+        'Enter username:password in the API Key field to sign in.',
+      );
+    }
+    final deviceId =
+        instance.userSession?.deviceId ?? 'arrmate-${const Uuid().v4()}';
+    await authenticate(deviceId: deviceId);
+    logger.info('[JellyfinService] Signed in as $_userName');
+    return InstanceUserSession(
+      accessToken: _accessToken!,
+      deviceId: deviceId,
+      userId: _userId,
+      userName: _userName,
+      isAdministrator: _isAdministrator,
+    );
+  }
+
+  /// Ends the stored user session on the server (`POST /Sessions/Logout`).
+  ///
+  /// No-op outside session mode: an API key is not a session, and a login
+  /// made only to run this call would end itself. Throws when the server
+  /// refuses or cannot be reached.
+  Future<void> logout() async {
+    _resolveAuthMode();
+    if (!_hasStoredSession) return;
+    await _endSession();
+    logger.info('[JellyfinService] Signed out of the stored session');
+  }
+
+  /// Ends the session behind the current access token.
+  Future<void> _endSession() async {
+    final response = await _request<dynamic>(
+      '/Sessions/Logout',
+      method: 'POST',
+    );
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode >= 300) {
+      throw ServerError('Jellyfin sign-out failed (HTTP $statusCode).');
+    }
+  }
+
+  /// Revokes the [appName] API key minted by [ensureApiKey]
+  /// (`DELETE /Auth/Keys/{key}`).
+  ///
+  /// Only user sessions can have minted the key — an API key configured by
+  /// hand belongs to the user and is never revoked. Returns true when a key
+  /// was revoked and false when there was none to revoke. Throws when key
+  /// management is refused (e.g. the user is not an administrator) or the
+  /// server cannot be reached.
+  Future<bool> revokeApiKey({String appName = 'Arrmate'}) async {
+    await _ensureAuthenticated();
+    if (!_isUserMode) return false;
+    if (!_isAdministrator) {
+      throw const UnauthorizedError(
+        'Revoking the Arrmate API key requires a Jellyfin administrator.',
+      );
+    }
+    final key = await _findApiKey(appName);
+    if (key == null) return false;
+    final response = await _request<dynamic>(
+      '/Auth/Keys/$key',
+      method: 'DELETE',
+    );
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode >= 300) {
+      throw ServerError(
+        'Jellyfin refused to revoke the "$appName" API key (HTTP '
+        '$statusCode).',
+      );
+    }
+    logger.info('[JellyfinService] Revoked the "$appName" API key');
+    return true;
+  }
+
+  /// Returns [headers] without a Basic `Authorization` header that carries
+  /// `username:password` — used once the credentials have been exchanged
+  /// for a session, so the password is not kept in the headers either.
+  static List<InstanceHeader> withoutBasicCredentials(
+    List<InstanceHeader> headers,
+  ) {
+    return [
+      for (final header in headers)
+        if (header.name.toLowerCase() != 'authorization' ||
+            decodeBasicCredentials([header]) == null)
+          header,
+    ];
   }
 
   /// MediaBrowser authorization header required by the auth endpoint.
@@ -513,8 +708,15 @@ class JellyfinService {
       options: options,
     );
 
-    // Only user-mode tokens can be renewed; a 401 under an API key or custom
-    // headers is final, so the response is returned as-is.
+    // A stored session cannot be renewed without the password, which is
+    // never kept: the user has to sign in again.
+    if (response.statusCode == 401 && _hasStoredSession) {
+      logger.warning('[JellyfinService] Stored session rejected (401)');
+      throw const UnauthorizedError(_sessionExpiredMessage);
+    }
+
+    // Only login credentials can renew a token; a 401 under an API key or
+    // custom headers is final, so the response is returned as-is.
     if (response.statusCode == 401 && _isUserMode) {
       await _reauthenticate(currentUrl: currentUrl);
       final retryAuthValue = _authorizationValue;
@@ -594,16 +796,72 @@ class JellyfinService {
   /// Prefers the authenticated `GET /System/Info` and falls back to the
   /// public endpoint when auth is unavailable or restricted for a non-admin
   /// user.
+  ///
+  /// With managed credentials, a transport failure on the authenticated
+  /// endpoint is never papered over by the public one: browsers report a
+  /// 401 without CORS headers as a transport error, so a reachable server
+  /// means the credentials were refused.
   Future<InstanceStatus> getSystemStatus() async {
     // Authenticate eagerly so credential problems surface as the auth error
     // instead of being swallowed into the public-info fallback.
     await authenticate();
-    var info = await _getSystemInfo('/System/Info', rejectOnAuthFailure: true);
-    info ??= await _getSystemInfo('/System/Info/Public');
-    if (info == null) {
-      throw Exception(
-        '[JellyfinService] Could not read the Jellyfin system status',
+    try {
+      return await _readSystemStatus();
+    } finally {
+      // A login made only to check the connection (typed credentials, not a
+      // stored session) is signed out so it does not linger on the server.
+      if (_loginCredentials != null && _accessToken != null) {
+        try {
+          await _endSession();
+          _accessToken = null;
+        } catch (e, stackTrace) {
+          logger.warning(
+            '[JellyfinService] Could not sign out the test login',
+            e,
+            stackTrace,
+          );
+        }
+      }
+    }
+  }
+
+  /// Reads `/System/Info` (or the public endpoint) for [getSystemStatus].
+  Future<InstanceStatus> _readSystemStatus() async {
+    final managed = _isApiKeyMode || _isUserMode;
+    Map<String, dynamic>? info;
+    var authenticatedProbeFailed = false;
+    try {
+      info = await _getSystemInfo('/System/Info', rejectOnAuthFailure: true);
+    } on DioException catch (e, stackTrace) {
+      logger.warning(
+        '[JellyfinService] /System/Info failed, checking the public endpoint',
+        e,
+        stackTrace,
       );
+      authenticatedProbeFailed = true;
+    }
+    if (info == null) {
+      final Map<String, dynamic>? publicInfo;
+      try {
+        publicInfo = await _getSystemInfo('/System/Info/Public');
+      } on DioException catch (e, stackTrace) {
+        logger.warning(
+          '[JellyfinService] /System/Info/Public failed',
+          e,
+          stackTrace,
+        );
+        throw const ConnectionError(_unreachableMessage);
+      }
+      if (publicInfo == null) {
+        throw const ServerError(
+          'Could not read the Jellyfin system status. Check that the URL '
+          'points to a Jellyfin server.',
+        );
+      }
+      if (managed && authenticatedProbeFailed) {
+        throw const UnauthorizedError(_invalidCredentialsMessage);
+      }
+      info = publicInfo;
     }
     return InstanceStatus(
       appName: 'Jellyfin',
@@ -617,26 +875,19 @@ class JellyfinService {
     );
   }
 
-  /// Fetches one of the `/System/Info*` endpoints, returning null on failure.
+  /// Fetches one of the `/System/Info*` endpoints, returning null when the
+  /// server answers without usable data.
   ///
-  /// When [rejectOnAuthFailure] is true and credentials are managed, a 401
-  /// (or 403 in API-key mode, where keys are always admin-scoped) throws
-  /// instead of falling back to the public endpoint.
+  /// Transport failures propagate as [DioException] so the caller can tell
+  /// an unreachable server from refused credentials. When
+  /// [rejectOnAuthFailure] is true and credentials are managed, a 401 (or
+  /// 403 in API-key mode, where keys are always admin-scoped) throws an
+  /// [UnauthorizedError] instead of falling back to the public endpoint.
   Future<Map<String, dynamic>?> _getSystemInfo(
     String path, {
     bool rejectOnAuthFailure = false,
   }) async {
-    final Response<dynamic> response;
-    try {
-      response = await _request<dynamic>(path);
-    } catch (e, stackTrace) {
-      logger.warning(
-        '[JellyfinService] $path failed, trying the next source',
-        e,
-        stackTrace,
-      );
-      return null;
-    }
+    final response = await _request<dynamic>(path);
     final statusCode = response.statusCode;
     final data = response.data;
     if (statusCode == 200 && data is Map) {
@@ -645,10 +896,10 @@ class JellyfinService {
     if (rejectOnAuthFailure &&
         ((statusCode == 401 && (_isApiKeyMode || _isUserMode)) ||
             (statusCode == 403 && _isApiKeyMode))) {
-      throw Exception(
-        '[JellyfinService] Jellyfin rejected the configured credentials '
-        '($statusCode)',
+      logger.warning(
+        '[JellyfinService] $path rejected the credentials ($statusCode)',
       );
+      throw const UnauthorizedError(_invalidCredentialsMessage);
     }
     logger.debug(
       '[JellyfinService] $path returned $statusCode; '
