@@ -206,6 +206,11 @@ class Instance extends Equatable {
   /// Radarr/Sonarr library auto-update connectors. Only this key is revoked
   /// when the instance is removed; a reused key belongs to someone else.
   final String? ownedApiKey;
+
+  /// Tag of the app installation that created [ownedApiKey]. A backup
+  /// restored on another device carries the key but not this device's tag,
+  /// so that device never revokes it.
+  final String? ownedApiKeyDevice;
   final List<RootFolder> rootFolders;
   final List<QualityProfile> qualityProfiles;
   final List<Tag> tags;
@@ -224,6 +229,7 @@ class Instance extends Equatable {
     this.headers = const [],
     this.userSession,
     this.ownedApiKey,
+    this.ownedApiKeyDevice,
     this.rootFolders = const [],
     this.qualityProfiles = const [],
     this.tags = const [],
@@ -257,6 +263,7 @@ class Instance extends Equatable {
             )
           : null,
       ownedApiKey: json['ownedApiKey'] as String?,
+      ownedApiKeyDevice: json['ownedApiKeyDevice'] as String?,
       rootFolders:
           (json['rootFolders'] as List<dynamic>?)
               ?.map((e) => RootFolder.fromJson(e as Map<String, dynamic>))
@@ -289,6 +296,7 @@ class Instance extends Equatable {
       'headers': headers.map((e) => e.toJson()).toList(),
       'userSession': ?userSession?.toJson(),
       'ownedApiKey': ?ownedApiKey,
+      'ownedApiKeyDevice': ?ownedApiKeyDevice,
       'rootFolders': rootFolders.map((e) => e.toJson()).toList(),
       'qualityProfiles': qualityProfiles.map((e) => e.toJson()).toList(),
       'tags': tags.map((e) => e.toJson()).toList(),
@@ -360,6 +368,7 @@ class Instance extends Equatable {
     InstanceUserSession? userSession,
     bool clearUserSession = false,
     String? ownedApiKey,
+    String? ownedApiKeyDevice,
     List<RootFolder>? rootFolders,
     List<QualityProfile>? qualityProfiles,
     List<Tag>? tags,
@@ -378,6 +387,7 @@ class Instance extends Equatable {
       headers: headers ?? this.headers,
       userSession: clearUserSession ? null : userSession ?? this.userSession,
       ownedApiKey: ownedApiKey ?? this.ownedApiKey,
+      ownedApiKeyDevice: ownedApiKeyDevice ?? this.ownedApiKeyDevice,
       rootFolders: rootFolders ?? this.rootFolders,
       qualityProfiles: qualityProfiles ?? this.qualityProfiles,
       tags: tags ?? this.tags,
@@ -399,6 +409,7 @@ class Instance extends Equatable {
     headers,
     userSession,
     ownedApiKey,
+    ownedApiKeyDevice,
     rootFolders,
     qualityProfiles,
     tags,

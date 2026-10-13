@@ -131,7 +131,10 @@ class JellyfinConnectSetupService {
   ///    devices' connectors carry another tag and are left alone.
   /// 2. Revokes this device's API key for those connectors, recorded in
   ///    [Instance.ownedApiKey]. Without a recorded key nothing is revoked: a
-  ///    hand-configured key may serve other integrations.
+  ///    hand-configured key may serve other integrations. A key recorded by
+  ///    another installation ([Instance.ownedApiKeyDevice] differs, e.g.
+  ///    after a backup restore) is left alone too: its connectors still use
+  ///    it.
   /// 3. Signs the stored user session out — only when the instance holds a
   ///    session token from a `username:password` sign-in. Logging out with
   ///    an API key would revoke that key server-wide, including a key shared
@@ -183,7 +186,9 @@ class JellyfinConnectSetupService {
     final ownedApiKey = jellyfinInstance.ownedApiKey;
     if (ownedApiKey != null) {
       try {
-        await service.revokeApiKey(ownedApiKey);
+        if (await _ownsRecordedKey(jellyfinInstance)) {
+          await service.revokeApiKey(ownedApiKey);
+        }
       } catch (e, st) {
         logger.error('[$_logPrefix] Failed to revoke the Arrmate key', e, st);
         failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
@@ -198,6 +203,18 @@ class JellyfinConnectSetupService {
       }
     }
     return failures;
+  }
+
+  /// Whether the [Instance.ownedApiKey] of [jellyfinInstance] was recorded by
+  /// this installation, so revoking it cannot cut off another device.
+  Future<bool> _ownsRecordedKey(Instance jellyfinInstance) async {
+    final device = jellyfinInstance.ownedApiKeyDevice;
+    if (device != null && device == await _deviceTag()) return true;
+    logger.info(
+      '[$_logPrefix] Keeping the recorded API key: another device created '
+      'it',
+    );
+    return false;
   }
 
   /// Whether [jellyfinInstance] authenticates with a stored session token
@@ -355,8 +372,10 @@ class JellyfinConnectSetupService {
     final service = _jellyfinServiceFactory(jellyfinInstance);
     final minted = await service.ensureApiKey(appName: await _apiKeyName());
     if (minted != null) {
-      if (minted.key != jellyfinInstance.ownedApiKey) {
-        await _recordOwnedApiKey(jellyfinInstance, minted);
+      final deviceTag = await _deviceTag();
+      if (minted.key != jellyfinInstance.ownedApiKey ||
+          deviceTag != jellyfinInstance.ownedApiKeyDevice) {
+        await _recordOwnedApiKey(jellyfinInstance, minted, deviceTag);
       }
       return _ApiKeyResolution(apiKey: minted.key);
     }
@@ -368,8 +387,9 @@ class JellyfinConnectSetupService {
     );
   }
 
-  /// Stores [key] as this device's API key for [jellyfinInstance], so
-  /// removing the instance revokes exactly that key and nothing else.
+  /// Stores [key] as this device's API key for [jellyfinInstance], tagged
+  /// with [deviceTag], so removing the instance on this device revokes
+  /// exactly that key and nothing else.
   ///
   /// The key name carries this device's tag, so a reused key is still this
   /// device's own. Recorded right after minting, before any connector is
@@ -378,6 +398,7 @@ class JellyfinConnectSetupService {
   Future<void> _recordOwnedApiKey(
     Instance jellyfinInstance,
     JellyfinApiKey key,
+    String deviceTag,
   ) async {
     try {
       final saved = _instancesSource()
@@ -390,7 +411,9 @@ class JellyfinConnectSetupService {
         );
         return;
       }
-      await _instanceUpdater(saved.copyWith(ownedApiKey: key.key));
+      await _instanceUpdater(
+        saved.copyWith(ownedApiKey: key.key, ownedApiKeyDevice: deviceTag),
+      );
       logger.debug(
         '[$_logPrefix] Recorded this device\'s API key '
         '(${key.created ? 'created' : 'reused'})',

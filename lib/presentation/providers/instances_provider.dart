@@ -338,12 +338,16 @@ class InstancesNotifier extends Notifier<InstancesState> {
   /// persisted; a session created for an instance that then fails
   /// validation is signed out again.
   ///
-  /// The [Instance.ownedApiKey] recorded by the connector setup is kept
-  /// across edits, since the edit form does not carry it.
+  /// The [Instance.ownedApiKey] (and its [Instance.ownedApiKeyDevice])
+  /// recorded by the connector setup is kept across edits, since the edit
+  /// form does not carry it.
   Future<Instance> validateAndSaveInstance(Instance instance) async {
-    final ownedApiKey = getInstanceById(instance.id)?.ownedApiKey;
-    if (instance.ownedApiKey == null && ownedApiKey != null) {
-      instance = instance.copyWith(ownedApiKey: ownedApiKey);
+    final stored = getInstanceById(instance.id);
+    if (instance.ownedApiKey == null && stored?.ownedApiKey != null) {
+      instance = instance.copyWith(
+        ownedApiKey: stored!.ownedApiKey,
+        ownedApiKeyDevice: stored.ownedApiKeyDevice,
+      );
     }
     final prepared = await _prepareCredentials(instance);
     final Instance validatedInstance;

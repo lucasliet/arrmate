@@ -107,6 +107,7 @@ void main() {
       url: 'https://jellyfin.example.com',
       userSession: _jellyfinSession,
       ownedApiKey: 'owned-key',
+      ownedApiKeyDevice: 'a1b2c3d4',
     );
     SharedPreferences.setMockInitialValues({
       'instances': jsonEncode([paired.toJson()]),
@@ -145,6 +146,7 @@ void main() {
     // Then
     expect(saved.label, 'Renamed');
     expect(saved.ownedApiKey, 'owned-key');
+    expect(saved.ownedApiKeyDevice, 'a1b2c3d4');
   });
 
   test('migrates a Jellyfin instance saved with a password on load', () async {

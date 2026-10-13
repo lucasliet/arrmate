@@ -754,8 +754,10 @@ void main() {
       ),
     );
 
-    Instance pairedJellyfin() =>
-        signedInJellyfin().copyWith(ownedApiKey: 'owned-key');
+    Instance pairedJellyfin() => signedInJellyfin().copyWith(
+      ownedApiKey: 'owned-key',
+      ownedApiKeyDevice: 'a1b2c3d4',
+    );
 
     test(
       'removes only the Arrmate connector pointing at this server, revokes '
@@ -833,6 +835,40 @@ void main() {
       verify(() => jellyfin.logout()).called(1);
     });
 
+    test('keeps a key recorded by another device', () async {
+      // Given
+      final jellyfin = cleanJellyfin();
+      final restored = pairedJellyfin().copyWith(
+        ownedApiKeyDevice: 'b9c8d7e6',
+      );
+
+      // When
+      final failures = await serviceWith(
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => const [],
+      ).disconnect(restored);
+
+      // Then
+      expect(failures, isEmpty);
+      verifyNever(() => jellyfin.revokeApiKey(any()));
+    });
+
+    test('keeps a recorded key without a device tag', () async {
+      // Given
+      final jellyfin = cleanJellyfin();
+      final untagged = signedInJellyfin().copyWith(ownedApiKey: 'owned-key');
+
+      // When
+      final failures = await serviceWith(
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => const [],
+      ).disconnect(untagged);
+
+      // Then
+      expect(failures, isEmpty);
+      verifyNever(() => jellyfin.revokeApiKey(any()));
+    });
+
     test('revokes nothing without a key Arrmate created', () async {
       // Given
       final jellyfin = cleanJellyfin();
@@ -908,6 +944,7 @@ void main() {
       // Then
       expect(updated.single.id, 'jellyfin-1');
       expect(updated.single.ownedApiKey, 'minted-key');
+      expect(updated.single.ownedApiKeyDevice, 'a1b2c3d4');
       expect(updated.single.userSession, adminJellyfin().userSession);
     });
 
@@ -919,6 +956,7 @@ void main() {
 
       // Then
       expect(updated.single.ownedApiKey, 'own-key');
+      expect(updated.single.ownedApiKeyDevice, 'a1b2c3d4');
     });
 
     test('asks for the API key named after this device', () async {
@@ -1002,12 +1040,13 @@ void main() {
       return api;
     }
 
-    Instance signedIn(String id, {String? ownedApiKey}) => Instance(
+    Instance signedIn(String id, {Instance? pairedAs}) => Instance(
       id: id,
       type: InstanceType.jellyfin,
       label: 'Jellyfin',
       url: _jellyfinUrl,
-      ownedApiKey: ownedApiKey,
+      ownedApiKey: pairedAs?.ownedApiKey,
+      ownedApiKeyDevice: pairedAs?.ownedApiKeyDevice,
       userSession: const InstanceUserSession(
         accessToken: 'session-token',
         deviceId: 'arrmate-device',
@@ -1064,7 +1103,7 @@ void main() {
         ).configureForAllArrInstances(jellyfinInstance: instanceB);
         final keyA = updatedA.single.ownedApiKey!;
         final keyB = updatedB.single.ownedApiKey!;
-        final pairedA = signedIn('jellyfin-a', ownedApiKey: keyA);
+        final pairedA = signedIn('jellyfin-a', pairedAs: updatedA.single);
         final failures = await device(
           _deviceA,
           pairedA,
@@ -1094,7 +1133,7 @@ void main() {
       await service.configureForAllArrInstances(jellyfinInstance: instanceA);
       final keyA = updated.single.ownedApiKey!;
       await service.configureForAllArrInstances(
-        jellyfinInstance: signedIn('jellyfin-a', ownedApiKey: keyA),
+        jellyfinInstance: signedIn('jellyfin-a', pairedAs: updated.single),
       );
 
       // Then
@@ -1103,5 +1142,74 @@ void main() {
       expect(radarrConnectors.map((c) => c.name), [_connectorA]);
       expect(updated, hasLength(1));
     });
+
+    test(
+      'a backup restored on another device never revokes the original key',
+      () async {
+        // Given
+        final jellyfin = jellyfinServer();
+        final radarr = radarrServer();
+        final updatedA = <Instance>[];
+        final instanceA = signedIn('jellyfin-a');
+        await device(
+          _deviceA,
+          instanceA,
+          jellyfin,
+          radarr,
+          updatedA,
+        ).configureForAllArrInstances(jellyfinInstance: instanceA);
+        final keyA = updatedA.single.ownedApiKey!;
+        final restoredOnB = updatedA.single;
+
+        // When
+        final failures = await device(
+          _deviceB,
+          restoredOnB,
+          jellyfin,
+          radarr,
+          [],
+        ).disconnect(restoredOnB);
+
+        // Then
+        expect(failures, isEmpty);
+        verifyNever(() => jellyfin.revokeApiKey(any()));
+        expect(serverKeys, {'Arrmate (a1b2c3d4)': keyA});
+        expect(radarrConnectors.map((c) => c.name), [_connectorA]);
+      },
+    );
+
+    test(
+      'a restored device pairing again records its own key and tag',
+      () async {
+        // Given
+        final jellyfin = jellyfinServer();
+        final radarr = radarrServer();
+        final updatedA = <Instance>[];
+        final updatedB = <Instance>[];
+        final instanceA = signedIn('jellyfin-a');
+        await device(
+          _deviceA,
+          instanceA,
+          jellyfin,
+          radarr,
+          updatedA,
+        ).configureForAllArrInstances(jellyfinInstance: instanceA);
+        final restoredOnB = updatedA.single;
+
+        // When
+        await device(
+          _deviceB,
+          restoredOnB,
+          jellyfin,
+          radarr,
+          updatedB,
+        ).configureForAllArrInstances(jellyfinInstance: restoredOnB);
+
+        // Then
+        expect(updatedB.single.ownedApiKey, isNot(restoredOnB.ownedApiKey));
+        expect(updatedB.single.ownedApiKeyDevice, 'b9c8d7e6');
+        expect(serverKeys.keys, {'Arrmate (a1b2c3d4)', 'Arrmate (b9c8d7e6)'});
+      },
+    );
   });
 }

@@ -170,7 +170,7 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
 **Observações:**
 - Somente o **token da sessão** é salvo no dispositivo — nunca a senha.
 - O conector é idempotente: rodar de novo atualiza o conector existente em vez de duplicar.
-- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin (<id do aparelho>)" **deste aparelho** (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate (<id do aparelho>)` deste aparelho (guardada na instância — chaves e conectores de outros aparelhos, ou uma chave configurada à mão, nunca são tocados) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login `username:password`; com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
+- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin (<id do aparelho>)" **deste aparelho** (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate (<id do aparelho>)` deste aparelho (guardada na instância — chaves e conectores de outros aparelhos, ou uma chave configurada à mão, nunca são tocados; uma chave que veio de outro aparelho por restauração de backup também é mantida) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login `username:password`; com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
 
 ## Editar ou remover instância existente
 

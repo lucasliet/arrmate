@@ -186,6 +186,7 @@ void main() {
         url: 'http://jellyfin.local:8096',
         userSession: session,
         ownedApiKey: 'owned-key',
+        ownedApiKeyDevice: 'a1b2c3d4',
       );
 
       // When
@@ -196,6 +197,7 @@ void main() {
       // Then
       expect(restored.userSession, session);
       expect(restored.ownedApiKey, 'owned-key');
+      expect(restored.ownedApiKeyDevice, 'a1b2c3d4');
       expect(restored, instance);
     });
 
