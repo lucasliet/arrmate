@@ -152,7 +152,7 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
    - **API key** (Painel Jellyfin → Avançado → Chaves de API): permite reprodução, mas **nunca grava estado de assistido** (a chave de admin não representa um usuário).
 3. **Test Connection** mostra versão e nome do servidor (ServerName). A credencial é validada de verdade: API key ou senha erradas mostram "Invalid Jellyfin credentials..." e servidor fora do ar mostra "Jellyfin server is unreachable...". O login feito só para o teste é encerrado em seguida.
 4. **Save Instance** troca `username:password` por um token de sessão e salva só o token (a senha nunca fica no dispositivo). Instâncias antigas salvas com senha são migradas automaticamente na próxima abertura do app.
-5. Se o Jellyfin invalidar a sessão (logout pelo painel, troca de senha), o app mostra "Your Jellyfin session has expired..." — basta digitar `username:password` de novo no campo API Key e salvar.
+5. Se o Jellyfin invalidar a sessão (logout pelo painel, troca de senha, sessão que outro aparelho encerrou), ao tentar assistir o app avisa "Your Jellyfin session has expired. Sign in again." com o botão **Sign in**, e a instância aparece em Settings como "Session expired · tap to sign in". Na tela da instância, um aviso pede o login e o campo API Key passa a ser obrigatório: digite `username:password` de novo e salve. O novo login cria uma sessão própria deste aparelho e descarta a antiga só localmente (sem `/Sessions/Logout`), então a sessão de outro aparelho não é derrubada. Os conectores do Radarr/Sonarr usam a chave de servidor e não são afetados.
 
 **Como funciona o pareamento (library pairing):**
 - O app localiza o arquivo do filme/episódio no Jellyfin automaticamente:

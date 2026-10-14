@@ -52,6 +52,8 @@ and **qBittorrent** (for downloads).
     `Arrmate Jellyfin (<device tag>)`), so one device never reuses, deletes
     or revokes another device's; logout only runs for session tokens this
     device signed in (a session restored from a backup is dropped locally).
+    A rejected session (401) surfaces as "session expired" in Watch, the
+    instance list and the edit screen, which asks for a new login.
     Progress sync ('Continue Watching') requires a user login:
     username:password is exchanged once for a session token and only the
     token is stored (legacy password instances migrate on load); API-key mode

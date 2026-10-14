@@ -582,6 +582,116 @@ void main() {
       );
     });
 
+    test('resolvePlayableItem surfaces an expired stored session', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        (_) => const _StatusBody(401, null),
+      );
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final call = service.resolvePlayableItem(
+        filePath: '/media/Movie (2020)/Movie.mkv',
+        title: 'Movie',
+        productionYear: 2020,
+        tmdbId: 1,
+        isEpisode: false,
+      );
+
+      // Then
+      await expectLater(
+        call,
+        throwsA(
+          isA<UnauthorizedError>().having(
+            (e) => e.message,
+            'message',
+            contains('Sign in again'),
+          ),
+        ),
+      );
+    });
+
+    test('episode resolution surfaces an expired stored session', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/Shows/series-1/Episodes') {
+          return const _StatusBody(401, null);
+        }
+        if (options.uri.path == '/Items' &&
+            options.uri.queryParameters['IncludeItemTypes'] == 'Series') {
+          return {
+            'Items': [
+              {'Id': 'series-1', 'Name': 'Dark Matter', 'Type': 'Series'},
+            ],
+          };
+        }
+        return {'Items': <Object?>[]};
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final call = service.resolvePlayableItem(
+        filePath: '/media/Dark Matter/Season 2/Dark.Matter.S02E07.mkv',
+        isEpisode: true,
+        seriesName: 'Dark Matter',
+        seasonNumber: 2,
+        episodeNumber: 7,
+      );
+
+      // Then
+      await expectLater(call, throwsA(isA<UnauthorizedError>()));
+      expect(
+        adapter.requests.any((uri) => uri.path == '/Shows/series-1/Episodes'),
+        isTrue,
+      );
+    });
+
+    test('getPlaybackSession surfaces an expired stored session', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        (_) => const _StatusBody(401, null),
+      );
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        userSession: storedSession,
+      );
+
+      // When
+      final call = service.getPlaybackSession(_playableItem());
+
+      // Then
+      await expectLater(call, throwsA(isA<UnauthorizedError>()));
+    });
+
+    test('API key 401 makes resolvePlayableItem return null', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        (_) => const _StatusBody(401, null),
+      );
+      final service = _serviceApiKey(adapter);
+
+      // When
+      final item = await service.resolvePlayableItem(
+        filePath: '/media/Movie (2020)/Movie.mkv',
+        title: 'Movie',
+        productionYear: 2020,
+        tmdbId: 1,
+        isEpisode: false,
+      );
+
+      // Then
+      expect(item, isNull);
+    });
+
     test('logout ends the stored session', () async {
       // Given
       final adapter = _RecordingAdapter((_) => const _StatusBody(204, ''));

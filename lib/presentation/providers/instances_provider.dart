@@ -12,6 +12,7 @@ import '../../core/services/logger_service.dart';
 import '../../core/services/remote_notification_setup_service.dart';
 import '../../domain/models/models.dart';
 import 'data_providers.dart';
+import 'jellyfin_session_state_provider.dart';
 import 'settings_provider.dart';
 
 /// Provider for resolving the reachable URL of configured instances.
@@ -378,6 +379,9 @@ class InstancesNotifier extends Notifier<InstancesState> {
     } else {
       await addInstance(validatedInstance);
     }
+    ref
+        .read(jellyfinSessionExpiredProvider.notifier)
+        .clear(validatedInstance.id);
 
     return validatedInstance;
   }

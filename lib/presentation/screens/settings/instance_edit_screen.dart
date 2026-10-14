@@ -12,6 +12,7 @@ import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../data/api/api.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/jellyfin_session_state_provider.dart';
 import '../../tour/app_tour_keys.dart';
 
 /// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent/
@@ -170,6 +171,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         });
       }
     } catch (e) {
+      _markSessionExpiredIfRejected(e);
       if (!mounted || operationGeneration != _operationGeneration) return;
       setState(() {
         _testSuccess = false;
@@ -215,6 +217,26 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     return 'API Key';
   }
 
+  /// Flags the edited Jellyfin instance when [error] reports that its stored
+  /// session was rejected, so the settings list asks for a new sign-in.
+  void _markSessionExpiredIfRejected(Object error) {
+    final instanceId = widget.instanceId;
+    if (instanceId == null ||
+        error is! UnauthorizedError ||
+        !error.message.contains('session has expired')) {
+      return;
+    }
+    ref.read(jellyfinSessionExpiredProvider.notifier).markExpired(instanceId);
+  }
+
+  /// Whether the edited Jellyfin instance was flagged as having an expired
+  /// session.
+  bool get _sessionExpired {
+    final instanceId = widget.instanceId;
+    return instanceId != null &&
+        ref.read(jellyfinSessionExpiredProvider).contains(instanceId);
+  }
+
   /// Checks whether the [InstanceHeader] list already carries an
   /// `Authorization` entry — typically added via "Add Basic Auth" in
   /// Advanced Settings.
@@ -246,6 +268,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         e,
         stackTrace,
       );
+      _markSessionExpiredIfRejected(e);
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _testMessage = 'Validation failed: ${_describeError(e)}';
@@ -334,6 +357,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   /// Helper text of the API Key field for Jellyfin, naming the signed-in
   /// user when a session is stored.
   String get _jellyfinApiKeyHelperText {
+    if (_sessionExpired) {
+      return 'Session expired — sign in again with username:password';
+    }
     final session = _existingSession;
     if (session != null) {
       final user = session.userName ?? 'a Jellyfin user';
@@ -434,6 +460,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final tourKeys = ref.watch(appTourKeysProvider);
 
     final instancesState = ref.watch(instancesProvider);
+    ref.watch(jellyfinSessionExpiredProvider);
     if (isEditing && !_initialized) {
       final existing = widget.instanceId == null
           ? null
@@ -606,6 +633,36 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             ),
             const SizedBox(height: 16),
 
+            if (_type == InstanceType.jellyfin && _sessionExpired) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Your Jellyfin session has expired. Enter '
+                        'username:password in the API Key field to sign in '
+                        'again.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             TextFormField(
               key: tourKeys.instanceApiKeyFieldKey,
               controller: _apiKeyController,
@@ -637,9 +694,12 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     _type == InstanceType.jellyfin) {
                   final hasSession =
                       _type == InstanceType.jellyfin &&
-                      _existingSession != null;
+                      _existingSession != null &&
+                      !_sessionExpired;
                   if (isEmpty && !_hasAuthorizationHeader && !hasSession) {
-                    return 'Provide an API key or add Basic Auth below';
+                    return _sessionExpired
+                        ? 'Enter username:password to sign in again'
+                        : 'Provide an API key or add Basic Auth below';
                   }
                   return null;
                 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
+import 'package:arrmate/presentation/providers/jellyfin_session_state_provider.dart';
 import 'package:arrmate/presentation/screens/settings/instance_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -144,6 +145,43 @@ void main() {
     },
   );
 
+  testWidgets('should ask for a new login when the session has expired', (
+    tester,
+  ) async {
+    // Given
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: const InstanceUserSession(
+        accessToken: 'token-123',
+        deviceId: 'device-1',
+        userName: 'admin',
+      ),
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([instance.toJson()]),
+    });
+
+    // When
+    await tester.pumpWidget(_screen(instance.id, expiredIds: {instance.id}));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.text(
+        'Your Jellyfin session has expired. Enter username:password in the '
+        'API Key field to sign in again.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Session expired — sign in again with username:password'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('should reveal the api key when the eye button is tapped', (
     tester,
   ) async {
@@ -173,6 +211,16 @@ void main() {
   });
 }
 
+/// Starts with the given instance ids flagged as having an expired session.
+class _FlaggedSessionsNotifier extends JellyfinSessionExpiredNotifier {
+  _FlaggedSessionsNotifier(this._ids);
+
+  final Set<String> _ids;
+
+  @override
+  Set<String> build() => _ids;
+}
+
 TextField _apiKeyField(WidgetTester tester) {
   return tester.widget<TextField>(
     find.byWidgetPredicate(
@@ -181,8 +229,13 @@ TextField _apiKeyField(WidgetTester tester) {
   );
 }
 
-Widget _screen(String instanceId) {
+Widget _screen(String instanceId, {Set<String> expiredIds = const {}}) {
   return ProviderScope(
+    overrides: [
+      jellyfinSessionExpiredProvider.overrideWith(
+        () => _FlaggedSessionsNotifier(expiredIds),
+      ),
+    ],
     child: MaterialApp(home: InstanceEditScreen(instanceId: instanceId)),
   );
 }

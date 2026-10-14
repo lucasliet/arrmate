@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/api_error.dart';
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
@@ -107,8 +108,12 @@ Future<_SectionResult<T>> _loadSection<T>({
       error,
       stackTrace,
     );
+    final failureMessage = error is UnauthorizedError ? error.message : message;
     return _SectionResult(
-      failure: InstanceOverviewFailure(section: section, message: message),
+      failure: InstanceOverviewFailure(
+        section: section,
+        message: failureMessage,
+      ),
     );
   }
 }

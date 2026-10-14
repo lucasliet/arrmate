@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/core/services/jellyfin_playback_reporter.dart';
 import 'package:arrmate/core/services/playback_launch_service.dart';
 import 'package:arrmate/data/api/jellyfin_service.dart';
@@ -13,6 +14,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/repositories.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
+import 'package:arrmate/presentation/providers/jellyfin_session_state_provider.dart';
 import 'package:arrmate/presentation/screens/player/playback_request.dart';
 import 'package:arrmate/presentation/screens/series/providers/episode_providers.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
@@ -816,6 +818,66 @@ void main() {
         await tester.pump(const Duration(seconds: 5));
       },
     );
+
+    testWidgets('an expired Jellyfin session flags the instance for sign-in', (
+      tester,
+    ) async {
+      // Given
+      final jellyfin = MockJellyfinService();
+      _stubResolve(
+        jellyfin,
+        throwable: const UnauthorizedError(
+          'Your Jellyfin session has expired. Sign in again in the instance '
+          'settings (API Key field as username:password).',
+        ),
+      );
+      final harness = _LaunchHarness();
+      final service = PlaybackLaunchService(
+        jellyfinServiceFactory: (instance) => jellyfin,
+      );
+      PlaybackLaunchResult? launchResult;
+      Set<String>? expiredAfterLaunch;
+
+      // When
+      await _pumpHarness(
+        tester,
+        harness: harness,
+        overrides: [
+          currentJellyfinInstanceProvider.overrideWithValue(
+            _jellyfinInstance(apiKey: ''),
+          ),
+        ],
+        run: (context, ref) async {
+          launchResult = await service.playFile(
+            context,
+            ref,
+            filePath: '/movies/The.Matrix.1999.mkv',
+            title: 'The Matrix',
+            tmdbId: 603,
+            isEpisode: false,
+          );
+          expiredAfterLaunch = ref.read(jellyfinSessionExpiredProvider);
+        },
+      );
+      await harness.done.future;
+      await tester.pump();
+
+      // Then
+      expect(launchResult, isA<PlaybackLaunchFailure>());
+      expect(
+        (launchResult! as PlaybackLaunchFailure).message,
+        startsWith('Your Jellyfin session has expired.'),
+      );
+      expect(expiredAfterLaunch, {'jellyfin-1'});
+      expect(harness.playerRequest, isNull);
+      expect(
+        find.text('Your Jellyfin session has expired. Sign in again.'),
+        findsOneWidget,
+      );
+      expect(find.text('Sign in'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
+    });
 
     testWidgets('dismissing the status dialog cancels the launch', (
       tester,

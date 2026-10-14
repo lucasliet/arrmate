@@ -1321,6 +1321,8 @@ class JellyfinService {
         }
       }
       return null;
+    } on UnauthorizedError {
+      rethrow;
     } catch (e, stackTrace) {
       logger.warning(
         '[JellyfinService] Could not list episodes for series $seriesId',
@@ -1389,6 +1391,8 @@ class JellyfinService {
           if (entry is Map)
             JellyfinItem.fromJson(Map<String, dynamic>.from(entry)),
       ];
+    } on UnauthorizedError {
+      rethrow;
     } catch (e, stackTrace) {
       logger.warning(
         '[JellyfinService] Item search failed (SearchTerm: $searchTerm, '
@@ -1565,6 +1569,8 @@ class JellyfinService {
       if (response.statusCode == 200 && data is Map<String, dynamic>) {
         return data;
       }
+    } on UnauthorizedError {
+      rethrow;
     } catch (e, stackTrace) {
       logger.warning(
         '[JellyfinService] PlaybackInfo failed for item ${item.id}',

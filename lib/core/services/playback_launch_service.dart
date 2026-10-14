@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 import '../../data/api/jellyfin_service.dart';
 import '../../domain/models/models.dart';
 import '../../presentation/providers/instances_provider.dart';
+import '../../presentation/providers/jellyfin_session_state_provider.dart';
 import '../../presentation/screens/movies/providers/movie_metadata_provider.dart';
 import '../../presentation/screens/player/playback_request.dart';
 import '../../presentation/screens/series/providers/episode_providers.dart';
 import '../../presentation/screens/series/providers/series_provider.dart';
 import '../constants/app_constants.dart';
 import '../extensions/context_extensions.dart';
+import '../network/api_error.dart';
 import '../utils/formatters.dart';
 import 'jellyfin_playback_reporter.dart';
 import 'logger_service.dart';
@@ -363,6 +365,32 @@ class PlaybackLaunchService {
         return PlaybackLaunched(request);
       }
       return const PlaybackLaunchCancelled();
+    } on UnauthorizedError catch (error) {
+      logger.warning(
+        '[$_logPrefix] Jellyfin session expired for instance ${instance.id}',
+      );
+      closeDialog();
+      ref
+          .read(jellyfinSessionExpiredProvider.notifier)
+          .markExpired(instance.id);
+      if (context.mounted) {
+        final router = GoRouter.of(context);
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Your Jellyfin session has expired. Sign in again.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Sign in',
+              onPressed: () => router.push('/settings/instance/${instance.id}'),
+            ),
+          ),
+        );
+      }
+      return PlaybackLaunchFailure(error.message);
     } catch (error, stackTrace) {
       logger.error(
         '[$_logPrefix] Failed to launch "$displayTitle" from Jellyfin',
