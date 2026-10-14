@@ -396,4 +396,4 @@ Use esta opção quando quiser **apagar todos os arquivos de uma temporada espec
 **Observações:**
 - Remove **apenas o arquivo selecionado**.
 - O episódio permanece na biblioteca com status "Missing".
-- Você pode re-buscar uma release tocando no ícone de busca (lupa) do episódio.
+- Você pode re-buscar uma release pelo menu ⋮ do episódio → **Automatic Search** ou **Interactive Search**.
