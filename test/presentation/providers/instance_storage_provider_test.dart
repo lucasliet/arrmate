@@ -1,7 +1,9 @@
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/repositories.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/providers/instance_storage_provider.dart';
+import 'package:arrmate/presentation/providers/jellyfin_session_state_provider.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,9 @@ class MockSeriesRepository extends Mock implements SeriesRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() {
+    registerFallbackValue(_instance('fallback', InstanceType.radarr));
+  });
 
   late Instance radarr;
   late Instance sonarr;
@@ -112,6 +117,159 @@ void main() {
     expect(sonarrOverview.diskSpaces, isNotEmpty);
     expect(sonarrOverview.failures, isEmpty);
   });
+
+  group('jellyfinSessionStatusProvider', () {
+    const expiredMessage =
+        'Your Jellyfin session has expired. Sign in again in the instance '
+        'settings (API Key field as username:password).';
+
+    test('should flag an instance whose session the server rejected', () async {
+      // Given
+      final jellyfin = _jellyfin('jellyfin-home');
+      when(
+        () => instanceRepository.getSystemStatus(jellyfin),
+      ).thenThrow(const UnauthorizedError(expiredMessage));
+      final container = _jellyfinContainer(
+        instances: [jellyfin],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      expect(
+        container.read(jellyfinSessionExpiredProvider),
+        contains('jellyfin-home'),
+      );
+    });
+
+    test('should clear the flag once the server accepts the session', () async {
+      // Given
+      final jellyfin = _jellyfin('jellyfin-home');
+      when(
+        () => instanceRepository.getSystemStatus(jellyfin),
+      ).thenAnswer((_) async => const InstanceStatus(
+          appName: 'Jellyfin',
+          instanceName: 'Jellyfin',
+          version: '10.9.0',
+        ),
+      );
+      final container = _jellyfinContainer(
+        instances: [jellyfin],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+      container
+          .read(jellyfinSessionExpiredProvider.notifier)
+          .markExpired('jellyfin-home');
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      expect(
+        container.read(jellyfinSessionExpiredProvider),
+        isNot(contains('jellyfin-home')),
+      );
+    });
+
+    test('should not flag an unreachable server', () async {
+      // Given
+      final jellyfin = _jellyfin('jellyfin-home');
+      when(
+        () => instanceRepository.getSystemStatus(jellyfin),
+      ).thenThrow(const ConnectionError());
+      final container = _jellyfinContainer(
+        instances: [jellyfin],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      expect(container.read(jellyfinSessionExpiredProvider), isEmpty);
+    });
+
+    test('should not flag on an unexpected error', () async {
+      // Given
+      final jellyfin = _jellyfin('jellyfin-home');
+      when(
+        () => instanceRepository.getSystemStatus(jellyfin),
+      ).thenThrow(Exception('server exploded'));
+      final container = _jellyfinContainer(
+        instances: [jellyfin],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      expect(container.read(jellyfinSessionExpiredProvider), isEmpty);
+    });
+
+    test('should check each instance independently', () async {
+      // Given
+      final offline = _jellyfin('jellyfin-offline');
+      final expired = _jellyfin('jellyfin-expired');
+      when(
+        () => instanceRepository.getSystemStatus(offline),
+      ).thenThrow(const TimeoutError());
+      when(
+        () => instanceRepository.getSystemStatus(expired),
+      ).thenThrow(const UnauthorizedError(expiredMessage));
+      final container = _jellyfinContainer(
+        instances: [offline, expired],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      expect(container.read(jellyfinSessionExpiredProvider), {
+        'jellyfin-expired',
+      });
+    });
+
+    test('should skip instances without a session', () async {
+      // Given
+      final apiKeyInstance = _jellyfin('jellyfin-key', withSession: false);
+      final container = _jellyfinContainer(
+        instances: [apiKeyInstance],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      verifyNever(() => instanceRepository.getSystemStatus(any()));
+      expect(container.read(jellyfinSessionExpiredProvider), isEmpty);
+    });
+
+    test('should not call the repository without Jellyfin instances', () async {
+      // Given
+      final container = _jellyfinContainer(
+        instances: const [],
+        instanceRepository: instanceRepository,
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await container.read(jellyfinSessionStatusProvider.future);
+
+      // Then
+      verifyNever(() => instanceRepository.getSystemStatus(any()));
+    });
+  });
 }
 
 ProviderContainer _container({
@@ -133,6 +291,38 @@ ProviderContainer _container({
         sonarr,
       ).overrideWithValue(seriesRepository),
     ],
+  );
+}
+
+ProviderContainer _jellyfinContainer({
+  required List<Instance> instances,
+  required InstanceRepository instanceRepository,
+}) {
+  return ProviderContainer(
+    overrides: [
+      instancesByTypeProvider(
+        InstanceType.jellyfin,
+      ).overrideWithValue(instances),
+      instanceRepositoryProvider.overrideWithValue(instanceRepository),
+    ],
+  );
+}
+
+Instance _jellyfin(String id, {bool withSession = true}) {
+  return Instance(
+    id: id,
+    type: InstanceType.jellyfin,
+    label: InstanceType.jellyfin.label,
+    url: 'https://$id.example.com',
+    apiKey: withSession ? '' : 'key',
+    userSession: withSession
+        ? const InstanceUserSession(
+            accessToken: 'session-token',
+            deviceId: 'arrmate-device',
+            isAdministrator: true,
+            deviceTag: 'a1b2c3d4',
+          )
+        : null,
   );
 }
 

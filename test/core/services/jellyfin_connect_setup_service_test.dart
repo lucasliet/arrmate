@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/core/services/jellyfin_connect_setup_service.dart';
 import 'package:arrmate/data/api/jellyfin_service.dart';
 import 'package:arrmate/data/api/radarr_api.dart';
@@ -809,6 +810,24 @@ void main() {
         ]);
       },
     );
+
+    test('treats an already rejected session as signed out', () async {
+      // Given
+      final jellyfin = cleanJellyfin();
+      when(
+        () => jellyfin.logout(),
+      ).thenThrow(const UnauthorizedError('session expired'));
+
+      // When
+      final failures = await serviceWith(
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => const [],
+      ).disconnect(signedInJellyfin());
+
+      // Then
+      expect(failures, isEmpty);
+      verify(() => jellyfin.logout()).called(1);
+    });
 
     test('reports each failed step and still runs the others', () async {
       // Given

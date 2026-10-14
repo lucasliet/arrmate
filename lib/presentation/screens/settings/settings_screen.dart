@@ -10,6 +10,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
 import '../../adaptive/content_layout.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/instance_storage_provider.dart';
 import '../../providers/jellyfin_session_state_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -94,6 +95,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildInstancesSection(BuildContext context, WidgetRef ref) {
     final instancesState = ref.watch(instancesProvider);
     final expiredSessionIds = ref.watch(jellyfinSessionExpiredProvider);
+    ref.watch(jellyfinSessionStatusProvider);
     final tourKeys = ref.watch(appTourKeysProvider);
 
     return Column(

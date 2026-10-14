@@ -5,6 +5,7 @@ import '../../data/api/radarr_api.dart';
 import '../../data/api/sonarr_api.dart';
 import '../../domain/models/models.dart';
 import '../../presentation/providers/instances_provider.dart';
+import '../network/api_error.dart';
 import 'logger_service.dart';
 import 'remote_notification_setup_service.dart' show NotificationSetupResult;
 
@@ -201,6 +202,11 @@ class JellyfinConnectSetupService {
         if (await _ownsSession(jellyfinInstance)) {
           await service.logout();
         }
+      } on UnauthorizedError {
+        logger.info(
+          '[$_logPrefix] The stored session was already rejected; nothing to '
+          'sign out',
+        );
       } catch (e, st) {
         logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
         failures.add('Could not sign out of Jellyfin: $e');

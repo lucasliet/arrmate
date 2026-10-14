@@ -6,6 +6,7 @@ import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
 import 'data_providers.dart';
 import 'instances_provider.dart';
+import 'jellyfin_session_state_provider.dart';
 
 /// Loads independently recoverable system information for one instance.
 final instanceStorageOverviewProvider = FutureProvider.autoDispose
@@ -71,6 +72,52 @@ final instanceStorageOverviewsProvider =
       );
       return Future.wait(overviewFutures);
     });
+
+/// Checks the stored session of every Jellyfin instance against its server.
+///
+/// A server that accepts the session clears any expired flag, while a server
+/// that rejects it with "session has expired" flags the instance. Any other
+/// failure, such as an offline or slow server, is logged and leaves the flag
+/// untouched, so an unreachable server never marks a session as expired.
+/// Instances without a user session (API key) are skipped.
+final jellyfinSessionStatusProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final instances = ref
+      .watch(instancesByTypeProvider(InstanceType.jellyfin))
+      .where((instance) => instance.userSession != null)
+      .toList();
+  if (instances.isEmpty) return;
+
+  final instanceRepository = ref.watch(instanceRepositoryProvider);
+  final expiredNotifier = ref.read(jellyfinSessionExpiredProvider.notifier);
+  await Future.wait(
+    instances.map((instance) async {
+      try {
+        await Future.sync(() => instanceRepository.getSystemStatus(instance));
+        expiredNotifier.clear(instance.id);
+      } on UnauthorizedError catch (error, stackTrace) {
+        if (error.message.contains('session has expired')) {
+          expiredNotifier.markExpired(instance.id);
+        } else {
+          logger.warning(
+            '[JellyfinSessionStatus] Session check failed for instance '
+            '${instance.id}',
+            error,
+            stackTrace,
+          );
+        }
+      } catch (error, stackTrace) {
+        logger.warning(
+          '[JellyfinSessionStatus] Session check failed for instance '
+          '${instance.id}',
+          error,
+          stackTrace,
+        );
+      }
+    }),
+  );
+});
 
 Future<InstanceLibraryStatistics> _loadLibraryStatistics(
   Instance instance,
