@@ -12,7 +12,7 @@ and **qBittorrent** (for downloads).
   - **Library Management**: Browse, search, filter, sort, monitor, and delete
     media.
   - **Releases Calendar**: View upcoming movie releases and series episodes.
-  - **Activity Monitoring**: Check download queues and history status.
+  - **Activity Monitoring**: Check download queues, history status, and in-progress Jellyfin playback ('Watching' tab matched to the Radarr/Sonarr library).
   - **Multi-Instance**: Support for managing multiple server instances within
     the same app.
   - **Download Client**: Native qBittorrent integration:

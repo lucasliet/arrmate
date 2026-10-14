@@ -954,5 +954,62 @@ void main() {
 
       await tester.pump(const Duration(seconds: 5));
     });
+
+    testWidgets(
+      'playItem starts playback directly from a resolved JellyfinItem without resolving',
+      (tester) async {
+        // Given
+        final jellyfin = MockJellyfinService();
+        final resolvedItem = _item();
+        _stubHappyPath(jellyfin, userMode: true, item: resolvedItem);
+        final harness = _LaunchHarness();
+        final service = PlaybackLaunchService(
+          jellyfinServiceFactory: (instance) {
+            harness.jellyfinServiceCreations++;
+            return jellyfin;
+          },
+        );
+        PlaybackLaunchResult? launchResult;
+
+        // When
+        await _pumpHarness(
+          tester,
+          harness: harness,
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(
+              _jellyfinInstance(apiKey: 'user:pass'),
+            ),
+          ],
+          run: (context, ref) async {
+            launchResult = await service.playItem(
+              context,
+              ref,
+              item: resolvedItem,
+              title: 'Severance · S01E02 · Half Loop',
+            );
+          },
+        );
+        await harness.done.future;
+        await tester.pump();
+
+        // Then
+        expect(launchResult, isA<PlaybackLaunched>());
+        expect(harness.playerRequest, isNotNull);
+        expect(harness.playerRequest!.title, 'Severance · S01E02 · Half Loop');
+        expect(
+          harness.playerRequest!.resumePosition,
+          const Duration(seconds: 90),
+        );
+        verify(() => jellyfin.getPlaybackSession(resolvedItem)).called(1);
+        verifyNever(
+          () => jellyfin.resolvePlayableItem(
+            filePath: any(named: 'filePath'),
+            isEpisode: any(named: 'isEpisode'),
+          ),
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
   });
 }

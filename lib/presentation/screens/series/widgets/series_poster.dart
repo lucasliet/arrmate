@@ -8,19 +8,27 @@ import '../../../../core/network/custom_cache_manager.dart';
 
 /// Helper widget to display a series poster, handling caching and auth headers.
 class SeriesPoster extends ConsumerWidget {
+  /// The series whose poster is displayed.
   final Series series;
+
+  /// How the image should be inscribed into the space allocated during layout.
   final BoxFit fit;
 
+  /// Optional Sonarr instance override for local poster URLs.
+  final Instance? instance;
+
+  /// Creates a [SeriesPoster].
   const SeriesPoster({
     super.key,
     required this.series,
     this.fit = BoxFit.cover,
+    this.instance,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Note: Use currentSonarrInstanceProvider instead of Radarr
-    final instance = ref.watch(currentSonarrInstanceProvider);
+    final instance = this.instance ?? ref.watch(currentSonarrInstanceProvider);
     final headers = instance?.authHeaders;
 
     // Priority:
