@@ -59,8 +59,9 @@ class InstanceHeader extends Equatable {
 
 /// A signed-in user session persisted in place of a password.
 ///
-/// Jellyfin exchanges `username:password` for an access token that stays
-/// valid until it is logged out or its device is revoked; there is no
+/// Jellyfin exchanges `username:password` — carried by a Basic
+/// `Authorization` header, not the API Key field — for an access token that
+/// stays valid until it is logged out or its device is revoked; there is no
 /// refresh token. Arrmate stores only this token, never the password, so an
 /// expired session asks the user to sign in again instead of replaying a
 /// stored secret.

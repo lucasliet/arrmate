@@ -26,15 +26,21 @@ const _jellyfinSession = InstanceUserSession(
   userName: 'admin',
 );
 
+/// Basic `Authorization` header carrying [credentials] (Add Basic Auth).
+InstanceHeader _basicAuth(String credentials) => InstanceHeader(
+  name: 'Authorization',
+  value: 'Basic ${base64Encode(utf8.encode(credentials))}',
+);
+
 /// Session service whose sign-in always succeeds with [_jellyfinSession]
-/// for instances carrying `username:password`.
+/// for instances carrying a Basic `username:password` header.
 JellyfinSessionService _signingInSessions() {
   return JellyfinSessionService(
     jellyfinServiceFactory: (instance) {
       final service = MockJellyfinService();
-      when(
-        () => service.hasLoginCredentials,
-      ).thenReturn(instance.apiKey.contains(':'));
+      final hasBasic =
+          JellyfinService.decodeBasicCredentials(instance.headers) != null;
+      when(() => service.hasLoginCredentials).thenReturn(hasBasic);
       when(() => service.signIn()).thenAnswer((_) async => _jellyfinSession);
       when(() => service.logout()).thenAnswer((_) async {});
       return service;
@@ -77,7 +83,7 @@ void main() {
       type: InstanceType.jellyfin,
       label: 'Home',
       url: 'https://jellyfin.example.com',
-      apiKey: 'admin:secret-password',
+      headers: [_basicAuth('admin:secret-password')],
     );
 
     // When
@@ -252,7 +258,10 @@ void main() {
     await container
         .read(instancesProvider.notifier)
         .validateAndSaveInstance(
-          stored.copyWith(apiKey: 'admin:new-password', clearUserSession: true),
+          stored.copyWith(
+            headers: [_basicAuth('admin:new-password')],
+            clearUserSession: true,
+          ),
         );
 
     // Then
@@ -328,7 +337,7 @@ void main() {
               type: InstanceType.jellyfin,
               label: 'Home',
               url: 'https://jellyfin.example.com',
-              apiKey: 'admin:pass',
+              headers: [_basicAuth('admin:pass')],
             ),
           );
       await pumpEventQueue();
@@ -406,7 +415,7 @@ void main() {
           type: InstanceType.jellyfin,
           label: 'Legacy',
           url: 'https://jellyfin.example.com',
-          apiKey: 'admin:secret-password',
+          headers: [_basicAuth('admin:secret-password')],
         ).toJson(),
       ]),
     });

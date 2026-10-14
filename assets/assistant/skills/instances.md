@@ -38,7 +38,7 @@ A tela de **Add Instance** permite configurar um novo servidor Radarr, Sonarr ou
      - **qBittorrent (opcional, v5.2.0+):** colar o Bearer token gerado em **qBittorrent WebUI → Tools → Options → Web UI → API Key**.
        - Se você usa **qBittorrent < v5.2.0** ou prefere autenticar com usuário/senha, deixe este campo **vazio** e use **Advanced Settings → "Add Basic Auth"** para informar as credenciais (veja seção própria abaixo).
        - O formulário aceita o campo vazio **apenas** se houver um header `Authorization` configurado nos Advanced Settings; caso contrário, exibe erro: "Provide an API key or add Basic Auth below".
-     - **Jellyfin:** campo **API Key** com a chave gerada em **Painel Jellyfin → Avançado → Chaves de API** (permite **apenas reprodução**, sem gravar estado de assistido), **ou** `username:password` no próprio campo (ou campo vazio + **Advanced Settings → "Add Basic Auth"**) com o login do Jellyfin, que habilita a **sincronização de progresso**. Ao salvar, o app faz login uma vez e guarda **apenas o token da sessão** — a senha é descartada e o campo volta vazio, com o texto "Signed in as <usuário>". Em uma instância já conectada, deixar o campo vazio mantém a sessão.
+     - **Jellyfin:** campo **API Key** aceita **somente a API key**, gerada em **Painel Jellyfin → Avançado → Chaves de API** (permite **apenas reprodução**, sem gravar estado de assistido). Para entrar com **login e senha** (o que habilita a **sincronização de progresso**), deixe o campo vazio e use **Advanced Settings → "Add Basic Auth"**. Ao salvar, o app faz login uma vez e guarda **apenas o token da sessão** — o header Basic é removido e a senha nunca fica no dispositivo; o campo volta vazio, com o texto "Signed in as <usuário>". Em uma instância já conectada, deixar o campo vazio mantém a sessão; digitar uma API key troca a sessão pela chave.
      - Campo de texto; pode usar botão de "visibility toggle" (olho) para ver/ocultar.
 
 3. **Botão "Test Connection":**
@@ -109,7 +109,7 @@ A **API Key** é uma chave de acesso gerada pelo próprio servidor Radarr ou Son
    - URL: endereço completo (http://... + porta).
    - **Radarr/Sonarr:** API Key obrigatória.
    - **qBittorrent:** API Key (v5.2.0+) **ou** Basic Auth configurado em Advanced Settings — pelo menos um dos dois.
-   - **Jellyfin:** API Key **ou** `username:password` (no campo ou via Basic Auth) — pelo menos um dos dois.
+   - **Jellyfin:** API Key **ou** Basic Auth (login e senha em Advanced Settings) — pelo menos um dos dois.
 
 2. **Tocar "Test Connection":**
    - Botão mostra spinner/loading.
@@ -148,11 +148,11 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
 
 1. Adicionar instância com tipo **Jellyfin** e a URL do servidor (ex: `http://192.168.1.10:8096`).
 2. No campo **API Key**, escolher um dos formatos:
-   - **`username:password`**: além de reproduzir, sincroniza o progresso — o item aparece no **"Continue Watching"** do Jellyfin.
-   - **API key** (Painel Jellyfin → Avançado → Chaves de API): permite reprodução, mas **nunca grava estado de assistido** (a chave de admin não representa um usuário).
+   - **Basic Auth** (Advanced Settings → "Add Basic Auth" com o usuário e a senha do Jellyfin): além de reproduzir, sincroniza o progresso — o item aparece no **"Continue Watching"** do Jellyfin.
+   - **API key** no campo API Key (Painel Jellyfin → Avançado → Chaves de API): permite reprodução, mas **nunca grava estado de assistido** (a chave de admin não representa um usuário). O campo API Key não aceita `usuario:senha`.
 3. **Test Connection** mostra versão e nome do servidor (ServerName). A credencial é validada de verdade: API key ou senha erradas mostram "Invalid Jellyfin credentials..." e servidor fora do ar mostra "Jellyfin server is unreachable...". O login feito só para o teste é encerrado em seguida.
-4. **Save Instance** troca `username:password` por um token de sessão e salva só o token (a senha nunca fica no dispositivo). Instâncias antigas salvas com senha são migradas automaticamente na próxima abertura do app.
-5. Se o Jellyfin invalidar a sessão (logout pelo painel, troca de senha, sessão que outro aparelho encerrou), ao tentar assistir o app avisa "Your Jellyfin session has expired. Sign in again." com o botão **Sign in**, e a instância aparece em Settings como "Session expired · tap to sign in" (o app também confere as sessões Jellyfin ao abrir Settings; um servidor fora do ar não marca a sessão como expirada). Na tela da instância, um aviso pede o login e o campo API Key passa a ser obrigatório: digite `username:password` de novo e salve. O novo login cria uma sessão própria deste aparelho e descarta a antiga só localmente (sem `/Sessions/Logout`), então a sessão de outro aparelho não é derrubada. Os conectores do Radarr/Sonarr usam a chave de servidor e não são afetados.
+4. **Save Instance** troca o Basic Auth por um token de sessão e salva só o token (a senha nunca fica no dispositivo; o header Basic é descartado). Instâncias antigas salvas com senha são migradas automaticamente na próxima abertura do app.
+5. Se o Jellyfin invalidar a sessão (logout pelo painel, troca de senha, sessão que outro aparelho encerrou), ao tentar assistir o app avisa "Your Jellyfin session has expired. Sign in again." com o botão **Sign in**, e a instância aparece em Settings como "Session expired · tap to sign in" (o app também confere as sessões Jellyfin ao abrir Settings; um servidor fora do ar não marca a sessão como expirada). Na tela da instância, um aviso pede o login: use **Advanced Settings → "Add Basic Auth"** com usuário e senha de novo e salve (o campo API Key continua aceitando apenas a API key). O novo login cria uma sessão própria deste aparelho e descarta a antiga só localmente (sem `/Sessions/Logout`), então a sessão de outro aparelho não é derrubada. Os conectores do Radarr/Sonarr usam a chave de servidor e não são afetados.
 
 **Como funciona o pareamento (library pairing):**
 - O app localiza o arquivo do filme/episódio no Jellyfin automaticamente:
@@ -170,7 +170,7 @@ O Arrmate reproduz filmes e episódios direto do Jellyfin com um **player de ví
 **Observações:**
 - Somente o **token da sessão** é salvo no dispositivo — nunca a senha.
 - O conector é idempotente: rodar de novo atualiza o conector existente em vez de duplicar.
-- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin (<id do aparelho>)" **deste aparelho** (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate (<id do aparelho>)` deste aparelho (guardada na instância — chaves e conectores de outros aparelhos, ou uma chave configurada à mão, nunca são tocados; uma chave que veio de outro aparelho por restauração de backup também é mantida) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login `username:password` feito **neste aparelho** (uma sessão que veio de outro aparelho por restauração de backup é apenas descartada localmente, sem deslogar o outro aparelho); com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
+- **Remover a instância Jellyfin** desfaz o que o app configurou: apaga o conector "Arrmate Jellyfin (<id do aparelho>)" **deste aparelho** (que aponta para esse servidor) de cada Radarr/Sonarr, revoga **somente** a chave `Arrmate (<id do aparelho>)` deste aparelho (guardada na instância — chaves e conectores de outros aparelhos, ou uma chave configurada à mão, nunca são tocados; uma chave que veio de outro aparelho por restauração de backup também é mantida) e encerra a sessão (`/Sessions/Logout`) — só quando a instância usa login (Basic Auth) feito **neste aparelho** (uma sessão que veio de outro aparelho por restauração de backup é apenas descartada localmente, sem deslogar o outro aparelho); com API key pura não há logout, porque ele revogaria a própria chave. Se algum passo falhar, a instância é removida mesmo assim e um aviso lista o que não foi limpo.
 
 ## Editar ou remover instância existente
 

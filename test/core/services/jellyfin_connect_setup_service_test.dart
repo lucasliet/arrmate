@@ -448,7 +448,7 @@ void main() {
       // When
       final result = await service.configureArrInstance(
         radarrInstance(),
-        // Username:password auth mode means there is no API key to reuse.
+        // No API key and no Basic Auth login means there is no key to reuse.
         jellyfinInstance: Instance(label: 'Jellyfin', url: _jellyfinUrl),
       );
 
@@ -540,7 +540,8 @@ void main() {
   );
 
   test(
-    'mints an administrator API key when credentials are username:password',
+    'mints an administrator API key when credentials are a Basic Auth '
+    'username:password',
     () async {
       // Given
       final api = MockRadarrApi();
@@ -558,7 +559,12 @@ void main() {
         type: InstanceType.jellyfin,
         label: 'Jellyfin',
         url: _jellyfinUrl,
-        apiKey: 'admin:pass',
+        headers: [
+          InstanceHeader(
+            name: 'Authorization',
+            value: 'Basic YWRtaW46cGFzcw==',
+          ),
+        ],
       );
 
       // When
@@ -577,6 +583,40 @@ void main() {
         () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
       ).called(1);
       expect(fieldsOf(created.single)['ApiKey'], 'minted-key');
+    },
+  );
+
+  test(
+    'uses an API key containing a colon as-is without minting a key',
+    () async {
+      // Given
+      final api = MockRadarrApi();
+      final created = stubCreate(api, schemas: [mediaBrowserSchema()])();
+
+      final jellyfin = MockJellyfinService();
+
+      final colonKeyJellyfin = Instance(
+        id: 'jellyfin-1',
+        type: InstanceType.jellyfin,
+        label: 'Jellyfin',
+        url: _jellyfinUrl,
+        apiKey: 'abc:def',
+      );
+
+      // When
+      final result =
+          await serviceWith(
+            radarrApiFactory: (_) => api,
+            jellyfinServiceFactory: (_) => jellyfin,
+          ).configureArrInstance(
+            radarrInstance(),
+            jellyfinInstance: colonKeyJellyfin,
+          );
+
+      // Then
+      expect(result.isSuccess, isTrue);
+      verifyNever(() => jellyfin.ensureApiKey(appName: any(named: 'appName')));
+      expect(fieldsOf(created.single)['ApiKey'], 'abc:def');
     },
   );
 
@@ -640,7 +680,12 @@ void main() {
       type: InstanceType.jellyfin,
       label: 'Jellyfin',
       url: _jellyfinUrl,
-      apiKey: 'regular:pass',
+      headers: [
+        InstanceHeader(
+          name: 'Authorization',
+          value: 'Basic cmVndWxhcjpwYXNz',
+        ),
+      ],
     );
 
     // When
@@ -655,7 +700,7 @@ void main() {
 
     // Then
     expect(result.isSuccess, isFalse);
-    expect(result.message, contains('administrator'));
+    expect(result.message, contains('administrator account'));
     // Nothing is written to the *arr instance without a key.
     verifyNever(() => api.createNotification(any()));
     verifyNever(() => api.updateNotification(any()));
@@ -698,7 +743,12 @@ void main() {
         type: InstanceType.jellyfin,
         label: 'Jellyfin',
         url: _jellyfinUrl,
-        apiKey: 'admin:pass',
+        headers: [
+          InstanceHeader(
+            name: 'Authorization',
+            value: 'Basic YWRtaW46cGFzcw==',
+          ),
+        ],
       );
 
       // When

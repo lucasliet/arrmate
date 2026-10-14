@@ -358,17 +358,18 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   /// user when a session is stored.
   String get _jellyfinApiKeyHelperText {
     if (_sessionExpired) {
-      return 'Session expired — sign in again with username:password';
+      return 'Session expired — add Basic Auth below to sign in again, or '
+          'enter an API key';
     }
     final session = _existingSession;
     if (session != null) {
       final user = session.userName ?? 'a Jellyfin user';
-      return 'Signed in as $user. Leave empty to keep this session, enter '
-          'username:password to sign in again, or an API key to switch.';
+      return 'Signed in as $user. Leave empty to keep the session, enter an '
+          'API key to switch, or add Basic Auth below to sign in again.';
     }
-    return 'API key (Jellyfin dashboard → Advanced → API Keys) or '
-        'username:password. A password is only used to sign in and is '
-        'never stored.';
+    return 'API key (Jellyfin dashboard → Advanced → API Keys). Leave '
+        'empty if using "Add Basic Auth" below to sign in with a username '
+        'and password.';
   }
 
   bool get _isBusy =>
@@ -649,9 +650,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Your Jellyfin session has expired. Enter '
-                        'username:password in the API Key field to sign in '
-                        'again.',
+                        'Your Jellyfin session has expired. Add Basic Auth in '
+                        'Advanced Settings with your username and password to '
+                        'sign in again.',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onErrorContainer,
                         ),
@@ -698,8 +699,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       !_sessionExpired;
                   if (isEmpty && !_hasAuthorizationHeader && !hasSession) {
                     return _sessionExpired
-                        ? 'Enter username:password to sign in again'
-                        : 'Provide an API key or add Basic Auth below';
+                        ? 'Add Basic Auth below to sign in again, '
+                              'or enter an API key'
+                        :'Provide an API key or add Basic Auth below';
                   }
                   return null;
                 }

@@ -83,7 +83,7 @@ void main() {
     when(() => instanceRepository.getSystemStatus(jellyfin)).thenThrow(
       const UnauthorizedError(
         'Your Jellyfin session has expired. Sign in again in the instance '
-        'settings (API Key field as username:password).',
+        'settings (Add Basic Auth with your username and password).',
       ),
     );
 

@@ -55,9 +55,9 @@ and **qBittorrent** (for downloads).
     A rejected session (401) surfaces as "session expired" in Watch, the
     instance list and the edit screen, which asks for a new login.
     Progress sync ('Continue Watching') requires a user login:
-    username:password is exchanged once for a session token and only the
-    token is stored (legacy password instances migrate on load); API-key mode
-    streams without watch-state writes.
+    the Basic Auth username/password is exchanged once for a session token and
+    only the token is stored (legacy password instances migrate on load);
+    API-key mode streams without watch-state writes.
   - **Notifications**: Real-time push notifications via ntfy.sh integration with
     unique multi-device synchronization, automatic configuration for new
     instances, and background polling (every 30 min) with battery saver mode.
