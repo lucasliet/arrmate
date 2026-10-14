@@ -1,6 +1,6 @@
 ---
 name: activity
-description: Fila de downloads (queue), import manual, histórico de atividade
+description: Fila de downloads (queue), import manual, histórico de atividade, Continue Assistindo (Watching) do Jellyfin
 ---
 
 # Atividade
@@ -122,3 +122,23 @@ O histórico mostra **eventos passados em ordem cronológica reversa** (mais rec
 - Eventos podem ser filtrados por tipo (abas ou chips, se implementado).
 - Útil para auditar o que foi baixado, quando falhas ocorreram, etc.
 - Dados persistem entre sessões do app.
+
+## Continue Assistindo (Watching) — retomar reprodução do Jellyfin
+
+**Onde fica:** Aba Atividade → aba "Watching" (exibida automaticamente no TabBar somente quando há uma instância do Jellyfin configurada com login de usuário e pelo menos um item em andamento que tenha paridade com a biblioteca de filmes/séries do Radarr/Sonarr; se a lista estiver vazia, a aba fica oculta).
+
+**Estrutura visual:**
+- **Lista de cards contendo:**
+  - **Capa** (poster do filme ou série).
+  - **Título** (e código/nome do episódio no formato `SxxExx · Título` para episódios, ou ano para filmes).
+  - **Tempo assistido/total** (ex: tempo decorrido e duração total).
+  - **Porcentagem concluída** e **barra de progresso linear**.
+
+**Ações:**
+- **Tocar no card:** retoma a reprodução diretamente no player interno do app (`/player`) na posição onde parou.
+- **Botão "Open in library" (ícone no canto direito do card):** alterna para a instância correspondente e abre a tela de detalhes do filme ou série na biblioteca (`/movies/:id` ou `/series/:id`).
+
+**Observações:**
+- Requer uma instância do Jellyfin configurada com **login de usuário** (para leitura de watch-state / Continue Watching).
+- Apenas itens que possuem correspondência (paridade) com a biblioteca do Radarr/Sonarr são exibidos na lista.
+

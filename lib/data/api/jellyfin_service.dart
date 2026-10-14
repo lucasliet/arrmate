@@ -574,10 +574,7 @@ class JellyfinService {
   /// first 8 lowercase alphanumerics. Names per-device server resources and
   /// marks the sessions and keys this device created.
   static String deviceTagOf(String installationId) {
-    final id = installationId.toLowerCase().replaceAll(
-      RegExp('[^a-z0-9]'),
-      '',
-    );
+    final id = installationId.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
     return id.length > 8 ? id.substring(0, 8) : id;
   }
 
@@ -779,10 +776,7 @@ class JellyfinService {
       final retryAuthValue = _authorizationValue;
       final retryOptions = Options(
         method: method,
-        headers: {
-          ...(options.headers ?? {}),
-          'Authorization': ?retryAuthValue,
-        },
+        headers: {...(options.headers ?? {}), 'Authorization': ?retryAuthValue},
       );
       return _dio.request<T>(
         resolvedPath,
@@ -963,6 +957,62 @@ class JellyfinService {
       'trying the next source',
     );
     return null;
+  }
+
+  /// Fetches the user's in-progress movies and episodes (`GET /UserItems/Resume`).
+  ///
+  /// Returns an empty list outside user mode ([supportsProgressSync] is false
+  /// or no user id is available), because resume state is per-user data.
+  /// Rethrows [UnauthorizedError] so callers can mark the session as expired.
+  Future<List<JellyfinItem>> getResumeItems({int limit = 50}) async {
+    await _ensureAuthenticated();
+    final userId = _userId;
+    if (!supportsProgressSync || userId == null || userId.isEmpty) {
+      logger.debug(
+        '[JellyfinService] Skipping resume fetch: no user scope available',
+      );
+      return const [];
+    }
+    try {
+      final response = await _request<dynamic>(
+        '/UserItems/Resume',
+        queryParameters: {
+          'userId': userId,
+          'Recursive': 'true',
+          'IncludeItemTypes': 'Movie,Episode',
+          'Fields': 'Path,MediaSources,ProviderIds',
+          'EnableTotalRecordCount': 'false',
+          'Limit': '$limit',
+        },
+      );
+      final data = response.data;
+      if (response.statusCode != 200 || data is! Map) return const [];
+      final rawItems = data['Items'];
+      if (rawItems is! List) return const [];
+      final result = <JellyfinItem>[];
+      for (final entry in rawItems) {
+        if (entry is! Map) continue;
+        final item = JellyfinItem.fromJson(Map<String, dynamic>.from(entry));
+        if ((item.playbackPositionTicks ?? 0) <= 0) continue;
+        if (item.played == true) continue;
+        if (item.mediaSources.isEmpty) continue;
+        result.add(item);
+      }
+      logger.debug(
+        '[JellyfinService] Loaded ${result.length} resume item(s) for user '
+        '$userId',
+      );
+      return result;
+    } on UnauthorizedError {
+      rethrow;
+    } catch (e, stackTrace) {
+      logger.warning(
+        '[JellyfinService] Could not fetch resume items',
+        e,
+        stackTrace,
+      );
+      return const [];
+    }
   }
 
   /// Locates the Jellyfin item backing a Radarr/Sonarr media file.

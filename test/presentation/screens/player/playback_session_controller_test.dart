@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:arrmate/presentation/screens/player/playback_request.dart';
 import 'package:arrmate/presentation/screens/player/playback_session_controller.dart';
+import 'package:arrmate/presentation/screens/player/playback_stop_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Fully in-memory [StreamPlayer] with controllable streams; no native media
@@ -147,6 +148,28 @@ class FakeReporter extends PlaybackProgressReporter {
   }
 }
 
+/// Reporter whose [onStop] stays pending until [release] completes.
+class _GatedReporter extends PlaybackProgressReporter {
+  _GatedReporter(this.release);
+
+  final Future<void> release;
+  final stops = <Duration>[];
+  var started = false;
+
+  @override
+  Future<void> onStart(Duration position) async {}
+
+  @override
+  Future<void> onProgress(Duration position, {required bool isPaused}) async {}
+
+  @override
+  Future<void> onStop(Duration position) {
+    started = true;
+    stops.add(position);
+    return release;
+  }
+}
+
 PlaybackRequest _buildRequest({
   Duration resumePosition = Duration.zero,
   PlaybackProgressReporter? reporter,
@@ -162,6 +185,40 @@ PlaybackRequest _buildRequest({
 
 void main() {
   group('PlaybackSessionController', () {
+    test(
+      'dispose publishes the stop report before that report finishes',
+      () async {
+        // Given
+        final gate = PlaybackStopGate();
+        final release = Completer<void>();
+        final reporter = _GatedReporter(release.future);
+        final controller = PlaybackSessionController(
+          request: _buildRequest(reporter: reporter),
+          playerFactory: FakeStreamPlayer.new,
+          progressInterval: const Duration(hours: 1),
+          stopGate: gate,
+        );
+        await controller.initialize();
+        await pumpEventQueue();
+
+        // When
+        final pending = controller.dispose();
+        var settled = false;
+        unawaited(gate.settled.then((_) => settled = true));
+        await pumpEventQueue();
+
+        // Then
+        expect(reporter.started, isTrue);
+        expect(settled, isFalse);
+
+        release.complete();
+        await pending;
+        await pumpEventQueue();
+        expect(settled, isTrue);
+        expect(reporter.stops, [Duration.zero]);
+      },
+    );
+
     test('seekTo tracks the target so an immediate exit reports it', () async {
       // Given
       final player = FakeStreamPlayer();

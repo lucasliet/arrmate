@@ -16,7 +16,10 @@ import 'providers/activity_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/qbittorrent_provider.dart';
 import 'providers/torrent_link_provider.dart';
+import 'providers/watching_provider.dart';
 import 'qbittorrent_tab.dart';
+import 'watching_route_refresh.dart';
+import 'watching_tab.dart';
 import 'widgets/queue_list_item.dart';
 import 'widgets/queue_options_sheet.dart';
 
@@ -28,70 +31,88 @@ class ActivityScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final qbittorrentInstance = ref.watch(currentQBittorrentInstanceProvider);
     final hasQBittorrent = qbittorrentInstance != null;
+    final jellyfinInstance = ref.watch(currentJellyfinInstanceProvider);
+    final hasJellyfin = jellyfinInstance != null;
+    final watchingItems = hasJellyfin
+        ? (ref.watch(watchingItemsProvider).valueOrNull ??
+              const <WatchingItem>[])
+        : const <WatchingItem>[];
+    final showsWatching = hasJellyfin && watchingItems.isNotEmpty;
     final tourKeys = ref.watch(appTourKeysProvider);
     // The tour explains torrents, so the tab is also shown while it runs
     // without a qBittorrent instance, backed by sample torrents.
     final showsTorrents =
         hasQBittorrent ||
         ref.watch(tourMockupProvider(InstanceType.qbittorrent));
+    final tabCount = 2 + (showsTorrents ? 1 : 0) + (showsWatching ? 1 : 0);
     final tabs = TabBarView(
       children: [
         const _QueueTab(),
         const HistoryScreen(),
         if (showsTorrents) const QBittorrentTab(),
+        if (showsWatching) const WatchingTab(),
       ],
     );
 
-    return AdaptiveLayout(
-      builder: (context) {
-        final isWide = ContentLayout.of(context).hasWideSections;
-        return DefaultTabController(
-          length: showsTorrents ? 3 : 2,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Activity'),
-              toolbarHeight: isWide ? 88 : null,
-              titleSpacing: isWide ? 32 : null,
-              bottom: TabBar(
-                key: tourKeys.activityTabBarKey,
-                isScrollable: isWide,
-                tabAlignment: isWide ? TabAlignment.start : null,
-                labelPadding: isWide
-                    ? const EdgeInsets.symmetric(horizontal: 32)
-                    : null,
-                tabs: [
-                  const Tab(text: 'Queue'),
-                  const Tab(text: 'History'),
-                  if (showsTorrents)
-                    Tab(key: tourKeys.activityTorrentsTabKey, text: 'Torrents'),
+    return WatchingRouteRefresh(
+      child: AdaptiveLayout(
+        builder: (context) {
+          final isWide = ContentLayout.of(context).hasWideSections;
+          return DefaultTabController(
+            length: tabCount,
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Activity'),
+                toolbarHeight: isWide ? 88 : null,
+                titleSpacing: isWide ? 32 : null,
+                bottom: TabBar(
+                  key: tourKeys.activityTabBarKey,
+                  isScrollable: isWide,
+                  tabAlignment: isWide ? TabAlignment.start : null,
+                  labelPadding: isWide
+                      ? const EdgeInsets.symmetric(horizontal: 32)
+                      : null,
+                  tabs: [
+                    const Tab(text: 'Queue'),
+                    const Tab(text: 'History'),
+                    if (showsTorrents)
+                      Tab(
+                        key: tourKeys.activityTorrentsTabKey,
+                        text: 'Torrents',
+                      ),
+                    if (showsWatching) const Tab(text: 'Watching'),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      ref.invalidate(queueProvider);
+                      ref.invalidate(activityHistoryProvider);
+                      if (hasQBittorrent) {
+                        ref.invalidate(qbittorrentTorrentsProvider);
+                        ref.invalidate(torrentLinkIndexProvider);
+                      }
+                      if (hasJellyfin) {
+                        ref.invalidate(watchingItemsProvider);
+                      }
+                    },
+                  ),
+                  const NotificationIconButton(),
                 ],
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    ref.invalidate(queueProvider);
-                    ref.invalidate(activityHistoryProvider);
-                    if (hasQBittorrent) {
-                      ref.invalidate(qbittorrentTorrentsProvider);
-                      ref.invalidate(torrentLinkIndexProvider);
-                    }
-                  },
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: ContentLayout.maximumActivityWidth,
+                  ),
+                  child: tabs,
                 ),
-                const NotificationIconButton(),
-              ],
-            ),
-            body: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: ContentLayout.maximumActivityWidth,
-                ),
-                child: tabs,
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

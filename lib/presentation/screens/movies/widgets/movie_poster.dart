@@ -8,14 +8,26 @@ import '../../../../core/network/custom_cache_manager.dart';
 
 /// Helper widget to display a movie poster, handling caching and auth headers.
 class MoviePoster extends ConsumerWidget {
+  /// The movie whose poster is displayed.
   final Movie movie;
+
+  /// How the image should be inscribed into the space allocated during layout.
   final BoxFit fit;
 
-  const MoviePoster({super.key, required this.movie, this.fit = BoxFit.cover});
+  /// Optional Radarr instance override for local poster URLs.
+  final Instance? instance;
+
+  /// Creates a [MoviePoster].
+  const MoviePoster({
+    super.key,
+    required this.movie,
+    this.fit = BoxFit.cover,
+    this.instance,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final instance = ref.watch(currentRadarrInstanceProvider);
+    final instance = this.instance ?? ref.watch(currentRadarrInstanceProvider);
     final posterUrl = movie.remotePoster;
     final headers = instance?.authHeaders;
 

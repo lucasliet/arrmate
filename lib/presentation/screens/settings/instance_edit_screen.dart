@@ -701,7 +701,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     return _sessionExpired
                         ? 'Add Basic Auth below to sign in again, '
                               'or enter an API key'
-                        :'Provide an API key or add Basic Auth below';
+                        : 'Provide an API key or add Basic Auth below';
                   }
                   return null;
                 }

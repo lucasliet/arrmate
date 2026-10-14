@@ -148,9 +148,8 @@ void main() {
     test('should clear the flag once the server accepts the session', () async {
       // Given
       final jellyfin = _jellyfin('jellyfin-home');
-      when(
-        () => instanceRepository.getSystemStatus(jellyfin),
-      ).thenAnswer((_) async => const InstanceStatus(
+      when(() => instanceRepository.getSystemStatus(jellyfin)).thenAnswer(
+        (_) async => const InstanceStatus(
           appName: 'Jellyfin',
           instanceName: 'Jellyfin',
           version: '10.9.0',

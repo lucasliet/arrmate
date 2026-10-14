@@ -9,52 +9,49 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('JellyfinService authentication', () {
-    test(
-      'Basic username:password mode hits AuthenticateByName and stores the '
-      'token',
-      () async {
-        // Given
-        final adapter = _RecordingAdapter((options) {
-          switch (options.uri.path) {
-            case '/Users/AuthenticateByName':
-              return {
-                'AccessToken': 'token-123',
-                'User': {'Id': 'user-9', 'Name': 'admin'},
-              };
-            case '/System/Info':
-              return {'ServerName': 'Jelly', 'Version': '10.9.0'};
-          }
-          return <String, dynamic>{};
-        });
-        final service = _serviceUserPassword(adapter);
+    test('Basic username:password mode hits AuthenticateByName and stores the '
+        'token', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        switch (options.uri.path) {
+          case '/Users/AuthenticateByName':
+            return {
+              'AccessToken': 'token-123',
+              'User': {'Id': 'user-9', 'Name': 'admin'},
+            };
+          case '/System/Info':
+            return {'ServerName': 'Jelly', 'Version': '10.9.0'};
+        }
+        return <String, dynamic>{};
+      });
+      final service = _serviceUserPassword(adapter);
 
-        // When
-        final status = await service.getSystemStatus();
+      // When
+      final status = await service.getSystemStatus();
 
-        // Then
-        expect(adapter.methods.first, 'POST');
-        expect(adapter.requests.first.path, '/Users/AuthenticateByName');
-        final authHeaders = adapter.headers.first;
-        expect(
-          authHeaders['Authorization'],
-          contains('MediaBrowser Client="Arrmate"'),
-        );
-        expect(
-          authHeaders['Authorization'],
-          contains('DeviceId="install-user-1"'),
-        );
-        // The stored access token travels as Token in the MediaBrowser
-        // Authorization header (Jellyfin 12 rejects X-Emby-Token).
-        expect(
-          adapter.headers.last['Authorization'],
-          contains('Token="token-123"'),
-        );
-        expect(status.appName, 'Jellyfin');
-        expect(status.instanceName, 'Jelly');
-        expect(status.version, '10.9.0');
-        expect(service.supportsProgressSync, isTrue);
-      },
-    );
+      // Then
+      expect(adapter.methods.first, 'POST');
+      expect(adapter.requests.first.path, '/Users/AuthenticateByName');
+      final authHeaders = adapter.headers.first;
+      expect(
+        authHeaders['Authorization'],
+        contains('MediaBrowser Client="Arrmate"'),
+      );
+      expect(
+        authHeaders['Authorization'],
+        contains('DeviceId="install-user-1"'),
+      );
+      // The stored access token travels as Token in the MediaBrowser
+      // Authorization header (Jellyfin 12 rejects X-Emby-Token).
+      expect(
+        adapter.headers.last['Authorization'],
+        contains('Token="token-123"'),
+      );
+      expect(status.appName, 'Jellyfin');
+      expect(status.instanceName, 'Jelly');
+      expect(status.version, '10.9.0');
+      expect(service.supportsProgressSync, isTrue);
+    });
 
     test(
       'api-key mode sends a MediaBrowser Token and never guesses a user id',
@@ -360,38 +357,35 @@ void main() {
   });
 
   group('JellyfinService credential validation', () {
-    test(
-      'rejects an API key whose /System/Info call fails at the transport '
-      'level while the public endpoint answers',
-      () async {
-        // Given — browsers surface a 401 without CORS headers this way.
-        final adapter = _RecordingAdapter((options) {
-          switch (options.uri.path) {
-            case '/System/Info':
-              return const _TransportFailure();
-            case '/System/Info/Public':
-              return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
-          }
-          return <String, dynamic>{};
-        });
-        final service = _buildService(adapter, apiKey: 'xyz');
+    test('rejects an API key whose /System/Info call fails at the transport '
+        'level while the public endpoint answers', () async {
+      // Given — browsers surface a 401 without CORS headers this way.
+      final adapter = _RecordingAdapter((options) {
+        switch (options.uri.path) {
+          case '/System/Info':
+            return const _TransportFailure();
+          case '/System/Info/Public':
+            return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(adapter, apiKey: 'xyz');
 
-        // When
-        final call = service.getSystemStatus();
+      // When
+      final call = service.getSystemStatus();
 
-        // Then
-        await expectLater(
-          call,
-          throwsA(
-            isA<UnauthorizedError>().having(
-              (e) => e.message,
-              'message',
-              contains('Invalid Jellyfin credentials'),
-            ),
+      // Then
+      await expectLater(
+        call,
+        throwsA(
+          isA<UnauthorizedError>().having(
+            (e) => e.message,
+            'message',
+            contains('Invalid Jellyfin credentials'),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
 
     test('reports an unreachable server, not a raw error', () async {
       // Given
@@ -435,33 +429,30 @@ void main() {
       await expectLater(call, throwsA(isA<UnauthorizedError>()));
     });
 
-    test(
-      'maps a transport-level sign-in failure on a reachable server to '
-      'invalid credentials',
-      () async {
-        // Given
-        final adapter = _RecordingAdapter((options) {
-          switch (options.uri.path) {
-            case '/Users/AuthenticateByName':
-              return const _TransportFailure();
-            case '/System/Info/Public':
-              return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
-          }
-          return <String, dynamic>{};
-        });
-        final service = _buildService(
-          adapter,
-          apiKey: '',
-          headers: [_basicAuthHeader('demo:wrong')],
-        );
+    test('maps a transport-level sign-in failure on a reachable server to '
+        'invalid credentials', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        switch (options.uri.path) {
+          case '/Users/AuthenticateByName':
+            return const _TransportFailure();
+          case '/System/Info/Public':
+            return {'ServerName': 'Public Jelly', 'Version': '12.2.0'};
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        headers: [_basicAuthHeader('demo:wrong')],
+      );
 
-        // When
-        final call = service.getSystemStatus();
+      // When
+      final call = service.getSystemStatus();
 
-        // Then
-        await expectLater(call, throwsA(isA<UnauthorizedError>()));
-      },
-    );
+      // Then
+      await expectLater(call, throwsA(isA<UnauthorizedError>()));
+    });
   });
 
   group('JellyfinService sessions', () {
@@ -517,44 +508,41 @@ void main() {
       );
     });
 
-    test(
-      'a Basic header wins over a stored session: a login request is made '
-      'and the new token is used',
-      () async {
-        // Given
-        final adapter = _RecordingAdapter((options) {
-          if (options.uri.path == '/Users/AuthenticateByName') {
-            return {
-              'AccessToken': 'token-456',
-              'User': {'Id': 'user-9', 'Name': 'admin'},
-            };
-          }
-          return <String, dynamic>{};
-        });
-        final service = _buildService(
-          adapter,
-          apiKey: '',
-          headers: [_basicAuthHeader('admin:newpass')],
-          userSession: storedSession,
-          deviceId: 'install-user-1',
-        );
+    test('a Basic header wins over a stored session: a login request is made '
+        'and the new token is used', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/Users/AuthenticateByName') {
+          return {
+            'AccessToken': 'token-456',
+            'User': {'Id': 'user-9', 'Name': 'admin'},
+          };
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        headers: [_basicAuthHeader('admin:newpass')],
+        userSession: storedSession,
+        deviceId: 'install-user-1',
+      );
 
-        // When
-        await service.authenticate();
+      // When
+      await service.authenticate();
 
-        // Then
-        expect(service.hasLoginCredentials, isTrue);
-        expect(
-          adapter.requests.map((uri) => uri.path),
-          contains('/Users/AuthenticateByName'),
-        );
-        expect(
-          adapter.headers.last['Authorization'],
-          isNot(contains('stored-token')),
-        );
-        expect(service.supportsProgressSync, isTrue);
-      },
-    );
+      // Then
+      expect(service.hasLoginCredentials, isTrue);
+      expect(
+        adapter.requests.map((uri) => uri.path),
+        contains('/Users/AuthenticateByName'),
+      );
+      expect(
+        adapter.headers.last['Authorization'],
+        isNot(contains('stored-token')),
+      );
+      expect(service.supportsProgressSync, isTrue);
+    });
 
     test('signing in again reuses the stored session device id', () async {
       // Given
@@ -583,37 +571,34 @@ void main() {
       expect(session.accessToken, 'new-token');
     });
 
-    test(
-      'signing in over a session restored from another device uses a new '
-      'device id',
-      () async {
-        // Given
-        final adapter = _RecordingAdapter((options) {
-          if (options.uri.path == '/Users/AuthenticateByName') {
-            return {
-              'AccessToken': 'new-token',
-              'User': {'Id': 'user-9', 'Name': 'admin'},
-            };
-          }
-          return <String, dynamic>{};
-        });
-        final service = _buildService(
-          adapter,
-          apiKey: '',
-          headers: [_basicAuthHeader('admin:newpass')],
-          userSession: restoredSession,
-          deviceId: 'install-user-1',
-        );
+    test('signing in over a session restored from another device uses a new '
+        'device id', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        if (options.uri.path == '/Users/AuthenticateByName') {
+          return {
+            'AccessToken': 'new-token',
+            'User': {'Id': 'user-9', 'Name': 'admin'},
+          };
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        headers: [_basicAuthHeader('admin:newpass')],
+        userSession: restoredSession,
+        deviceId: 'install-user-1',
+      );
 
-        // When
-        final session = await service.signIn();
+      // When
+      final session = await service.signIn();
 
-        // Then
-        expect(session.deviceId, isNot('arrmate-device-7'));
-        expect(session.deviceId, startsWith('arrmate-'));
-        expect(session.deviceTag, 'installu');
-      },
-    );
+      // Then
+      expect(session.deviceId, isNot('arrmate-device-7'));
+      expect(session.deviceId, startsWith('arrmate-'));
+      expect(session.deviceTag, 'installu');
+    });
 
     test('signIn without credentials asks for them', () async {
       // Given
@@ -691,9 +676,7 @@ void main() {
 
     test('resolvePlayableItem surfaces an expired stored session', () async {
       // Given
-      final adapter = _RecordingAdapter(
-        (_) => const _StatusBody(401, null),
-      );
+      final adapter = _RecordingAdapter((_) => const _StatusBody(401, null));
       final service = _buildService(
         adapter,
         apiKey: '',
@@ -763,9 +746,7 @@ void main() {
 
     test('getPlaybackSession surfaces an expired stored session', () async {
       // Given
-      final adapter = _RecordingAdapter(
-        (_) => const _StatusBody(401, null),
-      );
+      final adapter = _RecordingAdapter((_) => const _StatusBody(401, null));
       final service = _buildService(
         adapter,
         apiKey: '',
@@ -781,9 +762,7 @@ void main() {
 
     test('API key 401 makes resolvePlayableItem return null', () async {
       // Given
-      final adapter = _RecordingAdapter(
-        (_) => const _StatusBody(401, null),
-      );
+      final adapter = _RecordingAdapter((_) => const _StatusBody(401, null));
       final service = _serviceApiKey(adapter);
 
       // When
@@ -2041,6 +2020,156 @@ void main() {
           ),
           isFalse,
         );
+      },
+    );
+  });
+
+  group('JellyfinService getResumeItems', () {
+    test(
+      'returns in-progress Movie and Episode items with media sources in user mode',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/Users/AuthenticateByName':
+              return {
+                'AccessToken': 'user-token-resume',
+                'User': {'Id': 'user-9'},
+              };
+            case '/UserItems/Resume':
+              return {
+                'Items': [
+                  {
+                    'Id': 'movie-in-progress',
+                    'Name': 'Dune',
+                    'Type': 'Movie',
+                    'Path': '/data/movies/Dune/Dune.mkv',
+                    'RunTimeTicks': 90000000000,
+                    'ProviderIds': {'Tmdb': '438631'},
+                    'UserData': {
+                      'PlaybackPositionTicks': 30000000000,
+                      'Played': false,
+                    },
+                    'MediaSources': [
+                      _mediaSourceJson(
+                        id: 'src-dune',
+                        path: '/data/movies/Dune/Dune.mkv',
+                      ),
+                    ],
+                  },
+                  {
+                    'Id': 'ep-in-progress',
+                    'Name': 'Pilot',
+                    'Type': 'Episode',
+                    'SeriesName': 'Severance',
+                    'ParentIndexNumber': 1,
+                    'IndexNumber': 2,
+                    'Path': '/data/tv/Severance/Season 01/S01E02.mkv',
+                    'RunTimeTicks': 30000000000,
+                    'UserData': {
+                      'PlaybackPositionTicks': 15000000000,
+                      'Played': false,
+                    },
+                    'MediaSources': [
+                      _mediaSourceJson(
+                        id: 'src-sev',
+                        path: '/data/tv/Severance/Season 01/S01E02.mkv',
+                      ),
+                    ],
+                  },
+                  {
+                    'Id': 'already-played',
+                    'Name': 'Done Movie',
+                    'Type': 'Movie',
+                    'RunTimeTicks': 50000000000,
+                    'UserData': {
+                      'PlaybackPositionTicks': 10000000000,
+                      'Played': true,
+                    },
+                    'MediaSources': [_mediaSourceJson(id: 'src-done')],
+                  },
+                  {
+                    'Id': 'zero-ticks',
+                    'Name': 'Not Started',
+                    'Type': 'Movie',
+                    'RunTimeTicks': 50000000000,
+                    'UserData': {'PlaybackPositionTicks': 0, 'Played': false},
+                    'MediaSources': [_mediaSourceJson(id: 'src-zero')],
+                  },
+                ],
+              };
+          }
+          return <String, dynamic>{};
+        });
+        final service = _serviceUserPassword(adapter);
+
+        // When
+        final items = await service.getResumeItems();
+
+        // Then
+        expect(items.map((item) => item.id).toList(), [
+          'movie-in-progress',
+          'ep-in-progress',
+        ]);
+        final resumeUri = adapter.requests.singleWhere(
+          (uri) => uri.path == '/UserItems/Resume',
+        );
+        expect(resumeUri.queryParameters['userId'], 'user-9');
+        expect(resumeUri.queryParameters['IncludeItemTypes'], 'Movie,Episode');
+      },
+    );
+
+    test(
+      'returns empty list in api-key mode without calling /UserItems/Resume',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/System/Info':
+              return {'ServerName': 'Jelly', 'Version': '10.9.0'};
+          }
+          return <String, dynamic>{};
+        });
+        final service = _serviceApiKey(adapter);
+
+        // When
+        final items = await service.getResumeItems();
+
+        // Then
+        expect(items, isEmpty);
+        expect(
+          adapter.requests.any((uri) => uri.path == '/UserItems/Resume'),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'rethrows UnauthorizedError when stored session is rejected on /UserItems/Resume',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          if (options.uri.path == '/UserItems/Resume') {
+            return const _StatusBody(401, 'Unauthorized');
+          }
+          return <String, dynamic>{};
+        });
+        final service = _buildService(
+          adapter,
+          apiKey: '',
+          userSession: const InstanceUserSession(
+            accessToken: 'expired-token',
+            userId: 'user-9',
+            userName: 'admin',
+            deviceId: 'dev-1',
+          ),
+        );
+
+        // When
+        Future<List<JellyfinItem>> action() => service.getResumeItems();
+
+        // Then
+        await expectLater(action(), throwsA(isA<UnauthorizedError>()));
       },
     );
   });

@@ -539,52 +539,46 @@ void main() {
     },
   );
 
-  test(
-    'mints an administrator API key when credentials are a Basic Auth '
-    'username:password',
-    () async {
-      // Given
-      final api = MockRadarrApi();
-      final created = stubCreate(api, schemas: [mediaBrowserSchema()])();
+  test('mints an administrator API key when credentials are a Basic Auth '
+      'username:password', () async {
+    // Given
+    final api = MockRadarrApi();
+    final created = stubCreate(api, schemas: [mediaBrowserSchema()])();
 
-      final jellyfin = MockJellyfinService();
-      when(
-        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
-      ).thenAnswer(
-        (_) async => const JellyfinApiKey('minted-key', created: false),
-      );
+    final jellyfin = MockJellyfinService();
+    when(
+      () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+    ).thenAnswer(
+      (_) async => const JellyfinApiKey('minted-key', created: false),
+    );
 
-      final userPasswordJellyfin = Instance(
-        id: 'jellyfin-1',
-        type: InstanceType.jellyfin,
-        label: 'Jellyfin',
-        url: _jellyfinUrl,
-        headers: [
-          InstanceHeader(
-            name: 'Authorization',
-            value: 'Basic YWRtaW46cGFzcw==',
-          ),
-        ],
-      );
+    final userPasswordJellyfin = Instance(
+      id: 'jellyfin-1',
+      type: InstanceType.jellyfin,
+      label: 'Jellyfin',
+      url: _jellyfinUrl,
+      headers: [
+        InstanceHeader(name: 'Authorization', value: 'Basic YWRtaW46cGFzcw=='),
+      ],
+    );
 
-      // When
-      final result =
-          await serviceWith(
-            radarrApiFactory: (_) => api,
-            jellyfinServiceFactory: (_) => jellyfin,
-          ).configureArrInstance(
-            radarrInstance(),
-            jellyfinInstance: userPasswordJellyfin,
-          );
+    // When
+    final result =
+        await serviceWith(
+          radarrApiFactory: (_) => api,
+          jellyfinServiceFactory: (_) => jellyfin,
+        ).configureArrInstance(
+          radarrInstance(),
+          jellyfinInstance: userPasswordJellyfin,
+        );
 
-      // Then
-      expect(result.isSuccess, isTrue);
-      verify(
-        () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
-      ).called(1);
-      expect(fieldsOf(created.single)['ApiKey'], 'minted-key');
-    },
-  );
+    // Then
+    expect(result.isSuccess, isTrue);
+    verify(
+      () => jellyfin.ensureApiKey(appName: any(named: 'appName')),
+    ).called(1);
+    expect(fieldsOf(created.single)['ApiKey'], 'minted-key');
+  });
 
   test(
     'uses an API key containing a colon as-is without minting a key',
@@ -681,10 +675,7 @@ void main() {
       label: 'Jellyfin',
       url: _jellyfinUrl,
       headers: [
-        InstanceHeader(
-          name: 'Authorization',
-          value: 'Basic cmVndWxhcjpwYXNz',
-        ),
+        InstanceHeader(name: 'Authorization', value: 'Basic cmVndWxhcjpwYXNz'),
       ],
     );
 
@@ -811,55 +802,48 @@ void main() {
       ownedApiKeyDevice: 'a1b2c3d4',
     );
 
-    test(
-      'removes only the Arrmate connector pointing at this server, revokes '
-      'the key and signs out',
-      () async {
-        // Given
-        final radarrApi = MockRadarrApi();
-        when(() => radarrApi.getNotifications()).thenAnswer(
-          (_) async => [
-            connector(id: 1),
-            connector(id: 2, name: 'My Jellyfin'),
-            connector(id: 3, host: 'other-jellyfin.local'),
-          ],
-        );
-        when(
-          () => radarrApi.deleteNotification(any()),
-        ).thenAnswer((_) async {});
-        final sonarrApi = MockSonarrApi();
-        when(
-          () => sonarrApi.getNotifications(),
-        ).thenAnswer((_) async => [connector(id: 7)]);
-        when(
-          () => sonarrApi.deleteNotification(any()),
-        ).thenAnswer((_) async {});
-        final jellyfin = cleanJellyfin();
+    test('removes only the Arrmate connector pointing at this server, revokes '
+        'the key and signs out', () async {
+      // Given
+      final radarrApi = MockRadarrApi();
+      when(() => radarrApi.getNotifications()).thenAnswer(
+        (_) async => [
+          connector(id: 1),
+          connector(id: 2, name: 'My Jellyfin'),
+          connector(id: 3, host: 'other-jellyfin.local'),
+        ],
+      );
+      when(() => radarrApi.deleteNotification(any())).thenAnswer((_) async {});
+      final sonarrApi = MockSonarrApi();
+      when(
+        () => sonarrApi.getNotifications(),
+      ).thenAnswer((_) async => [connector(id: 7)]);
+      when(() => sonarrApi.deleteNotification(any())).thenAnswer((_) async {});
+      final jellyfin = cleanJellyfin();
 
-        // When
-        final failures = await serviceWith(
-          radarrApiFactory: (_) => radarrApi,
-          sonarrApiFactory: (_) => sonarrApi,
-          jellyfinServiceFactory: (_) => jellyfin,
-          instancesSource: () => [
-            radarrInstance(),
-            sonarrInstance(),
-            qbittorrentInstance(),
-          ],
-        ).disconnect(pairedJellyfin());
+      // When
+      final failures = await serviceWith(
+        radarrApiFactory: (_) => radarrApi,
+        sonarrApiFactory: (_) => sonarrApi,
+        jellyfinServiceFactory: (_) => jellyfin,
+        instancesSource: () => [
+          radarrInstance(),
+          sonarrInstance(),
+          qbittorrentInstance(),
+        ],
+      ).disconnect(pairedJellyfin());
 
-        // Then
-        expect(failures, isEmpty);
-        verify(() => radarrApi.deleteNotification(1)).called(1);
-        verifyNever(() => radarrApi.deleteNotification(2));
-        verifyNever(() => radarrApi.deleteNotification(3));
-        verify(() => sonarrApi.deleteNotification(7)).called(1);
-        verifyInOrder([
-          () => jellyfin.revokeApiKey('owned-key'),
-          () => jellyfin.logout(),
-        ]);
-      },
-    );
+      // Then
+      expect(failures, isEmpty);
+      verify(() => radarrApi.deleteNotification(1)).called(1);
+      verifyNever(() => radarrApi.deleteNotification(2));
+      verifyNever(() => radarrApi.deleteNotification(3));
+      verify(() => sonarrApi.deleteNotification(7)).called(1);
+      verifyInOrder([
+        () => jellyfin.revokeApiKey('owned-key'),
+        () => jellyfin.logout(),
+      ]);
+    });
 
     test('treats an already rejected session as signed out', () async {
       // Given
@@ -908,9 +892,7 @@ void main() {
     test('keeps a key recorded by another device', () async {
       // Given
       final jellyfin = cleanJellyfin();
-      final restored = pairedJellyfin().copyWith(
-        ownedApiKeyDevice: 'b9c8d7e6',
-      );
+      final restored = pairedJellyfin().copyWith(ownedApiKeyDevice: 'b9c8d7e6');
 
       // When
       final failures = await serviceWith(
@@ -1168,52 +1150,49 @@ void main() {
       keysMinted = 0;
     });
 
-    test(
-      'each device pairs with its own key and connector, and removing one '
-      'leaves the other working',
-      () async {
-        // Given
-        final jellyfin = jellyfinServer();
-        final radarr = radarrServer();
-        final updatedA = <Instance>[];
-        final updatedB = <Instance>[];
-        final instanceA = signedIn('jellyfin-a');
-        final instanceB = signedIn('jellyfin-b');
+    test('each device pairs with its own key and connector, and removing one '
+        'leaves the other working', () async {
+      // Given
+      final jellyfin = jellyfinServer();
+      final radarr = radarrServer();
+      final updatedA = <Instance>[];
+      final updatedB = <Instance>[];
+      final instanceA = signedIn('jellyfin-a');
+      final instanceB = signedIn('jellyfin-b');
 
-        // When
-        await device(
-          _deviceA,
-          instanceA,
-          jellyfin,
-          radarr,
-          updatedA,
-        ).configureForAllArrInstances(jellyfinInstance: instanceA);
-        await device(
-          _deviceB,
-          instanceB,
-          jellyfin,
-          radarr,
-          updatedB,
-        ).configureForAllArrInstances(jellyfinInstance: instanceB);
-        final keyA = updatedA.single.ownedApiKey!;
-        final keyB = updatedB.single.ownedApiKey!;
-        final pairedA = signedIn('jellyfin-a', pairedAs: updatedA.single);
-        final failures = await device(
-          _deviceA,
-          pairedA,
-          jellyfin,
-          radarr,
-          [],
-        ).disconnect(pairedA);
+      // When
+      await device(
+        _deviceA,
+        instanceA,
+        jellyfin,
+        radarr,
+        updatedA,
+      ).configureForAllArrInstances(jellyfinInstance: instanceA);
+      await device(
+        _deviceB,
+        instanceB,
+        jellyfin,
+        radarr,
+        updatedB,
+      ).configureForAllArrInstances(jellyfinInstance: instanceB);
+      final keyA = updatedA.single.ownedApiKey!;
+      final keyB = updatedB.single.ownedApiKey!;
+      final pairedA = signedIn('jellyfin-a', pairedAs: updatedA.single);
+      final failures = await device(
+        _deviceA,
+        pairedA,
+        jellyfin,
+        radarr,
+        [],
+      ).disconnect(pairedA);
 
-        // Then
-        expect(keyA, isNot(keyB));
-        expect(failures, isEmpty);
-        expect(serverKeys, {'Arrmate (b9c8d7e6)': keyB});
-        expect(radarrConnectors.map((c) => c.name), [_connectorB]);
-        expect(fieldsOf(radarrConnectors.single)['ApiKey'], keyB);
-      },
-    );
+      // Then
+      expect(keyA, isNot(keyB));
+      expect(failures, isEmpty);
+      expect(serverKeys, {'Arrmate (b9c8d7e6)': keyB});
+      expect(radarrConnectors.map((c) => c.name), [_connectorB]);
+      expect(fieldsOf(radarrConnectors.single)['ApiKey'], keyB);
+    });
 
     test('pairing again reuses the device key instead of a new one', () async {
       // Given

@@ -33,9 +33,7 @@ void main() {
       notifier.markExpired('jellyfin-home');
 
       // Then
-      expect(container.read(jellyfinSessionExpiredProvider), {
-        'jellyfin-home',
-      });
+      expect(container.read(jellyfinSessionExpiredProvider), {'jellyfin-home'});
       expect(notifier.isExpired('jellyfin-home'), isTrue);
       expect(notifier.isExpired('jellyfin-other'), isFalse);
     });

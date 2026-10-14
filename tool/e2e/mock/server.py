@@ -3218,6 +3218,22 @@ class Handler(BaseHTTPRequestHandler):
             items.append(self._jellyfin_with_position(item))
         return {"Items": items[: max(limit, 0)], "TotalRecordCount": len(items), "StartIndex": 0}
 
+    def _jellyfin_resume_envelope(self, query: dict) -> dict:
+        """Return in-progress movies and episodes for `GET /UserItems/Resume`."""
+        limit = int((query.get("Limit") or ["50"])[0] or 50)
+        items = []
+        for item in LAB.jellyfin_items:
+            if item.get("Type") not in ("Movie", "Episode"):
+                continue
+            copied = self._jellyfin_with_position(item)
+            ticks = (copied.get("UserData") or {}).get("PlaybackPositionTicks") or 0
+            if ticks <= 0 or copied.get("UserData", {}).get("Played"):
+                continue
+            if not copied.get("MediaSources"):
+                continue
+            items.append(copied)
+        return {"Items": items[: max(limit, 0)], "TotalRecordCount": len(items)}
+
     def _jellyfin_episodes_envelope(self, series_id: str, query: dict) -> dict | None:
         """List a series' indexed episodes, honoring the `season` filter."""
         series = next(
@@ -3345,6 +3361,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if method == "GET" and path == "/Items":
                 self._json(self._jellyfin_items_envelope(query))
+                return
+            if method == "GET" and path == "/UserItems/Resume":
+                self._json(self._jellyfin_resume_envelope(query))
                 return
             match = re.fullmatch(r"/Shows/([^/]+)/Episodes", path)
             if match and method == "GET":
