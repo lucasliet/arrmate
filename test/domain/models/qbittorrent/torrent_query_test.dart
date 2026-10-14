@@ -303,18 +303,16 @@ void main() {
 
       // Then
       for (final entry in descending.entries) {
-        expect(
-          entry.value.map((torrent) => torrent.name),
-          ['Newer', 'Older'],
-          reason: '${entry.key} descending',
-        );
+        expect(entry.value.map((torrent) => torrent.name), [
+          'Newer',
+          'Older',
+        ], reason: '${entry.key} descending');
       }
       for (final entry in ascending.entries) {
-        expect(
-          entry.value.map((torrent) => torrent.name),
-          ['Older', 'Newer'],
-          reason: '${entry.key} ascending',
-        );
+        expect(entry.value.map((torrent) => torrent.name), [
+          'Older',
+          'Newer',
+        ], reason: '${entry.key} ascending');
       }
     });
 
