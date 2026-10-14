@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/core/services/playback_launch_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
@@ -13,6 +14,7 @@ import 'package:arrmate/presentation/screens/activity/providers/activity_provide
 import 'package:arrmate/presentation/screens/activity/providers/history_provider.dart';
 import 'package:arrmate/presentation/screens/activity/providers/watching_provider.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/watching_list_item.dart';
+import 'package:arrmate/presentation/screens/player/media_player_screen.dart';
 import 'package:arrmate/presentation/screens/player/playback_request.dart';
 
 class _EmptyQueueNotifier extends QueueNotifier {
@@ -59,7 +61,14 @@ class _FakePlaybackLaunchService extends PlaybackLaunchService {
 
   /// When set, [playItem] reports a launched player that closes with this
   /// future; otherwise it reports a cancelled launch.
+  ///
+  /// This future is independent of the route pushed when [pushPlayerRoute]
+  /// is true, so a test can pop that route while the future stays pending.
   Future<void>? launchedClosed;
+
+  /// When true, [playItem] pushes `/player` without exposing that navigation
+  /// future as [PlaybackLaunched.closed].
+  bool pushPlayerRoute = false;
 
   @override
   Future<PlaybackLaunchResult> playItem(
@@ -70,17 +79,30 @@ class _FakePlaybackLaunchService extends PlaybackLaunchService {
   }) async {
     lastPlayedItem = item;
     lastPlayedTitle = title;
-    final closed = launchedClosed;
-    if (closed == null) return const PlaybackLaunchCancelled();
-    return PlaybackLaunched(
-      PlaybackRequest(
-        title: title ?? item.name ?? '',
-        streamUrl: Uri.parse('http://jellyfin.local:8096/Videos/jf/stream'),
-      ),
-      closed: closed,
+    final request = PlaybackRequest(
+      title: title ?? item.name ?? '',
+      streamUrl: Uri.parse('http://jellyfin.local:8096/Videos/jf/stream'),
     );
+    if (pushPlayerRoute) {
+      unawaited(context.push<void>('/player', extra: request));
+    }
+    final closed = launchedClosed;
+    if (closed == null && !pushPlayerRoute) {
+      return const PlaybackLaunchCancelled();
+    }
+    return PlaybackLaunched(request, closed: closed);
   }
 }
+
+const _webCapabilities = PlatformCapabilities(
+  isWeb: true,
+  supportsAppUpdates: false,
+  supportsBackgroundNotifications: false,
+  localAssistantRuntime: LocalAssistantRuntime.none,
+  supportsFileSystemCache: false,
+  supportsBrowserFileInput: true,
+  supportsInternalVideoPlayer: false,
+);
 
 void main() {
   final jellyfinInstance = Instance(
@@ -355,57 +377,90 @@ void main() {
       },
     );
 
-    testWidgets(
-      'refreshes watching items only after the resumed player closes',
-      (tester) async {
-        // Given
-        final playerClosed = Completer<void>();
-        final fakeLaunchService = _FakePlaybackLaunchService()
-          ..launchedClosed = playerClosed.future;
-        var buildCount = 0;
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              currentJellyfinInstanceProvider.overrideWithValue(
-                jellyfinInstance,
-              ),
-              currentQBittorrentInstanceProvider.overrideWithValue(null),
-              queueProvider.overrideWith(_EmptyQueueNotifier.new),
-              activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
-              watchingItemsProvider.overrideWith(
-                () => _StubWatchingNotifier([
-                  episodeWatchingItem,
-                ], onBuild: () => buildCount++),
-              ),
-              playbackLaunchServiceProvider.overrideWithValue(
-                fakeLaunchService,
-              ),
-            ],
-            child: const MaterialApp(home: ActivityScreen()),
+    testWidgets('invalidates watching items when the player route is popped '
+        'without the push future completing', (tester) async {
+      // Given
+      final unresolvedClose = Completer<void>();
+      final fakeLaunchService = _FakePlaybackLaunchService()
+        ..pushPlayerRoute = true
+        ..launchedClosed = unresolvedClose.future;
+      var buildCount = 0;
+      final router = GoRouter(
+        initialLocation: '/activity',
+        routes: [
+          GoRoute(
+            path: '/activity',
+            builder: (context, state) => const ActivityScreen(),
           ),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(Tab, 'Watching'));
-        await tester.pumpAndSettle();
-        final buildsBeforeTap = buildCount;
+          GoRoute(
+            path: '/player',
+            builder: (context, state) {
+              final request = state.extra;
+              if (request is! PlaybackRequest) {
+                return const SizedBox.shrink();
+              }
+              return MediaPlayerScreen(request: request);
+            },
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-        // When
-        await tester.tap(find.byType(WatchingListItem));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            platformCapabilitiesProvider.overrideWithValue(_webCapabilities),
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            currentQBittorrentInstanceProvider.overrideWithValue(null),
+            queueProvider.overrideWith(_EmptyQueueNotifier.new),
+            activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+            watchingItemsProvider.overrideWith(
+              () => _StubWatchingNotifier([
+                episodeWatchingItem,
+              ], onBuild: () => buildCount++),
+            ),
+            playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(Tab, 'Watching'));
+      await tester.pumpAndSettle();
+      final buildsBeforeTap = buildCount;
 
-        // Then
-        expect(fakeLaunchService.lastPlayedItem?.id, 'jf-ep-99');
-        expect(buildCount, buildsBeforeTap);
+      // When
+      await tester.tap(find.byType(WatchingListItem));
+      await tester.pumpAndSettle();
 
-        // When
-        playerClosed.complete();
-        await tester.pumpAndSettle();
+      // Then
+      expect(fakeLaunchService.lastPlayedItem?.id, 'jf-ep-99');
+      expect(
+        find.text('In-app playback is not supported on the web yet'),
+        findsOneWidget,
+      );
+      expect(buildCount, buildsBeforeTap);
+      expect(unresolvedClose.isCompleted, isFalse);
 
-        // Then
-        expect(buildCount, buildsBeforeTap + 1);
-      },
-    );
+      // When
+      router.pop();
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(unresolvedClose.isCompleted, isFalse);
+      expect(
+        find.text('In-app playback is not supported on the web yet'),
+        findsNothing,
+      );
+      expect(buildCount, buildsBeforeTap + 1);
+
+      // When
+      unresolvedClose.complete();
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(buildCount, buildsBeforeTap + 1);
+    });
 
     testWidgets('does not navigate to library when instance selection fails', (
       tester,

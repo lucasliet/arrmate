@@ -163,13 +163,12 @@ class WatchingListItem extends ConsumerWidget {
     return '$watched / $total';
   }
 
-  /// Starts playback and refreshes the Continue Watching list once the player
-  /// closes, so the card shows the progress reported during the session.
-  Future<void> _resumePlayback(BuildContext context, WidgetRef ref) async {
-    // Captured before the first await so the refresh still works if this card
-    // is disposed while the player is open.
-    final container = ProviderScope.containerOf(context);
-    final result = await ref
+  /// Starts playback of this Continue Watching item.
+  ///
+  /// The list reloads when the player route is disposed, including when the
+  /// route is left without the navigation future completing.
+  Future<void> _resumePlayback(BuildContext context, WidgetRef ref) {
+    return ref
         .read(playbackLaunchServiceProvider)
         .playItem(
           context,
@@ -177,9 +176,6 @@ class WatchingListItem extends ConsumerWidget {
           item: item.jellyfinItem,
           title: item.playbackTitle,
         );
-    if (result is! PlaybackLaunched) return;
-    await result.closed;
-    container.invalidate(watchingItemsProvider);
   }
 
   Future<void> _openInLibrary(BuildContext context, WidgetRef ref) async {

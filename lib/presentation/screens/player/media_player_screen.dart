@@ -11,6 +11,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/platform/platform_capabilities.dart';
 import '../../../../core/services/logger_service.dart';
+import '../activity/providers/watching_provider.dart';
 import 'playback_request.dart';
 import 'playback_session_controller.dart';
 import 'providers/player_providers.dart';
@@ -109,6 +110,7 @@ class MediaPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
+  late final ProviderContainer _container;
   PlaybackSessionController? _controller;
   late final PlatformCapabilities _capabilities = ref.read(
     platformCapabilitiesProvider,
@@ -138,6 +140,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
     if (!_capabilities.supportsInternalVideoPlayer) {
       _probeExternalLaunch();
       return;
@@ -167,6 +170,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
 
   @override
   void dispose() {
+    _refreshWatchingList();
     _controller?.finished.removeListener(_handleFinished);
     unawaited(_controller?.dispose());
     if (_isMobilePlatform) {
@@ -176,6 +180,15 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
       );
     }
     super.dispose();
+  }
+
+  /// Reloads Continue Watching after this route leaves the tree.
+  ///
+  /// Disposal covers browser Back, the in-app back control, and a normal pop.
+  /// Browser Back on web removes the route without completing the future
+  /// returned by `GoRouter.push`, so the refresh cannot wait on that future.
+  void _refreshWatchingList() {
+    _container.invalidate(watchingItemsProvider);
   }
 
   void _handleFinished() {
