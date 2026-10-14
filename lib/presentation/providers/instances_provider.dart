@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/instance_connection_resolver.dart';
+import '../../core/services/jellyfin_session_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/remote_notification_setup_service.dart';
 import '../../domain/models/models.dart';
 import 'data_providers.dart';
+import 'jellyfin_session_state_provider.dart';
 import 'settings_provider.dart';
 
 /// Provider for resolving the reachable URL of configured instances.
@@ -37,6 +40,11 @@ final currentSonarrInstanceProvider = Provider<Instance?>((ref) {
 /// Provider that returns the currently active qBittorrent instance.
 final currentQBittorrentInstanceProvider = Provider<Instance?>((ref) {
   return ref.watch(currentInstanceProvider(InstanceType.qbittorrent));
+});
+
+/// Provider that returns the currently active Jellyfin instance.
+final currentJellyfinInstanceProvider = Provider<Instance?>((ref) {
+  return ref.watch(currentInstanceProvider(InstanceType.jellyfin));
 });
 
 /// Provider that returns all configured instances of [type].
@@ -85,6 +93,7 @@ class InstancesState {
 
   bool get hasRadarr => instances.any((i) => i.type == InstanceType.radarr);
   bool get hasSonarr => instances.any((i) => i.type == InstanceType.sonarr);
+  bool get hasJellyfin => instances.any((i) => i.type == InstanceType.jellyfin);
   bool get isEmpty => instances.isEmpty;
 
   InstancesState copyWith({
@@ -107,6 +116,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
     InstanceType.radarr: 'selected_radarr_instance_id',
     InstanceType.sonarr: 'selected_sonarr_instance_id',
     InstanceType.qbittorrent: 'selected_qbittorrent_instance_id',
+    InstanceType.jellyfin: 'selected_jellyfin_instance_id',
   };
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   int _resolutionGeneration = 0;
@@ -148,6 +158,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
         );
         _syncConnectionMonitoring();
         _refreshResolvedUrls();
+        unawaited(_migrateJellyfinCredentials());
       } catch (e, st) {
         logger.error('[InstancesNotifier] Error decoding instances', e, st);
         state = state.copyWith(isLoading: false);
@@ -170,7 +181,10 @@ class InstancesNotifier extends Notifier<InstancesState> {
   /// Adds a new instance to the list and persists it.
   ///
   /// If notifications are enabled in global settings, it automatically
-  /// triggers the auto-configuration for this new instance.
+  /// triggers the auto-configuration for this new instance. Only Radarr and
+  /// Sonarr instances are auto-configured: the ntfy webhook setup speaks the
+  /// *arr notifications API, and pointing it at another instance type would
+  /// send its credentials to a foreign host and always fail.
   Future<void> addInstance(Instance instance) async {
     logger.info(
       '[InstancesNotifier] Adding instance: ${instance.name ?? instance.id}',
@@ -181,23 +195,37 @@ class InstancesNotifier extends Notifier<InstancesState> {
 
     // Auto-configure notifications if enabled
     final settings = ref.read(settingsProvider);
-    if (settings.notifications.enabled &&
-        settings.notifications.ntfyTopic != null) {
-      logger.info(
-        '[InstancesNotifier] Auto-configuring notifications for new instance',
-      );
-      final notificationService = ref.read(remoteNotificationServiceProvider);
-      // We run this in background (no await) to not block the UI,
-      // but we log failures inside the service.
-      notificationService.configureInstance(instance).catchError((e, st) {
-        logger.error(
-          '[InstancesNotifier] Auto-config failed for new instance',
-          e,
-          st,
-        );
-        return NotificationSetupResult.failure(e.toString());
-      });
+    if (!settings.notifications.enabled ||
+        settings.notifications.ntfyTopic == null) {
+      return;
     }
+
+    final isArrInstance =
+        instance.type == InstanceType.radarr ||
+        instance.type == InstanceType.sonarr;
+    if (!isArrInstance) {
+      logger.debug(
+        '[InstancesNotifier] Skipping notification auto-config for '
+        '${instance.type.label} instance: only Radarr/Sonarr support ntfy '
+        'webhooks',
+      );
+      return;
+    }
+
+    logger.info(
+      '[InstancesNotifier] Auto-configuring notifications for new instance',
+    );
+    final notificationService = ref.read(remoteNotificationServiceProvider);
+    // We run this in background (no await) to not block the UI,
+    // but we log failures inside the service.
+    notificationService.configureInstance(instance).catchError((e, st) {
+      logger.error(
+        '[InstancesNotifier] Auto-config failed for new instance',
+        e,
+        st,
+      );
+      return NotificationSetupResult.failure(e.toString());
+    });
   }
 
   /// Updates an existing instance in the list.
@@ -305,19 +333,110 @@ class InstancesNotifier extends Notifier<InstancesState> {
   }
 
   /// Validates and persists [instance] as a single transactional operation.
+  ///
+  /// Jellyfin `username:password` credentials are first exchanged for a
+  /// session (see [JellyfinSessionService]) so the password is never
+  /// persisted; a session created for an instance that then fails
+  /// validation is signed out again. A stored session replaced by an API
+  /// key is signed out on the server only after the instance is saved.
+  ///
+  /// The [Instance.ownedApiKey] (and its [Instance.ownedApiKeyDevice])
+  /// recorded by the connector setup is kept across edits, since the edit
+  /// form does not carry it.
   Future<Instance> validateAndSaveInstance(Instance instance) async {
-    final validatedInstance = await validateInstance(instance);
+    final stored = getInstanceById(instance.id);
+    if (instance.ownedApiKey == null && stored?.ownedApiKey != null) {
+      instance = instance.copyWith(
+        ownedApiKey: stored!.ownedApiKey,
+        ownedApiKeyDevice: stored.ownedApiKeyDevice,
+      );
+    }
+    final prepared = await _prepareCredentials(instance);
+    final Instance validatedInstance;
+    try {
+      validatedInstance = await validateInstance(prepared);
+    } catch (_) {
+      final session = prepared.userSession;
+      if (session != null && session != instance.userSession) {
+        unawaited(
+          ref.read(jellyfinSessionServiceProvider).logoutQuietly(prepared),
+        );
+      }
+      rethrow;
+    }
     final isEditing = state.instances.any(
       (existing) => existing.id == validatedInstance.id,
     );
 
     if (isEditing) {
       await updateInstance(validatedInstance);
+      final replaced = stored?.userSession;
+      if (replaced != null && validatedInstance.userSession == null) {
+        unawaited(
+          ref.read(jellyfinSessionServiceProvider).logoutQuietly(stored!),
+        );
+      }
     } else {
       await addInstance(validatedInstance);
     }
+    ref
+        .read(jellyfinSessionExpiredProvider.notifier)
+        .clear(validatedInstance.id);
 
     return validatedInstance;
+  }
+
+  /// Exchanges Jellyfin login credentials in [instance] for a session,
+  /// signing in against the reachable URL.
+  Future<Instance> _prepareCredentials(Instance instance) async {
+    if (instance.type != InstanceType.jellyfin) return instance;
+    final sessions = ref.read(jellyfinSessionServiceProvider);
+    final resolved = await ref
+        .read(instanceConnectionResolverProvider)
+        .resolve(instance);
+    return sessions.exchangeCredentials(resolved);
+  }
+
+  /// Migrates Jellyfin instances saved with a password to stored sessions.
+  ///
+  /// Runs in the background after loading. An instance that cannot sign in
+  /// right now (offline, wrong password) keeps working with its credentials
+  /// and is retried on the next load; one edited meanwhile is left alone.
+  Future<void> _migrateJellyfinCredentials() async {
+    final sessions = ref.read(jellyfinSessionServiceProvider);
+    final pending = state.instances
+        .where(sessions.needsCredentialExchange)
+        .toList();
+    for (final instance in pending) {
+      try {
+        final migrated = await _prepareCredentials(instance);
+        final current = getInstanceById(instance.id);
+        if (current == null ||
+            current.apiKey != instance.apiKey ||
+            !listEquals(current.headers, instance.headers)) {
+          unawaited(sessions.logoutQuietly(migrated));
+          continue;
+        }
+        await updateInstance(
+          current.copyWith(
+            apiKey: migrated.apiKey,
+            headers: migrated.headers,
+            userSession: migrated.userSession,
+          ),
+        );
+        logger.info(
+          '[InstancesNotifier] Migrated Jellyfin instance ${instance.id} '
+          'from a stored password to a session',
+        );
+      } catch (e, stackTrace) {
+        logger.warning(
+          '[InstancesNotifier] Jellyfin credential migration failed for '
+          '${instance.id}; retrying on the next load',
+          e,
+          stackTrace,
+        );
+      }
+    }
   }
 
   void _syncConnectionMonitoring() {

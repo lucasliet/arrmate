@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/logger_service.dart';
 import '../../../core/services/remote_notification_setup_service.dart';
+import '../../../domain/models/models.dart';
 import '../../../domain/models/settings/notification_settings.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/notifications_provider.dart';
@@ -366,11 +367,15 @@ class _NotificationSettingsScreenState
     );
   }
 
-  /// Orchestrates the auto-configuration process for all configured instances.
+  /// Orchestrates the auto-configuration process for all configured
+  /// Radarr/Sonarr instances.
   ///
   /// Displays a loading dialog (unless [silent] is true) and iterates through
-  /// all instances, calling [RemoteNotificationService.configureInstance] for each.
-  /// Result summaries are shown in a dialog or SnackBar.
+  /// the *arr instances, calling [RemoteNotificationService.configureInstance]
+  /// for each. Jellyfin and qBittorrent instances are skipped: the ntfy
+  /// webhook setup only exists for the *arr API, and attempting it elsewhere
+  /// would only produce bogus failures. Result summaries are shown in a
+  /// dialog or SnackBar.
   Future<void> _handleAutoConfigure({
     bool silent = false,
     NotificationSettings? settings,
@@ -378,11 +383,21 @@ class _NotificationSettingsScreenState
     logger.info(
       '[NotificationSettingsScreen] Starting auto-configuration (silent: $silent)',
     );
-    final instances = ref.read(instancesProvider).instances;
+    final instances = ref
+        .read(instancesProvider)
+        .instances
+        .where(
+          (instance) =>
+              instance.type == InstanceType.radarr ||
+              instance.type == InstanceType.sonarr,
+        )
+        .toList();
     if (instances.isEmpty) {
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No instances configured')),
+          const SnackBar(
+            content: Text('No Radarr or Sonarr instances configured'),
+          ),
         );
       }
       return;

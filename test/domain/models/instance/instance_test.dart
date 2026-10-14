@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:arrmate/domain/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -164,6 +166,69 @@ void main() {
         'https://radarr.example.com',
         'http://192.168.1.10:7878',
       ]);
+    });
+  });
+
+  group('Instance user session', () {
+    const session = InstanceUserSession(
+      accessToken: 'token-123',
+      deviceId: 'arrmate-device-1',
+      userId: 'user-9',
+      userName: 'admin',
+      isAdministrator: true,
+      deviceTag: 'a1b2c3d4',
+    );
+
+    test('round-trips the session through JSON', () {
+      // Given
+      final instance = Instance(
+        id: 'jf-1',
+        type: InstanceType.jellyfin,
+        url: 'http://jellyfin.local:8096',
+        userSession: session,
+        ownedApiKey: 'owned-key',
+        ownedApiKeyDevice: 'a1b2c3d4',
+      );
+
+      // When
+      final restored = Instance.fromJson(
+        jsonDecode(jsonEncode(instance.toJson())) as Map<String, dynamic>,
+      );
+
+      // Then
+      expect(restored.userSession, session);
+      expect(restored.ownedApiKey, 'owned-key');
+      expect(restored.ownedApiKeyDevice, 'a1b2c3d4');
+      expect(restored, instance);
+    });
+
+    test('omits the session from JSON when absent', () {
+      // Given
+      final instance = Instance(type: InstanceType.jellyfin, apiKey: 'key');
+
+      // When
+      final json = instance.toJson();
+
+      // Then
+      expect(json.containsKey('userSession'), isFalse);
+      expect(Instance.fromJson(json).userSession, isNull);
+    });
+
+    test('copyWith keeps or clears the session', () {
+      // Given
+      final instance = Instance(
+        type: InstanceType.jellyfin,
+        userSession: session,
+      );
+
+      // When
+      final kept = instance.copyWith(label: 'Renamed');
+      final cleared = instance.copyWith(apiKey: 'key', clearUserSession: true);
+
+      // Then
+      expect(kept.userSession, session);
+      expect(cleared.userSession, isNull);
+      expect(cleared.apiKey, 'key');
     });
   });
 }

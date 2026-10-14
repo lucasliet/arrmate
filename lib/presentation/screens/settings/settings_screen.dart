@@ -10,6 +10,8 @@ import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
 import '../../adaptive/content_layout.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/instance_storage_provider.dart';
+import '../../providers/jellyfin_session_state_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/update_provider.dart';
@@ -92,6 +94,8 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildInstancesSection(BuildContext context, WidgetRef ref) {
     final instancesState = ref.watch(instancesProvider);
+    final expiredSessionIds = ref.watch(jellyfinSessionExpiredProvider);
+    ref.watch(jellyfinSessionStatusProvider);
     final tourKeys = ref.watch(appTourKeysProvider);
 
     return Column(
@@ -118,18 +122,32 @@ class SettingsScreen extends ConsumerWidget {
               ? ' · ${instance.tags.length} tags'
               : '';
 
+          final sessionExpired =
+              instance.type == InstanceType.jellyfin &&
+              expiredSessionIds.contains(instance.id);
+          final errorColor = Theme.of(context).colorScheme.error;
+
           return ListTile(
             leading: Icon(
               instance.type == InstanceType.radarr
                   ? Icons.movie
                   : (instance.type == InstanceType.sonarr
                         ? Icons.tv
+                        : instance.type == InstanceType.jellyfin
+                        ? Icons.dns
                         : Icons.download),
               color: Theme.of(context).colorScheme.primary,
             ),
             title: Text(instance.label),
-            subtitle: Text(instance.url + versionInfo + tagsInfo),
-            trailing: const Icon(Icons.chevron_right),
+            subtitle: sessionExpired
+                ? Text(
+                    'Session expired · tap to sign in',
+                    style: TextStyle(color: errorColor),
+                  )
+                : Text(instance.url + versionInfo + tagsInfo),
+            trailing: sessionExpired
+                ? Icon(Icons.error_outline, color: errorColor)
+                : const Icon(Icons.chevron_right),
             onTap: () {
               context.push('/settings/instance/${instance.id}');
             },

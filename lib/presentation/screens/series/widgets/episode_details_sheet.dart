@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/core/services/playback_launch_service.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/widgets/media/media_file_card.dart';
 import 'package:arrmate/presentation/widgets/media/media_file_details_sheet.dart';
@@ -22,6 +24,8 @@ class EpisodeDetailsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final jellyfinConfigured =
+        ref.watch(currentJellyfinInstanceProvider) != null;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -61,6 +65,19 @@ class EpisodeDetailsSheet extends ConsumerWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (episode.isDownloaded && jellyfinConfigured) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => ref
+                            .read(playbackLaunchServiceProvider)
+                            .playEpisode(context, ref, episode: episode),
+                        icon: const Icon(Icons.play_circle_outline),
+                        label: const Text('Watch'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildMetadataRow(context),
                   const SizedBox(height: 16),
                   if (episode.overview != null) ...[

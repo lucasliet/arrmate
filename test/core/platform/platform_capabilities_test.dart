@@ -15,6 +15,7 @@ void main() {
       expect(capabilities.localAssistantRuntime, LocalAssistantRuntime.none);
       expect(capabilities.supportsFileSystemCache, isFalse);
       expect(capabilities.supportsBrowserFileInput, isTrue);
+      expect(capabilities.supportsInternalVideoPlayer, isFalse);
     });
 
     test('enables native-only features per platform', () {
@@ -40,6 +41,14 @@ void main() {
         });
         expect(capabilities.supportsFileSystemCache, isTrue);
         expect(capabilities.supportsBrowserFileInput, isFalse);
+        expect(
+          capabilities.supportsInternalVideoPlayer,
+          platform == TargetPlatform.android ||
+              platform == TargetPlatform.iOS ||
+              platform == TargetPlatform.macOS ||
+              platform == TargetPlatform.windows ||
+              platform == TargetPlatform.linux,
+        );
       }
     });
   });

@@ -7,7 +7,7 @@ description: Sobre o Arrmate, navegação principal (5 abas), aba inicial, tour 
 
 ## Sobre o Arrmate — o que o app faz
 
-Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes), **Sonarr** (séries) e **qBittorrent** (downloads).
+Arrmate é um app mobile companion para gerenciar servidores **Radarr** (filmes), **Sonarr** (séries), **qBittorrent** (downloads) e **Jellyfin** (streaming).
 
 Funcionalidades principais:
 - Biblioteca de filmes e séries: navegar, buscar, filtrar, ordenar, selecionar em lote, monitorar/desmonitorar e deletar.
@@ -17,6 +17,7 @@ Funcionalidades principais:
 - Calendário de próximos lançamentos e episódios, com **filtros** (instância, tipo, monitorados, estreias, ocultar especiais).
 - Monitoramento de fila de downloads e histórico de atividade.
 - Cliente qBittorrent integrado: listar, pausar, retomar, remover, adicionar torrents.
+- **Jellyfin Streaming:** player de vídeo integrado que reproduz filmes e episódios direto do Jellyfin, com trilhas de áudio/legenda, qualidade (quando disponível) e abrir em player externo. Pareamento automático da biblioteca (caminho → provider IDs → scan/refresh sob demanda) e sincronização de progresso ("Continue Watching") com `username:password`; com API key, reproduz sem gravar estado de assistido. O conector automático mantém o catálogo do Jellyfin atualizado a cada import do Radarr/Sonarr (detalhes em `instances.md`).
 - **System Management:** tela única (Configurações → System → System Management) que reúne Logs, Health, Connection Diagnostics, System Overview, Quality Profiles, dias mínimos de seeding, Version History, limpar cache de imagens e resetar configurações.
 - **Connection Diagnostics:** teste de endpoints, latência, traces de requisições e export de relatório sanitizado (System Management → Server → Connection Diagnostics).
 - **System Overview:** armazenamento/disco, tamanho da biblioteca e versão por instância (System Management → Server → System Overview).
@@ -25,7 +26,7 @@ Funcionalidades principais:
 - **Banner offline:** indicador de offline com timestamp da última conexão online.
 - Notificações push via ntfy.sh com sincronização multi-dispositivo e central in-app (incluindo eventos de purge).
 - Onboarding guiado com tour inicial e replay em Configurações → seção "About" → "Getting Started". Enquanto o tour roda sem instância configurada, as telas de biblioteca, calendário, fila e torrents mostram **cards de exemplo** para o tour ter o que apontar; eles são apenas visuais e somem ao concluir ou pular o tour.
-- Multi-instância: conectar vários servidores Radarr, Sonarr e qBittorrent ao mesmo tempo.
+- Multi-instância: conectar vários servidores Radarr, Sonarr, qBittorrent e Jellyfin ao mesmo tempo.
 - Assistente de IA on-device para dúvidas sobre o próprio app.
 - Atualização automática do app via GitHub Releases.
 

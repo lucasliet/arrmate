@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
+import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
 import 'package:arrmate/presentation/shared/widgets/seeding_warning_dialog.dart';
@@ -399,6 +401,15 @@ class _EpisodeTile extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (episode.hasFile &&
+              ref.watch(currentJellyfinInstanceProvider) != null)
+            IconButton(
+              icon: const Icon(Icons.play_circle_outline),
+              tooltip: 'Watch in Jellyfin',
+              onPressed: () => ref
+                  .read(playbackLaunchServiceProvider)
+                  .playEpisode(context, ref, episode: episode),
+            ),
           IconButton(
             icon: Icon(
               episode.monitored ? Icons.bookmark : Icons.bookmark_border,

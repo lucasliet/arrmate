@@ -1,8 +1,9 @@
 # End-to-end media lab
 
-The lab is a Docker Compose stack that speaks the Radarr, Sonarr, Prowlarr, and
-qBittorrent APIs Arrmate calls. All four share one in-memory library, so an
-action in one service shows up in the others the way it does on a real stack:
+The lab is a Docker Compose stack that speaks the Radarr, Sonarr, Prowlarr,
+qBittorrent, and Jellyfin APIs Arrmate calls. All five share one in-memory
+library, so an action in one service shows up in the others the way it does on
+a real stack:
 
 - Grabbing a release (interactive, automatic search, or add-and-search) adds a
   torrent, a queue item, and a `grabbed` history event. The grabbed torrent
@@ -19,6 +20,13 @@ action in one service shows up in the others the way it does on a real stack:
 - qBittorrent answers like 5.1.2: `stop`/`start` only, `stoppedDL`/`stoppedUP`
   states, the `stopped` add flag, persisted file priorities, and a recheck that
   returns to the previous state after three seconds.
+- Jellyfin indexes the *arr files as a playable catalog: `/Items` matches names
+  loosely and returns decoys the client must reject (a same-title movie with a
+  different path and tmdb id, a ghost episode path Sonarr no longer has),
+  `PlaybackInfo` only attaches `DeliveryUrl` when the request carries a
+  `DeviceProfile` with external subtitle profiles, `/Library/Media/Updated`
+  indexes a new path (403 for non-admin users), and `/Sessions/Playing/*`
+  persists the resume position back onto the item.
 
 Prowlarr is not a screen in Arrmate. Its search API is what the interactive
 release lists attribute to indexers such as `1337x (Prowlarr)`.
@@ -41,8 +49,10 @@ docker compose -f tool/e2e/docker-compose.yml down
 The process keeps state in memory. Restarting the container restores the
 sample library.
 
-The smoke command requires Python 3.10 or newer on the host and runs 16 HTTP
-scenarios, including new grabs and their automatic imports in both services.
+The smoke command requires Python 3.10 or newer on the host and runs 22 HTTP
+scenarios, including new grabs and their automatic imports in both services
+plus the Jellyfin auth, catalog, playback, progress-sync, and library-scan
+contracts.
 It takes about a minute, mutates fixtures, and requires a fresh lab. Before
 repeating it or starting a manual UI pass, reset the container:
 
@@ -63,7 +73,7 @@ python3 -u tool/e2e/mock/server.py
 ```
 
 Run the smoke command in another terminal. Stop and restart the server to
-restore fixtures. All four lab ports must be available.
+restore fixtures. All five lab ports must be available.
 
 ## Instances to add in Arrmate
 
@@ -73,6 +83,7 @@ restore fixtures. All four lab ports must be available.
 | Sonarr | `http://127.0.0.1:8989` | `arrmate-sonarr` |
 | qBittorrent | `http://127.0.0.1:8080` | `admin:adminarr` or bearer `arrmate-qbit` |
 | Prowlarr | `http://127.0.0.1:9696` | `arrmate-prowlarr` |
+| Jellyfin | `http://127.0.0.1:8096` | `arrmate:arrmate-jellyfin` (admin, enables Continue Watching sync) or API key `arrmate-jellyfin` (playback only, no watch-state writes) |
 
 Prowlarr has no instance type in the app. Call it directly when checking that
 indexer results exist. On a device that is not the machine running Docker,
@@ -123,9 +134,31 @@ History also covers every event-type filter: grabbed, imported, failed
 (Arrival's earlier HDTV grab), ignored, renamed (Dune), and the file-deleted
 events the app creates.
 
+Jellyfin mirrors the *arr library as a playable catalog on port 8096:
+
+- Movies Dune and The Matrix are indexed with the same file paths Radarr
+  reports, so path-based pairing works. Dune carries two audio tracks
+  (English AAC default, Portuguese EAC3), one embedded ASS subtitle, and one
+  external SRT. The Matrix starts with `PlaybackPositionTicks` of 600,000,000
+  (100 s), so the resume flow is visible.
+- Series Severance and The Bear are indexed with their TVDB ids; episodes
+  resolve through `/Shows/{id}/Episodes?season=N` using the same file paths
+  Sonarr reports.
+- Arrival's file is on disk in Radarr but is NOT indexed in Jellyfin until the
+  app (or the smoke) POSTs `/Library/Media/Updated` with its exact path; the
+  new item is minimal (path and media sources, no provider ids), the way a
+  freshly scanned file looks before metadata downloads.
+- Decoys the client must reject: `The Matrix Reloaded` (shares the title words
+  but has a different path and tmdb id) and a ghost Severance S01E05 720p path
+  that matches no file Sonarr still has.
+- Auth: API key `arrmate-jellyfin`, admin user `arrmate` / `arrmate-jellyfin`,
+  non-admin user `guest` / `guest-arrmate` (its library scan returns 403).
+  `/Auth/Keys` starts with a `Jellyfin Media Player` key; POST `?app=Arrmate`
+  mints and reuses an `Arrmate` key for the admin user.
+
 ## Pass through the app
 
-Run these after the three instances test as connected. They are a quick smoke
+Run these after the four instances test as connected. They are a quick smoke
 pass; [e2e-feature-matrix.md](e2e-feature-matrix.md) lists every control with
 its expected result and last tested status.
 
@@ -141,5 +174,7 @@ its expected result and last tested status.
 10. Edit Arrival: change monitored state, quality profile, minimum availability, or root folder, save, leave the screen, and reopen. The edited values remain.
 11. Settings shows system status for Radarr 5.18.4 and Sonarr 4.0.14, two health warnings, log lines at info, warn, and error level (commands add more), quality profiles HD-1080p and Ultra-HD, and both root folders' free space.
 12. Series details for Severance lists seasons 1 and 2. Season 1 shows four files, the missing episodes, and the downloads. Episode search grabs a release that imports itself within a minute.
+13. Jellyfin streaming. Add the Jellyfin instance (`http://127.0.0.1:8096`, `arrmate:arrmate-jellyfin`), open Dune, and tap Watch: the player opens the direct stream, the audio sheet lists English AAC and Portuguese EAC3, and the subtitle sheet lists the embedded ASS track plus the external SRT. Open The Matrix and confirm playback resumes around 100 s. Stop the video, then re-fetch `/Items` for Dune and confirm the reported position round-tripped.
+14. Jellyfin auto-update. On the Jellyfin instance edit screen, tap Set Up Library Auto-Update: Radarr and Sonarr each gain an `Arrmate Jellyfin (<device tag>)` MediaBrowser connector, backed by this device's `Arrmate (<device tag>)` API key. Grabbing a new release then imports it in the *arrs, and Jellyfin indexes the new path only after its scan runs.
 
 Desktop and web layouts use the same data. Repeat library, calendar, activity, and settings at a narrow width and a wide width when the build under test is the responsive layout.

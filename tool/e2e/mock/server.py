@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Mock Radarr, Sonarr, Prowlarr, and qBittorrent for Arrmate end-to-end tests.
+"""Mock Radarr, Sonarr, Prowlarr, qBittorrent, and Jellyfin for Arrmate tests.
 
-The four APIs share one in-memory library, so actions cascade the way they do
+The five APIs share one in-memory library, so actions cascade the way they do
 on a real stack:
 
 - Grabbing a release (interactive or through a search command) adds a
@@ -18,6 +18,11 @@ on a real stack:
 - `/calendar` honors `start`, `end`, and `unmonitored`.
 - qBittorrent speaks the 5.x dialect: `stop`/`start`, `stoppedDL`/`stoppedUP`,
   the `stopped` add flag, persisted file priorities, and a timed recheck.
+- Jellyfin indexes the *arr files as a playing catalog: `/Items` matches names
+  loosely and leaves validation (paths, provider ids) to the client,
+  `/Library/Media/Updated` indexes a new path with minimal metadata,
+  `/Sessions/Playing/*` records resume points, and only administrators may
+  scan. Stream endpoints answer with a small placeholder payload.
 
 Credentials
     Radarr     X-Api-Key: arrmate-radarr     http://127.0.0.1:7878
@@ -25,6 +30,10 @@ Credentials
     Prowlarr   X-Api-Key: arrmate-prowlarr   http://127.0.0.1:9696
     qBittorrent  admin:adminarr  or Bearer arrmate-qbit
                  http://127.0.0.1:8080
+    Jellyfin   Authorization: MediaBrowser ..., Token="arrmate-jellyfin"
+               or arrmate:arrmate-jellyfin (legacy X-Emby-Token/api_key also ok)
+               (guest:guest-arrmate may play but cannot scan)
+               http://127.0.0.1:8096
 """
 
 from __future__ import annotations
@@ -48,6 +57,11 @@ QBIT_USER = "admin"
 QBIT_PASSWORD = "adminarr"
 QBIT_BEARER = "arrmate-qbit"
 QBIT_SID = "arrmate-lab"
+JELLYFIN_KEY = "arrmate-jellyfin"
+JELLYFIN_USERS = {
+    "arrmate": {"password": "arrmate-jellyfin", "admin": True},
+    "guest": {"password": "guest-arrmate", "admin": False},
+}
 
 LOCK = threading.Lock()
 NOW = datetime.now(timezone.utc)
@@ -495,6 +509,133 @@ SHOGUN_S1 = [
 ]
 
 
+def jellyfin_id(seed: str) -> str:
+    """Return a stable 32-hex Jellyfin-style id derived from [seed]."""
+    return hashlib.md5(seed.encode()).hexdigest()
+
+
+def jellyfin_stream(index: int, stream_type: str, codec: str, *, language: str | None = None, display_title: str | None = None, is_default: bool = False, is_external: bool = False) -> dict:
+    """Serialize one Jellyfin `MediaStream`."""
+    stream = {
+        "Index": index,
+        "Type": stream_type,
+        "Codec": codec,
+        "IsDefault": is_default,
+        "IsExternal": is_external,
+    }
+    if language:
+        stream["Language"] = language
+    if display_title:
+        stream["DisplayTitle"] = display_title
+    return stream
+
+
+def jellyfin_video_streams(*, with_external_subtitle: bool = False) -> list[dict]:
+    """Lay out the default streams: one h264 video and one English AAC track."""
+    streams = [
+        jellyfin_stream(0, "Video", "h264", display_title="1080p H264"),
+        jellyfin_stream(1, "Audio", "aac", language="eng", display_title="English AAC", is_default=True),
+    ]
+    if with_external_subtitle:
+        streams.append(jellyfin_stream(2, "Subtitle", "subrip", language="eng", display_title="English SRT", is_external=True))
+    return streams
+
+
+def jellyfin_source(source_id: str, path: str, container: str, *, size: int = 8_000_000_000, streams: list[dict]) -> dict:
+    """Serialize one Jellyfin `MediaSourceInfo`."""
+    return {
+        "Id": source_id,
+        "Path": path,
+        "Container": container,
+        "Size": size,
+        "MediaStreams": streams,
+    }
+
+
+def jellyfin_item(
+    item_id: str,
+    name: str,
+    item_type: str,
+    *,
+    path: str | None = None,
+    year: int | None = None,
+    provider_ids: dict | None = None,
+    series_id: str | None = None,
+    series_name: str | None = None,
+    season_number: int | None = None,
+    episode_number: int | None = None,
+    runtime_minutes: int | None = None,
+    position_ticks: int = 0,
+    played: bool = False,
+    sources: list[dict] | None = None,
+) -> dict:
+    """Serialize one Jellyfin `BaseItemDto` for `/Items` and episode lists."""
+    item = {
+        "Id": item_id,
+        "Name": name,
+        "Type": item_type,
+        "ProviderIds": provider_ids or {},
+        "UserData": {"PlaybackPositionTicks": position_ticks, "Played": played},
+        "MediaSources": sources or [],
+    }
+    if path:
+        item["Path"] = path
+    if series_id:
+        item["SeriesId"] = series_id
+    if series_name:
+        item["SeriesName"] = series_name
+    if season_number is not None:
+        item["ParentIndexNumber"] = season_number
+    if episode_number is not None:
+        item["IndexNumber"] = episode_number
+    if year is not None:
+        item["ProductionYear"] = year
+    if runtime_minutes is not None:
+        item["RunTimeTicks"] = runtime_minutes * 600_000_000
+    return item
+
+
+def _jellyfin_bearer_token(authorization: str) -> str | None:
+    """Extract `Token="..."` from a `MediaBrowser ...` Authorization value."""
+    match = re.search(r'Token="([^"]+)"', authorization or "")
+    return match.group(1) if match else None
+
+
+def jellyfin_matches(name: str, term: str) -> bool:
+    """Loose Jellyfin `SearchTerm`: every whitespace token appears in the name.
+
+    Matching stays name-only on purpose; proving a hit is the right title is
+    the client's job, exactly as against a real server.
+    """
+    haystack = name.lower()
+    return all(token in haystack for token in term.lower().split())
+
+
+def minimal_jellyfin_item(path: str) -> dict:
+    """Build the metadata-less item a fresh library scan creates for [path]."""
+    name = path.rsplit("/", 1)[-1]
+    title = re.sub(r"\.[a-z0-9]{2,4}$", "", name, flags=re.I)
+    episode = re.search(r"S(\d{2})E(\d{2})", title, re.I)
+    year = re.search(r"(?:19|20)\d{2}", title)
+    item_type = "Video"
+    if episode:
+        item_type = "Episode"
+    elif "/movies/" in path.lower() or "/downloads/radarr/" in path.lower():
+        item_type = "Movie"
+    extension = name.rsplit(".", 1)[-1].lower() if "." in name else "mkv"
+    item_id = jellyfin_id(f"jellyfin:scan:{path}")
+    return jellyfin_item(
+        item_id,
+        title,
+        item_type,
+        path=path,
+        year=int(year.group()) if year else None,
+        season_number=int(episode.group(1)) if episode else None,
+        episode_number=int(episode.group(2)) if episode else None,
+        sources=[jellyfin_source(item_id, path, extension, streams=jellyfin_video_streams())],
+    )
+
+
 class Lab:
     """In-memory library shared by every mocked service."""
 
@@ -524,6 +665,7 @@ class Lab:
         self._movies()
         self._series()
         self._downloads()
+        self._jellyfin()
         for series_id in self.series:
             self.refresh_series(series_id)
         for role in ("radarr", "sonarr"):
@@ -802,6 +944,136 @@ class Lab:
         self.add_queue("sonarr", "Severance S01E09 The We We Are", series_id=1, episode_ids=[19], download_id=s01e09)
         self.add_queue("sonarr", "Severance S01E05 The Grim Barbarity of Optics and Design", series_id=1, episode_ids=[15], download_id=s01e05)
         self.sync_queues()
+
+    def _jellyfin(self) -> None:
+        """Snapshot the *arr fixtures into the Jellyfin catalog and state."""
+        self.jellyfin_positions: dict[str, int] = {}
+        self.jellyfin_sessions: dict[str, dict] = {}
+        self.jellyfin_api_keys: dict[str, str] = {
+            "Jellyfin Media Player": jellyfin_id("jellyfin-key:Jellyfin Media Player"),
+        }
+        self.jellyfin_indexed: set[str] = set()
+        self.jellyfin_items: list[dict] = []
+        dune_streams = [
+            jellyfin_stream(0, "Video", "h264", display_title="1080p H264"),
+            jellyfin_stream(1, "Audio", "aac", language="eng", display_title="English AAC", is_default=True),
+            jellyfin_stream(2, "Audio", "eac3", language="por", display_title="Portuguese EAC3"),
+            jellyfin_stream(3, "Subtitle", "ass", language="eng", display_title="English ASS"),
+            jellyfin_stream(4, "Subtitle", "subrip", language="eng", display_title="English SRT", is_external=True),
+        ]
+        for movie in self.movies.values():
+            file = movie.get("movieFile")
+            if file is None:
+                continue
+            item_id = jellyfin_id(f"jellyfin:movie:{movie['id']}")
+            streams = dune_streams if movie["id"] == 1 else jellyfin_video_streams()
+            self.jellyfin_items.append(
+                jellyfin_item(
+                    item_id,
+                    movie["title"],
+                    "Movie",
+                    path=file["path"],
+                    year=movie["year"],
+                    provider_ids={"Tmdb": str(movie["tmdbId"]), "Imdb": movie["imdbId"]},
+                    runtime_minutes=movie["runtime"],
+                    # The Matrix starts 100 s in, so the resume flow is visible.
+                    position_ticks=600_000_000 if movie["id"] == 2 else 0,
+                    sources=[jellyfin_source(item_id, file["path"], "mkv", streams=streams)],
+                )
+            )
+        for series in self.series.values():
+            on_disk = [episode for episode in self.episodes.get(series["id"], []) if episode.get("episodeFile")]
+            if not on_disk:
+                continue
+            series_item_id = jellyfin_id(f"jellyfin:series:{series['id']}")
+            self.jellyfin_items.append(
+                jellyfin_item(
+                    series_item_id,
+                    series["title"],
+                    "Series",
+                    path=series["path"],
+                    year=series["year"],
+                    provider_ids={"Tvdb": str(series["tvdbId"]), "Imdb": series["imdbId"]},
+                )
+            )
+            for episode in on_disk:
+                self._jellyfin_episode(series, series_item_id, episode)
+        self._jellyfin_decoys()
+        for item in self.jellyfin_items:
+            path = item.get("Path")
+            if path:
+                self.jellyfin_indexed.add(path)
+
+    def _jellyfin_episode(self, series: dict, series_item_id: str, episode: dict) -> dict:
+        """Add one indexed episode of [series] to the Jellyfin catalog."""
+        file = episode["episodeFile"]
+        item_id = jellyfin_id(f"jellyfin:episode:{episode['id']}")
+        item = jellyfin_item(
+            item_id,
+            episode["title"],
+            "Episode",
+            path=file["path"],
+            provider_ids={"Tvdb": str(episode["tvdbId"])},
+            series_id=series_item_id,
+            series_name=series["title"],
+            season_number=episode["seasonNumber"],
+            episode_number=episode["episodeNumber"],
+            runtime_minutes=episode["runtime"],
+            sources=[jellyfin_source(item_id, file["path"], "mkv", streams=jellyfin_video_streams())],
+        )
+        self.jellyfin_items.append(item)
+        return item
+
+    def _jellyfin_decoys(self) -> None:
+        """Add catalog entries that loose searches hit but the client must reject.
+
+        "The Matrix Reloaded" shares The Matrix's title words but carries a
+        different path and tmdb id; the Severance S01E05 ghost lists a season
+        slot whose 720p path matches no file Sonarr still has.
+        """
+        reloaded_path = "/movies/The Matrix Reloaded (2003)/The Matrix Reloaded (2003) Bluray-1080p.mkv"
+        reloaded_id = jellyfin_id("jellyfin:movie:reloaded")
+        self.jellyfin_items.append(
+            jellyfin_item(
+                reloaded_id,
+                "The Matrix Reloaded",
+                "Movie",
+                path=reloaded_path,
+                year=2003,
+                provider_ids={"Tmdb": "6247", "Imdb": "tt0234215"},
+                runtime_minutes=138,
+                sources=[jellyfin_source(reloaded_id, reloaded_path, "mkv", streams=jellyfin_video_streams())],
+            )
+        )
+        ghost_path = "/tv/Severance (2022)/Season 01/Severance.S01E05.720p.HDTV.mkv"
+        ghost_id = jellyfin_id("jellyfin:episode:ghost-e05")
+        self.jellyfin_items.append(
+            jellyfin_item(
+                ghost_id,
+                "The Grim Barbarity of Optics and Design",
+                "Episode",
+                path=ghost_path,
+                provider_ids={"Tvdb": "700015"},
+                series_id=jellyfin_id("jellyfin:series:1"),
+                series_name="Severance",
+                season_number=1,
+                episode_number=5,
+                runtime_minutes=48,
+                sources=[jellyfin_source(ghost_id, ghost_path, "mkv", streams=jellyfin_video_streams())],
+            )
+        )
+
+    def jellyfin_scan(self, path: str) -> None:
+        """Index [path] the way `Library/Media/Updated` does on a real server.
+
+        Already-cataloged paths are a no-op; a new path gains a minimal item
+        with no provider ids, so only a client-side match can accept it.
+        """
+        normalized = path.strip()
+        if not normalized or normalized in self.jellyfin_indexed:
+            return
+        self.jellyfin_items.append(minimal_jellyfin_item(normalized))
+        self.jellyfin_indexed.add(normalized)
 
     # Helpers ----------------------------------------------------------------
 
@@ -1643,7 +1915,7 @@ class Handler(BaseHTTPRequestHandler):
     @property
     def role(self) -> str:
         port = self.server.server_address[1]
-        return {7878: "radarr", 8989: "sonarr", 9696: "prowlarr", 8080: "qbit"}.get(
+        return {7878: "radarr", 8989: "sonarr", 9696: "prowlarr", 8080: "qbit", 8096: "jellyfin"}.get(
             port, "unknown"
         )
 
@@ -1672,6 +1944,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.role == "qbit":
             self._qbit(method, path, query, body)
+            return
+        if self.role == "jellyfin":
+            self._jellyfin(method, path, query, body)
             return
         if path == "/ping":
             self._json({"status": "OK"})
@@ -1929,7 +2204,28 @@ class Handler(BaseHTTPRequestHandler):
                             {"name": "priority", "value": 3},
                         ],
                         "tags": [],
-                    }
+                    },
+                    {
+                        # The implementation the Arrmate Jellyfin connector
+                        # adopts: Host/Port/UseSsl/UrlBase/ApiKey plus the
+                        # update triggers, mirroring Radarr's MediaBrowser and
+                        # Sonarr's MediaBrowser schemas.
+                        "name": "MediaBrowser",
+                        "implementation": "MediaBrowser",
+                        "implementationName": "Emby / Jellyfin",
+                        "configContract": "MediaBrowserSettings",
+                        "onRename": True,
+                        "fields": [
+                            {"name": "Url", "value": ""},
+                            {"name": "Host", "value": ""},
+                            {"name": "Port", "value": 0},
+                            {"name": "UseSsl", "value": False},
+                            {"name": "UrlBase", "value": ""},
+                            {"name": "ApiKey", "value": ""},
+                            {"name": "UpdateLibrary", "value": False},
+                        ],
+                        "tags": [],
+                    },
                 ]
             )
             return True
@@ -2827,6 +3123,282 @@ class Handler(BaseHTTPRequestHandler):
             added += 1
         return added
 
+    # Jellyfin ---------------------------------------------------------------
+
+    def _jellyfin_system_info(self) -> dict:
+        """Serialize the system info both `/System/Info*` endpoints return."""
+        return {
+            "ServerName": "Arrmate Lab Jellyfin",
+            "Version": "10.10.6",
+            "Id": jellyfin_id("jellyfin:server"),
+            "OperatingSystem": "ubuntu",
+            "HasUpdateAvailable": False,
+        }
+
+    def _jellyfin_principal(self, query: dict) -> dict | None:
+        """Resolve the caller into a lab principal.
+
+        Accepts the modern Jellyfin 12 methods (`Authorization: MediaBrowser
+        ..., Token="..."` and the `ApiKey` query parameter) as well as the
+        legacy `X-Emby-Token` header and lowercase `api_key` query, so the
+        lab stays usable while clients migrate.
+        """
+        token = self._jellyfin_request_token(query)
+        if not token:
+            return None
+        if token == JELLYFIN_KEY or token in LAB.jellyfin_api_keys.values():
+            return {"name": "API key", "userId": None, "admin": True}
+        return LAB.jellyfin_sessions.get(token)
+
+    def _jellyfin_request_token(self, query: dict) -> str | None:
+        """Token carried by the request, from any accepted auth method."""
+        return (
+            self.headers.get("X-Emby-Token")
+            or _jellyfin_bearer_token(self.headers.get("Authorization", ""))
+            or (query.get("ApiKey") or [None])[0]
+            or (query.get("api_key") or [None])[0]
+        )
+
+    def _jellyfin_login(self, body: bytes) -> None:
+        """Handle `POST /Users/AuthenticateByName` for the two lab users."""
+        incoming = self._json_body(body)
+        username = str(incoming.get("Username") or "")
+        user = JELLYFIN_USERS.get(username)
+        if user is None or user["password"] != incoming.get("Pw"):
+            self._json({}, 401)
+            return
+        token = jellyfin_id(f"jellyfin-session:{username}")
+        user_id = jellyfin_id(f"jellyfin-user:{username}")
+        with LOCK:
+            LAB.jellyfin_sessions[token] = {"name": username, "userId": user_id, "admin": user["admin"]}
+        self._json(
+            {
+                "AccessToken": token,
+                "User": {"Id": user_id, "Name": username, "Policy": {"IsAdministrator": user["admin"]}},
+            }
+        )
+
+    def _jellyfin_api_keys(self) -> dict:
+        """Serialize `/Auth/Keys` as an AuthenticationInfoQueryResult."""
+        items = [
+            {"AccessTokenId": index + 1, "AppName": app, "AccessToken": token}
+            for index, (app, token) in enumerate(LAB.jellyfin_api_keys.items())
+        ]
+        return {"Items": items, "TotalRecordCount": len(items)}
+
+    def _jellyfin_with_position(self, item: dict) -> dict:
+        """Copy [item], overlaying the live resume position when one exists."""
+        copied = copy.deepcopy(item)
+        position = LAB.jellyfin_positions.get(copied["Id"])
+        if position is not None:
+            copied["UserData"]["PlaybackPositionTicks"] = position
+        return copied
+
+    def _jellyfin_items_envelope(self, query: dict) -> dict:
+        """Filter the catalog the loose way `/Items` does.
+
+        Names match by token, `years` only drops items whose year is known to
+        differ, and provider ids are never filtered: the client validates
+        every candidate itself.
+        """
+        types = {part.strip() for part in ((query.get("IncludeItemTypes") or [""])[0]).split(",") if part.strip()}
+        term = (query.get("SearchTerm") or [None])[0]
+        raw_years = ((query.get("years") or [""])[0]).replace(" ", "")
+        years = {int(value) for value in raw_years.split(",") if value.strip().isdigit()}
+        limit = int((query.get("Limit") or ["100"])[0] or 100)
+        items = []
+        for item in LAB.jellyfin_items:
+            if types and item["Type"] not in types:
+                continue
+            if term and not jellyfin_matches(item["Name"], str(term)):
+                continue
+            year = item.get("ProductionYear")
+            if years and year is not None and year not in years:
+                continue
+            items.append(self._jellyfin_with_position(item))
+        return {"Items": items[: max(limit, 0)], "TotalRecordCount": len(items), "StartIndex": 0}
+
+    def _jellyfin_episodes_envelope(self, series_id: str, query: dict) -> dict | None:
+        """List a series' indexed episodes, honoring the `season` filter."""
+        series = next(
+            (item for item in LAB.jellyfin_items if item["Id"] == series_id and item["Type"] == "Series"),
+            None,
+        )
+        if series is None:
+            return None
+        raw_season = (query.get("season") or [None])[0]
+        season = int(raw_season) if raw_season is not None and str(raw_season).lstrip("-").isdigit() else None
+        items = [
+            self._jellyfin_with_position(item)
+            for item in LAB.jellyfin_items
+            if item["Type"] == "Episode"
+            and item.get("SeriesId") == series_id
+            and (season is None or item.get("ParentIndexNumber") == season)
+        ]
+        return {"Items": items, "TotalRecordCount": len(items), "StartIndex": 0}
+
+    def _jellyfin_playback_info(self, item_id: str, incoming: dict) -> dict | None:
+        """Build the PlaybackInfo response for [item_id], or None if unknown.
+
+        `DeliveryUrl` appears on external subtitle streams only when the
+        request's DeviceProfile asks for that format with Method External —
+        the behavior the client's subtitle flow now relies on.
+        """
+        item = next((entry for entry in LAB.jellyfin_items if entry["Id"] == item_id), None)
+        if item is None:
+            return None
+        profile = incoming.get("DeviceProfile")
+        formats: list[str] = []
+        if isinstance(profile, dict):
+            for entry in profile.get("SubtitleProfiles") or []:
+                if isinstance(entry, dict) and entry.get("Method") == "External":
+                    formats.append(str(entry.get("Format") or "").lower())
+        extension = next((fmt for fmt in formats if fmt in ("vtt", "srt", "subrip")), None)
+        if extension == "subrip":
+            extension = "srt"
+        sources = copy.deepcopy(item["MediaSources"])
+        for source in sources:
+            for stream in source.get("MediaStreams", []):
+                is_external_subtitle = stream.get("Type") == "Subtitle" and stream.get("IsExternal")
+                if is_external_subtitle and extension:
+                    stream["DeliveryUrl"] = (
+                        f"/Videos/{item['Id']}/{source['Id']}/Subtitles/{stream['Index']}/0/Stream.{extension}"
+                    )
+        return {"MediaSources": sources}
+
+    def _jellyfin_video(self, item_id: str) -> bool:
+        """Serve the placeholder video payload; False when the item is unknown."""
+        item = next((entry for entry in LAB.jellyfin_items if entry["Id"] == item_id), None)
+        source = item["MediaSources"][0] if item and item["MediaSources"] else None
+        if source is None:
+            return False
+        container = str(source.get("Container") or "mkv").lower()
+        content_type = "video/mp4" if container == "mp4" else "video/x-matroska"
+        payload = b"ARRMATE-LAB-VIDEO:" + item_id.encode() + b"\n" + bytes(4096)
+        self._send(200, payload, content_type)
+        return True
+
+    def _jellyfin_subtitle(self, item_id: str, source_id: str, index: str, extension: str) -> bool:
+        """Serve one subtitle stream; False when the item or source is unknown."""
+        item = next((entry for entry in LAB.jellyfin_items if entry["Id"] == item_id), None)
+        source_ids = {source["Id"] for source in (item["MediaSources"] if item else [])}
+        if item is None or source_id not in source_ids:
+            return False
+        if extension == "vtt":
+            payload = (
+                "WEBVTT\n\n"
+                "1\n00:00:01.000 --> 00:00:04.000\nHello from the Arrmate media lab.\n\n"
+                "2\n00:00:05.000 --> 00:00:08.000\nThe mock serves this subtitle.\n"
+            )
+            self._send(200, payload.encode(), "text/vtt")
+        else:
+            payload = (
+                "1\n00:00:01,000 --> 00:00:04,000\nHello from the Arrmate media lab.\n\n"
+                "2\n00:00:05,000 --> 00:00:08,000\nThe mock serves this subtitle.\n"
+            )
+            self._send(200, payload.encode(), "application/x-subrip")
+        return True
+
+    def _jellyfin(self, method: str, path: str, query: dict, body: bytes) -> None:
+        """Serve the Jellyfin REST surface on port 8096."""
+        if method == "GET" and path == "/System/Info/Public":
+            self._json(self._jellyfin_system_info())
+            return
+        if method == "POST" and path == "/Users/AuthenticateByName":
+            self._jellyfin_login(body)
+            return
+        principal = self._jellyfin_principal(query)
+        if principal is None:
+            self._json({}, 401)
+            return
+        with LOCK:
+            LAB.tick()
+            if method == "GET" and path == "/System/Info":
+                self._json(self._jellyfin_system_info())
+                return
+            if path == "/Auth/Keys" and method in ("GET", "POST"):
+                if not principal["admin"]:
+                    self._json({}, 403)
+                    return
+                if method == "POST":
+                    app = ((query.get("app") or [""])[0]).strip()
+                    if app:
+                        LAB.jellyfin_api_keys.setdefault(app, jellyfin_id(f"jellyfin-key:{app}"))
+                    self._send(204, b"", "text/plain")
+                else:
+                    self._json(self._jellyfin_api_keys())
+                return
+            match = re.fullmatch(r"/Auth/Keys/([^/]+)", path)
+            if match and method == "DELETE":
+                if not principal["admin"]:
+                    self._json({}, 403)
+                    return
+                revoked = match.group(1)
+                for app, token in list(LAB.jellyfin_api_keys.items()):
+                    if token == revoked:
+                        del LAB.jellyfin_api_keys[app]
+                self._send(204, b"", "text/plain")
+                return
+            if method == "POST" and path == "/Sessions/Logout":
+                LAB.jellyfin_sessions.pop(self._jellyfin_request_token(query), None)
+                self._send(204, b"", "text/plain")
+                return
+            if method == "GET" and path == "/Items":
+                self._json(self._jellyfin_items_envelope(query))
+                return
+            match = re.fullmatch(r"/Shows/([^/]+)/Episodes", path)
+            if match and method == "GET":
+                envelope = self._jellyfin_episodes_envelope(match.group(1), query)
+                if envelope is None:
+                    self._not_found()
+                else:
+                    self._json(envelope)
+                return
+            match = re.fullmatch(r"/Items/([^/]+)/PlaybackInfo", path)
+            if match and method == "POST":
+                payload = self._jellyfin_playback_info(match.group(1), self._json_body(body))
+                if payload is None:
+                    self._not_found()
+                else:
+                    self._json(payload)
+                return
+            match = re.fullmatch(r"/Videos/([^/]+)/stream", path)
+            if match and method == "GET":
+                if not self._jellyfin_video(match.group(1)):
+                    self._not_found()
+                return
+            match = re.fullmatch(r"/Videos/([^/]+)/master\.m3u8", path)
+            if match and method == "GET":
+                item = next((entry for entry in LAB.jellyfin_items if entry["Id"] == match.group(1)), None)
+                if item is None:
+                    self._not_found()
+                    return
+                playlist = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nsegment0.ts\n#EXT-X-ENDLIST\n"
+                self._send(200, playlist.encode(), "application/vnd.apple.mpegurl")
+                return
+            match = re.fullmatch(r"/Videos/([^/]+)/([^/]+)/Subtitles/(\d+)/0/Stream\.(vtt|srt)", path)
+            if match and method == "GET":
+                if not self._jellyfin_subtitle(match.group(1), match.group(2), match.group(3), match.group(4)):
+                    self._not_found()
+                return
+            if method == "POST" and path == "/Library/Media/Updated":
+                if not principal["admin"]:
+                    self._json({}, 403)
+                    return
+                for update in self._json_body(body).get("Updates") or []:
+                    if isinstance(update, dict) and update.get("Path"):
+                        LAB.jellyfin_scan(str(update["Path"]))
+                self._send(204, b"", "text/plain")
+                return
+            if method == "POST" and path in ("/Sessions/Playing/Start", "/Sessions/Playing/Progress", "/Sessions/Playing/Stopped"):
+                incoming = self._json_body(body)
+                ticks = incoming.get("PositionTicks")
+                if path != "/Sessions/Playing/Start" and ticks is not None:
+                    LAB.jellyfin_positions[str(incoming.get("ItemId") or "")] = int(ticks)
+                self._send(204, b"", "text/plain")
+                return
+        self._not_found()
+
 
 def serve(port: int) -> None:
     """Listen on [port] until the process stops."""
@@ -2836,8 +3408,8 @@ def serve(port: int) -> None:
 
 
 def main() -> None:
-    """Start Radarr, Sonarr, Prowlarr, and qBittorrent listeners."""
-    ports = (7878, 8989, 9696, 8080)
+    """Start Radarr, Sonarr, Prowlarr, qBittorrent, and Jellyfin listeners."""
+    ports = (7878, 8989, 9696, 8080, 8096)
     threads = [
         threading.Thread(target=serve, args=(port,), daemon=True, name=f"lab-{port}")
         for port in ports

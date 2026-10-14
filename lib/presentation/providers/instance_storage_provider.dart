@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/api_error.dart';
 import '../../core/services/logger_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
 import 'data_providers.dart';
 import 'instances_provider.dart';
+import 'jellyfin_session_state_provider.dart';
 
 /// Loads independently recoverable system information for one instance.
 final instanceStorageOverviewProvider = FutureProvider.autoDispose
@@ -71,6 +73,52 @@ final instanceStorageOverviewsProvider =
       return Future.wait(overviewFutures);
     });
 
+/// Checks the stored session of every Jellyfin instance against its server.
+///
+/// A server that accepts the session clears any expired flag, while a server
+/// that rejects it with "session has expired" flags the instance. Any other
+/// failure, such as an offline or slow server, is logged and leaves the flag
+/// untouched, so an unreachable server never marks a session as expired.
+/// Instances without a user session (API key) are skipped.
+final jellyfinSessionStatusProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final instances = ref
+      .watch(instancesByTypeProvider(InstanceType.jellyfin))
+      .where((instance) => instance.userSession != null)
+      .toList();
+  if (instances.isEmpty) return;
+
+  final instanceRepository = ref.watch(instanceRepositoryProvider);
+  final expiredNotifier = ref.read(jellyfinSessionExpiredProvider.notifier);
+  await Future.wait(
+    instances.map((instance) async {
+      try {
+        await Future.sync(() => instanceRepository.getSystemStatus(instance));
+        expiredNotifier.clear(instance.id);
+      } on UnauthorizedError catch (error, stackTrace) {
+        if (error.message.contains('session has expired')) {
+          expiredNotifier.markExpired(instance.id);
+        } else {
+          logger.warning(
+            '[JellyfinSessionStatus] Session check failed for instance '
+            '${instance.id}',
+            error,
+            stackTrace,
+          );
+        }
+      } catch (error, stackTrace) {
+        logger.warning(
+          '[JellyfinSessionStatus] Session check failed for instance '
+          '${instance.id}',
+          error,
+          stackTrace,
+        );
+      }
+    }),
+  );
+});
+
 Future<InstanceLibraryStatistics> _loadLibraryStatistics(
   Instance instance,
   MovieRepository? movieRepository,
@@ -83,8 +131,12 @@ Future<InstanceLibraryStatistics> _loadLibraryStatistics(
     InstanceType.sonarr => InstanceLibraryStatistics.fromSeries(
       await seriesRepository!.getSeries(),
     ),
-    InstanceType.qbittorrent => throw UnsupportedError(
-      'Library statistics are not available for qBittorrent instances',
+    // Design decision: Throw UnsupportedError instead of returning empty data
+    // so the section loader reports the section as unavailable, mirroring
+    // qBittorrent. Jellyfin overviews are never requested upstream, but the
+    // switch must stay exhaustive over the instance types.
+    InstanceType.qbittorrent || InstanceType.jellyfin => throw UnsupportedError(
+      'Library statistics are not available for ${instance.type.label} instances',
     ),
   };
 }
@@ -103,8 +155,12 @@ Future<_SectionResult<T>> _loadSection<T>({
       error,
       stackTrace,
     );
+    final failureMessage = error is UnauthorizedError ? error.message : message;
     return _SectionResult(
-      failure: InstanceOverviewFailure(section: section, message: message),
+      failure: InstanceOverviewFailure(
+        section: section,
+        message: failureMessage,
+      ),
     );
   }
 }

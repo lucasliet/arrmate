@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/platform/platform_capabilities.dart';
 import 'core/services/legacy_web_google_token_cleanup.dart';
 import 'core/services/logger_service.dart';
 import 'presentation/providers/app_providers.dart';
@@ -19,6 +21,21 @@ import 'presentation/router/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // The media engine has native libraries and must not be touched on web.
+  var mediaKitAvailable = !kIsWeb;
+  if (!kIsWeb) {
+    try {
+      MediaKit.ensureInitialized();
+    } catch (e, stackTrace) {
+      mediaKitAvailable = false;
+      logger.warning(
+        '[main] MediaKit initialization failed; internal video player disabled',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
   final prefs = await SharedPreferences.getInstance();
   if (kIsWeb) {
     await clearLegacyWebGoogleOAuthTokens(prefs);
@@ -33,7 +50,26 @@ void main() async {
 
   initializeRouter(homeTab.path);
 
-  final container = ProviderContainer();
+  final defaultCapabilities = PlatformCapabilities.current();
+  final container = ProviderContainer(
+    overrides: [
+      if (!kIsWeb && !mediaKitAvailable)
+        platformCapabilitiesProvider.overrideWithValue(
+          PlatformCapabilities(
+            isWeb: defaultCapabilities.isWeb,
+            supportsAppUpdates: defaultCapabilities.supportsAppUpdates,
+            supportsBackgroundNotifications:
+                defaultCapabilities.supportsBackgroundNotifications,
+            localAssistantRuntime: defaultCapabilities.localAssistantRuntime,
+            supportsFileSystemCache:
+                defaultCapabilities.supportsFileSystemCache,
+            supportsBrowserFileInput:
+                defaultCapabilities.supportsBrowserFileInput,
+            supportsInternalVideoPlayer: false,
+          ),
+        ),
+    ],
+  );
 
   try {
     await container.read(inAppNotificationServiceProvider).init();

@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:arrmate/core/network/instance_connection_resolver.dart';
+import 'package:arrmate/core/services/jellyfin_session_service.dart';
+import 'package:arrmate/data/api/jellyfin_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/instance_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
+import 'package:arrmate/presentation/providers/jellyfin_session_state_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,11 +17,423 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MockInstanceRepository extends Mock implements InstanceRepository {}
 
+class MockJellyfinService extends Mock implements JellyfinService {}
+
+const _jellyfinSession = InstanceUserSession(
+  accessToken: 'token-123',
+  deviceId: 'arrmate-device-1',
+  userId: 'user-9',
+  userName: 'admin',
+);
+
+/// Session service whose sign-in always succeeds with [_jellyfinSession]
+/// for instances carrying `username:password`.
+JellyfinSessionService _signingInSessions() {
+  return JellyfinSessionService(
+    jellyfinServiceFactory: (instance) {
+      final service = MockJellyfinService();
+      when(
+        () => service.hasLoginCredentials,
+      ).thenReturn(instance.apiKey.contains(':'));
+      when(() => service.signIn()).thenAnswer((_) async => _jellyfinSession);
+      when(() => service.logout()).thenAnswer((_) async {});
+      return service;
+    },
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    registerFallbackValue(Instance());
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  test('stores a Jellyfin session instead of the password on save', () async {
+    // Given
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      apiKey: 'admin:secret-password',
+    );
+
+    // When
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(instance);
+
+    // Then
+    expect(saved.apiKey, isEmpty);
+    expect(saved.userSession, _jellyfinSession);
+    final validated =
+        verify(() => repository.getSystemStatus(captureAny())).captured.single
+            as Instance;
+    expect(validated.apiKey, isEmpty);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('instances'),
+      isNot(contains('secret-password')),
+    );
+  });
+
+  test('keeps the owned Jellyfin API key when an edit is saved', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+      ownedApiKey: 'owned-key',
+      ownedApiKeyDevice: 'a1b2c3d4',
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When — the edit form never carries the owned key.
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(
+          Instance(
+            id: 'jellyfin-home',
+            type: InstanceType.jellyfin,
+            label: 'Renamed',
+            url: 'https://jellyfin.example.com',
+            userSession: _jellyfinSession,
+          ),
+        );
+
+    // Then
+    expect(saved.label, 'Renamed');
+    expect(saved.ownedApiKey, 'owned-key');
+    expect(saved.ownedApiKeyDevice, 'a1b2c3d4');
+  });
+
+  test('signs out a replaced session only after the key is saved', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final jellyfin = MockJellyfinService();
+    when(() => jellyfin.hasLoginCredentials).thenReturn(false);
+    late final ProviderContainer container;
+    final sessionsSeenOnLogout = <InstanceUserSession?>[];
+    when(() => jellyfin.logout()).thenAnswer((_) async {
+      sessionsSeenOnLogout.add(
+        container.read(instancesProvider).instances.single.userSession,
+      );
+    });
+    container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(
+          JellyfinSessionService(jellyfinServiceFactory: (_) => jellyfin),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(
+          Instance(
+            id: 'jellyfin-home',
+            type: InstanceType.jellyfin,
+            label: 'Home',
+            url: 'https://jellyfin.example.com',
+            apiKey: 'server-key',
+          ),
+        );
+    await pumpEventQueue();
+
+    // Then
+    expect(saved.apiKey, 'server-key');
+    expect(saved.userSession, isNull);
+    final stored = container.read(instancesProvider).instances.single;
+    expect(stored.apiKey, 'server-key');
+    expect(stored.userSession, isNull);
+    verify(() => jellyfin.logout()).called(1);
+    expect(sessionsSeenOnLogout, [null]);
+  });
+
+  test('clears the expired-session flag once a new login is saved', () async {
+    // Given
+    final stored = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([stored.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    container
+        .read(jellyfinSessionExpiredProvider.notifier)
+        .markExpired('jellyfin-home');
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When
+    await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(
+          stored.copyWith(apiKey: 'admin:new-password', clearUserSession: true),
+        );
+
+    // Then
+    expect(
+      container.read(jellyfinSessionExpiredProvider),
+      isNot(contains('jellyfin-home')),
+    );
+    expect(
+      container.read(instancesProvider).instances.single.userSession,
+      _jellyfinSession,
+    );
+  });
+
+  test(
+    'a new login over a session from another device never signs it out',
+    () async {
+      // Given
+      const restored = InstanceUserSession(
+        accessToken: 'restored-token',
+        deviceId: 'device-other',
+        userId: 'user-9',
+        userName: 'admin',
+        deviceTag: 'otherdev',
+      );
+      final stored = Instance(
+        id: 'jellyfin-home',
+        type: InstanceType.jellyfin,
+        label: 'Home',
+        url: 'https://jellyfin.example.com',
+        userSession: restored,
+      );
+      SharedPreferences.setMockInitialValues({
+        'instances': jsonEncode([stored.toJson()]),
+      });
+      const signedIn = InstanceUserSession(
+        accessToken: 'new-token',
+        deviceId: 'device-new',
+        userId: 'user-9',
+        userName: 'admin',
+        deviceTag: 'thisdev',
+      );
+      final repository = MockInstanceRepository();
+      final jellyfin = MockJellyfinService();
+      when(() => jellyfin.hasLoginCredentials).thenReturn(false);
+      when(() => jellyfin.signIn()).thenAnswer((_) async => signedIn);
+      when(() => jellyfin.logout()).thenAnswer((_) async {});
+      final container = ProviderContainer(
+        overrides: [
+          instanceRepositoryProvider.overrideWithValue(repository),
+          jellyfinSessionServiceProvider.overrideWithValue(
+            JellyfinSessionService(jellyfinServiceFactory: (_) => jellyfin),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await _waitUntilLoaded(container);
+      when(() => jellyfin.hasLoginCredentials).thenReturn(true);
+      when(() => repository.getSystemStatus(any())).thenAnswer(
+        (_) async => const InstanceStatus(
+          appName: 'Jellyfin',
+          instanceName: 'Home Jellyfin',
+          version: '12.2.0',
+        ),
+      );
+      when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+      // When
+      final saved = await container
+          .read(instancesProvider.notifier)
+          .validateAndSaveInstance(
+            Instance(
+              id: 'jellyfin-home',
+              type: InstanceType.jellyfin,
+              label: 'Home',
+              url: 'https://jellyfin.example.com',
+              apiKey: 'admin:pass',
+            ),
+          );
+      await pumpEventQueue();
+
+      // Then
+      expect(saved.apiKey, isEmpty);
+      expect(saved.userSession, signedIn);
+      final persisted = container.read(instancesProvider).instances.single;
+      expect(persisted.userSession, signedIn);
+      verifyNever(() => jellyfin.logout());
+    },
+  );
+
+  test('keeps the stored session when validating the API key fails', () async {
+    // Given
+    final paired = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: _jellyfinSession,
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([paired.toJson()]),
+    });
+    final repository = MockInstanceRepository();
+    final jellyfin = MockJellyfinService();
+    when(() => jellyfin.hasLoginCredentials).thenReturn(false);
+    when(() => jellyfin.logout()).thenAnswer((_) async {});
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(
+          JellyfinSessionService(jellyfinServiceFactory: (_) => jellyfin),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(
+      () => repository.getSystemStatus(any()),
+    ).thenAnswer((_) async => throw Exception('server unreachable'));
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+
+    // When
+    await expectLater(
+      container
+          .read(instancesProvider.notifier)
+          .validateAndSaveInstance(
+            Instance(
+              id: 'jellyfin-home',
+              type: InstanceType.jellyfin,
+              label: 'Home',
+              url: 'https://jellyfin.example.com',
+              apiKey: 'server-key',
+            ),
+          ),
+      throwsException,
+    );
+    await pumpEventQueue();
+
+    // Then
+    final stored = container.read(instancesProvider).instances.single;
+    expect(stored.apiKey, isEmpty);
+    expect(stored.userSession, _jellyfinSession);
+    verifyNever(() => jellyfin.logout());
+  });
+
+  test('migrates a Jellyfin instance saved with a password on load', () async {
+    // Given
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([
+        Instance(
+          id: 'jellyfin-legacy',
+          type: InstanceType.jellyfin,
+          label: 'Legacy',
+          url: 'https://jellyfin.example.com',
+          apiKey: 'admin:secret-password',
+        ).toJson(),
+      ]),
+    });
+    final container = ProviderContainer(
+      overrides: [
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // When
+    await _waitUntilLoaded(container);
+    await _waitUntil(
+      () =>
+          container.read(instancesProvider).instances.single.userSession !=
+          null,
+    );
+
+    // Then
+    final migrated = container.read(instancesProvider).instances.single;
+    expect(migrated.apiKey, isEmpty);
+    expect(migrated.userSession, _jellyfinSession);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('instances'),
+      isNot(contains('secret-password')),
+    );
   });
 
   test(

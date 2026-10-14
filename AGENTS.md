@@ -41,6 +41,23 @@ and **qBittorrent** (for downloads).
     deleted) with filtering by event type.
   - **Queue Management**: View active downloads with detailed status, remove
     tasks with blocklist option.
+  - **Jellyfin Streaming**: In-app video player (media_kit) streaming directly
+    from Jellyfin with automatic library pairing — path-based matching first,
+    provider-id fallback, and on-demand library scan when
+    Jellyfin has not indexed a file yet. Radarr/Sonarr auto-connector keeps
+    Jellyfin's catalog updated on import; it is only set up from the explicit
+    "Set Up Library Auto-Update" action, and removing the Jellyfin instance
+    deletes the connector, revokes the API key and signs out. Key and
+    connector are per device (`Arrmate (<device tag>)` and
+    `Arrmate Jellyfin (<device tag>)`), so one device never reuses, deletes
+    or revokes another device's; logout only runs for session tokens this
+    device signed in (a session restored from a backup is dropped locally).
+    A rejected session (401) surfaces as "session expired" in Watch, the
+    instance list and the edit screen, which asks for a new login.
+    Progress sync ('Continue Watching') requires a user login:
+    username:password is exchanged once for a session token and only the
+    token is stored (legacy password instances migrate on load); API-key mode
+    streams without watch-state writes.
   - **Notifications**: Real-time push notifications via ntfy.sh integration with
     unique multi-device synchronization, automatic configuration for new
     instances, and background polling (every 30 min) with battery saver mode.

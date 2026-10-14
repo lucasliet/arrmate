@@ -422,6 +422,13 @@ List<Instance> _configuredInstances() {
       url: 'https://downloads.example.com',
       apiKey: 'key',
     ),
+    Instance(
+      id: 'jellyfin',
+      type: InstanceType.jellyfin,
+      label: 'Media Jellyfin',
+      url: 'https://jellyfin.example.com',
+      apiKey: 'key',
+    ),
   ];
 }
 

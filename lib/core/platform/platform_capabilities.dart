@@ -24,6 +24,7 @@ class PlatformCapabilities {
     required this.localAssistantRuntime,
     required this.supportsFileSystemCache,
     required this.supportsBrowserFileInput,
+    required this.supportsInternalVideoPlayer,
   });
 
   /// Builds a capability set for a specific Flutter target.
@@ -54,6 +55,15 @@ class PlatformCapabilities {
           },
     supportsFileSystemCache: !isWeb,
     supportsBrowserFileInput: isWeb,
+    supportsInternalVideoPlayer:
+        !isWeb &&
+        {
+          TargetPlatform.android,
+          TargetPlatform.iOS,
+          TargetPlatform.macOS,
+          TargetPlatform.windows,
+          TargetPlatform.linux,
+        }.contains(targetPlatform),
   );
 
   /// Builds the capability set for the active Flutter target.
@@ -79,6 +89,9 @@ class PlatformCapabilities {
 
   /// Whether browser byte-based file selection is available.
   final bool supportsBrowserFileInput;
+
+  /// Whether the in-app video player (media_kit) can run on this platform.
+  final bool supportsInternalVideoPlayer;
 }
 
 /// Provides the capabilities of the active platform to application features.

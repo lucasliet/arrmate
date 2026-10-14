@@ -1,16 +1,22 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_error.dart';
+import '../../../core/services/jellyfin_connect_setup_service.dart';
 import '../../../core/services/logger_service.dart';
+import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../data/api/api.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instances_provider.dart';
+import '../../providers/jellyfin_session_state_provider.dart';
 import '../../tour/app_tour_keys.dart';
 
-/// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent instances.
+/// Screen for creating, editing, and deleting Radarr/Sonarr/qBittorrent/
+/// Jellyfin instances.
 class InstanceEditScreen extends ConsumerStatefulWidget {
   final String? instanceId;
 
@@ -36,6 +42,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   bool _isTesting = false;
   bool _isSaving = false;
   bool _isDeleting = false;
+  bool _isConfiguringConnect = false;
   bool _obscureApiKey = true;
   bool _testSuccess = false;
   int _operationGeneration = 0;
@@ -51,6 +58,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   /// was not present, so the UI can show an explicit error instead of a
   /// silently empty edit form.
   bool _notFound = false;
+
+  /// Stored Jellyfin session of the instance being edited, kept so saving
+  /// without new credentials preserves the sign-in.
+  InstanceUserSession? _existingSession;
 
   @override
   void initState() {
@@ -95,6 +106,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _type = existing.type;
     _slowMode = existing.mode == InstanceMode.slow;
     _headers = List.from(existing.headers);
+    _existingSession = existing.userSession;
     _initialized = true;
     _notFound = false;
   }
@@ -111,9 +123,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     _isTesting = false;
     _isSaving = false;
     _isDeleting = false;
+    _isConfiguringConnect = false;
     _testSuccess = false;
     _testMessage = null;
     _headers = [];
+    _existingSession = null;
     _initialized = false;
     _notFound = false;
   }
@@ -128,15 +142,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final tempInstance = Instance(
-      label: _nameController.text.trim(),
-      url: _urlController.text.trim(),
-      alternativeUrl: _alternativeUrl,
-      apiKey: _apiKeyController.text.trim(),
-      type: _type,
-      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
-      headers: _headers,
-    );
+    final tempInstance = _formInstance;
 
     try {
       if (_type == InstanceType.qbittorrent) {
@@ -165,10 +171,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         });
       }
     } catch (e) {
+      _markSessionExpiredIfRejected(e);
       if (!mounted || operationGeneration != _operationGeneration) return;
       setState(() {
         _testSuccess = false;
-        _testMessage = 'Error: ${e.toString()}';
+        _testMessage = 'Error: ${_describeError(e)}';
       });
     } finally {
       if (mounted && operationGeneration == _operationGeneration) {
@@ -179,12 +186,55 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
+  /// Turns a connection failure into a message fit for the screen.
+  ///
+  /// Typed API errors already carry one; a raw [DioException] (whose text
+  /// dumps request internals such as browser CORS notes) is reduced to what
+  /// the user can act on.
+  String _describeError(Object error) {
+    if (error is ApiError) return error.message;
+    if (error is DioException) {
+      return switch (error.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout =>
+          'The server took too long to answer. Try again or enable Slow '
+              'Instance Mode.',
+        DioExceptionType.badResponse =>
+          'The server answered with HTTP ${error.response?.statusCode}.',
+        _ => 'Server unreachable. Check the URL and your network.',
+      };
+    }
+    if (error is StateError) return error.message;
+    return error.toString();
+  }
+
   /// Returns a short human-readable label describing the active qBittorrent
   /// auth mode, used in the test-connection feedback message.
   String _authModeLabel(Instance instance) {
     if (instance.apiKey.isEmpty) return 'Custom Header';
     if (instance.apiKey.contains(':')) return 'Username & Password';
     return 'API Key';
+  }
+
+  /// Flags the edited Jellyfin instance when [error] reports that its stored
+  /// session was rejected, so the settings list asks for a new sign-in.
+  void _markSessionExpiredIfRejected(Object error) {
+    final instanceId = widget.instanceId;
+    if (instanceId == null ||
+        error is! UnauthorizedError ||
+        !error.message.contains('session has expired')) {
+      return;
+    }
+    ref.read(jellyfinSessionExpiredProvider.notifier).markExpired(instanceId);
+  }
+
+  /// Whether the edited Jellyfin instance was flagged as having an expired
+  /// session.
+  bool get _sessionExpired {
+    final instanceId = widget.instanceId;
+    return instanceId != null &&
+        ref.read(jellyfinSessionExpiredProvider).contains(instanceId);
   }
 
   /// Checks whether the [InstanceHeader] list already carries an
@@ -204,16 +254,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _testSuccess = false;
     });
 
-    final instance = Instance(
-      id: widget.instanceId,
-      label: _nameController.text.trim(),
-      url: _urlController.text.trim(),
-      alternativeUrl: _alternativeUrl,
-      apiKey: _apiKeyController.text.trim(),
-      type: _type,
-      mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
-      headers: _headers,
-    );
+    final instance = _formInstance.copyWith(id: widget.instanceId);
 
     try {
       await ref
@@ -227,9 +268,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         e,
         stackTrace,
       );
+      _markSessionExpiredIfRejected(e);
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
-          _testMessage = 'Validation failed: $e';
+          _testMessage = 'Validation failed: ${_describeError(e)}';
           _testSuccess = false;
         });
       }
@@ -250,6 +292,18 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     return value;
   }
 
+  /// Builds an [Instance] from the current form values, without an id.
+  Instance get _formInstance => Instance(
+    label: _nameController.text.trim(),
+    url: _urlController.text.trim(),
+    alternativeUrl: _alternativeUrl,
+    apiKey: _apiKeyController.text.trim(),
+    type: _type,
+    mode: _slowMode ? InstanceMode.slow : InstanceMode.normal,
+    headers: _headers,
+    userSession: _existingSession,
+  );
+
   Future<void> _delete() async {
     final instanceId = widget.instanceId;
     if (instanceId == null || _isBusy) return;
@@ -257,9 +311,30 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     setState(() => _isDeleting = true);
 
     try {
-      await ref.read(instancesProvider.notifier).removeInstance(instanceId);
+      final notifier = ref.read(instancesProvider.notifier);
+      final existing = notifier.getInstanceById(instanceId);
+      // Undo the remote setup first: it needs the stored session, which the
+      // local removal discards. Failures are reported, never blocking.
+      final cleanupFailures = existing?.type == InstanceType.jellyfin
+          ? await ref
+                .read(jellyfinConnectSetupServiceProvider)
+                .disconnect(existing!)
+          : const <String>[];
+      await notifier.removeInstance(instanceId);
       if (!mounted || operationGeneration != _operationGeneration) return;
+      final messenger = ScaffoldMessenger.of(context);
       context.pop();
+      if (cleanupFailures.isNotEmpty) {
+        messenger.showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text(
+              'Instance removed, but some cleanup failed:\n'
+              '${cleanupFailures.join('\n')}',
+            ),
+          ),
+        );
+      }
     } catch (error, stackTrace) {
       logger.error(
         '[InstanceEditScreen] Failed to delete instance',
@@ -269,7 +344,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _testSuccess = false;
-          _testMessage = 'Delete failed: $error';
+          _testMessage = 'Delete failed: ${_describeError(error)}';
         });
       }
     } finally {
@@ -279,7 +354,105 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     }
   }
 
-  bool get _isBusy => _isTesting || _isSaving || _isDeleting;
+  /// Helper text of the API Key field for Jellyfin, naming the signed-in
+  /// user when a session is stored.
+  String get _jellyfinApiKeyHelperText {
+    if (_sessionExpired) {
+      return 'Session expired — sign in again with username:password';
+    }
+    final session = _existingSession;
+    if (session != null) {
+      final user = session.userName ?? 'a Jellyfin user';
+      return 'Signed in as $user. Leave empty to keep this session, enter '
+          'username:password to sign in again, or an API key to switch.';
+    }
+    return 'API key (Jellyfin dashboard → Advanced → API Keys) or '
+        'username:password. A password is only used to sign in and is '
+        'never stored.';
+  }
+
+  bool get _isBusy =>
+      _isTesting || _isSaving || _isDeleting || _isConfiguringConnect;
+
+  /// Runs the Radarr/Sonarr → Jellyfin connector setup for the saved
+  /// Jellyfin instance, then shows one result line per *arr instance.
+  ///
+  /// Pairing only ever runs from this explicit action, never on save, and
+  /// uses the saved instance so it signs in with the stored session rather
+  /// than unsaved form values.
+  Future<void> _configureJellyfinConnect() async {
+    final instanceId = widget.instanceId;
+    if (instanceId == null || _isBusy) return;
+    final saved = ref
+        .read(instancesProvider.notifier)
+        .getInstanceById(instanceId);
+    if (saved == null) return;
+    final operationGeneration = ++_operationGeneration;
+
+    setState(() => _isConfiguringConnect = true);
+
+    try {
+      final results = await ref
+          .read(jellyfinConnectSetupServiceProvider)
+          .configureForAllArrInstances(jellyfinInstance: saved);
+      if (!mounted || operationGeneration != _operationGeneration) return;
+      if (results.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No Radarr or Sonarr instances configured'),
+          ),
+        );
+        return;
+      }
+      _showJellyfinConnectResults(results);
+    } catch (e, stackTrace) {
+      logger.error(
+        '[InstanceEditScreen] Jellyfin connector setup failed',
+        e,
+        stackTrace,
+      );
+      if (!mounted || operationGeneration != _operationGeneration) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Setup failed: ${_describeError(e)}')),
+      );
+    } finally {
+      if (mounted && operationGeneration == _operationGeneration) {
+        setState(() => _isConfiguringConnect = false);
+      }
+    }
+  }
+
+  /// Shows one dialog line per Radarr/Sonarr instance result, mirroring the
+  /// report dialog of the notification auto-config screen.
+  void _showJellyfinConnectResults(List<NotificationSetupResult> results) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Library Auto-Update Setup'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: results
+              .map(
+                (result) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    result.isSuccess ? Icons.check_circle : Icons.error,
+                    color: result.isSuccess ? Colors.green : Colors.red,
+                  ),
+                  title: Text(
+                    result.message,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,6 +460,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final tourKeys = ref.watch(appTourKeysProvider);
 
     final instancesState = ref.watch(instancesProvider);
+    ref.watch(jellyfinSessionExpiredProvider);
     if (isEditing && !_initialized) {
       final existing = widget.instanceId == null
           ? null
@@ -377,6 +551,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                   label: Text('qBittorrent'),
                   icon: Icon(Icons.download),
                 ),
+                ButtonSegment(
+                  value: InstanceType.jellyfin,
+                  label: Text('Jellyfin'),
+                  icon: Icon(Icons.dns),
+                ),
               ],
               selected: {_type},
               onSelectionChanged: (Set<InstanceType> newSelection) {
@@ -454,6 +633,36 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             ),
             const SizedBox(height: 16),
 
+            if (_type == InstanceType.jellyfin && _sessionExpired) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Your Jellyfin session has expired. Enter '
+                        'username:password in the API Key field to sign in '
+                        'again.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             TextFormField(
               key: tourKeys.instanceApiKeyFieldKey,
               controller: _apiKeyController,
@@ -464,7 +673,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 helperText: _type == InstanceType.qbittorrent
                     ? 'Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using '
                           '"Add Basic Auth" below for older versions.'
+                    : _type == InstanceType.jellyfin
+                    ? _jellyfinApiKeyHelperText
                     : null,
+                helperMaxLines: 4,
                 suffixIcon: IconButton(
                   tooltip: _obscureApiKey ? 'Show API key' : 'Hide API key',
                   icon: Icon(
@@ -478,9 +690,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               ),
               validator: (value) {
                 final isEmpty = value == null || value.isEmpty;
-                if (_type == InstanceType.qbittorrent) {
-                  if (isEmpty && !_hasAuthorizationHeader) {
-                    return 'Provide an API key or add Basic Auth below';
+                if (_type == InstanceType.qbittorrent ||
+                    _type == InstanceType.jellyfin) {
+                  final hasSession =
+                      _type == InstanceType.jellyfin &&
+                      _existingSession != null &&
+                      !_sessionExpired;
+                  if (isEmpty && !_hasAuthorizationHeader && !hasSession) {
+                    return _sessionExpired
+                        ? 'Enter username:password to sign in again'
+                        : 'Provide an API key or add Basic Auth below';
                   }
                   return null;
                 }
@@ -564,6 +783,21 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                   color: _testSuccess ? Colors.green : Colors.red,
                 ),
                 textAlign: TextAlign.center,
+              ),
+            ],
+
+            if (_type == InstanceType.jellyfin && isEditing) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _isBusy ? null : _configureJellyfinConnect,
+                icon: _isConfiguringConnect
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                label: const Text('Set Up Library Auto-Update'),
               ),
             ],
 
@@ -689,7 +923,13 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Instance?'),
-        content: const Text('This action cannot be undone.'),
+        content: Text(
+          _type == InstanceType.jellyfin
+              ? 'Arrmate will also remove its Jellyfin connection from '
+                    'Radarr/Sonarr, revoke the Arrmate API key it created and '
+                    'sign out of Jellyfin. This action cannot be undone.'
+              : 'This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => context.pop(),

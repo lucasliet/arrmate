@@ -16,3 +16,4 @@ export 'queue/queue_query.dart';
 export 'queue/importable_file.dart';
 export 'shared/notification_resource.dart';
 export 'qbittorrent/qbittorrent_models.dart';
+export 'jellyfin/jellyfin_models.dart';

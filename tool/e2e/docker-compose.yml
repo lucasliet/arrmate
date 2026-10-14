@@ -1,7 +1,8 @@
 # Local media lab for Arrmate end-to-end checks.
 #
-# One process serves four APIs so a grab in Radarr or Sonarr shows up in the
-# qBittorrent queue without an external indexer or metadata key.
+# One process serves five APIs so a grab in Radarr or Sonarr shows up in the
+# qBittorrent queue and in the Jellyfin catalog without an external indexer or
+# metadata key.
 services:
   media-lab:
     build: ./mock
@@ -14,9 +15,9 @@ services:
         - -c
         - >-
           import http.client;
-          ports = (7878, 8989, 9696, 8080);
+          ports = (7878, 8989, 9696, 8080, 8096);
           connections = [http.client.HTTPConnection('127.0.0.1', port, timeout=2) for port in ports];
-          [connection.request('GET', '/api/v2/app/version' if port == 8080 else '/ping', headers={'Authorization': 'Bearer arrmate-qbit'}) for port, connection in zip(ports, connections)];
+          [connection.request('GET', '/api/v2/app/version' if port == 8080 else '/System/Info/Public' if port == 8096 else '/ping', headers={'Authorization': 'Bearer arrmate-qbit'}) for port, connection in zip(ports, connections)];
           assert all(connection.getresponse().status == 200 for connection in connections)
       interval: 2s
       timeout: 10s
@@ -26,3 +27,4 @@ services:
       - "8989:8989"
       - "9696:9696"
       - "8080:8080"
+      - "8096:8096"

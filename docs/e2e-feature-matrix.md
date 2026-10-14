@@ -43,6 +43,7 @@ in each section, or restart the lab before the next section.
 | Sonarr queue | Severance S01E09 downloading; Severance S01E05 stalled (warning) |
 | qBittorrent | Dune (downloading, `radarr`, 40×`c`), The Matrix (seeding, `radarr`, 40×`a`), The Matrix cross-seed (seeding, `cross-seed`, 40×`b`), Arrival (stopped, complete, `radarr`, 40×`d`), Broken Sample (error, `radarr`), Unrelated Concert Bootleg 2020 (seeding, no category), Severance S01E01 (seeding, `sonarr`, 40×`9`), S01E09 (downloading, `sonarr`, 40×`8`), S01E05 (stalled, `sonarr`, 40×`7`) |
 | History | Dune grabbed + imported + renamed + 2160p grab; Matrix grabbed + imported (40×`a`); Arrival HDTV grabbed + failed, WEBDL grabbed (40×`d`); Oppenheimer ignored; The Bear pack grabbed + imported, one ignored; Severance S01E01–E04 grabbed + imported, E05 and E09 grabbed |
+| Jellyfin catalog | Dune (same path as Radarr, eng/por audio, embedded ASS + external SRT), The Matrix (same path, resume at 100 s), Severance + The Bear series with on-disk episodes at Sonarr paths; Arrival NOT indexed until a scan runs; decoys The Matrix Reloaded and a ghost S01E05 720p path |
 
 Grabs, searches, imports, queue removals, and deletions change this state the
 way a real stack would; see [Media lab limits](#media-lab-limits) for what the
@@ -134,6 +135,7 @@ do not register the scheme, so run this section on those three platforms only.
 | MVD-16 | Menu → Delete | Overflow → Delete; try both checkboxes | “Also delete files from disk” and “Prevent re-add”; snackbar “Movie deleted” or “Movie and files deleted”; returns to the library. The copy in the Radarr category becomes Orphan. A cross-seed kept in another category (the lab uses `cross-seed`) becomes Not in library: once the movie and its history are gone, only a managed category is classified as Orphan | Verified |
 | MVD-17 | Menu → Purge | Overflow → Purge | Same flow as MOV-17 for one movie; “Movie purged.” summary | Verified |
 | MVD-18 | Wide vs compact hero | Content width < 1200 and ≥ 1200, after subtracting the rail | Hero 300/360, poster 100/180, padding 16/32 | Verified |
+| MVD-19 | Watch in Jellyfin | Dune details → Watch (Jellyfin instance added) | Player opens the direct stream; audio sheet lists English AAC + Portuguese EAC3; subtitle sheet lists embedded ASS + external SRT; The Matrix resumes around 100 s | Not run |
 
 ## Interactive search (REL)
 
@@ -233,6 +235,7 @@ Shared by movies, seasons, and episodes.
 | EPI-07 | Episode sheet | Tap S01E01 | Air date, runtime, status, file card, the S01E01 torrent, and history | Verified |
 | EPI-08 | Episode file details / delete | File card tap, trash | Details sheet; “File deleted”; season count drops by one | Not run |
 | EPI-09 | Episode history event | Tap event | Read-only event sheet | Not run |
+| EPI-10 | Watch episode in Jellyfin | S01E01 sheet → Watch (Jellyfin instance added) | Player opens the episode stream; a freshly imported episode not yet in Jellyfin triggers the scan flow and then plays | Not run |
 
 ## Series edit (SEE)
 
@@ -242,6 +245,20 @@ Shared by movies, seasons, and episodes.
 | SEE-02 | Series Type Standard / Daily / Anime | Dropdown, Save | Persists on reopen | Not run |
 | SEE-03 | Quality Profile, Root Folder | Change, Save | Root change asks “Move Files?” | Not run |
 | SEE-04 | Tags | Tick `lab` | Saved | Not run |
+
+## Jellyfin streaming (STR)
+
+| ID | Control | Steps | Expected | Status |
+| --- | --- | --- | --- | --- |
+| STR-01 | Player controls | Watch Dune | Play/pause, ±10 s buttons and double-tap sides, position slider with buffer, `mm:ss` labels | Not run |
+| STR-02 | Audio track switch | Player → audio sheet | English AAC (default) and Portuguese EAC3 listed; selection applies | Not run |
+| STR-03 | Subtitle track switch | Player → subtitles sheet | Embedded ASS + external SRT listed with Disabled option; external SRT loads from the lab | Not run |
+| STR-04 | Quality toggle | Player → quality button | Original (direct stream) and Data saver (HLS `master.m3u8`) switch keeping the position | Not run |
+| STR-05 | Resume | Watch The Matrix | Starts around the 100 s lab resume point | Not run |
+| STR-06 | Progress sync | Watch Dune past a 10 s tick, close, re-fetch `/Items` for Dune | Lab `UserData.PlaybackPositionTicks` advanced; API-key login streams without writing progress | Not run |
+| STR-07 | Open externally | Player → open-in-new (user login) | External player opens the stream URL; hidden when the instance uses an API key | Not run |
+| STR-08 | Scan on play | Watch a file the *arrs have but Jellyfin has not indexed yet | “Updating the Jellyfin library…” status, then playback once the scan indexes the path | Not run |
+| STR-09 | Web fallback | Web build → Watch | “In-app playback is not supported on the web yet” with an external-open action | Not run |
 
 ---
 
@@ -395,6 +412,8 @@ Shared by movies, seasons, and episodes.
 | INS-13 | Edit instance | Tap row, rename, Save | New label in list | Not run |
 | INS-14 | Delete instance | Trash → Delete | Removed; data screens reflect it | Not run |
 | INS-15 | Missing instance | `/settings/instance/does-not-exist` | “Instance not found” + Go back | Not run |
+| INS-16 | Add Jellyfin, user login | Type Jellyfin, `http://127.0.0.1:8096`, `arrmate:arrmate-jellyfin`, Test, Save | “Connection successful!” with the lab server name and version; Watch buttons appear on downloaded movies and episodes | Not run |
+| INS-17 | Jellyfin auto-update connector | Jellyfin row → Set Up Library Auto-Update | Per-instance results; Radarr and Sonarr each gain an `Arrmate Jellyfin (<device tag>)` MediaBrowser connector (`GET /api/v3/notification`); re-running updates it instead of duplicating | Not run |
 
 ## System Management (SYS)
 
