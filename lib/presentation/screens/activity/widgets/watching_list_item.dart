@@ -165,8 +165,8 @@ class WatchingListItem extends ConsumerWidget {
 
   /// Starts playback of this Continue Watching item.
   ///
-  /// The list reloads when the player route is disposed, including when the
-  /// route is left without the navigation future completing.
+  /// The list reloads when the router leaves `/player`, after any in-flight
+  /// Stopped report has finished.
   Future<void> _resumePlayback(BuildContext context, WidgetRef ref) {
     return ref
         .read(playbackLaunchServiceProvider)

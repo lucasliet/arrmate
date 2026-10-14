@@ -18,6 +18,7 @@ import 'providers/qbittorrent_provider.dart';
 import 'providers/torrent_link_provider.dart';
 import 'providers/watching_provider.dart';
 import 'qbittorrent_tab.dart';
+import 'watching_route_refresh.dart';
 import 'watching_tab.dart';
 import 'widgets/queue_list_item.dart';
 import 'widgets/queue_options_sheet.dart';
@@ -53,60 +54,65 @@ class ActivityScreen extends ConsumerWidget {
       ],
     );
 
-    return AdaptiveLayout(
-      builder: (context) {
-        final isWide = ContentLayout.of(context).hasWideSections;
-        return DefaultTabController(
-          length: tabCount,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Activity'),
-              toolbarHeight: isWide ? 88 : null,
-              titleSpacing: isWide ? 32 : null,
-              bottom: TabBar(
-                key: tourKeys.activityTabBarKey,
-                isScrollable: isWide,
-                tabAlignment: isWide ? TabAlignment.start : null,
-                labelPadding: isWide
-                    ? const EdgeInsets.symmetric(horizontal: 32)
-                    : null,
-                tabs: [
-                  const Tab(text: 'Queue'),
-                  const Tab(text: 'History'),
-                  if (showsTorrents)
-                    Tab(key: tourKeys.activityTorrentsTabKey, text: 'Torrents'),
-                  if (showsWatching) const Tab(text: 'Watching'),
+    return WatchingRouteRefresh(
+      child: AdaptiveLayout(
+        builder: (context) {
+          final isWide = ContentLayout.of(context).hasWideSections;
+          return DefaultTabController(
+            length: tabCount,
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Activity'),
+                toolbarHeight: isWide ? 88 : null,
+                titleSpacing: isWide ? 32 : null,
+                bottom: TabBar(
+                  key: tourKeys.activityTabBarKey,
+                  isScrollable: isWide,
+                  tabAlignment: isWide ? TabAlignment.start : null,
+                  labelPadding: isWide
+                      ? const EdgeInsets.symmetric(horizontal: 32)
+                      : null,
+                  tabs: [
+                    const Tab(text: 'Queue'),
+                    const Tab(text: 'History'),
+                    if (showsTorrents)
+                      Tab(
+                        key: tourKeys.activityTorrentsTabKey,
+                        text: 'Torrents',
+                      ),
+                    if (showsWatching) const Tab(text: 'Watching'),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      ref.invalidate(queueProvider);
+                      ref.invalidate(activityHistoryProvider);
+                      if (hasQBittorrent) {
+                        ref.invalidate(qbittorrentTorrentsProvider);
+                        ref.invalidate(torrentLinkIndexProvider);
+                      }
+                      if (hasJellyfin) {
+                        ref.invalidate(watchingItemsProvider);
+                      }
+                    },
+                  ),
+                  const NotificationIconButton(),
                 ],
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    ref.invalidate(queueProvider);
-                    ref.invalidate(activityHistoryProvider);
-                    if (hasQBittorrent) {
-                      ref.invalidate(qbittorrentTorrentsProvider);
-                      ref.invalidate(torrentLinkIndexProvider);
-                    }
-                    if (hasJellyfin) {
-                      ref.invalidate(watchingItemsProvider);
-                    }
-                  },
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: ContentLayout.maximumActivityWidth,
+                  ),
+                  child: tabs,
                 ),
-                const NotificationIconButton(),
-              ],
-            ),
-            body: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: ContentLayout.maximumActivityWidth,
-                ),
-                child: tabs,
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

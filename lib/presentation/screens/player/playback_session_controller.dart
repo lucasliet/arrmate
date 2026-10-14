@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/utils/sensitive_data_redactor.dart';
 import 'playback_request.dart';
+import 'playback_stop_gate.dart';
 
 /// Minimal description of a track discovered by the underlying player engine.
 ///
@@ -160,9 +161,14 @@ class PlaybackSessionController {
     required this.request,
     required StreamPlayer Function() playerFactory,
     this.progressInterval = defaultProgressInterval,
+    this.stopGate,
     DateTime Function()? clock,
   }) : _playerFactory = playerFactory,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now {
+    if (request.reporter != null) {
+      stopGate?.arm();
+    }
+  }
 
   /// How often progress is reported while playing.
   static const Duration defaultProgressInterval = Duration(seconds: 10);
@@ -182,10 +188,14 @@ class PlaybackSessionController {
   /// Interval between progress reports while playing.
   final Duration progressInterval;
 
+  /// Gate notified with the final Stopped report so listeners can wait for it.
+  final PlaybackStopGate? stopGate;
+
   final StreamPlayer Function() _playerFactory;
   final DateTime Function() _clock;
   final _subscriptions = <StreamSubscription<void>>[];
   Timer? _progressTimer;
+  Future<void>? _stopReport;
 
   StreamPlayer? _player;
   Duration _lastPosition = Duration.zero;
@@ -234,6 +244,7 @@ class PlaybackSessionController {
     finished.value = false;
     _resetResumeState(_lastPosition);
     _stopReported = false;
+    _stopReport = null;
     _progressTimer?.cancel();
     _startProgressTimer();
     await _open(request.streamUrl);
@@ -288,11 +299,13 @@ class PlaybackSessionController {
   Future<void> dispose() async {
     _disposed = true;
     _progressTimer?.cancel();
+    final stop = _safeReportStop();
+    stopGate?.track(stop);
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
     _subscriptions.clear();
-    await _safeReportStop();
+    await stop;
     await _player?.dispose();
     _player = null;
   }
@@ -511,17 +524,18 @@ class PlaybackSessionController {
     }
   }
 
-  Future<void> _safeReportStop() async {
-    if (_stopReported) {
-      return;
+  Future<void> _safeReportStop() {
+    final existing = _stopReport;
+    if (existing != null) {
+      return existing;
     }
     _stopReported = true;
     final reporter = request.reporter;
     if (reporter == null) {
-      return;
+      return _stopReport = Future<void>.value();
     }
     final position = _lastPosition;
-    await _safeReport(() => reporter.onStop(position), 'onStop');
+    return _stopReport = _safeReport(() => reporter.onStop(position), 'onStop');
   }
 
   void _startProgressTimer() {
