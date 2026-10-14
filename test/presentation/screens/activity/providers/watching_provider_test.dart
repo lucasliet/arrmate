@@ -269,6 +269,36 @@ void main() {
     );
 
     test(
+      'does not match a series folder name found only in a higher ancestor',
+      () {
+        // Given
+        final generic = _series(id: 41, title: 'Anime', path: '/data/Anime');
+        final resumeItems = [
+          _jellyfinEpisode(
+            id: 'jf-ancestor',
+            name: 'Pilot',
+            seriesName: 'Another Show',
+            seasonNumber: 1,
+            episodeNumber: 1,
+            path: '/media/Anime/Another Show/Season 01/S01E01.mkv',
+          ),
+        ];
+
+        // When
+        final matched = matchResumeItemsToLibrary(
+          resumeItems: resumeItems,
+          movies: const [],
+          series: [
+            LibrarySeriesEntry(instance: sonarrInstance, series: generic),
+          ],
+        );
+
+        // Then
+        expect(matched, isEmpty);
+      },
+    );
+
+    test(
       'prefers the series whose year matches the Jellyfin production year',
       () {
         // Given

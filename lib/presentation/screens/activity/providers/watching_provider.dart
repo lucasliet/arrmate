@@ -390,8 +390,7 @@ LibrarySeriesEntry? _matchSeries(
       final folderName = _basename(_normalizePath(entry.series.path) ?? '');
       if (folderName.isEmpty) continue;
       for (final itemPath in candidatePaths) {
-        final folders = itemPath.split('/').reversed.skip(1);
-        if (folders.contains(folderName)) return entry;
+        if (_episodeSeriesFolder(itemPath) == folderName) return entry;
       }
     }
   }
@@ -452,6 +451,26 @@ String? _normalizePath(String? path) {
 String _basename(String normalizedPath) {
   final slash = normalizedPath.lastIndexOf('/');
   return slash == -1 ? normalizedPath : normalizedPath.substring(slash + 1);
+}
+
+final RegExp _seasonFolderPattern = RegExp(
+  r'^(?:season\s+\d+|s\d+|specials)$',
+  caseSensitive: false,
+);
+
+/// Returns the series folder of an episode at [normalizedPath]: the folder
+/// above the season folder, or the file's parent when there is no season
+/// folder. Returns `null` when the path is too short to have one.
+String? _episodeSeriesFolder(String normalizedPath) {
+  final segments = normalizedPath
+      .split('/')
+      .where((s) => s.isNotEmpty)
+      .toList();
+  if (segments.length < 2) return null;
+  final parentIndex = segments.length - 2;
+  final inSeasonFolder =
+      parentIndex > 0 && _seasonFolderPattern.hasMatch(segments[parentIndex]);
+  return segments[inSeasonFolder ? parentIndex - 1 : parentIndex];
 }
 
 /// Returns the parent folder and file name of [normalizedPath] joined by `/`,
