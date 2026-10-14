@@ -334,7 +334,7 @@ LibraryMovieEntry? _matchMovie(
       for (final itemPath in candidatePaths) {
         if (movieFilePath != null &&
             (itemPath == movieFilePath ||
-                _basename(itemPath) == _basename(movieFilePath))) {
+                _parentAndName(itemPath) == _parentAndName(movieFilePath))) {
           return entry;
         }
         if (movieFolderPath != null &&
@@ -385,20 +385,37 @@ LibrarySeriesEntry? _matchSeries(
     }
   }
 
+  if (candidatePaths.isNotEmpty) {
+    for (final entry in seriesList) {
+      final folderName = _basename(_normalizePath(entry.series.path) ?? '');
+      if (folderName.isEmpty) continue;
+      for (final itemPath in candidatePaths) {
+        final folders = itemPath.split('/').reversed.skip(1);
+        if (folders.contains(folderName)) return entry;
+      }
+    }
+  }
+
   final rawSeriesName = item.seriesName?.trim();
   if (rawSeriesName != null && rawSeriesName.isNotEmpty) {
     final normalizedTarget = _normalizeSeriesTitle(rawSeriesName);
     if (normalizedTarget.isNotEmpty) {
-      for (final entry in seriesList) {
-        if (_normalizeSeriesTitle(entry.series.title) == normalizedTarget) {
-          return entry;
-        }
-        final alternates = entry.series.alternateTitles ?? const [];
-        for (final alt in alternates) {
-          if (_normalizeSeriesTitle(alt.title) == normalizedTarget) {
-            return entry;
+      final titleMatches = [
+        for (final entry in seriesList)
+          if (_normalizeSeriesTitle(entry.series.title) == normalizedTarget ||
+              (entry.series.alternateTitles ?? const []).any(
+                (alt) => _normalizeSeriesTitle(alt.title) == normalizedTarget,
+              ))
+            entry,
+      ];
+      if (titleMatches.isNotEmpty) {
+        final itemYear = item.productionYear;
+        if (itemYear != null && itemYear > 0) {
+          for (final entry in titleMatches) {
+            if (entry.series.year == itemYear) return entry;
           }
         }
+        return titleMatches.first;
       }
     }
   }
@@ -435,6 +452,17 @@ String? _normalizePath(String? path) {
 String _basename(String normalizedPath) {
   final slash = normalizedPath.lastIndexOf('/');
   return slash == -1 ? normalizedPath : normalizedPath.substring(slash + 1);
+}
+
+/// Returns the parent folder and file name of [normalizedPath] joined by `/`,
+/// or the whole path when it has fewer than two non-empty segments.
+String _parentAndName(String normalizedPath) {
+  final segments = normalizedPath
+      .split('/')
+      .where((s) => s.isNotEmpty)
+      .toList();
+  if (segments.length < 2) return normalizedPath;
+  return segments.sublist(segments.length - 2).join('/');
 }
 
 final RegExp _trailingYearPattern = RegExp(r'\s*\(\d{4}\)\s*$');

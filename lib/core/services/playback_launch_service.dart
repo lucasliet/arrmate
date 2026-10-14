@@ -34,8 +34,12 @@ class PlaybackLaunched extends PlaybackLaunchResult {
   /// The request that was pushed to the player route.
   final PlaybackRequest request;
 
+  /// Completes when the player route is popped, or `null` when the caller
+  /// cannot observe it.
+  final Future<void>? closed;
+
   /// Creates a successful launch result.
-  const PlaybackLaunched(this.request);
+  const PlaybackLaunched(this.request, {this.closed});
 }
 
 /// Jellyfin has no playable item for the requested file, even after a
@@ -276,6 +280,9 @@ class PlaybackLaunchService {
 
     final instance = ref.read(currentJellyfinInstanceProvider)!;
     final jellyfin = serviceFor(instance);
+    // Captured before the first await: `ref` is unusable once the caller's
+    // widget is disposed, but the expiry flag must still be recorded.
+    final sessionExpired = ref.read(jellyfinSessionExpiredProvider.notifier);
     final displayTitle = (title != null && title.trim().isNotEmpty)
         ? title.trim()
         : filePath;
@@ -361,16 +368,18 @@ class PlaybackLaunchService {
         return const PlaybackLaunchCancelled();
       }
       if (context.mounted) {
-        unawaited(context.push<void>('/player', extra: request));
-        return PlaybackLaunched(request);
+        final closed = context.push<void>('/player', extra: request);
+        return PlaybackLaunched(request, closed: closed);
       }
       return const PlaybackLaunchCancelled();
     } on UnauthorizedError catch (error) {
       closeDialog();
-      if (context.mounted) {
-        return _handleSessionExpired(context, ref, instance, error);
-      }
-      return PlaybackLaunchFailure(error.message);
+      return _handleSessionExpired(
+        context.mounted ? context : null,
+        sessionExpired,
+        instance,
+        error,
+      );
     } catch (error, stackTrace) {
       logger.error(
         '[$_logPrefix] Failed to launch "$displayTitle" from Jellyfin',
@@ -401,6 +410,7 @@ class PlaybackLaunchService {
 
     final instance = ref.read(currentJellyfinInstanceProvider)!;
     final jellyfin = serviceFor(instance);
+    final sessionExpired = ref.read(jellyfinSessionExpiredProvider.notifier);
     final displayTitle = (title != null && title.trim().isNotEmpty)
         ? title.trim()
         : (item.name ?? item.id);
@@ -414,15 +424,17 @@ class PlaybackLaunchService {
         title: displayTitle,
       );
       if (context.mounted) {
-        unawaited(context.push<void>('/player', extra: request));
-        return PlaybackLaunched(request);
+        final closed = context.push<void>('/player', extra: request);
+        return PlaybackLaunched(request, closed: closed);
       }
       return const PlaybackLaunchCancelled();
     } on UnauthorizedError catch (error) {
-      if (context.mounted) {
-        return _handleSessionExpired(context, ref, instance, error);
-      }
-      return PlaybackLaunchFailure(error.message);
+      return _handleSessionExpired(
+        context.mounted ? context : null,
+        sessionExpired,
+        instance,
+        error,
+      );
     } catch (error, stackTrace) {
       logger.error(
         '[$_logPrefix] Failed to launch "$displayTitle" from Jellyfin',
@@ -438,16 +450,16 @@ class PlaybackLaunchService {
 
   /// Marks [instance] as expired and shows the re-authentication snackbar.
   PlaybackLaunchFailure _handleSessionExpired(
-    BuildContext context,
-    WidgetRef ref,
+    BuildContext? context,
+    JellyfinSessionExpiredNotifier sessionExpired,
     Instance instance,
     UnauthorizedError error,
   ) {
     logger.warning(
       '[$_logPrefix] Jellyfin session expired for instance ${instance.id}',
     );
-    ref.read(jellyfinSessionExpiredProvider.notifier).markExpired(instance.id);
-    if (context.mounted) {
+    sessionExpired.markExpired(instance.id);
+    if (context != null && context.mounted) {
       final router = GoRouter.of(context);
       final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(

@@ -84,7 +84,7 @@ void main() {
           _jellyfinMovie(
             id: 'jf-br',
             name: 'Other Title',
-            path: '/jellyfin/movies/BR2049.mkv',
+            path: '/jellyfin/movies/Blade Runner 2049/BR2049.mkv',
           ),
           _jellyfinMovie(
             id: 'jf-sicario',
@@ -175,6 +175,154 @@ void main() {
           matched.first.playbackTitle,
           'Severance (2022) · S01E02 · Half Loop',
         );
+      },
+    );
+
+    test('does not pair movies that only share a generic file name', () {
+      // Given
+      final alpha = _movie(
+        id: 1,
+        title: 'Alpha',
+        year: 2001,
+        tmdbId: 1001,
+        path: '/movies/Alpha (2001)',
+        filePath: '/movies/Alpha (2001)/movie.mkv',
+      );
+      final beta = _movie(
+        id: 2,
+        title: 'Beta',
+        year: 2010,
+        tmdbId: 1002,
+        path: '/movies/Beta (2010)',
+        filePath: '/movies/Beta (2010)/movie.mkv',
+      );
+
+      final resumeItems = [
+        _jellyfinMovie(
+          id: 'jf-beta',
+          name: 'Other Title',
+          path: '/jellyfin/Beta (2010)/movie.mkv',
+        ),
+        _jellyfinMovie(
+          id: 'jf-gamma',
+          name: 'Gamma',
+          path: '/jellyfin/Gamma (2020)/movie.mkv',
+        ),
+      ];
+
+      // When
+      final matched = matchResumeItemsToLibrary(
+        resumeItems: resumeItems,
+        movies: [
+          LibraryMovieEntry(instance: radarrInstance, movie: alpha),
+          LibraryMovieEntry(instance: radarrInstance, movie: beta),
+        ],
+        series: const [],
+      );
+
+      // Then
+      expect(matched.map((item) => item.movie?.id).toList(), [2]);
+    });
+
+    test(
+      'matches episodes by series folder name when Jellyfin mounts a different root',
+      () {
+        // Given
+        final shogun = _series(
+          id: 40,
+          title: 'Shogun (2024)',
+          path: '/data/tv/Shogun',
+        );
+
+        final resumeItems = [
+          _jellyfinEpisode(
+            id: 'jf-shogun',
+            name: 'Anjin',
+            seriesName: 'Unrelated Title',
+            seasonNumber: 1,
+            episodeNumber: 3,
+            path: '/tv/Shogun/Season 01/S01E03.mkv',
+          ),
+          _jellyfinEpisode(
+            id: 'jf-other',
+            name: 'Elsewhere',
+            seriesName: 'Other Show',
+            seasonNumber: 1,
+            episodeNumber: 1,
+            path: '/tv/Other/Season 01/S01E01.mkv',
+          ),
+        ];
+
+        // When
+        final matched = matchResumeItemsToLibrary(
+          resumeItems: resumeItems,
+          movies: const [],
+          series: [
+            LibrarySeriesEntry(instance: sonarrInstance, series: shogun),
+          ],
+        );
+
+        // Then
+        expect(matched.map((item) => item.series?.id).toList(), [40]);
+        expect(matched.single.jellyfinItem.id, 'jf-shogun');
+      },
+    );
+
+    test(
+      'prefers the series whose year matches the Jellyfin production year',
+      () {
+        // Given
+        final oldWho = _series(
+          id: 50,
+          title: 'Doctor Who',
+          year: 1963,
+          path: '/tv/Doctor Who',
+        );
+        final newWho = _series(
+          id: 51,
+          title: 'Doctor Who (2005)',
+          year: 2005,
+          path: '/tv/Doctor Who (2005)',
+        );
+
+        final resumeItems = [
+          _jellyfinEpisode(
+            id: 'jf-new',
+            name: 'The Eleventh Hour',
+            seriesName: 'Doctor Who',
+            seasonNumber: 5,
+            episodeNumber: 1,
+            productionYear: 2005,
+          ),
+          _jellyfinEpisode(
+            id: 'jf-old',
+            name: 'An Unearthly Child',
+            seriesName: 'Doctor Who',
+            seasonNumber: 1,
+            episodeNumber: 1,
+            productionYear: 1963,
+          ),
+          _jellyfinEpisode(
+            id: 'jf-no-year',
+            name: 'Untitled',
+            seriesName: 'Doctor Who',
+            seasonNumber: 1,
+            episodeNumber: 2,
+          ),
+        ];
+
+        // When
+        final matched = matchResumeItemsToLibrary(
+          resumeItems: resumeItems,
+          movies: const [],
+          series: [
+            LibrarySeriesEntry(instance: sonarrInstance, series: oldWho),
+            LibrarySeriesEntry(instance: sonarrInstance, series: newWho),
+          ],
+        );
+
+        // Then
+        expect(matched.map((item) => item.series?.id).toList(), [51, 50, 50]);
       },
     );
   });
@@ -361,12 +509,17 @@ Movie _movie({
   });
 }
 
-Series _series({required int id, required String title, String? path}) {
+Series _series({
+  required int id,
+  required String title,
+  String? path,
+  int year = 2022,
+}) {
   return Series.fromJson({
     'id': id,
     'title': title,
     'sortTitle': title.toLowerCase(),
-    'year': 2022,
+    'year': year,
     'tvdbId': id * 100,
     'status': 'continuing',
     'seriesType': 'standard',
@@ -406,6 +559,7 @@ JellyfinItem _jellyfinEpisode({
   required int seasonNumber,
   required int episodeNumber,
   String? path,
+  int? productionYear,
 }) {
   return JellyfinItem(
     id: id,
@@ -415,6 +569,7 @@ JellyfinItem _jellyfinEpisode({
     parentIndexNumber: seasonNumber,
     indexNumber: episodeNumber,
     path: path,
+    productionYear: productionYear,
     playbackPositionTicks: 15000000000,
     runTimeTicks: 30000000000,
     mediaSources: const [JellyfinMediaSource(id: 'src-1', container: 'mkv')],

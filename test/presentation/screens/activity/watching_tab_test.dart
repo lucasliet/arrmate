@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,7 @@ import 'package:arrmate/presentation/screens/activity/providers/activity_provide
 import 'package:arrmate/presentation/screens/activity/providers/history_provider.dart';
 import 'package:arrmate/presentation/screens/activity/providers/watching_provider.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/watching_list_item.dart';
+import 'package:arrmate/presentation/screens/player/playback_request.dart';
 
 class _EmptyQueueNotifier extends QueueNotifier {
   @override
@@ -24,16 +27,39 @@ class _EmptyHistoryNotifier extends HistoryNotifier {
 
 class _StubWatchingNotifier extends WatchingNotifier {
   final List<WatchingItem> _items;
+  final void Function()? _onBuild;
 
-  _StubWatchingNotifier(this._items);
+  _StubWatchingNotifier(this._items, {void Function()? onBuild})
+    : _onBuild = onBuild;
 
   @override
-  Future<List<WatchingItem>> build() async => _items;
+  Future<List<WatchingItem>> build() async {
+    _onBuild?.call();
+    return _items;
+  }
+}
+
+class _StubInstancesNotifier extends InstancesNotifier {
+  final bool failSelection;
+
+  _StubInstancesNotifier({this.failSelection = false});
+
+  @override
+  InstancesState build() => const InstancesState(isLoading: false);
+
+  @override
+  Future<void> selectInstance(InstanceType type, String id) async {
+    if (failSelection) throw StateError('Instance selection failed');
+  }
 }
 
 class _FakePlaybackLaunchService extends PlaybackLaunchService {
   JellyfinItem? lastPlayedItem;
   String? lastPlayedTitle;
+
+  /// When set, [playItem] reports a launched player that closes with this
+  /// future; otherwise it reports a cancelled launch.
+  Future<void>? launchedClosed;
 
   @override
   Future<PlaybackLaunchResult> playItem(
@@ -44,7 +70,15 @@ class _FakePlaybackLaunchService extends PlaybackLaunchService {
   }) async {
     lastPlayedItem = item;
     lastPlayedTitle = title;
-    return const PlaybackLaunchCancelled();
+    final closed = launchedClosed;
+    if (closed == null) return const PlaybackLaunchCancelled();
+    return PlaybackLaunched(
+      PlaybackRequest(
+        title: title ?? item.name ?? '',
+        streamUrl: Uri.parse('http://jellyfin.local:8096/Videos/jf/stream'),
+      ),
+      closed: closed,
+    );
   }
 }
 
@@ -301,6 +335,7 @@ void main() {
               watchingItemsProvider.overrideWith(
                 () => _StubWatchingNotifier([movieWatchingItem]),
               ),
+              instancesProvider.overrideWith(() => _StubInstancesNotifier()),
             ],
             child: MaterialApp.router(routerConfig: router),
           ),
@@ -319,5 +354,111 @@ void main() {
         expect(find.text('Movie Details'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'refreshes watching items only after the resumed player closes',
+      (tester) async {
+        // Given
+        final playerClosed = Completer<void>();
+        final fakeLaunchService = _FakePlaybackLaunchService()
+          ..launchedClosed = playerClosed.future;
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentJellyfinInstanceProvider.overrideWithValue(
+                jellyfinInstance,
+              ),
+              currentQBittorrentInstanceProvider.overrideWithValue(null),
+              queueProvider.overrideWith(_EmptyQueueNotifier.new),
+              activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+              watchingItemsProvider.overrideWith(
+                () => _StubWatchingNotifier([
+                  episodeWatchingItem,
+                ], onBuild: () => buildCount++),
+              ),
+              playbackLaunchServiceProvider.overrideWithValue(
+                fakeLaunchService,
+              ),
+            ],
+            child: const MaterialApp(home: ActivityScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(Tab, 'Watching'));
+        await tester.pumpAndSettle();
+        final buildsBeforeTap = buildCount;
+
+        // When
+        await tester.tap(find.byType(WatchingListItem));
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(fakeLaunchService.lastPlayedItem?.id, 'jf-ep-99');
+        expect(buildCount, buildsBeforeTap);
+
+        // When
+        playerClosed.complete();
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(buildCount, buildsBeforeTap + 1);
+      },
+    );
+
+    testWidgets('does not navigate to library when instance selection fails', (
+      tester,
+    ) async {
+      // Given
+      String? navigatedLocation;
+      final router = GoRouter(
+        initialLocation: '/activity',
+        routes: [
+          GoRoute(
+            path: '/activity',
+            builder: (context, state) => const ActivityScreen(),
+          ),
+          GoRoute(
+            path: '/movies/:id',
+            builder: (context, state) {
+              navigatedLocation = state.uri.toString();
+              return const Scaffold(body: Text('Movie Details'));
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            currentQBittorrentInstanceProvider.overrideWithValue(null),
+            queueProvider.overrideWith(_EmptyQueueNotifier.new),
+            activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+            watchingItemsProvider.overrideWith(
+              () => _StubWatchingNotifier([movieWatchingItem]),
+            ),
+            instancesProvider.overrideWith(
+              () => _StubInstancesNotifier(failSelection: true),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Watching'));
+      await tester.pumpAndSettle();
+
+      // When
+      await tester.tap(find.byTooltip('Open in library'));
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(navigatedLocation, isNull);
+      expect(find.text('Movie Details'), findsNothing);
+      expect(find.byType(WatchingListItem), findsOneWidget);
+    });
   });
 }

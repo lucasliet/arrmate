@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../providers/instances_provider.dart';
@@ -162,8 +163,13 @@ class WatchingListItem extends ConsumerWidget {
     return '$watched / $total';
   }
 
+  /// Starts playback and refreshes the Continue Watching list once the player
+  /// closes, so the card shows the progress reported during the session.
   Future<void> _resumePlayback(BuildContext context, WidgetRef ref) async {
-    await ref
+    // Captured before the first await so the refresh still works if this card
+    // is disposed while the player is open.
+    final container = ProviderScope.containerOf(context);
+    final result = await ref
         .read(playbackLaunchServiceProvider)
         .playItem(
           context,
@@ -171,7 +177,9 @@ class WatchingListItem extends ConsumerWidget {
           item: item.jellyfinItem,
           title: item.playbackTitle,
         );
-    ref.invalidate(watchingItemsProvider);
+    if (result is! PlaybackLaunched) return;
+    await result.closed;
+    container.invalidate(watchingItemsProvider);
   }
 
   Future<void> _openInLibrary(BuildContext context, WidgetRef ref) async {
@@ -179,7 +187,14 @@ class WatchingListItem extends ConsumerWidget {
       await ref
           .read(instancesProvider.notifier)
           .selectInstance(item.mediaInstance.type, item.mediaInstance.id);
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[WatchingListItem] Could not select ${item.mediaInstance.type} instance ${item.mediaInstance.id}',
+        error,
+        stackTrace,
+      );
+      return;
+    }
     if (!context.mounted) return;
 
     if (item.movie != null) {

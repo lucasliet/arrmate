@@ -993,7 +993,14 @@ void main() {
         await tester.pump();
 
         // Then
-        expect(launchResult, isA<PlaybackLaunched>());
+        expect(
+          launchResult,
+          isA<PlaybackLaunched>().having(
+            (launched) => launched.closed,
+            'closed',
+            isNotNull,
+          ),
+        );
         expect(harness.playerRequest, isNotNull);
         expect(harness.playerRequest!.title, 'Severance · S01E02 · Half Loop');
         expect(
