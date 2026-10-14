@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
@@ -404,69 +405,9 @@ class _EpisodeTile extends ConsumerWidget {
         episode.airDate != null ? formatDate(episode.airDate!) : 'TBA',
         style: TextStyle(color: statusColor),
       ),
-      trailing: PopupMenuButton<_EpisodeAction>(
-        key: Key('episodeActionsMenu_${episode.id}'),
-        tooltip: 'Episode actions',
-        onSelected: (action) {
-          switch (action) {
-            case _EpisodeAction.watch:
-              ref
-                  .read(playbackLaunchServiceProvider)
-                  .playEpisode(context, ref, episode: episode);
-            case _EpisodeAction.toggleMonitor:
-              _handleMonitoring(context, ref);
-            case _EpisodeAction.automaticSearch:
-              _handleAutomaticSearch(context, ref);
-            case _EpisodeAction.interactiveSearch:
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => ReleasesSheet(
-                  id: episode.id,
-                  isMovie: false,
-                  title: '${series.title} - ${episode.episodeLabel}',
-                  episodeCode: episode.episodeLabel,
-                  originalLanguage: series.originalLanguage?.name,
-                ),
-              );
-          }
-        },
-        itemBuilder: (context) => [
-          if (canWatch)
-            const PopupMenuItem(
-              value: _EpisodeAction.watch,
-              child: ListTile(
-                leading: Icon(Icons.play_circle_outline),
-                title: Text('Watch in Jellyfin'),
-              ),
-            ),
-          PopupMenuItem(
-            value: _EpisodeAction.toggleMonitor,
-            child: ListTile(
-              leading: Icon(
-                episode.monitored ? Icons.bookmark : Icons.bookmark_border,
-              ),
-              title: Text(
-                episode.monitored ? 'Unmonitor episode' : 'Monitor episode',
-              ),
-            ),
-          ),
-          const PopupMenuItem(
-            value: _EpisodeAction.automaticSearch,
-            child: ListTile(
-              leading: Icon(Icons.travel_explore),
-              title: Text('Automatic Search'),
-            ),
-          ),
-          const PopupMenuItem(
-            value: _EpisodeAction.interactiveSearch,
-            child: ListTile(
-              leading: Icon(Icons.troubleshoot),
-              title: Text('Interactive Search'),
-            ),
-          ),
-        ],
-      ),
+      trailing: context.isLargeScreen
+          ? _buildExpandedActions(context, ref, canWatch)
+          : _buildOverflowMenu(context, ref, canWatch),
       onTap: () {
         showModalBottomSheet(
           context: context,
@@ -474,6 +415,119 @@ class _EpisodeTile extends ConsumerWidget {
           builder: (context) => EpisodeDetailsSheet(episode: episode),
         );
       },
+    );
+  }
+
+  void _openInteractiveSearch(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ReleasesSheet(
+        id: episode.id,
+        isMovie: false,
+        title: '${series.title} - ${episode.episodeLabel}',
+        episodeCode: episode.episodeLabel,
+        originalLanguage: series.originalLanguage?.name,
+      ),
+    );
+  }
+
+  void _watch(BuildContext context, WidgetRef ref) {
+    ref
+        .read(playbackLaunchServiceProvider)
+        .playEpisode(context, ref, episode: episode);
+  }
+
+  Widget _buildExpandedActions(
+    BuildContext context,
+    WidgetRef ref,
+    bool canWatch,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (canWatch)
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline),
+            tooltip: 'Watch in Jellyfin',
+            onPressed: () => _watch(context, ref),
+          ),
+        IconButton(
+          icon: Icon(
+            episode.monitored ? Icons.bookmark : Icons.bookmark_border,
+          ),
+          tooltip: episode.monitored ? 'Unmonitor episode' : 'Monitor episode',
+          onPressed: () => _handleMonitoring(context, ref),
+        ),
+        IconButton(
+          icon: const Icon(Icons.travel_explore),
+          tooltip: 'Automatic Search',
+          onPressed: () => _handleAutomaticSearch(context, ref),
+        ),
+        IconButton(
+          icon: const Icon(Icons.troubleshoot),
+          tooltip: 'Interactive Search',
+          onPressed: () => _openInteractiveSearch(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOverflowMenu(
+    BuildContext context,
+    WidgetRef ref,
+    bool canWatch,
+  ) {
+    return PopupMenuButton<_EpisodeAction>(
+      key: Key('episodeActionsMenu_${episode.id}'),
+      tooltip: 'Episode actions',
+      onSelected: (action) {
+        switch (action) {
+          case _EpisodeAction.watch:
+            _watch(context, ref);
+          case _EpisodeAction.toggleMonitor:
+            _handleMonitoring(context, ref);
+          case _EpisodeAction.automaticSearch:
+            _handleAutomaticSearch(context, ref);
+          case _EpisodeAction.interactiveSearch:
+            _openInteractiveSearch(context);
+        }
+      },
+      itemBuilder: (context) => [
+        if (canWatch)
+          const PopupMenuItem(
+            value: _EpisodeAction.watch,
+            child: ListTile(
+              leading: Icon(Icons.play_circle_outline),
+              title: Text('Watch in Jellyfin'),
+            ),
+          ),
+        PopupMenuItem(
+          value: _EpisodeAction.toggleMonitor,
+          child: ListTile(
+            leading: Icon(
+              episode.monitored ? Icons.bookmark : Icons.bookmark_border,
+            ),
+            title: Text(
+              episode.monitored ? 'Unmonitor episode' : 'Monitor episode',
+            ),
+          ),
+        ),
+        const PopupMenuItem(
+          value: _EpisodeAction.automaticSearch,
+          child: ListTile(
+            leading: Icon(Icons.travel_explore),
+            title: Text('Automatic Search'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: _EpisodeAction.interactiveSearch,
+          child: ListTile(
+            leading: Icon(Icons.troubleshoot),
+            title: Text('Interactive Search'),
+          ),
+        ),
+      ],
     );
   }
 

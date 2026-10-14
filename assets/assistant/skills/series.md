@@ -176,13 +176,13 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
      - 🔴 Vermelho = monitorado mas faltando.
      - ⚫ Cinza = não monitorado.
      - 🔵 Azul = próximo a exibir.
-   - **Menu ⋮ "Episode actions"** (à direita do episódio) com: **Watch in Jellyfin** (só aparece quando o episódio tem arquivo e há uma instância Jellyfin), **Monitor episode / Unmonitor episode**, **Automatic Search** e **Interactive Search**.
+   - **Ações do episódio** (à direita). No **celular** (tela estreita) ficam num **menu ⋮ "Episode actions"**; em **tablet, web e desktop** (tela larga) aparecem como botões de ícone lado a lado. As ações são: **Watch in Jellyfin** (só aparece quando o episódio tem arquivo e há uma instância Jellyfin), **Monitor episode / Unmonitor episode**, **Automatic Search** e **Interactive Search**.
 
 5. **Opções da temporada e por episódio:**
    - Tocar em **Automatic Search** na AppBar para buscar releases da temporada inteira.
    - Tocar em **Interactive Search** na AppBar para abrir o sheet de releases da temporada com ordenação por score/seeders/idade/tamanho/indexador.
-   - Abrir o menu ⋮ do episódio e tocar em **Monitor episode** / **Unmonitor episode** para monitorar ou desmonitorar um episódio individual.
-   - Abrir o menu ⋮ do episódio e tocar em **Automatic Search** ou **Interactive Search** para buscar releases daquele episódio (a busca interativa abre o sheet de releases).
+   - No celular, abrir o menu ⋮ do episódio (em tela larga, usar os botões de ícone) e tocar em **Monitor episode** / **Unmonitor episode** para monitorar ou desmonitorar um episódio individual.
+   - No celular, abrir o menu ⋮ do episódio (em tela larga, usar os botões de ícone) e tocar em **Automatic Search** ou **Interactive Search** para buscar releases daquele episódio (a busca interativa abre o sheet de releases).
    - Tocar em qualquer lugar do tile para ver **detalhes completos do episódio** (nome, sinopse, elenco, etc). A ficha do episódio traz, entre o arquivo e o histórico, uma seção **Torrents** com os torrents do cliente que sustentam aquele episódio — um season pack aparece em todos os episódios que ele cobre, e cópias cross-seed vêm marcadas com o badge "Cross-seed". Tocar em um card abre a ficha do torrent.
 
 6. Se tocou em uma release na busca:
@@ -395,4 +395,4 @@ Use esta opção quando quiser **apagar todos os arquivos de uma temporada espec
 **Observações:**
 - Remove **apenas o arquivo selecionado**.
 - O episódio permanece na biblioteca com status "Missing".
-- Você pode re-buscar uma release pelo menu ⋮ do episódio → **Automatic Search** ou **Interactive Search**.
+- Você pode re-buscar uma release pelo menu ⋮ do episódio (celular) ou pelos botões de busca do episódio (tela larga) → **Automatic Search** ou **Interactive Search**.
