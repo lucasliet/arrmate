@@ -121,7 +121,7 @@ void main() {
   group('jellyfinSessionStatusProvider', () {
     const expiredMessage =
         'Your Jellyfin session has expired. Sign in again in the instance '
-        'settings (API Key field as username:password).';
+        'settings (Add Basic Auth with your username and password).';
 
     test('should flag an instance whose session the server rejected', () async {
       // Given

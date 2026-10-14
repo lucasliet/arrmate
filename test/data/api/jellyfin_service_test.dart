@@ -10,7 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('JellyfinService authentication', () {
     test(
-      'username:password mode hits AuthenticateByName and stores the token',
+      'Basic username:password mode hits AuthenticateByName and stores the '
+      'token',
       () async {
         // Given
         final adapter = _RecordingAdapter((options) {
@@ -86,9 +87,59 @@ void main() {
       },
     );
 
+    test('treats an apiKey containing a colon as a plain API key', () async {
+      // Given
+      final adapter = _RecordingAdapter((options) {
+        switch (options.uri.path) {
+          case '/System/Info':
+            return {'ServerName': 'Jelly', 'Version': '10.9.0'};
+        }
+        return <String, dynamic>{};
+      });
+      final service = _buildService(adapter, apiKey: 'admin:pass');
+
+      // When
+      await service.getSystemStatus();
+
+      // Then
+      expect(
+        adapter.requests.any((uri) => uri.path == '/Users/AuthenticateByName'),
+        isFalse,
+      );
+      expect(
+        adapter.headers.last['Authorization'],
+        contains('Token="admin:pass"'),
+      );
+      expect(service.supportsProgressSync, isFalse);
+    });
+
+    test('hasLoginCredentials is true only for a Basic header', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final keyService = _buildService(adapter, apiKey: 'admin:pass');
+      final basicService = _serviceUserPassword(adapter);
+
+      // Then
+      expect(keyService.hasLoginCredentials, isFalse);
+      expect(basicService.hasLoginCredentials, isTrue);
+    });
+
+    test('signIn with only an API key containing a colon throws', () async {
+      // Given
+      final adapter = _RecordingAdapter((_) => <String, dynamic>{});
+      final service = _buildService(adapter, apiKey: 'admin:pass');
+
+      // When
+      final call = service.signIn();
+
+      // Then
+      await expectLater(call, throwsA(isA<MissingDataError>()));
+      expect(adapter.requests, isEmpty);
+    });
+
     test('drops a custom Authorization header in user mode', () async {
       // Given
-      final instance = _instanceWithBasicAuth(apiKey: 'lucas:secret');
+      final instance = _instanceWithBasicAuth(apiKey: '');
 
       // When
       final headers = JellyfinService.effectiveCustomHeaders(instance);
@@ -285,7 +336,8 @@ void main() {
       });
       final service = _buildService(
         adapter,
-        apiKey: 'admin:pass',
+        apiKey: '',
+        headers: [_basicAuthHeader('admin:pass')],
         deviceIdResolver: () async {
           resolutions++;
           return 'counted-device-1';
@@ -370,7 +422,11 @@ void main() {
         }
         return <String, dynamic>{};
       });
-      final service = _buildService(adapter, apiKey: 'demo:wrong');
+      final service = _buildService(
+        adapter,
+        apiKey: '',
+        headers: [_basicAuthHeader('demo:wrong')],
+      );
 
       // When
       final call = service.getSystemStatus();
@@ -393,7 +449,11 @@ void main() {
           }
           return <String, dynamic>{};
         });
-        final service = _buildService(adapter, apiKey: 'demo:wrong');
+        final service = _buildService(
+          adapter,
+          apiKey: '',
+          headers: [_basicAuthHeader('demo:wrong')],
+        );
 
         // When
         final call = service.getSystemStatus();
@@ -457,17 +517,60 @@ void main() {
       );
     });
 
+    test(
+      'a Basic header wins over a stored session: a login request is made '
+      'and the new token is used',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          if (options.uri.path == '/Users/AuthenticateByName') {
+            return {
+              'AccessToken': 'token-456',
+              'User': {'Id': 'user-9', 'Name': 'admin'},
+            };
+          }
+          return <String, dynamic>{};
+        });
+        final service = _buildService(
+          adapter,
+          apiKey: '',
+          headers: [_basicAuthHeader('admin:newpass')],
+          userSession: storedSession,
+          deviceId: 'install-user-1',
+        );
+
+        // When
+        await service.authenticate();
+
+        // Then
+        expect(service.hasLoginCredentials, isTrue);
+        expect(
+          adapter.requests.map((uri) => uri.path),
+          contains('/Users/AuthenticateByName'),
+        );
+        expect(
+          adapter.headers.last['Authorization'],
+          isNot(contains('stored-token')),
+        );
+        expect(service.supportsProgressSync, isTrue);
+      },
+    );
+
     test('signing in again reuses the stored session device id', () async {
       // Given
       final adapter = _RecordingAdapter((options) {
-        return {
-          'AccessToken': 'token-456',
-          'User': {'Id': 'user-9', 'Name': 'admin'},
-        };
+        if (options.uri.path == '/Users/AuthenticateByName') {
+          return {
+            'AccessToken': 'new-token',
+            'User': {'Id': 'user-9', 'Name': 'admin'},
+          };
+        }
+        return <String, dynamic>{};
       });
       final service = _buildService(
         adapter,
-        apiKey: 'admin:newpass',
+        apiKey: '',
+        headers: [_basicAuthHeader('admin:newpass')],
         userSession: storedSession,
         deviceId: 'install-user-1',
       );
@@ -476,8 +579,8 @@ void main() {
       final session = await service.signIn();
 
       // Then
-      expect(session.accessToken, 'token-456');
       expect(session.deviceId, 'arrmate-device-7');
+      expect(session.accessToken, 'new-token');
     });
 
     test(
@@ -486,14 +589,18 @@ void main() {
       () async {
         // Given
         final adapter = _RecordingAdapter((options) {
-          return {
-            'AccessToken': 'token-789',
-            'User': {'Id': 'user-9', 'Name': 'admin'},
-          };
+          if (options.uri.path == '/Users/AuthenticateByName') {
+            return {
+              'AccessToken': 'new-token',
+              'User': {'Id': 'user-9', 'Name': 'admin'},
+            };
+          }
+          return <String, dynamic>{};
         });
         final service = _buildService(
           adapter,
-          apiKey: 'admin:newpass',
+          apiKey: '',
+          headers: [_basicAuthHeader('admin:newpass')],
           userSession: restoredSession,
           deviceId: 'install-user-1',
         );
@@ -1525,7 +1632,7 @@ void main() {
         }
         return <String, dynamic>{};
       });
-      final instance = _instanceWithBasicAuth(apiKey: 'lucas:secret');
+      final instance = _instanceWithBasicAuth(apiKey: '');
       final dio = Dio()
         ..httpClientAdapter = adapter
         ..options.baseUrl = instance.effectiveUrl
@@ -2034,12 +2141,20 @@ JellyfinService _serviceApiKey(
 JellyfinService _serviceUserPassword(_RecordingAdapter adapter) {
   return _buildService(
     adapter,
-    apiKey: 'admin:pass',
+    apiKey: '',
+    headers: [_basicAuthHeader('admin:pass')],
     deviceId: 'install-user-1',
   );
 }
 
-/// Instance carrying a reverse-proxy Basic header plus a passthrough header.
+/// Basic `Authorization` header carrying [credentials] (Add Basic Auth).
+InstanceHeader _basicAuthHeader(String credentials) => InstanceHeader(
+  name: 'Authorization',
+  value: 'Basic ${base64Encode(utf8.encode(credentials))}',
+);
+
+/// Instance with an empty API key whose login travels in a Basic header,
+/// plus a passthrough header.
 Instance _instanceWithBasicAuth({required String apiKey}) => Instance(
   id: 'jf-1',
   type: InstanceType.jellyfin,

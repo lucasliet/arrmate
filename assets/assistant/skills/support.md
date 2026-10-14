@@ -48,7 +48,7 @@ description: Funcionalidades suportadas/não suportadas, FAQs, onde reportar bug
 **Streaming (Jellyfin):**
 - Player de vídeo integrado para filmes e episódios do Jellyfin (trilhas de áudio/legenda, qualidade quando disponível, abrir em player externo).
 - Pareamento automático da biblioteca (caminho → provider IDs → scan/refresh sob demanda) e conector Radarr/Sonarr que mantém o catálogo do Jellyfin atualizado.
-- Sincronização de progresso ("Continue Watching") com `username:password`; com API key reproduz sem gravar estado de assistido.
+- Sincronização de progresso ("Continue Watching") com login e senha via Basic Auth (Advanced Settings); com API key reproduz sem gravar estado de assistido.
 
 **Notificações:**
 - Push notifications via ntfy.sh.

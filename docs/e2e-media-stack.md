@@ -83,7 +83,7 @@ restore fixtures. All five lab ports must be available.
 | Sonarr | `http://127.0.0.1:8989` | `arrmate-sonarr` |
 | qBittorrent | `http://127.0.0.1:8080` | `admin:adminarr` or bearer `arrmate-qbit` |
 | Prowlarr | `http://127.0.0.1:9696` | `arrmate-prowlarr` |
-| Jellyfin | `http://127.0.0.1:8096` | `arrmate:arrmate-jellyfin` (admin, enables Continue Watching sync) or API key `arrmate-jellyfin` (playback only, no watch-state writes) |
+| Jellyfin | `http://127.0.0.1:8096` | Advanced Settings → Add Basic Auth `arrmate` / `arrmate-jellyfin` (admin, enables Continue Watching sync) or API key `arrmate-jellyfin` in the API Key field (playback only, no watch-state writes) |
 
 Prowlarr has no instance type in the app. Call it directly when checking that
 indexer results exist. On a device that is not the machine running Docker,
@@ -174,7 +174,7 @@ its expected result and last tested status.
 10. Edit Arrival: change monitored state, quality profile, minimum availability, or root folder, save, leave the screen, and reopen. The edited values remain.
 11. Settings shows system status for Radarr 5.18.4 and Sonarr 4.0.14, two health warnings, log lines at info, warn, and error level (commands add more), quality profiles HD-1080p and Ultra-HD, and both root folders' free space.
 12. Series details for Severance lists seasons 1 and 2. Season 1 shows four files, the missing episodes, and the downloads. Episode search grabs a release that imports itself within a minute.
-13. Jellyfin streaming. Add the Jellyfin instance (`http://127.0.0.1:8096`, `arrmate:arrmate-jellyfin`), open Dune, and tap Watch: the player opens the direct stream, the audio sheet lists English AAC and Portuguese EAC3, and the subtitle sheet lists the embedded ASS track plus the external SRT. Open The Matrix and confirm playback resumes around 100 s. Stop the video, then re-fetch `/Items` for Dune and confirm the reported position round-tripped.
+13. Jellyfin streaming. Add the Jellyfin instance (`http://127.0.0.1:8096`, Basic Auth `arrmate` / `arrmate-jellyfin`), open Dune, and tap Watch: the player opens the direct stream, the audio sheet lists English AAC and Portuguese EAC3, and the subtitle sheet lists the embedded ASS track plus the external SRT. Open The Matrix and confirm playback resumes around 100 s. Stop the video, then re-fetch `/Items` for Dune and confirm the reported position round-tripped.
 14. Jellyfin auto-update. On the Jellyfin instance edit screen, tap Set Up Library Auto-Update: Radarr and Sonarr each gain an `Arrmate Jellyfin (<device tag>)` MediaBrowser connector, backed by this device's `Arrmate (<device tag>)` API key. Grabbing a new release then imports it in the *arrs, and Jellyfin indexes the new path only after its scan runs.
 
 Desktop and web layouts use the same data. Repeat library, calendar, activity, and settings at a narrow width and a wide width when the build under test is the responsive layout.

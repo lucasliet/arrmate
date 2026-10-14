@@ -334,10 +334,10 @@ class InstancesNotifier extends Notifier<InstancesState> {
 
   /// Validates and persists [instance] as a single transactional operation.
   ///
-  /// Jellyfin `username:password` credentials are first exchanged for a
-  /// session (see [JellyfinSessionService]) so the password is never
-  /// persisted; a session created for an instance that then fails
-  /// validation is signed out again. A stored session replaced by an API
+  /// Jellyfin `username:password` credentials from a Basic `Authorization`
+  /// header are first exchanged for a session (see [JellyfinSessionService])
+  /// so the password is never persisted; a session created for an instance
+  /// that then fails validation is signed out again. A stored session replaced by an API
   /// key is signed out on the server only after the instance is saved.
   ///
   /// The [Instance.ownedApiKey] (and its [Instance.ownedApiKeyDevice])

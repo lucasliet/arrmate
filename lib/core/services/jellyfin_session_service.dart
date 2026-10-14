@@ -11,10 +11,11 @@ final jellyfinSessionServiceProvider = Provider(
 
 /// Keeps Jellyfin passwords out of storage by exchanging them for sessions.
 ///
-/// `username:password` credentials — typed in the API Key field or carried
-/// by a Basic `Authorization` header — are signed in once, and only the
-/// returned [InstanceUserSession] is persisted. Instances saved before
-/// sessions existed are migrated the same way on their next load.
+/// `username:password` credentials, carried by a Basic `Authorization`
+/// header (Add Basic Auth), are signed in once, and only the returned
+/// [InstanceUserSession] is persisted. The API Key field is never a login.
+/// Instances saved before sessions existed are migrated the same way on
+/// their next load.
 class JellyfinSessionService {
   final JellyfinService Function(Instance instance) _jellyfinServiceFactory;
 

@@ -137,7 +137,7 @@ class JellyfinConnectSetupService {
   ///    after a backup restore) is left alone too: its connectors still use
   ///    it.
   /// 3. Signs the stored user session out — only when the instance holds a
-  ///    session token from a `username:password` sign-in on this device.
+  ///    session token from a Basic Auth sign-in on this device.
   ///    Logging out with an API key would revoke that key server-wide,
   ///    including a key shared with other devices, so API-key instances are
   ///    never logged out; a session restored from another device
@@ -241,7 +241,7 @@ class JellyfinConnectSetupService {
   }
 
   /// Whether [jellyfinInstance] authenticates with a stored session token
-  /// from a `username:password` sign-in rather than an API key.
+  /// from a Basic Auth sign-in rather than an API key.
   bool _holdsSessionToken(Instance jellyfinInstance) =>
       jellyfinInstance.userSession != null && jellyfinInstance.apiKey.isEmpty;
 
@@ -376,7 +376,7 @@ class JellyfinConnectSetupService {
 
   /// Resolves a server-scoped API key for the connector.
   ///
-  /// A plain API key is used as-is. A stored user session (or legacy
+  /// A plain API key is used as-is. A stored user session (or Basic Auth
   /// `username:password` credentials) mints — or reuses — this device's
   /// `Arrmate (<tag>)` API key when the account is an administrator: the
   /// connector outlives a user session, so it cannot rely on the user's
@@ -386,10 +386,7 @@ class JellyfinConnectSetupService {
     Instance jellyfinInstance,
   ) async {
     final credential = jellyfinInstance.apiKey.trim();
-    // A plain key is used as-is. Anything else (user login in the field or
-    // in a Basic header, or nothing at all) goes through the login flow,
-    // which mints a key for admins and yields null otherwise.
-    if (credential.isNotEmpty && !credential.contains(':')) {
+    if (credential.isNotEmpty) {
       return _ApiKeyResolution(apiKey: credential);
     }
     final service = _jellyfinServiceFactory(jellyfinInstance);
@@ -405,8 +402,8 @@ class JellyfinConnectSetupService {
     return _ApiKeyResolution(
       failure:
           'Jellyfin API key required for automatic library updates: set an '
-          'API key in the field, or log in with an administrator account '
-          '(API Key field as username:password, or Add Basic Auth)',
+          'API key in the field, or sign in with an administrator account '
+          '(Add Basic Auth)',
     );
   }
 

@@ -412,7 +412,7 @@ Shared by movies, seasons, and episodes.
 | INS-13 | Edit instance | Tap row, rename, Save | New label in list | Not run |
 | INS-14 | Delete instance | Trash → Delete | Removed; data screens reflect it | Not run |
 | INS-15 | Missing instance | `/settings/instance/does-not-exist` | “Instance not found” + Go back | Not run |
-| INS-16 | Add Jellyfin, user login | Type Jellyfin, `http://127.0.0.1:8096`, `arrmate:arrmate-jellyfin`, Test, Save | “Connection successful!” with the lab server name and version; Watch buttons appear on downloaded movies and episodes | Not run |
+| INS-16 | Add Jellyfin, user login | Type Jellyfin, `http://127.0.0.1:8096`, Advanced → Add Basic Auth `arrmate` / `arrmate-jellyfin`, Test, Save | “Connection successful!” with the lab server name and version; Watch buttons appear on downloaded movies and episodes | Not run |
 | INS-17 | Jellyfin auto-update connector | Jellyfin row → Set Up Library Auto-Update | Per-instance results; Radarr and Sonarr each gain an `Arrmate Jellyfin (<device tag>)` MediaBrowser connector (`GET /api/v3/notification`); re-running updates it instead of duplicating | Not run |
 
 ## System Management (SYS)

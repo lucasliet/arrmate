@@ -171,15 +171,78 @@ void main() {
     // Then
     expect(
       find.text(
-        'Your Jellyfin session has expired. Enter username:password in the '
-        'API Key field to sign in again.',
+        'Your Jellyfin session has expired. Add Basic Auth in Advanced '
+        'Settings with your username and password to sign in again.',
       ),
       findsOneWidget,
     );
     expect(
-      find.text('Session expired — sign in again with username:password'),
+      find.text(
+        'Session expired — add Basic Auth below to sign in again, or enter '
+        'an API key',
+      ),
       findsOneWidget,
     );
+    expect(find.textContaining('username:password'), findsNothing);
+  });
+
+  testWidgets('should show the Basic Auth hint for a jellyfin api key', (
+    tester,
+  ) async {
+    // Given
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      apiKey: 'key-a',
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([instance.toJson()]),
+    });
+
+    // When
+    await tester.pumpWidget(_screen(instance.id));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.textContaining(
+        'API key (Jellyfin dashboard → Advanced → API Keys). Leave empty if '
+        'using "Add Basic Auth" below',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('username:password'), findsNothing);
+  });
+
+  testWidgets('should keep the stored session in the jellyfin api key help', (
+    tester,
+  ) async {
+    // Given
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      userSession: const InstanceUserSession(
+        accessToken: 'token-123',
+        deviceId: 'device-1',
+        userName: 'admin',
+      ),
+    );
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([instance.toJson()]),
+    });
+
+    // When
+    await tester.pumpWidget(_screen(instance.id));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.textContaining('Signed in as admin.'), findsOneWidget);
+    expect(find.textContaining('add Basic Auth below'), findsOneWidget);
+    expect(find.textContaining('username:password'), findsNothing);
   });
 
   testWidgets('should reveal the api key when the eye button is tapped', (

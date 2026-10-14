@@ -45,17 +45,18 @@ class JellyfinApiKey {
 ///   previous [signIn] returned) is sent as `Token`. The password is never
 ///   persisted, so a rejected token is final: requests throw an
 ///   [UnauthorizedError] asking the user to sign in again.
-/// - **User mode**: `username:password` in [Instance.apiKey], or decoded
-///   from a custom `Authorization: Basic ...` header when the field is
-///   empty → `POST /Users/AuthenticateByName`. This is the sign-in step;
-///   callers persist the result of [signIn] as a session and drop the
+/// - **User mode**: `username:password` decoded from a custom
+///   `Authorization: Basic ...` header (Add Basic Auth) when the API key
+///   field is empty → `POST /Users/AuthenticateByName`. This is the sign-in
+///   step; callers persist the result of [signIn] as a session and drop the
 ///   password. Instances saved before sessions existed keep working in this
 ///   mode until they are migrated.
-/// - **API key mode**: any non-empty value without `:` (the admin-generated
-///   key) → sent as `Token` in the `Authorization: MediaBrowser ...`
-///   header. An admin API key has no user scope, so playback progress is
-///   never reported in this mode (see [supportsProgressSync]) — watch-state
-///   writes must not be attributed to an arbitrary account.
+/// - **API key mode**: any non-empty [Instance.apiKey] (the admin-generated
+///   key, as in the qBittorrent field) → sent as `Token` in the
+///   `Authorization: MediaBrowser ...` header. An admin API key has no user
+///   scope, so playback progress is never reported in this mode (see
+///   [supportsProgressSync]) — watch-state writes must not be attributed to
+///   an arbitrary account.
 /// - **Custom header only**: empty value without usable headers → relies
 ///   solely on [Instance.headers].
 class JellyfinService {
@@ -105,7 +106,8 @@ class JellyfinService {
   /// Whether the authenticated user is a server administrator (user mode).
   bool _isAdministrator = false;
 
-  /// Whether authentication uses `username:password` credentials.
+  /// Whether authentication uses `username:password` credentials (Basic
+  /// header) or a stored session.
   bool _isUserMode = false;
 
   /// Whether authentication uses a plain API key (sent as `Token`).
@@ -187,15 +189,14 @@ class JellyfinService {
     };
   }
 
-  /// Credentials (`username:password`) for user mode.
-  ///
-  /// From [Instance.apiKey] when it contains `:`, otherwise decoded from a
-  /// custom `Authorization: Basic ...` header (the qBittorrent-style flow:
-  /// empty key plus "Add Basic Auth"). Jellyfin never accepts HTTP Basic
-  /// itself, so the decoded pair is only ever sent to `AuthenticateByName`.
+  /// Credentials (`username:password`) for user mode, decoded from a custom
+  /// `Authorization: Basic ...` header (Add Basic Auth). Jellyfin never
+  /// accepts HTTP Basic itself, so the decoded pair is only ever sent to
+  /// `AuthenticateByName`.
   String? _loginCredentials;
 
-  /// Decodes `username:password` from a custom Basic authorization header.
+  /// Decodes `username:password` from the instance's Basic authorization
+  /// header.
   ///
   /// Returns null when there is no Basic header, it is malformed, or it
   /// carries no `:` separator. The decoded value is never logged.
@@ -222,32 +223,33 @@ class JellyfinService {
     return null;
   }
 
-  /// Resolves the authentication mode from [Instance.apiKey] without any
-  /// network call, so request headers are correct from the first request.
+  /// Resolves the authentication mode from [Instance.apiKey] and the custom
+  /// headers without any network call, so request headers are correct from
+  /// the first request.
   ///
-  /// Mirrors `QBittorrentService`: the API key field carries either a plain
-  /// key or `username:password`, and an empty field falls back to the
-  /// custom headers — including Basic credentials for the login.
+  /// The API key field holds only an API key, as in `QBittorrentService`;
+  /// login credentials travel in a Basic `Authorization` header instead.
   ///
-  /// - `username:password` in the field → user mode (credentials via
-  ///   AuthenticateByName); typed credentials always win so the user can
-  ///   sign in again over an expired session.
-  /// - Plain key → API key mode (no login request).
+  /// - Non-empty [Instance.apiKey] → API key mode (no login request), even
+  ///   when the value contains `:`.
+  /// - Basic header credentials → user mode (credentials via
+  ///   AuthenticateByName). They win over a stored session because the user
+  ///   entered them on purpose, e.g. to sign in again after the session
+  ///   expired; the stored token is not copied in this mode.
   /// - Stored [Instance.userSession] → session mode (stored token, no
   ///   login request).
-  /// - Basic header credentials → user mode.
   /// - Empty without usable headers → custom headers only.
   void _resolveAuthMode() {
     _loginCredentials = null;
     _hasStoredSession = false;
     final session = instance.userSession;
-    if (instance.apiKey.contains(':')) {
-      _isUserMode = true;
-      _isApiKeyMode = false;
-      _loginCredentials = instance.apiKey;
-    } else if (instance.apiKey.isNotEmpty) {
+    if (instance.apiKey.isNotEmpty) {
       _isApiKeyMode = true;
       _isUserMode = false;
+    } else if (_decodedBasicCredentials() case final credentials?) {
+      _loginCredentials = credentials;
+      _isUserMode = true;
+      _isApiKeyMode = false;
     } else if (session != null) {
       _isUserMode = true;
       _isApiKeyMode = false;
@@ -258,8 +260,7 @@ class JellyfinService {
       _deviceId = session.deviceId;
       _isAdministrator = session.isAdministrator;
     } else {
-      _loginCredentials = _decodedBasicCredentials();
-      _isUserMode = _loginCredentials != null;
+      _isUserMode = false;
       _isApiKeyMode = false;
     }
     if ((_isUserMode || _isApiKeyMode) &&
@@ -273,14 +274,17 @@ class JellyfinService {
 
   /// Authenticates with the Jellyfin server.
   ///
-  /// Selection of mode based on [Instance.apiKey], mirroring
-  /// `QBittorrentService`:
-  /// - Empty → decoded Basic header credentials when present, otherwise
-  ///   requests fall back to [Instance.headers] only.
-  /// - Plain key → API key; no login request.
-  /// - `username:password` (field or Basic header) → `POST
+  /// Selection of mode based on [Instance.apiKey] and the custom headers:
+  /// - Non-empty key → API key; no login request.
+  /// - Empty key with `username:password` in a Basic header → `POST
   ///   /Users/AuthenticateByName`, storing the returned access token and
-  ///   user id in memory.
+  ///   user id in memory. These credentials win over a stored session, so a
+  ///   user who signs in again over an expired session gets the new token.
+  /// - Otherwise a stored session is reused without a login request.
+  /// - Otherwise requests fall back to [Instance.headers] only.
+  ///
+  /// After a successful [signIn] the app drops the Basic header and keeps
+  /// only the new session.
   ///
   /// [deviceId] overrides the per-installation device id; [signIn] passes the
   /// instance's own stable id so the persisted session is never replaced by
@@ -303,7 +307,7 @@ class JellyfinService {
       return;
     }
 
-    final credentials = _loginCredentials ?? instance.apiKey;
+    final credentials = _loginCredentials!;
     final separatorIndex = credentials.indexOf(':');
     final username = credentials.substring(0, separatorIndex);
     final password = credentials.substring(separatorIndex + 1);
@@ -373,13 +377,13 @@ class JellyfinService {
 
   /// Shown when the server refuses the configured credentials.
   static const _invalidCredentialsMessage =
-      'Invalid Jellyfin credentials. Check the username and password or the '
-      'API key.';
+      'Invalid Jellyfin credentials. Check the username and password (Basic '
+      'Auth) or the API key.';
 
   /// Shown when a stored session is no longer accepted.
   static const _sessionExpiredMessage =
       'Your Jellyfin session has expired. Sign in again in the instance '
-      'settings (API Key field as username:password).';
+      'settings (Add Basic Auth with your username and password).';
 
   /// Shown when the server does not answer at all.
   static const _unreachableMessage =
@@ -399,14 +403,14 @@ class JellyfinService {
     }
   }
 
-  /// Whether this service holds `username:password` credentials that
-  /// [signIn] can exchange for a session.
+  /// Whether this service holds `username:password` credentials from a Basic
+  /// `Authorization` header that [signIn] can exchange for a session.
   bool get hasLoginCredentials {
     _resolveAuthMode();
     return _loginCredentials != null;
   }
 
-  /// Exchanges the configured `username:password` for a user session.
+  /// Exchanges the Basic-header `username:password` for a user session.
   ///
   /// The returned [InstanceUserSession] is meant to be persisted in place of
   /// the password (see [Instance.userSession]) and carries this device's
@@ -416,12 +420,12 @@ class JellyfinService {
   /// session restored from another device, gets a fresh id, so the other
   /// device's session is never replaced.
   ///
-  /// Throws a [MissingDataError] when no credentials are configured, and the
-  /// errors of [authenticate] when the sign-in fails.
+  /// Throws a [MissingDataError] when no Basic credentials are configured,
+  /// and the errors of [authenticate] when the sign-in fails.
   Future<InstanceUserSession> signIn() async {
     if (!hasLoginCredentials) {
       throw const MissingDataError(
-        'Enter username:password in the API Key field to sign in.',
+        'Add Basic Auth with your username and password to sign in.',
       );
     }
     final deviceTag = await _currentDeviceTag();
@@ -1612,7 +1616,7 @@ class JellyfinService {
     if (!_isUserMode || !_isAdministrator) {
       logger.debug(
         '[JellyfinService] API key management requires an administrator '
-        'login (username:password)',
+        'login (Basic Auth username:password)',
       );
       return null;
     }
