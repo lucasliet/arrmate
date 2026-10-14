@@ -162,11 +162,10 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 
 **AppBar da SeasonDetailsScreen:**
 - **Título**: "[Nome da série] - Season [N]".
-- **Menu ⋮ "Season actions"** (canto superior direito) com quatro itens:
-  - **"Automatic Search"** (ícone `travel_explore`): dispara busca automática de releases para toda a temporada.
-  - **"Interactive Search"** (ícone `troubleshoot`): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download).
-  - **"Delete season files"** (ícone `delete_sweep`): apaga todos os arquivos dessa temporada em disco. **Desabilitado** (acinzentado) quando a temporada não tem nenhum episódio com arquivo baixado.
-  - **"Purge season"** (ícone `delete_forever`): remove episódios e arquivos da temporada no Sonarr e também remove torrents fonte no qBittorrent (com aprovação individual de cross-seed). Também fica **desabilitado** sem arquivos.
+- **Botão "Automatic Search"** (ícone `travel_explore` no canto superior direito): dispara busca automática de releases para toda a temporada.
+- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download).
+- **Botão "Delete season files"** (ícone `delete_sweep` no canto superior direito): apaga todos os arquivos dessa temporada em disco. **Desabilitado** (acinzentado) quando a temporada não tem nenhum episódio com arquivo baixado.
+- **Botão "Purge season"** (ícone `delete_forever` no canto superior direito): remove episódios e arquivos da temporada no Sonarr e também remove torrents fonte no qBittorrent (com aprovação individual de cross-seed).
 
 **Cada episódio exibe:**
    - **Número do episódio** (ex: "S01E01", "S01E02").
@@ -180,8 +179,8 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
    - **Menu ⋮ "Episode actions"** (à direita do episódio) com: **Watch in Jellyfin** (só aparece quando o episódio tem arquivo e há uma instância Jellyfin), **Monitor episode / Unmonitor episode**, **Automatic Search** e **Interactive Search**.
 
 5. **Opções da temporada e por episódio:**
-   - Abrir o menu ⋮ da AppBar e tocar em **Automatic Search** para buscar releases da temporada inteira.
-   - Abrir o menu ⋮ da AppBar e tocar em **Interactive Search** para abrir o sheet de releases da temporada com ordenação por score/seeders/idade/tamanho/indexador.
+   - Tocar em **Automatic Search** na AppBar para buscar releases da temporada inteira.
+   - Tocar em **Interactive Search** na AppBar para abrir o sheet de releases da temporada com ordenação por score/seeders/idade/tamanho/indexador.
    - Abrir o menu ⋮ do episódio e tocar em **Monitor episode** / **Unmonitor episode** para monitorar ou desmonitorar um episódio individual.
    - Abrir o menu ⋮ do episódio e tocar em **Automatic Search** ou **Interactive Search** para buscar releases daquele episódio (a busca interativa abre o sheet de releases).
    - Tocar em qualquer lugar do tile para ver **detalhes completos do episódio** (nome, sinopse, elenco, etc). A ficha do episódio traz, entre o arquivo e o histórico, uma seção **Torrents** com os torrents do cliente que sustentam aquele episódio — um season pack aparece em todos os episódios que ele cobre, e cópias cross-seed vêm marcadas com o badge "Cross-seed". Tocar em um card abre a ficha do torrent.
@@ -332,14 +331,14 @@ Use esta opção quando quiser **liberar espaço em disco** mas continuar acompa
 
 ## Purge de temporada — remover temporada + arquivos + torrents fonte
 
-**Onde fica:** SeasonDetailsScreen → menu ⋮ da AppBar → item "Purge season" (ícone `delete_forever`).
+**Onde fica:** SeasonDetailsScreen → botão "Purge season" (ícone `delete_forever` na AppBar).
 
 Use esta opção quando quiser remover completamente uma temporada específica, incluindo episódios no Sonarr, arquivos em disco e torrents fonte no qBittorrent.
 
 **Passo a passo:**
 1. Abrir detalhes da série.
 2. Scroll para **"Seasons"** e tocar na temporada desejada.
-3. Na AppBar da SeasonDetailsScreen, abrir o menu ⋮ e tocar em **"Purge season"** (`delete_forever`).
+3. Na AppBar da SeasonDetailsScreen, tocar no ícone **"Purge season"** (`delete_forever`).
 4. Um **diálogo de confirmação** aparece explicando que a operação remove episódios/arquivos da temporada e torrents fonte no qBittorrent.
 5. Tocar **"Purge"** para confirmar.
 6. Se algum torrent tiver semeado menos que os "Minimum seeding days", aparece o diálogo **"Torrents still seeding"** com as opções "Cancel", "Keep seeding" e "Delete all".
@@ -354,15 +353,15 @@ Use esta opção quando quiser remover completamente uma temporada específica, 
 
 ## Deletar arquivos de uma temporada inteira
 
-**Onde fica:** SeasonDetailsScreen → menu ⋮ da AppBar → item "Delete season files" (ícone `delete_sweep`).
+**Onde fica:** SeasonDetailsScreen → botão "Delete season files" (ícone `delete_sweep` na AppBar).
 
 Use esta opção quando quiser **apagar todos os arquivos de uma temporada específica** sem afetar as demais.
 
 **Passo a passo:**
 1. Abrir detalhes da série.
 2. Scroll para **"Seasons"** e tocar na temporada desejada.
-3. Na AppBar da SeasonDetailsScreen, abrir o menu ⋮ e tocar em **"Delete season files"** (`delete_sweep`).
-   - Se o item estiver **acinzentado/desabilitado**, é porque a temporada não tem nenhum episódio com arquivo.
+3. Na AppBar da SeasonDetailsScreen, tocar no ícone **"Delete season files"** (`delete_sweep`).
+   - Se o ícone estiver **acinzentado/desabilitado**, é porque a temporada não tem nenhum episódio com arquivo.
 4. Um **diálogo de confirmação** aparece:
    - Mensagem: `Delete all files for "[Título da série] - Season [N]"? This removes every episode file in this season from disk.`
    - Botões: "Cancel" e "Delete" (botão vermelho).

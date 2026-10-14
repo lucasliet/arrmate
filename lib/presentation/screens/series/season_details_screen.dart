@@ -49,69 +49,45 @@ class SeasonDetailsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('${series.title} - Season ${season.seasonNumber}'),
         actions: [
-          PopupMenuButton<_SeasonAction>(
-            key: const Key('seasonActionsMenu'),
-            tooltip: 'Season actions',
-            onSelected: (action) {
-              switch (action) {
-                case _SeasonAction.automaticSearch:
-                  _handleAutomaticSearch(context, ref);
-                case _SeasonAction.interactiveSearch:
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (context) => ReleasesSheet(
-                      id: 0,
-                      isMovie: false,
-                      title: '${series.title} - Season ${season.seasonNumber}',
-                      episodeCode: 'Season ${season.seasonNumber}',
-                      seriesId: series.id,
-                      seasonNumber: season.seasonNumber,
-                      originalLanguage: series.originalLanguage?.name,
-                    ),
-                  );
-                case _SeasonAction.deleteFiles:
-                  _handleDeleteFiles(context, ref);
-                case _SeasonAction.purge:
-                  _handlePurge(context, ref);
-              }
+          IconButton(
+            key: const Key('seasonAutomaticSearchBtn'),
+            icon: const Icon(Icons.travel_explore),
+            tooltip: 'Automatic Search',
+            onPressed: () => _handleAutomaticSearch(context, ref),
+          ),
+          IconButton(
+            key: const Key('seasonInteractiveSearchBtn'),
+            icon: const Icon(Icons.troubleshoot),
+            tooltip: 'Interactive Search',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => ReleasesSheet(
+                  id: 0,
+                  isMovie: false,
+                  title: '${series.title} - Season ${season.seasonNumber}',
+                  episodeCode: 'Season ${season.seasonNumber}',
+                  seriesId: series.id,
+                  seasonNumber: season.seasonNumber,
+                  originalLanguage: series.originalLanguage?.name,
+                ),
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                key: Key('seasonAutomaticSearchBtn'),
-                value: _SeasonAction.automaticSearch,
-                child: ListTile(
-                  leading: Icon(Icons.travel_explore),
-                  title: Text('Automatic Search'),
-                ),
-              ),
-              const PopupMenuItem(
-                key: Key('seasonInteractiveSearchBtn'),
-                value: _SeasonAction.interactiveSearch,
-                child: ListTile(
-                  leading: Icon(Icons.troubleshoot),
-                  title: Text('Interactive Search'),
-                ),
-              ),
-              PopupMenuItem(
-                key: const Key('deleteSeasonFilesBtn'),
-                value: _SeasonAction.deleteFiles,
-                enabled: hasAnyFile,
-                child: const ListTile(
-                  leading: Icon(Icons.delete_sweep),
-                  title: Text('Delete season files'),
-                ),
-              ),
-              PopupMenuItem(
-                key: const Key('purgeSeasonBtn'),
-                value: _SeasonAction.purge,
-                enabled: hasAnyFile,
-                child: const ListTile(
-                  leading: Icon(Icons.delete_forever),
-                  title: Text('Purge season'),
-                ),
-              ),
-            ],
+          ),
+          IconButton(
+            key: const Key('deleteSeasonFilesBtn'),
+            icon: const Icon(Icons.delete_sweep),
+            tooltip: 'Delete season files',
+            onPressed: hasAnyFile
+                ? () => _handleDeleteFiles(context, ref)
+                : null,
+          ),
+          IconButton(
+            key: const Key('purgeSeasonBtn'),
+            icon: const Icon(Icons.delete_forever),
+            tooltip: 'Purge season',
+            onPressed: hasAnyFile ? () => _handlePurge(context, ref) : null,
           ),
         ],
       ),
@@ -388,9 +364,6 @@ class SeasonDetailsScreen extends ConsumerWidget {
     }
   }
 }
-
-/// Actions offered in the season app bar overflow menu.
-enum _SeasonAction { automaticSearch, interactiveSearch, deleteFiles, purge }
 
 /// Actions offered in an episode row overflow menu.
 enum _EpisodeAction { watch, toggleMonitor, automaticSearch, interactiveSearch }
