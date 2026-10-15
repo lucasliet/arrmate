@@ -6275,6 +6275,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, other{{count} connected}}'**
   String torrentConnectedCount(int count);
 
+  /// No description provided for @torrentCrossSeedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-seed'**
+  String get torrentCrossSeedBadge;
+
   /// No description provided for @torrentCrossSeedExplanation.
   ///
   /// In en, this message translates to:

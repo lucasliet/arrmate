@@ -363,7 +363,7 @@ class TorrentListItem extends StatelessWidget {
             context,
             key: const ValueKey('torrent-cross-seed-badge'),
             icon: Icons.content_copy,
-            label: 'Cross-seed',
+            label: context.l10n.torrentCrossSeedBadge,
             color: context.colorScheme.onSurfaceVariant,
           ),
       ],

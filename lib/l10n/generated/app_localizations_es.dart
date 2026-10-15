@@ -4061,6 +4061,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get torrentCrossSeedBadge => 'Cross-seed';
+
+  @override
   String get torrentCrossSeedExplanation =>
       'Identificado como cross-seed: mismo nombre de release que el torrent que Radarr/Sonarr capturó, infohash distinto.';
 

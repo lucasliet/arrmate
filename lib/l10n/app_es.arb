@@ -1029,6 +1029,7 @@
   "torrentChangeSaveLocationWarning": "Esto moverá todos los datos descargados a la nueva ubicación.",
   "torrentClearSearch": "Borrar búsqueda",
   "torrentConnectedCount": "{count, plural, =1{1 conectado} other{{count} conectados}}",
+  "torrentCrossSeedBadge": "Cross-seed",
   "torrentCrossSeedExplanation": "Identificado como cross-seed: mismo nombre de release que el torrent que Radarr/Sonarr capturó, infohash distinto.",
   "torrentDeleteWithFiles": "Eliminar con archivos",
   "torrentEmptySubtitle": "Añade un torrent para empezar a descargar",
