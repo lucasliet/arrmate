@@ -3767,6 +3767,69 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sharedTorrents => 'Torrents';
 
   @override
+  String get sharedTorrentsDeleteContent =>
+      'Isso remove os torrents selecionados do qBittorrent e exclui os arquivos do disco.';
+
+  @override
+  String sharedTorrentsDeleteFailed(String error) {
+    return 'Falha ao excluir torrents: $error';
+  }
+
+  @override
+  String sharedTorrentsDeleteTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Excluir $count torrents',
+      one: 'Excluir 1 torrent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count torrents e seus arquivos excluídos',
+      one: '1 torrent e seus arquivos excluídos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeletedKept(int count, int kept) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count torrents e seus arquivos excluídos ($kept mantidos semeando)',
+      one: '1 torrent e seus arquivos excluídos ($kept mantidos semeando)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sharedTorrentsKeepSeedingAll =>
+      'Manter semeando deixa os torrents e os arquivos intactos.';
+
+  @override
+  String get sharedTorrentsKeepSeedingSome =>
+      'Os outros torrents selecionados e seus arquivos são excluídos de qualquer forma.';
+
+  @override
+  String get sharedTorrentsNoQbittorrent =>
+      'Nenhuma instância do qBittorrent configurada';
+
+  @override
+  String get sharedTorrentsNoneDeleted => 'Nenhum torrent excluído';
+
+  @override
+  String sharedTorrentsNoneDeletedKept(int kept) {
+    return 'Nenhum torrent excluído ($kept mantidos semeando)';
+  }
+
+  @override
   String get systemAppMaintenance => 'Manutenção do app';
 
   @override
@@ -4003,6 +4066,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get torrentCrossSeedExplanation =>
       'Identificado como cross-seed: mesmo nome de release do torrent que o Radarr/Sonarr capturou, infohash diferente.';
+
+  @override
+  String get torrentDeleteWithFiles => 'Excluir com arquivos';
 
   @override
   String get torrentEmptySubtitle =>
@@ -4309,6 +4375,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get torrentSelectFile => 'Selecionar arquivo .torrent';
 
   @override
+  String get torrentSelectionClear => 'Limpar seleção';
+
+  @override
   String get torrentSetPriority => 'Definir prioridade';
 
   @override
@@ -4601,14 +4670,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get versionHistoryTitle => 'Histórico de versões';
 
   @override
+  String get watchingContinueWatching => 'Continuar assistindo';
+
+  @override
   String get watchingEmptySubtitle =>
-      'As mídias que você pausar no Jellyfin aparecerão aqui.';
+      'As mídias que você pausar no Jellyfin e os próximos episódios das séries que você acompanha aparecerão aqui.';
 
   @override
   String get watchingEmptyTitle => 'Nada em andamento';
 
   @override
   String get watchingLoading => 'Carregando continuar assistindo...';
+
+  @override
+  String get watchingNextEpisode => 'Próximo episódio';
+
+  @override
+  String watchingNextEpisodeRuntime(String runtime) {
+    return 'Próximo episódio · $runtime';
+  }
+
+  @override
+  String get watchingNextUp => 'A seguir';
 
   @override
   String get whatsNewNoNotes => 'Esta versão não inclui notas de lançamento.';
@@ -8557,6 +8640,69 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get sharedTorrents => 'Torrents';
 
   @override
+  String get sharedTorrentsDeleteContent =>
+      'Isso remove os torrents selecionados do qBittorrent e exclui os arquivos do disco.';
+
+  @override
+  String sharedTorrentsDeleteFailed(String error) {
+    return 'Falha ao excluir torrents: $error';
+  }
+
+  @override
+  String sharedTorrentsDeleteTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Excluir $count torrents',
+      one: 'Excluir 1 torrent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count torrents e seus arquivos excluídos',
+      one: '1 torrent e seus arquivos excluídos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeletedKept(int count, int kept) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count torrents e seus arquivos excluídos ($kept mantidos semeando)',
+      one: '1 torrent e seus arquivos excluídos ($kept mantidos semeando)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sharedTorrentsKeepSeedingAll =>
+      'Manter semeando deixa os torrents e os arquivos intactos.';
+
+  @override
+  String get sharedTorrentsKeepSeedingSome =>
+      'Os outros torrents selecionados e seus arquivos são excluídos de qualquer forma.';
+
+  @override
+  String get sharedTorrentsNoQbittorrent =>
+      'Nenhuma instância do qBittorrent configurada';
+
+  @override
+  String get sharedTorrentsNoneDeleted => 'Nenhum torrent excluído';
+
+  @override
+  String sharedTorrentsNoneDeletedKept(int kept) {
+    return 'Nenhum torrent excluído ($kept mantidos semeando)';
+  }
+
+  @override
   String get systemAppMaintenance => 'Manutenção do app';
 
   @override
@@ -8793,6 +8939,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get torrentCrossSeedExplanation =>
       'Identificado como cross-seed: mesmo nome de release do torrent que o Radarr/Sonarr capturou, infohash diferente.';
+
+  @override
+  String get torrentDeleteWithFiles => 'Excluir com arquivos';
 
   @override
   String get torrentEmptySubtitle =>
@@ -9099,6 +9248,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get torrentSelectFile => 'Selecionar arquivo .torrent';
 
   @override
+  String get torrentSelectionClear => 'Limpar seleção';
+
+  @override
   String get torrentSetPriority => 'Definir prioridade';
 
   @override
@@ -9391,14 +9543,28 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get versionHistoryTitle => 'Histórico de versões';
 
   @override
+  String get watchingContinueWatching => 'Continuar assistindo';
+
+  @override
   String get watchingEmptySubtitle =>
-      'As mídias que você pausar no Jellyfin aparecerão aqui.';
+      'As mídias que você pausar no Jellyfin e os próximos episódios das séries que você acompanha aparecerão aqui.';
 
   @override
   String get watchingEmptyTitle => 'Nada em andamento';
 
   @override
   String get watchingLoading => 'Carregando continuar assistindo...';
+
+  @override
+  String get watchingNextEpisode => 'Próximo episódio';
+
+  @override
+  String watchingNextEpisodeRuntime(String runtime) {
+    return 'Próximo episódio · $runtime';
+  }
+
+  @override
+  String get watchingNextUp => 'A seguir';
 
   @override
   String get whatsNewNoNotes => 'Esta versão não inclui notas de lançamento.';

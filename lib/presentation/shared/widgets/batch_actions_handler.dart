@@ -561,10 +561,9 @@ class BatchActionsHandler {
     List<Torrent> torrents,
   ) async {
     if (torrents.isEmpty) return null;
+    final l10n = context.l10n;
     if (_ref.read(qbittorrentServiceProvider) == null) {
-      return const BatchActionResult(
-        message: 'No qBittorrent instance configured',
-      );
+      return BatchActionResult(message: l10n.sharedTorrentsNoQbittorrent);
     }
 
     final minimumSeedingDays = _ref.read(settingsProvider).minimumSeedingDays;
@@ -573,10 +572,8 @@ class BatchActionsHandler {
 
     final confirmed = await _confirm(
       context,
-      title: 'Delete ${torrents.length} torrent${_plural(torrents.length)}',
-      content:
-          'This removes the selected torrents from qBittorrent and deletes '
-          'their files from disk.',
+      title: l10n.sharedTorrentsDeleteTitle(torrents.length),
+      content: l10n.sharedTorrentsDeleteContent,
     );
     if (confirmed != true) return null;
     if (!context.mounted) return null;
@@ -591,9 +588,8 @@ class BatchActionsHandler {
         belowThreshold: belowThreshold,
         minimumSeedingDays: minimumSeedingDays,
         footnote: belowThreshold.length == torrents.length
-            ? 'Keep seeding leaves them and their files untouched.'
-            : 'The other selected torrents and their files are deleted '
-                  'either way.',
+            ? l10n.sharedTorrentsKeepSeedingAll
+            : l10n.sharedTorrentsKeepSeedingSome,
       );
       if (action == null || action == SeedingAction.cancel) return null;
       if (action == SeedingAction.keepBelowThreshold) {
@@ -604,9 +600,12 @@ class BatchActionsHandler {
     }
 
     final kept = torrents.length - toDelete.length;
-    final keptSuffix = kept > 0 ? ' (kept $kept still seeding)' : '';
     if (toDelete.isEmpty) {
-      return BatchActionResult(message: 'No torrents deleted$keptSuffix');
+      return BatchActionResult(
+        message: kept > 0
+            ? l10n.sharedTorrentsNoneDeletedKept(kept)
+            : l10n.sharedTorrentsNoneDeleted,
+      );
     }
     if (!context.mounted) return null;
 
@@ -622,14 +621,16 @@ class BatchActionsHandler {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message:
-            'Deleted ${toDelete.length} torrent${_plural(toDelete.length)} '
-            'and files$keptSuffix',
+        message: kept > 0
+            ? l10n.sharedTorrentsDeletedKept(toDelete.length, kept)
+            : l10n.sharedTorrentsDeleted(toDelete.length),
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
-      return BatchActionResult(message: 'Failed to delete torrents: $e');
+      return BatchActionResult(
+        message: l10n.sharedTorrentsDeleteFailed(describeError(e, l10n)),
+      );
     }
   }
 

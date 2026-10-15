@@ -5873,6 +5873,66 @@ abstract class AppLocalizations {
   /// **'Torrents'**
   String get sharedTorrents;
 
+  /// No description provided for @sharedTorrentsDeleteContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the selected torrents from qBittorrent and deletes their files from disk.'**
+  String get sharedTorrentsDeleteContent;
+
+  /// No description provided for @sharedTorrentsDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete torrents: {error}'**
+  String sharedTorrentsDeleteFailed(String error);
+
+  /// No description provided for @sharedTorrentsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete 1 torrent} other{Delete {count} torrents}}'**
+  String sharedTorrentsDeleteTitle(int count);
+
+  /// No description provided for @sharedTorrentsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Deleted 1 torrent and files} other{Deleted {count} torrents and files}}'**
+  String sharedTorrentsDeleted(int count);
+
+  /// No description provided for @sharedTorrentsDeletedKept.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Deleted 1 torrent and files (kept {kept} still seeding)} other{Deleted {count} torrents and files (kept {kept} still seeding)}}'**
+  String sharedTorrentsDeletedKept(int count, int kept);
+
+  /// No description provided for @sharedTorrentsKeepSeedingAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep seeding leaves them and their files untouched.'**
+  String get sharedTorrentsKeepSeedingAll;
+
+  /// No description provided for @sharedTorrentsKeepSeedingSome.
+  ///
+  /// In en, this message translates to:
+  /// **'The other selected torrents and their files are deleted either way.'**
+  String get sharedTorrentsKeepSeedingSome;
+
+  /// No description provided for @sharedTorrentsNoQbittorrent.
+  ///
+  /// In en, this message translates to:
+  /// **'No qBittorrent instance configured'**
+  String get sharedTorrentsNoQbittorrent;
+
+  /// No description provided for @sharedTorrentsNoneDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'No torrents deleted'**
+  String get sharedTorrentsNoneDeleted;
+
+  /// No description provided for @sharedTorrentsNoneDeletedKept.
+  ///
+  /// In en, this message translates to:
+  /// **'No torrents deleted (kept {kept} still seeding)'**
+  String sharedTorrentsNoneDeletedKept(int kept);
+
   /// No description provided for @systemAppMaintenance.
   ///
   /// In en, this message translates to:
@@ -6220,6 +6280,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.'**
   String get torrentCrossSeedExplanation;
+
+  /// No description provided for @torrentDeleteWithFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete with files'**
+  String get torrentDeleteWithFiles;
 
   /// No description provided for @torrentEmptySubtitle.
   ///
@@ -6689,6 +6755,12 @@ abstract class AppLocalizations {
   /// **'Select .torrent File'**
   String get torrentSelectFile;
 
+  /// No description provided for @torrentSelectionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get torrentSelectionClear;
+
   /// No description provided for @torrentSetPriority.
   ///
   /// In en, this message translates to:
@@ -7151,10 +7223,16 @@ abstract class AppLocalizations {
   /// **'Version History'**
   String get versionHistoryTitle;
 
+  /// No description provided for @watchingContinueWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Watching'**
+  String get watchingContinueWatching;
+
   /// No description provided for @watchingEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Media you pause in Jellyfin will appear here.'**
+  /// **'Media you pause in Jellyfin and the next episodes of series you follow will appear here.'**
   String get watchingEmptySubtitle;
 
   /// No description provided for @watchingEmptyTitle.
@@ -7168,6 +7246,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading continue watching...'**
   String get watchingLoading;
+
+  /// No description provided for @watchingNextEpisode.
+  ///
+  /// In en, this message translates to:
+  /// **'Next episode'**
+  String get watchingNextEpisode;
+
+  /// No description provided for @watchingNextEpisodeRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Next episode · {runtime}'**
+  String watchingNextEpisodeRuntime(String runtime);
+
+  /// No description provided for @watchingNextUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Up'**
+  String get watchingNextUp;
 
   /// No description provided for @whatsNewNoNotes.
   ///

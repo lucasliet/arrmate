@@ -2345,6 +2345,54 @@
     }
   },
   "sharedTorrents": "Torrents",
+  "sharedTorrentsDeleteContent": "This removes the selected torrents from qBittorrent and deletes their files from disk.",
+  "sharedTorrentsDeleteFailed": "Failed to delete torrents: {error}",
+  "@sharedTorrentsDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedTorrentsDeleteTitle": "{count, plural, =1{Delete 1 torrent} other{Delete {count} torrents}}",
+  "@sharedTorrentsDeleteTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsDeleted": "{count, plural, =1{Deleted 1 torrent and files} other{Deleted {count} torrents and files}}",
+  "@sharedTorrentsDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsDeletedKept": "{count, plural, =1{Deleted 1 torrent and files (kept {kept} still seeding)} other{Deleted {count} torrents and files (kept {kept} still seeding)}}",
+  "@sharedTorrentsDeletedKept": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "kept": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsKeepSeedingAll": "Keep seeding leaves them and their files untouched.",
+  "sharedTorrentsKeepSeedingSome": "The other selected torrents and their files are deleted either way.",
+  "sharedTorrentsNoQbittorrent": "No qBittorrent instance configured",
+  "sharedTorrentsNoneDeleted": "No torrents deleted",
+  "sharedTorrentsNoneDeletedKept": "No torrents deleted (kept {kept} still seeding)",
+  "@sharedTorrentsNoneDeletedKept": {
+    "placeholders": {
+      "kept": {
+        "type": "int"
+      }
+    }
+  },
   "systemAppMaintenance": "App Maintenance",
   "systemClearImageCache": "Clear image cache",
   "systemClearImageCacheSubtitle": "Free up cached poster and image storage",
@@ -2479,6 +2527,7 @@
     }
   },
   "torrentCrossSeedExplanation": "Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.",
+  "torrentDeleteWithFiles": "Delete with files",
   "torrentEmptySubtitle": "Add a new torrent to start downloading",
   "torrentEmptyTitle": "No Torrents",
   "torrentEnterValidPath": "Please enter a valid path",
@@ -2665,6 +2714,7 @@
   "torrentSectionMediaLibrary": "Media Library",
   "torrentSectionProgress": "Progress",
   "torrentSelectFile": "Select .torrent File",
+  "torrentSelectionClear": "Clear selection",
   "torrentSetPriority": "Set Priority",
   "torrentSortAscending": "Ascending",
   "torrentSortDescending": "Descending",
@@ -2791,9 +2841,20 @@
   },
   "versionHistoryLoading": "Loading version history...",
   "versionHistoryTitle": "Version History",
-  "watchingEmptySubtitle": "Media you pause in Jellyfin will appear here.",
+  "watchingContinueWatching": "Continue Watching",
+  "watchingEmptySubtitle": "Media you pause in Jellyfin and the next episodes of series you follow will appear here.",
   "watchingEmptyTitle": "Nothing in progress",
   "watchingLoading": "Loading continue watching...",
+  "watchingNextEpisode": "Next episode",
+  "watchingNextEpisodeRuntime": "Next episode · {runtime}",
+  "@watchingNextEpisodeRuntime": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "watchingNextUp": "Next Up",
   "whatsNewNoNotes": "This release does not include release notes.",
   "whatsNewTitle": "What's New in v{version}",
   "@whatsNewTitle": {

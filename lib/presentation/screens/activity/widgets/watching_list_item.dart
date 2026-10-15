@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/services/playback_launch_service.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../providers/instances_provider.dart';
 import '../../movies/widgets/movie_poster.dart';
@@ -96,7 +97,7 @@ class WatchingListItem extends ConsumerWidget {
                     if (item.hasResumePosition)
                       ..._buildProgressFooter(theme)
                     else
-                      _buildNextUpFooter(theme),
+                      _buildNextUpFooter(theme, context.l10n),
                   ],
                 ),
               ),
@@ -156,7 +157,7 @@ class WatchingListItem extends ConsumerWidget {
 
   /// "Next episode" label with the runtime for a Next Up item, which has no
   /// progress to show yet.
-  Widget _buildNextUpFooter(ThemeData theme) {
+  Widget _buildNextUpFooter(ThemeData theme, AppLocalizations l10n) {
     final runSeconds = item.totalDuration?.inSeconds ?? 0;
     final runtimeLabel = runSeconds > 0
         ? formatDurationSeconds(runSeconds)
@@ -172,8 +173,8 @@ class WatchingListItem extends ConsumerWidget {
         Expanded(
           child: Text(
             runtimeLabel != null
-                ? 'Next episode · $runtimeLabel'
-                : 'Next episode',
+                ? l10n.watchingNextEpisodeRuntime(runtimeLabel)
+                : l10n.watchingNextEpisode,
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

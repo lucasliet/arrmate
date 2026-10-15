@@ -330,7 +330,12 @@ void main() {
                 ),
               ),
             ],
-            child: const MaterialApp(home: ActivityScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              home: ActivityScreen(),
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -374,7 +379,12 @@ void main() {
                   _StubWatchingNotifier(const [], nextUp: [nextUpWatchingItem]),
             ),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -411,7 +421,12 @@ void main() {
             ),
             playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();

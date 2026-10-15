@@ -135,20 +135,20 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
       child: Row(
         children: [
           IconButton(
-            tooltip: 'Clear selection',
+            tooltip: context.l10n.torrentSelectionClear,
             onPressed: _clearSelection,
             icon: const Icon(Icons.close),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '$selectedCount selected',
+              context.l10n.sharedSelectedCount(selectedCount),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           IconButton(
             key: const Key('torrentSelectAllButton'),
-            tooltip: 'Select all',
+            tooltip: context.l10n.commonSelectAll,
             onPressed: () => _selectAll(visibleTorrents),
             icon: const Icon(Icons.select_all),
           ),
@@ -317,7 +317,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               actions: [
                 BatchAction(
                   icon: Icons.delete_forever,
-                  label: 'Delete with files',
+                  label: context.l10n.torrentDeleteWithFiles,
                   isDestructive: true,
                   onPressed: () => _deleteSelectedWithFiles(selectedTorrents),
                 ),

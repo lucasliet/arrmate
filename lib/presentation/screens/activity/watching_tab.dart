@@ -43,12 +43,12 @@ class WatchingTab extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 16),
             children: [
               if (feed.continueWatching.isNotEmpty) ...[
-                const _SectionHeader(title: 'Continue Watching'),
+                _SectionHeader(title: context.l10n.watchingContinueWatching),
                 for (final item in feed.continueWatching)
                   WatchingListItem(item: item),
               ],
               if (feed.nextUp.isNotEmpty) ...[
-                const _SectionHeader(title: 'Next Up'),
+                _SectionHeader(title: context.l10n.watchingNextUp),
                 for (final item in feed.nextUp) WatchingListItem(item: item),
               ],
             ],

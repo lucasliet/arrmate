@@ -3688,6 +3688,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sharedTorrents => 'Torrents';
 
   @override
+  String get sharedTorrentsDeleteContent =>
+      'This removes the selected torrents from qBittorrent and deletes their files from disk.';
+
+  @override
+  String sharedTorrentsDeleteFailed(String error) {
+    return 'Failed to delete torrents: $error';
+  }
+
+  @override
+  String sharedTorrentsDeleteTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count torrents',
+      one: 'Delete 1 torrent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Deleted $count torrents and files',
+      one: 'Deleted 1 torrent and files',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sharedTorrentsDeletedKept(int count, int kept) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Deleted $count torrents and files (kept $kept still seeding)',
+      one: 'Deleted 1 torrent and files (kept $kept still seeding)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sharedTorrentsKeepSeedingAll =>
+      'Keep seeding leaves them and their files untouched.';
+
+  @override
+  String get sharedTorrentsKeepSeedingSome =>
+      'The other selected torrents and their files are deleted either way.';
+
+  @override
+  String get sharedTorrentsNoQbittorrent =>
+      'No qBittorrent instance configured';
+
+  @override
+  String get sharedTorrentsNoneDeleted => 'No torrents deleted';
+
+  @override
+  String sharedTorrentsNoneDeletedKept(int kept) {
+    return 'No torrents deleted (kept $kept still seeding)';
+  }
+
+  @override
   String get systemAppMaintenance => 'App Maintenance';
 
   @override
@@ -3918,6 +3980,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get torrentCrossSeedExplanation =>
       'Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.';
+
+  @override
+  String get torrentDeleteWithFiles => 'Delete with files';
 
   @override
   String get torrentEmptySubtitle => 'Add a new torrent to start downloading';
@@ -4217,6 +4282,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get torrentSelectFile => 'Select .torrent File';
 
   @override
+  String get torrentSelectionClear => 'Clear selection';
+
+  @override
   String get torrentSetPriority => 'Set Priority';
 
   @override
@@ -4508,14 +4576,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get versionHistoryTitle => 'Version History';
 
   @override
+  String get watchingContinueWatching => 'Continue Watching';
+
+  @override
   String get watchingEmptySubtitle =>
-      'Media you pause in Jellyfin will appear here.';
+      'Media you pause in Jellyfin and the next episodes of series you follow will appear here.';
 
   @override
   String get watchingEmptyTitle => 'Nothing in progress';
 
   @override
   String get watchingLoading => 'Loading continue watching...';
+
+  @override
+  String get watchingNextEpisode => 'Next episode';
+
+  @override
+  String watchingNextEpisodeRuntime(String runtime) {
+    return 'Next episode · $runtime';
+  }
+
+  @override
+  String get watchingNextUp => 'Next Up';
 
   @override
   String get whatsNewNoNotes => 'This release does not include release notes.';
