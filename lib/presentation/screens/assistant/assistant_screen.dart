@@ -11,6 +11,7 @@ import '../../../core/services/assistant_apple_intelligence_service.dart';
 import '../../../core/services/assistant_model_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../adaptive/content_layout.dart';
+import '../../l10n/core_labels.dart';
 import '../../l10n/error_messages.dart';
 import '../../providers/assistant_provider.dart';
 
@@ -82,7 +83,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                           _buildModelSelector(context, notifier, state),
                           const Divider(height: 1),
                           Expanded(child: _messages(state)),
-                          if (state.error != null)
+                          if (state.localizedError(context.l10n) != null)
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -108,7 +109,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        state.error!,
+                                        state.localizedError(context.l10n)!,
                                         style: TextStyle(
                                           color: Theme.of(
                                             context,
@@ -671,7 +672,7 @@ class _DownloadProgressDialogState
     });
 
     return PopScope(
-      canPop: state.error != null,
+      canPop: state.localizedError(context.l10n) != null,
       child: AlertDialog(
         title: Text(
           context.l10n.assistantDownloadingModel,
@@ -699,14 +700,17 @@ class _DownloadProgressDialogState
                 style: theme.textTheme.bodyMedium,
               ),
             ),
-            if (state.error != null) ...[
+            if (state.localizedError(context.l10n) != null) ...[
               const SizedBox(height: 12),
-              Text(state.error!, style: TextStyle(color: colorScheme.error)),
+              Text(
+                state.localizedError(context.l10n)!,
+                style: TextStyle(color: colorScheme.error),
+              ),
             ],
           ],
         ),
         actions: [
-          if (state.error != null)
+          if (state.localizedError(context.l10n) != null)
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(context.l10n.commonOk),

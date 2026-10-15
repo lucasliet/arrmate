@@ -2,6 +2,7 @@ import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/core/services/assistant_apple_intelligence_service.dart';
 import 'package:arrmate/core/services/assistant_model_service.dart';
+import 'package:arrmate/presentation/l10n/provider_messages.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
 import 'package:arrmate/presentation/screens/assistant/assistant_screen.dart';
 import 'package:arrmate/presentation/theme/app_theme.dart';
@@ -17,17 +18,25 @@ class _AssistantNotifier extends AssistantNotifier {
     this.mode = AssistantModelMode.online,
     this.appleIntelligenceAvailability,
     this.messages = const [],
+    this.errorKind,
   });
 
   final bool isGenerating;
   final AssistantModelMode mode;
   final AppleFoundationModelsAvailability? appleIntelligenceAvailability;
   final List<AssistantMessage> messages;
+  final AssistantErrorKind? errorKind;
   String? lastMessage;
   int appleIntelligenceRequests = 0;
 
   @override
-  AssistantState build() => AssistantState(
+  AssistantState build() {
+    final state = _initialState();
+    final kind = errorKind;
+    return kind == null ? state : state.withError(kind);
+  }
+
+  AssistantState _initialState() => AssistantState(
     isLoading: false,
     isGenerating: isGenerating,
     mode: mode,
@@ -59,6 +68,7 @@ class _AssistantNotifier extends AssistantNotifier {
 Widget _assistantApp(
   PlatformCapabilities capabilities, {
   _AssistantNotifier? notifier,
+  Locale locale = testLocale,
 }) {
   final effectiveNotifier = notifier ?? _AssistantNotifier();
 
@@ -70,7 +80,7 @@ Widget _assistantApp(
     child: MaterialApp(
       localizationsDelegates: testLocalizationsDelegates,
       supportedLocales: testSupportedLocales,
-      locale: testLocale,
+      locale: locale,
       theme: AppTheme.light(AppColorScheme.blue),
       home: const AssistantScreen(),
     ),
@@ -137,6 +147,39 @@ void main() {
       },
     );
   }
+
+  testWidgets('translates a stored error with the interface language', (
+    tester,
+  ) async {
+    final capabilities = PlatformCapabilities.forPlatform(
+      isWeb: false,
+      targetPlatform: TargetPlatform.android,
+    );
+    await tester.pumpWidget(
+      _assistantApp(
+        capabilities,
+        notifier: _AssistantNotifier(
+          errorKind: AssistantErrorKind.selectModelFirst,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Select a model before chatting.'), findsOneWidget);
+
+    await tester.pumpWidget(
+      _assistantApp(
+        capabilities,
+        notifier: _AssistantNotifier(
+          errorKind: AssistantErrorKind.selectModelFirst,
+        ),
+        locale: const Locale('es'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selecciona un modelo antes de chatear.'), findsOneWidget);
+    expect(find.text('Select a model before chatting.'), findsNothing);
+  });
 
   testWidgets('keyboard submission preserves draft while generating', (
     tester,

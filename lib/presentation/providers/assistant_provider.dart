@@ -4,7 +4,6 @@ import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/l10n/app_locale.dart';
 import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/assistant_apple_intelligence_service.dart';
 import '../../core/services/assistant_chat_service.dart';
@@ -12,9 +11,8 @@ import '../../core/services/assistant_knowledge_service.dart';
 import '../../core/services/assistant_model_service.dart';
 import '../../core/services/assistant_online_chat_service.dart';
 import '../../core/services/logger_service.dart';
-import '../l10n/error_messages.dart';
+import '../l10n/provider_messages.dart';
 import 'locale_provider.dart';
-import '../l10n/core_labels.dart';
 
 /// Conversation message roles supported by the assistant.
 enum AssistantMessageRole { user, assistant }
@@ -71,6 +69,8 @@ class AssistantState {
     this.downloadProgress = 0,
     this.isImporting = false,
     this.error,
+    this.errorKind,
+    this.errorDetail,
   });
 
   /// Available downloadable models.
@@ -110,8 +110,18 @@ class AssistantState {
   /// Whether an import is in progress.
   final bool isImporting;
 
-  /// Last error message, if any.
+  /// Last error message in English, if any.
+  ///
+  /// The screen shows [errorKind] translated through
+  /// `AssistantStateL10n.localizedError`; this text is the fallback for a
+  /// state that carries no kind.
   final String? error;
+
+  /// What [error] reports, translated when rendered.
+  final AssistantErrorKind? errorKind;
+
+  /// The error or availability [errorKind] was raised for.
+  final Object? errorDetail;
 
   /// Returns whether a model is ready to answer.
   bool get hasModel {
@@ -151,6 +161,8 @@ class AssistantState {
     double? downloadProgress,
     bool? isImporting,
     String? error,
+    AssistantErrorKind? errorKind,
+    Object? errorDetail,
     bool clearSelectedModelId = false,
     bool clearSelectedModelPath = false,
     bool clearError = false,
@@ -174,6 +186,25 @@ class AssistantState {
       downloadProgress: downloadProgress ?? this.downloadProgress,
       isImporting: isImporting ?? this.isImporting,
       error: clearError ? null : error ?? this.error,
+      errorKind: clearError
+          ? null
+          : error != null
+          ? errorKind
+          : errorKind ?? this.errorKind,
+      errorDetail: clearError
+          ? null
+          : error != null
+          ? errorDetail
+          : errorDetail ?? this.errorDetail,
+    );
+  }
+
+  /// Returns a copy reporting [kind] as the error, with [detail] as context.
+  AssistantState withError(AssistantErrorKind kind, [Object? detail]) {
+    return copyWith(
+      error: kind.english(detail),
+      errorKind: kind,
+      errorDetail: detail,
     );
   }
 }
@@ -254,10 +285,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to initialize assistant', e, st);
-      state = state.copyWith(
-        isLoading: false,
-        error: _l10n.providerAssistantInitFailed,
-      );
+      state = state
+          .copyWith(isLoading: false)
+          .withError(AssistantErrorKind.initFailed);
     }
   }
 
@@ -316,10 +346,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to refresh models', e, st);
-      state = state.copyWith(
-        isLoading: false,
-        error: _l10n.providerAssistantRefreshModelsFailed,
-      );
+      state = state
+          .copyWith(isLoading: false)
+          .withError(AssistantErrorKind.refreshModelsFailed);
     }
   }
 
@@ -345,10 +374,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to import model', e, st);
-      state = state.copyWith(
-        isImporting: false,
-        error: _l10n.providerAssistantImportFailed,
-      );
+      state = state
+          .copyWith(isImporting: false)
+          .withError(AssistantErrorKind.importFailed);
     }
   }
 
@@ -382,11 +410,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Download failed', e, st);
-      state = state.copyWith(
-        isDownloading: false,
-        downloadProgress: 0,
-        error: _l10n.providerAssistantDownloadFailed(describeError(e, _l10n)),
-      );
+      state = state
+          .copyWith(isDownloading: false, downloadProgress: 0)
+          .withError(AssistantErrorKind.downloadFailed, e);
     }
   }
 
@@ -401,7 +427,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       (candidate) => candidate.id == modelId,
     );
     if (model == null) {
-      state = state.copyWith(error: _l10n.providerAssistantModelNotFound);
+      state = state.withError(AssistantErrorKind.modelNotFound);
       return;
     }
 
@@ -419,7 +445,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
       if (!_isLatestSelection(generation)) return;
-      state = state.copyWith(error: _l10n.providerAssistantEnableOnlineFailed);
+      state = state.withError(AssistantErrorKind.enableOnlineFailed);
     }
   }
 
@@ -436,10 +462,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       logger.info(
         '[AssistantNotifier] Apple Intelligence unavailable: ${availability.name}',
       );
-      state = state.copyWith(
-        appleIntelligenceAvailability: availability,
-        error: availability.localizedUnavailableReason(_l10n),
-      );
+      state = state
+          .copyWith(appleIntelligenceAvailability: availability)
+          .withError(AssistantErrorKind.appleUnavailable, availability);
       return;
     }
 
@@ -462,7 +487,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
 
     if (!state.hasModel) {
-      state = state.copyWith(error: _l10n.providerAssistantSelectModelFirst);
+      state = state.withError(AssistantErrorKind.selectModelFirst);
       return;
     }
 
@@ -509,22 +534,16 @@ class AssistantNotifier extends Notifier<AssistantState> {
         isGenerating: false,
       );
     } on AssistantAppleIntelligenceException catch (e) {
-      state = state.copyWith(
-        isGenerating: false,
-        error: e.localizedMessage(_l10n),
-      );
+      state = state
+          .copyWith(isGenerating: false)
+          .withError(AssistantErrorKind.appleFailed, e);
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to generate response', e, st);
-      state = state.copyWith(
-        isGenerating: false,
-        error: _l10n.providerAssistantGenerateFailed,
-      );
+      state = state
+          .copyWith(isGenerating: false)
+          .withError(AssistantErrorKind.generateFailed);
     }
   }
-
-  /// The translations for the current interface language, used for the
-  /// user-facing errors stored in [AssistantState.error].
-  AppLocalizations get _l10n => readAppLocalizations(ref);
 
   /// The interface language code the assistant must reply in.
   String get _replyLanguageCode => ref.read(currentLocaleProvider).languageCode;
@@ -597,7 +616,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to delete model', e, st);
-      state = state.copyWith(error: _l10n.providerAssistantDeleteFailed);
+      state = state.withError(AssistantErrorKind.deleteFailed);
     }
   }
 
@@ -608,7 +627,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
         model,
       );
       if (!toolCalling) {
-        state = state.copyWith(error: _l10n.providerAssistantNoToolCalling);
+        state = state.withError(AssistantErrorKind.noToolCalling);
         return false;
       }
       _chatService.setKnowledgeService(_knowledgeService);
@@ -629,7 +648,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to select model', e, st);
       if (!_isLatestSelection(generation)) return false;
-      state = state.copyWith(error: _l10n.providerAssistantLoadModelFailed);
+      state = state.withError(AssistantErrorKind.loadModelFailed);
       return false;
     }
   }

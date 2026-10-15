@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/app_locale.dart';
 import '../../core/services/desktop_update_failure.dart';
 import '../providers/locale_provider.dart';
+import '../providers/assistant_provider.dart';
+import '../providers/backup_provider.dart';
 import '../providers/update_provider.dart';
 import 'error_messages.dart';
+import 'provider_messages.dart';
 
 /// Returns the translations for the current interface language from [ref],
 /// for providers and services that build user-facing text without a
@@ -42,5 +45,32 @@ extension UpdateStateL10n on UpdateState {
       ),
       _ => message,
     };
+  }
+}
+
+/// Translation of the messages held by a [BackupState].
+extension BackupStateL10n on BackupState {
+  /// Returns [BackupState.errorMessage] in the language of [l10n], or `null`
+  /// when the state holds no error.
+  String? localizedErrorMessage(AppLocalizations l10n) {
+    final kind = errorKind;
+    return kind == null ? errorMessage : kind.localize(l10n, errorDetail);
+  }
+
+  /// Returns [BackupState.statusMessage] in the language of [l10n], or `null`
+  /// when the state holds no status hint.
+  String? localizedStatusMessage(AppLocalizations l10n) {
+    final kind = statusKind;
+    return kind == null ? statusMessage : kind.localize(l10n, statusDetail);
+  }
+}
+
+/// Translation of the failure held by an [AssistantState].
+extension AssistantStateL10n on AssistantState {
+  /// Returns [AssistantState.error] in the language of [l10n], or `null` when
+  /// the state holds no error.
+  String? localizedError(AppLocalizations l10n) {
+    final kind = errorKind;
+    return kind == null ? error : kind.localize(l10n, errorDetail);
   }
 }

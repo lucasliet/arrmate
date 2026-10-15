@@ -154,10 +154,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
         final container = ProviderScope.containerOf(context);
+        final successMessage = context.l10n.seriesAddedSuccessfully;
         _closeSheet();
-        messenger.showSnackBar(
-          SnackBar(content: Text(context.l10n.seriesAddedSuccessfully)),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
         // Reload the library on the next frame, after the pop and the
         // snackbar have been scheduled.
         WidgetsBinding.instance.addPostFrameCallback((_) {

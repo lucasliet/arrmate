@@ -197,7 +197,12 @@ English, Portuguese (pt-BR) and Spanish in the same change.
   `flutter gen-l10n` and commit `lib/l10n/generated/`.
 - **Providers and services** that surface a message keep a typed error or an
   English constant and let the UI translate it (see `describeError` in
-  `lib/presentation/l10n/error_messages.dart`); do not read
+  `lib/presentation/l10n/error_messages.dart`); never store translated text
+  in provider state, or a message already on screen keeps the old language
+  after a language change. Notifiers keep a kind enum plus a detail (see
+  `BackupMessageKind` and `AssistantErrorKind` in
+  `lib/presentation/l10n/provider_messages.dart`, `UpdateErrorKind`) and the
+  screen translates it with `context.l10n`. Do not read
   `appLocalizationsProvider` from data providers, it breaks provider tests.
   Pure helpers take an `AppLocalizations` parameter.
 - **New domain enums or models** shown to the user get a `localizedLabel` /

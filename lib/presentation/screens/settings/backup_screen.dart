@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/backup_service.dart';
+import '../../l10n/core_labels.dart';
 import '../../providers/backup_provider.dart';
 
 /// Settings screen for backup and restore of app data.
@@ -126,10 +127,10 @@ class BackupScreen extends ConsumerWidget {
               icon: const Icon(Icons.login),
               label: Text(context.l10n.backupSignInWithGoogle),
             ),
-            if (state.errorMessage != null) ...[
+            if (state.localizedErrorMessage(context.l10n) != null) ...[
               const SizedBox(height: 8),
               Text(
-                state.errorMessage!,
+                state.localizedErrorMessage(context.l10n)!,
                 key: const Key('backupErrorMessage'),
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.error,
@@ -185,20 +186,20 @@ class BackupScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            if (state.statusMessage != null) ...[
+            if (state.localizedStatusMessage(context.l10n) != null) ...[
               const SizedBox(height: 12),
               Text(
-                state.statusMessage!,
+                state.localizedStatusMessage(context.l10n)!,
                 key: const Key('backupStatusMessage'),
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.primary,
                 ),
               ),
             ],
-            if (state.errorMessage != null) ...[
+            if (state.localizedErrorMessage(context.l10n) != null) ...[
               const SizedBox(height: 8),
               Text(
-                state.errorMessage!,
+                state.localizedErrorMessage(context.l10n)!,
                 key: const Key('backupErrorMessage'),
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.error,
@@ -447,7 +448,7 @@ class BackupScreen extends ConsumerWidget {
   }
 
   void _showErrorSnackBar(BuildContext context, WidgetRef ref) {
-    final error = ref.read(backupProvider).errorMessage;
+    final error = ref.read(backupProvider).localizedErrorMessage(context.l10n);
     if (error == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

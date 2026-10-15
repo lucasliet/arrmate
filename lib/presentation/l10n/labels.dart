@@ -12,5 +12,6 @@ export 'core_labels.dart';
 export 'error_messages.dart';
 export 'history_queue_labels.dart';
 export 'media_labels.dart';
+export 'provider_messages.dart';
 export 'shared_labels.dart';
 export 'torrent_status_labels.dart';
