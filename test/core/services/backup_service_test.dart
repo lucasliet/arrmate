@@ -28,6 +28,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('instances', instancesJson);
       await prefs.setInt('minimum_seeding_days', 30);
+      await prefs.setString('app_locale', 'es');
       await prefs.setBool('remember_torrent_query', true);
       await prefs.setStringList('movie_sort', ['title', 'year']);
       final service = BackupService();
@@ -48,15 +49,16 @@ void main() {
       expect(payload.schema, 1);
       expect(payload.appVersion, '2.3.0');
       expect(payload.preferences.containsKey('google_oauth_tokens'), isFalse);
-      expect(restoredPayload.preferences, hasLength(4));
+      expect(restoredPayload.preferences, hasLength(5));
       expect(restoredPrefs.getString('instances'), instancesJson);
       expect(restoredPrefs.getInt('minimum_seeding_days'), 30);
+      expect(restoredPrefs.getString('app_locale'), 'es');
       expect(restoredPrefs.getBool('remember_torrent_query'), isTrue);
       expect(restoredPrefs.getStringList('movie_sort'), ['title', 'year']);
       expect(restoredPrefs.containsKey('appearance'), isFalse);
       expect(restoredPrefs.getString('google_oauth_tokens'), 'current-session');
       expect(restoredPrefs.getBool('stale_key'), isTrue);
-      expect(summary.restoredKeys, 4);
+      expect(summary.restoredKeys, 5);
       expect(summary.removedKeys, 1);
       expect(summary.instanceCount, 2);
     });

@@ -1,6 +1,6 @@
 ---
 name: appearance
-description: Tema claro/escuro/automático, cor de destaque, aba inicial
+description: Tema claro/escuro/automático, cor de destaque, idioma, aba inicial
 ---
 
 # Aparência
@@ -50,6 +50,26 @@ description: Tema claro/escuro/automático, cor de destaque, aba inicial
   - Highlights em campos focados.
   - Links e elementos interativos.
 - A escolha é salva localmente e persiste entre sessões.
+
+## Idioma do app (inglês, português, espanhol)
+
+**Onde fica:** Configurações → seção "Appearance" (Aparência / Apariencia) → "Language" (Idioma).
+
+**Primeira abertura:** numa instalação nova, o app pergunta o idioma antes do tour de boas-vindas. A opção do idioma do dispositivo já vem selecionada e a tela muda de idioma ao tocar em cada opção; tocar em **Continue** (Continuar) confirma.
+
+**Passo a passo para trocar depois:**
+1. Abrir Configurações.
+2. Na seção **"Appearance"**, tocar em **"Language"** (o subtítulo mostra o idioma atual).
+3. Escolher uma opção no diálogo:
+   - **Padrão do sistema**: segue o idioma do dispositivo (inglês quando o idioma do dispositivo não é suportado).
+   - **English**, **Português (Brasil)** ou **Español**.
+4. A interface muda **instantaneamente**, sem reiniciar o app.
+
+**Observações:**
+- O assistente passa a responder no idioma escolhido.
+- Mensagens vindas dos servidores (Radarr, Sonarr, qBittorrent, Jellyfin) continuam no idioma do servidor.
+- O idioma entra no backup e é limpo por "Reset app settings" (volta a seguir o sistema).
+- No Android 13+, com a opção **Padrão do sistema**, o idioma também segue o que for escolhido em Configurações do sistema → Apps → Arrmate → Idioma.
 
 ## Aba inicial — escolher qual abre ao iniciar o app
 

@@ -80,7 +80,8 @@ class AssistantKnowledgeService {
     AssistantSkill(
       id: 'appearance',
       title: 'Aparência',
-      description: 'Tema claro/escuro/automático, cor de destaque',
+      description:
+          'Tema claro/escuro/automático, cor de destaque, idioma (language, idioma) do app',
       assetPath: 'assets/assistant/skills/appearance.md',
     ),
     AssistantSkill(

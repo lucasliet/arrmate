@@ -8,6 +8,7 @@ import 'package:arrmate/core/services/assistant_apple_intelligence_service.dart'
 import 'package:arrmate/core/services/assistant_knowledge_service.dart';
 import 'package:arrmate/core/services/assistant_online_chat_service.dart';
 import 'package:arrmate/presentation/providers/assistant_provider.dart';
+import 'package:arrmate/presentation/providers/settings_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -233,6 +234,17 @@ void main() {
     ]);
   });
 
+  test('asks the cloud model to reply in the interface language', () async {
+    SharedPreferences.setMockInitialValues({appLocalePreferenceKey: 'es'});
+    container.read(settingsProvider);
+    await Future<void>.delayed(Duration.zero);
+    await notifier().useOnlineMode();
+
+    await notifier().sendMessage('¿Cómo añado una instancia?');
+
+    expect(online.languageCodes, ['es']);
+  });
+
   test(
     'a slower cloud selection does not override Apple Intelligence',
     () async {
@@ -265,11 +277,16 @@ void main() {
 }
 
 class _FakeOnlineChatService extends AssistantOnlineChatService {
+  /// Reply languages requested by each call, in order.
+  final List<String> languageCodes = [];
+
   @override
   Future<AssistantOnlineChatResult> sendMessage(
     List<AssistantOnlineChatMessage> history,
-    AssistantKnowledgeService knowledgeService,
-  ) async {
+    AssistantKnowledgeService knowledgeService, {
+    String languageCode = 'pt',
+  }) async {
+    languageCodes.add(languageCode);
     return const AssistantOnlineChatResult(content: 'Cloud reply');
   }
 }

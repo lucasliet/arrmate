@@ -2,6 +2,7 @@ import 'package:apple_foundation_models/apple_foundation_models.dart';
 
 import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
+import 'assistant_reply_language.dart';
 import 'logger_service.dart';
 
 /// One conversation turn sent to the Apple Intelligence model.
@@ -89,11 +90,13 @@ class AssistantAppleIntelligenceService {
 
   /// Answers the last user turn of [conversation] using [knowledgeService].
   ///
+  /// [languageCode] is the interface language the reply must be written in.
   /// Throws [AssistantAppleIntelligenceException] when the model fails.
   Future<String> sendMessage(
     List<AssistantAppleIntelligenceTurn> conversation,
-    AssistantKnowledgeService knowledgeService,
-  ) async {
+    AssistantKnowledgeService knowledgeService, {
+    String languageCode = 'pt',
+  }) async {
     final question = conversation.last.content;
     final history = conversation.sublist(0, conversation.length - 1);
 
@@ -105,7 +108,7 @@ class AssistantAppleIntelligenceService {
 
       try {
         final reply = await _models.respond(
-          instructions: _buildInstructions(documentation),
+          instructions: _buildInstructions(documentation, languageCode),
           prompt: _buildPrompt(question, history, attempt.historyTurns),
           temperature: _temperature,
           maximumResponseTokens: _maxResponseTokens,
@@ -144,10 +147,10 @@ class AssistantAppleIntelligenceService {
     throw StateError('Apple Intelligence retries exhausted.');
   }
 
-  String _buildInstructions(String documentation) {
+  String _buildInstructions(String documentation, String languageCode) {
     return 'Você é o assistente virtual do Arrmate, um app para gerenciar '
-        'servidores Radarr, Sonarr e qBittorrent. Responda sempre em '
-        'Português do Brasil.\n\n'
+        'servidores Radarr, Sonarr e qBittorrent. '
+        '${assistantReplyInstruction(languageCode)}\n\n'
         'REGRAS:\n'
         '- Fale como parte do Arrmate e responda diretamente, sem mencionar '
         'documentação, instruções ou detalhes internos.\n'

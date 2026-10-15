@@ -11,6 +11,7 @@ import '../../core/services/assistant_knowledge_service.dart';
 import '../../core/services/assistant_model_service.dart';
 import '../../core/services/assistant_online_chat_service.dart';
 import '../../core/services/logger_service.dart';
+import 'locale_provider.dart';
 
 /// Conversation message roles supported by the assistant.
 enum AssistantMessageRole { user, assistant }
@@ -477,17 +478,19 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
     try {
       final currentMessages = state.messages;
+      final languageCode = _replyLanguageCode;
       final result = switch (state.mode) {
         AssistantModelMode.online => _AssistantSendResult(
-          content: await _sendOnlineMessage(currentMessages),
+          content: await _sendOnlineMessage(currentMessages, languageCode),
         ),
         AssistantModelMode.local => _AssistantSendResult(
-          content: await _chatService.sendMessage(trimmed),
+          content: await _sendLocalMessage(trimmed, languageCode),
         ),
         AssistantModelMode.appleIntelligence => _AssistantSendResult(
           content: await _appleIntelligenceService.sendMessage(
             currentMessages.map(_toAppleIntelligenceTurn).toList(),
             _knowledgeService,
+            languageCode: languageCode,
           ),
         ),
       };
@@ -513,13 +516,31 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
   }
 
-  Future<String> _sendOnlineMessage(List<AssistantMessage> messages) async {
+  /// The interface language code the assistant must reply in.
+  String get _replyLanguageCode => ref.read(currentLocaleProvider).languageCode;
+
+  Future<String> _sendOnlineMessage(
+    List<AssistantMessage> messages,
+    String languageCode,
+  ) async {
     final result = await _onlineChatService.sendMessage(
       messages.map(_toOnlineMessage).toList(growable: false),
       _knowledgeService,
+      languageCode: languageCode,
     );
 
     return result.content;
+  }
+
+  /// Sends [message] to the on-device model, first switching its
+  /// conversation to [languageCode] when the interface language changed
+  /// since the model was loaded.
+  Future<String> _sendLocalMessage(String message, String languageCode) async {
+    final modelPath = state.selectedModelPath;
+    if (modelPath != null) {
+      await _chatService.loadModel(modelPath, languageCode: languageCode);
+    }
+    return _chatService.sendMessage(message);
   }
 
   AssistantOnlineChatMessage _toOnlineMessage(AssistantMessage message) {
@@ -583,7 +604,10 @@ class AssistantNotifier extends Notifier<AssistantState> {
         return false;
       }
       _chatService.setKnowledgeService(_knowledgeService);
-      await _chatService.loadModel(model.path);
+      await _chatService.loadModel(
+        model.path,
+        languageCode: _replyLanguageCode,
+      );
       if (!_isLatestSelection(generation)) return false;
       await _modelService.setSelectedModelId(model.id);
       await _modelService.setSelectedModeName(AssistantModelMode.local.name);
