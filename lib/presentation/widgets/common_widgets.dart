@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/extensions/context_extensions.dart';
 
 /// A centered loading indicator with an optional message.
 class LoadingIndicator extends StatelessWidget {
@@ -57,7 +58,7 @@ class ErrorDisplay extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(context.l10n.commonRetry),
               ),
             ],
           ],

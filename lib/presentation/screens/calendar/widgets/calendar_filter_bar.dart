@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/models.dart';
 import '../providers/calendar_provider.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// Displays the active calendar filters as an interactive horizontal bar.
 class CalendarFilterBar extends StatelessWidget {
@@ -82,12 +84,15 @@ class CalendarFilterBar extends StatelessWidget {
             onSelected: onMediaTypeChanged,
             itemBuilder: (context) => CalendarMediaType.values
                 .map(
-                  (type) => PopupMenuItem(value: type, child: Text(type.label)),
+                  (type) => PopupMenuItem(
+                    value: type,
+                    child: Text(type.localizedLabel(context.l10n)),
+                  ),
                 )
                 .toList(),
             child: Chip(
               avatar: const Icon(Icons.video_library_outlined, size: 18),
-              label: Text(filters.mediaType.label),
+              label: Text(filters.mediaType.localizedLabel(context.l10n)),
             ),
           ),
           const SizedBox(width: 8),

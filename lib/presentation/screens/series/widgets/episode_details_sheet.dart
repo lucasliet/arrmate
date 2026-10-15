@@ -4,6 +4,7 @@ import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/extensions/context_extensions.dart';
 import 'package:arrmate/core/services/playback_launch_service.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/widgets/media/media_file_card.dart';
@@ -53,7 +54,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                episode.fullLabel,
+                episode.localizedFullLabel(context.l10n),
                 style: theme.textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),

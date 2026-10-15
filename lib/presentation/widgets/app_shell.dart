@@ -8,6 +8,8 @@ import '../router/app_router.dart';
 import '../tour/app_tour_keys.dart';
 import 'notification_icon_button.dart';
 import 'offline_status_banner.dart';
+import '../../core/extensions/context_extensions.dart';
+import '../l10n/labels.dart';
 
 /// Main shell widget containing the app scaffold and navigation bar.
 class AppShell extends ConsumerWidget {
@@ -83,7 +85,7 @@ class AppShell extends ConsumerWidget {
                     (tab) => NavigationRailDestination(
                       icon: Icon(tab.icon),
                       selectedIcon: Icon(tab.selectedIcon),
-                      label: Text(tab.label),
+                      label: Text(tab.localizedLabel(context.l10n)),
                     ),
                   )
                   .toList(),
@@ -116,7 +118,7 @@ class AppShell extends ConsumerWidget {
                     (tab) => NavigationDestination(
                       icon: Icon(tab.icon),
                       selectedIcon: Icon(tab.selectedIcon),
-                      label: tab.label,
+                      label: tab.localizedLabel(context.l10n),
                     ),
                   )
                   .toList(),

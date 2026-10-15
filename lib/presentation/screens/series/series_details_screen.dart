@@ -26,6 +26,8 @@ import 'providers/series_provider.dart';
 import 'season_details_screen.dart';
 import 'series_edit_screen.dart';
 import 'widgets/series_poster.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Displays detailed information about a specific series, including seasons and options.
 class SeriesDetailsScreen extends ConsumerWidget {
@@ -45,7 +47,7 @@ class SeriesDetailsScreen extends ConsumerWidget {
             error: (error, stack) => Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: ErrorDisplay(
-                message: error.toString(),
+                message: describeError(error, context.l10n),
                 onRetry: () => ref.refresh(seriesDetailsProvider(seriesId)),
               ),
             ),

@@ -8,6 +8,8 @@ import '../../../providers/instances_provider.dart';
 import '../../../widgets/instance_origin_badge.dart';
 import '../providers/activity_provider.dart';
 import '../manual_import_screen.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// Detailed bottom sheet for a queue item, allowing management (remove, blocklist).
 class QueueItemSheet extends ConsumerStatefulWidget {
@@ -56,7 +58,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
               _buildStatusBadge(context),
               const SizedBox(height: 8),
               Text(
-                item.displayTitle,
+                item.localizedDisplayTitle(context.l10n),
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -64,7 +66,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
               if (item.episode != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  item.episode!.fullLabel,
+                  item.episode!.localizedFullLabel(context.l10n),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -209,7 +211,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        item.status.label.toUpperCase(),
+        item.status.localizedLabel(context.l10n).toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
@@ -394,7 +396,10 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         const SizedBox(height: 12),
         if (item.qualityLabel != null)
           _DetailRow(label: 'Quality', value: item.qualityLabel!),
-        _DetailRow(label: 'Language', value: item.languagesLabel),
+        _DetailRow(
+          label: 'Language',
+          value: item.localizedLanguagesLabel(context.l10n),
+        ),
         if (item.customFormatsLabel != null)
           _DetailRow(label: 'Custom Formats', value: item.customFormatsLabel!),
         if (item.customFormatScore != null)

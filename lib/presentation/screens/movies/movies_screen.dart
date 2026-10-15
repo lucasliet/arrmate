@@ -18,6 +18,8 @@ import '../../widgets/sort_bottom_sheet.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_card.dart';
 import 'widgets/movie_list_tile.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// The main screen displaying the list of movies in the library, with sorting and filtering.
 class MoviesScreen extends ConsumerStatefulWidget {
@@ -85,8 +87,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           currentFilter: currentSort.filter,
           sortOptions: MovieSortOption.values,
           filterOptions: MovieFilter.values,
-          sortLabelBuilder: (option) => option.label,
-          filterLabelBuilder: (filter) => filter.label,
+          sortLabelBuilder: (option) => option.localizedLabel(context.l10n),
+          filterLabelBuilder: (filter) => filter.localizedLabel(context.l10n),
           onSortChanged: (option) {
             ref
                 .read(movieSortProvider.notifier)
@@ -276,7 +278,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     },
                     error: (error, stack) => SliverFillRemaining(
                       child: ErrorDisplay(
-                        message: error.toString(),
+                        message: describeError(error, context.l10n),
                         onRetry: () =>
                             ref.read(moviesProvider.notifier).refresh(),
                       ),

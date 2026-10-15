@@ -22,6 +22,8 @@ import 'watching_route_refresh.dart';
 import 'watching_tab.dart';
 import 'widgets/queue_list_item.dart';
 import 'widgets/queue_options_sheet.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Main screen showing current download queue and history.
 class ActivityScreen extends ConsumerWidget {
@@ -201,7 +203,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
               );
             },
             error: (error, stack) => ErrorDisplay(
-              message: error.toString(),
+              message: describeError(error, context.l10n),
               onRetry: () => ref.refresh(queueProvider),
             ),
             loading: () => const LoadingIndicator(message: 'Loading queue...'),

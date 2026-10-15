@@ -7,6 +7,9 @@ import '../../providers/instances_provider.dart';
 import '../../widgets/instance_load_failure_banner.dart';
 import '../../widgets/instance_origin_badge.dart';
 import 'providers/history_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
+import '../../../core/extensions/date_extensions.dart';
 
 /// Displays a list of recent history events (grabs, imports, failures).
 class HistoryScreen extends ConsumerWidget {
@@ -195,7 +198,9 @@ class _EventTypeFilterChip extends ConsumerWidget {
     return PopupMenuButton<HistoryEventType?>(
       child: InputChip(
         label: Text(
-          selectedEventType == null ? 'All events' : selectedEventType!.title,
+          selectedEventType == null
+              ? 'All events'
+              : selectedEventType!.localizedTitle(context.l10n),
         ),
         avatar: const Icon(Icons.filter_list, size: 18),
         selected: selectedEventType != null,
@@ -214,7 +219,7 @@ class _EventTypeFilterChip extends ConsumerWidget {
             .map(
               (type) => PopupMenuItem<HistoryEventType?>(
                 value: type,
-                child: Text(type.title),
+                child: Text(type.localizedTitle(context.l10n)),
               ),
             ),
       ],
@@ -281,7 +286,7 @@ class _HistoryEventCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _formatRelativeTime(event.date),
+                    event.date.relativeDateL10n(context.l10n),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -293,20 +298,6 @@ class _HistoryEventCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatRelativeTime(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    }
-    return 'Just now';
   }
 
   void _showEventDetails(BuildContext context) {
@@ -332,7 +323,7 @@ class _EventTypeBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        eventType.label,
+        eventType.localizedLabel(context.l10n),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: _getColor(context),
           fontWeight: FontWeight.bold,
@@ -396,7 +387,7 @@ class _HistoryEventSheet extends StatelessWidget {
                   _EventTypeBadge(eventType: event.eventType),
                   const SizedBox(width: 8),
                   Text(
-                    event.eventType.title,
+                    event.eventType.localizedTitle(context.l10n),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ],
@@ -412,12 +403,15 @@ class _HistoryEventSheet extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                event.description,
+                event.localizedDescription(context.l10n),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
               _DetailRow(label: 'Quality', value: event.quality.quality.name),
-              _DetailRow(label: 'Language', value: event.languageLabel),
+              _DetailRow(
+                label: 'Language',
+                value: event.localizedLanguageLabel(context.l10n),
+              ),
               _DetailRow(label: 'Date', value: formatDate(event.date)),
               if (event.indexer != null)
                 _DetailRow(label: 'Indexer', value: event.indexer!),

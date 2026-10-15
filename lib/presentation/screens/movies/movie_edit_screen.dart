@@ -8,6 +8,8 @@ import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_details_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Screen for editing an existing movie's configuration (monitor status, profile, path).
 class MovieEditScreen extends ConsumerStatefulWidget {
@@ -244,7 +246,9 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                                   .map(
                                     (s) => DropdownMenuItem(
                                       value: s,
-                                      child: Text(s.label),
+                                      child: Text(
+                                        s.localizedLabel(context.l10n),
+                                      ),
                                     ),
                                   )
                                   .toList(),

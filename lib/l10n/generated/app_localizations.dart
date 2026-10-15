@@ -431,6 +431,960 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get commonYes;
 
+  /// No description provided for @errorConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed. Please check your network.'**
+  String get errorConnectionFailed;
+
+  /// No description provided for @errorInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid URL: {url}'**
+  String errorInvalidUrl(String url);
+
+  /// No description provided for @errorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource not found.'**
+  String get errorNotFound;
+
+  /// No description provided for @errorRequestCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Request cancelled'**
+  String get errorRequestCancelled;
+
+  /// No description provided for @errorRequestTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out. Please try again.'**
+  String get errorRequestTimedOut;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error. Please try again later.'**
+  String get errorServer;
+
+  /// No description provided for @errorUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized. Please check your API key.'**
+  String get errorUnauthorized;
+
+  /// No description provided for @errorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An unknown error occurred.'**
+  String get errorUnknown;
+
+  /// No description provided for @errorValidationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Validation failed.'**
+  String get errorValidationFailed;
+
+  /// No description provided for @formatDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String formatDaysAgo(int count);
+
+  /// No description provided for @formatHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String formatHoursAgo(int count);
+
+  /// No description provided for @formatJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get formatJustNow;
+
+  /// No description provided for @formatLastOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Last online {time}'**
+  String formatLastOnline(String time);
+
+  /// No description provided for @formatMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String formatMinutesAgo(int count);
+
+  /// No description provided for @formatMonthsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}mo ago'**
+  String formatMonthsAgo(int count);
+
+  /// No description provided for @formatSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Season {number}'**
+  String formatSeason(int number);
+
+  /// No description provided for @formatSeasonEpisode.
+  ///
+  /// In en, this message translates to:
+  /// **'Season {season}, Episode {episode}'**
+  String formatSeasonEpisode(int season, int episode);
+
+  /// No description provided for @formatTitleWithSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (Season {season})'**
+  String formatTitleWithSeason(String title, int season);
+
+  /// No description provided for @formatWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}w ago'**
+  String formatWeeksAgo(int count);
+
+  /// No description provided for @formatYearsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}y ago'**
+  String formatYearsAgo(int count);
+
+  /// No description provided for @formatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get formatYesterday;
+
+  /// No description provided for @labelAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labelAll;
+
+  /// No description provided for @labelAppearanceDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get labelAppearanceDark;
+
+  /// No description provided for @labelAppearanceLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get labelAppearanceLight;
+
+  /// No description provided for @labelAppearanceSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get labelAppearanceSystem;
+
+  /// No description provided for @labelCalendarAllMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'All media'**
+  String get labelCalendarAllMedia;
+
+  /// No description provided for @labelCalendarUnknownMovie.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Movie'**
+  String get labelCalendarUnknownMovie;
+
+  /// No description provided for @labelCalendarUnknownSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Series'**
+  String get labelCalendarUnknownSeries;
+
+  /// No description provided for @labelColorAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get labelColorAmber;
+
+  /// No description provided for @labelColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get labelColorBlue;
+
+  /// No description provided for @labelColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get labelColorGreen;
+
+  /// No description provided for @labelColorIndigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get labelColorIndigo;
+
+  /// No description provided for @labelColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get labelColorOrange;
+
+  /// No description provided for @labelColorPink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get labelColorPink;
+
+  /// No description provided for @labelColorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get labelColorPurple;
+
+  /// No description provided for @labelColorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get labelColorRed;
+
+  /// No description provided for @labelColorTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get labelColorTeal;
+
+  /// No description provided for @labelDangling.
+  ///
+  /// In en, this message translates to:
+  /// **'Dangling'**
+  String get labelDangling;
+
+  /// No description provided for @labelDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get labelDeleted;
+
+  /// No description provided for @labelDigitalRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital Release'**
+  String get labelDigitalRelease;
+
+  /// No description provided for @labelDiscoverySortLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest'**
+  String get labelDiscoverySortLatest;
+
+  /// No description provided for @labelDiscoverySortRelevant.
+  ///
+  /// In en, this message translates to:
+  /// **'Relevant'**
+  String get labelDiscoverySortRelevant;
+
+  /// No description provided for @labelDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get labelDownloaded;
+
+  /// No description provided for @labelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get labelDownloading;
+
+  /// No description provided for @labelEpisode.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode'**
+  String get labelEpisode;
+
+  /// No description provided for @labelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get labelError;
+
+  /// No description provided for @labelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get labelFailed;
+
+  /// No description provided for @labelFilePriorityDoNotDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Do Not Download'**
+  String get labelFilePriorityDoNotDownload;
+
+  /// No description provided for @labelFilePriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High Priority'**
+  String get labelFilePriorityHigh;
+
+  /// No description provided for @labelFilePriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Priority'**
+  String get labelFilePriorityLow;
+
+  /// No description provided for @labelFilePriorityMaximal.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximal Priority'**
+  String get labelFilePriorityMaximal;
+
+  /// No description provided for @labelFilePriorityNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal Priority'**
+  String get labelFilePriorityNormal;
+
+  /// No description provided for @labelFilterAllMovies.
+  ///
+  /// In en, this message translates to:
+  /// **'All Movies'**
+  String get labelFilterAllMovies;
+
+  /// No description provided for @labelFilterAllSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'All Series'**
+  String get labelFilterAllSeries;
+
+  /// No description provided for @labelGrabbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Grabbed'**
+  String get labelGrabbed;
+
+  /// No description provided for @labelHistoryDeletedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'File was deleted.'**
+  String get labelHistoryDeletedGeneric;
+
+  /// No description provided for @labelHistoryDeletedManual.
+  ///
+  /// In en, this message translates to:
+  /// **'File was deleted manually or by a client through the API.'**
+  String get labelHistoryDeletedManual;
+
+  /// No description provided for @labelHistoryDeletedMissingFromDisk.
+  ///
+  /// In en, this message translates to:
+  /// **'File was not found on disk so it was unlinked from the database.'**
+  String get labelHistoryDeletedMissingFromDisk;
+
+  /// No description provided for @labelHistoryDeletedUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'File was deleted to import an upgrade.'**
+  String get labelHistoryDeletedUpgrade;
+
+  /// No description provided for @labelHistoryDownloadFailedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed.'**
+  String get labelHistoryDownloadFailedDescription;
+
+  /// No description provided for @labelHistoryDownloadIgnoredDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ignored.'**
+  String get labelHistoryDownloadIgnoredDescription;
+
+  /// No description provided for @labelHistoryEpisodeGrabbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode grabbed from {indexer} and sent to {client}.'**
+  String labelHistoryEpisodeGrabbed(String indexer, String client);
+
+  /// No description provided for @labelHistoryEpisodeImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode downloaded successfully and imported from {client}.'**
+  String labelHistoryEpisodeImported(String client);
+
+  /// No description provided for @labelHistoryEpisodeRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode file was renamed.'**
+  String get labelHistoryEpisodeRenamed;
+
+  /// No description provided for @labelHistoryFallbackClient.
+  ///
+  /// In en, this message translates to:
+  /// **'download client'**
+  String get labelHistoryFallbackClient;
+
+  /// No description provided for @labelHistoryFallbackIndexer.
+  ///
+  /// In en, this message translates to:
+  /// **'indexer'**
+  String get labelHistoryFallbackIndexer;
+
+  /// No description provided for @labelHistoryIgnored.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored'**
+  String get labelHistoryIgnored;
+
+  /// No description provided for @labelHistoryImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get labelHistoryImported;
+
+  /// No description provided for @labelHistoryMovieGrabbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie grabbed from {indexer} and sent to {client}.'**
+  String labelHistoryMovieGrabbed(String indexer, String client);
+
+  /// No description provided for @labelHistoryMovieImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie downloaded successfully and imported from {client}.'**
+  String labelHistoryMovieImported(String client);
+
+  /// No description provided for @labelHistoryMovieRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie file was renamed.'**
+  String get labelHistoryMovieRenamed;
+
+  /// No description provided for @labelHistoryRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed'**
+  String get labelHistoryRenamed;
+
+  /// No description provided for @labelHistoryTitleDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'File Deleted'**
+  String get labelHistoryTitleDeleted;
+
+  /// No description provided for @labelHistoryTitleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Failed'**
+  String get labelHistoryTitleFailed;
+
+  /// No description provided for @labelHistoryTitleGrabbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Grabbed'**
+  String get labelHistoryTitleGrabbed;
+
+  /// No description provided for @labelHistoryTitleIgnored.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Ignored'**
+  String get labelHistoryTitleIgnored;
+
+  /// No description provided for @labelHistoryTitleImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder Imported'**
+  String get labelHistoryTitleImported;
+
+  /// No description provided for @labelHistoryTitleRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'File Renamed'**
+  String get labelHistoryTitleRenamed;
+
+  /// No description provided for @labelHistoryTitleUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Event'**
+  String get labelHistoryTitleUnknown;
+
+  /// No description provided for @labelHistoryUnknownEventDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown event.'**
+  String get labelHistoryUnknownEventDescription;
+
+  /// No description provided for @labelInCinemas.
+  ///
+  /// In en, this message translates to:
+  /// **'In Cinemas'**
+  String get labelInCinemas;
+
+  /// No description provided for @labelMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get labelMissing;
+
+  /// No description provided for @labelMovieMonitorMovieAndCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie + Collection'**
+  String get labelMovieMonitorMovieAndCollection;
+
+  /// No description provided for @labelMovieMonitorMovieOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie'**
+  String get labelMovieMonitorMovieOnly;
+
+  /// No description provided for @labelMovieStateUnreleased.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreleased'**
+  String get labelMovieStateUnreleased;
+
+  /// No description provided for @labelMovieStateUnwanted.
+  ///
+  /// In en, this message translates to:
+  /// **'Unwanted'**
+  String get labelMovieStateUnwanted;
+
+  /// No description provided for @labelMovieStateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get labelMovieStateWaiting;
+
+  /// No description provided for @labelMovieStatusAnnounced.
+  ///
+  /// In en, this message translates to:
+  /// **'Announced'**
+  String get labelMovieStatusAnnounced;
+
+  /// No description provided for @labelMovieStatusReleased.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get labelMovieStatusReleased;
+
+  /// No description provided for @labelMovieStatusTba.
+  ///
+  /// In en, this message translates to:
+  /// **'Unannounced'**
+  String get labelMovieStatusTba;
+
+  /// No description provided for @labelNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get labelNone;
+
+  /// No description provided for @labelPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get labelPaused;
+
+  /// No description provided for @labelPhysicalRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical Release'**
+  String get labelPhysicalRelease;
+
+  /// No description provided for @labelQueueCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get labelQueueCompleted;
+
+  /// No description provided for @labelQueuePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get labelQueuePending;
+
+  /// No description provided for @labelQueueWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get labelQueueWarning;
+
+  /// No description provided for @labelQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get labelQueued;
+
+  /// No description provided for @labelSeeding.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeding'**
+  String get labelSeeding;
+
+  /// No description provided for @labelSeriesMonitorAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All Episodes'**
+  String get labelSeriesMonitorAll;
+
+  /// No description provided for @labelSeriesMonitorExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing Episodes'**
+  String get labelSeriesMonitorExisting;
+
+  /// No description provided for @labelSeriesMonitorFirstSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'First Season'**
+  String get labelSeriesMonitorFirstSeason;
+
+  /// No description provided for @labelSeriesMonitorFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'Future Episodes'**
+  String get labelSeriesMonitorFuture;
+
+  /// No description provided for @labelSeriesMonitorLastSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Season'**
+  String get labelSeriesMonitorLastSeason;
+
+  /// No description provided for @labelSeriesMonitorMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing Episodes'**
+  String get labelSeriesMonitorMissing;
+
+  /// No description provided for @labelSeriesMonitorPilot.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot Episode'**
+  String get labelSeriesMonitorPilot;
+
+  /// No description provided for @labelSeriesMonitorRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Episodes'**
+  String get labelSeriesMonitorRecent;
+
+  /// No description provided for @labelSeriesMonitorSpecials.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor Specials'**
+  String get labelSeriesMonitorSpecials;
+
+  /// No description provided for @labelSeriesStatusContinuing.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuing'**
+  String get labelSeriesStatusContinuing;
+
+  /// No description provided for @labelSeriesStatusEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get labelSeriesStatusEnded;
+
+  /// No description provided for @labelSeriesStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get labelSeriesStatusUpcoming;
+
+  /// No description provided for @labelSeriesTypeAnime.
+  ///
+  /// In en, this message translates to:
+  /// **'Anime'**
+  String get labelSeriesTypeAnime;
+
+  /// No description provided for @labelSeriesTypeDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get labelSeriesTypeDaily;
+
+  /// No description provided for @labelSeriesTypeStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get labelSeriesTypeStandard;
+
+  /// No description provided for @labelSeriesUnmonitorSpecials.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmonitor Specials'**
+  String get labelSeriesUnmonitorSpecials;
+
+  /// No description provided for @labelSortAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get labelSortAdded;
+
+  /// No description provided for @labelSortNextAiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Airing'**
+  String get labelSortNextAiring;
+
+  /// No description provided for @labelSortPreviousAiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous Airing'**
+  String get labelSortPreviousAiring;
+
+  /// No description provided for @labelSortRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get labelSortRating;
+
+  /// No description provided for @labelSortRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime'**
+  String get labelSortRuntime;
+
+  /// No description provided for @labelSortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get labelSortTitle;
+
+  /// No description provided for @labelSortYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get labelSortYear;
+
+  /// No description provided for @labelSpecials.
+  ///
+  /// In en, this message translates to:
+  /// **'Specials'**
+  String get labelSpecials;
+
+  /// No description provided for @labelTabActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get labelTabActivity;
+
+  /// No description provided for @labelTabCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get labelTabCalendar;
+
+  /// No description provided for @labelTabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get labelTabSettings;
+
+  /// No description provided for @labelTba.
+  ///
+  /// In en, this message translates to:
+  /// **'TBA'**
+  String get labelTba;
+
+  /// No description provided for @labelTorrentChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get labelTorrentChecking;
+
+  /// No description provided for @labelTorrentLinkExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in library'**
+  String get labelTorrentLinkExternal;
+
+  /// No description provided for @labelTorrentLinkExternalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This torrent was downloaded outside the media library.'**
+  String get labelTorrentLinkExternalDescription;
+
+  /// No description provided for @labelTorrentLinkFileMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'File removed'**
+  String get labelTorrentLinkFileMissing;
+
+  /// No description provided for @labelTorrentLinkFileMissingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalog item still exists, but its media file was deleted.'**
+  String get labelTorrentLinkFileMissingDescription;
+
+  /// No description provided for @labelTorrentLinkLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'In library'**
+  String get labelTorrentLinkLinked;
+
+  /// No description provided for @labelTorrentLinkLinkedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This torrent backs an item that is still in the media library.'**
+  String get labelTorrentLinkLinkedDescription;
+
+  /// No description provided for @labelTorrentLinkOrphan.
+  ///
+  /// In en, this message translates to:
+  /// **'Orphan'**
+  String get labelTorrentLinkOrphan;
+
+  /// No description provided for @labelTorrentLinkOrphanDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Radarr/Sonarr downloaded this torrent, but the catalog item is gone. Only the torrent is left.'**
+  String get labelTorrentLinkOrphanDescription;
+
+  /// No description provided for @labelTorrentLinkUnknownDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The library relation could not be determined.'**
+  String get labelTorrentLinkUnknownDescription;
+
+  /// No description provided for @labelTorrentMissingFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing Files'**
+  String get labelTorrentMissingFiles;
+
+  /// No description provided for @labelTorrentPausedDl.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused (DL)'**
+  String get labelTorrentPausedDl;
+
+  /// No description provided for @labelTorrentPausedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused (UP)'**
+  String get labelTorrentPausedUp;
+
+  /// No description provided for @labelTorrentQueuedDl.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued (DL)'**
+  String get labelTorrentQueuedDl;
+
+  /// No description provided for @labelTorrentQueuedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued (UP)'**
+  String get labelTorrentQueuedUp;
+
+  /// No description provided for @labelTorrentSortActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get labelTorrentSortActivity;
+
+  /// No description provided for @labelTorrentSortAddedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Added date'**
+  String get labelTorrentSortAddedDate;
+
+  /// No description provided for @labelTorrentSortDownloadSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download speed'**
+  String get labelTorrentSortDownloadSpeed;
+
+  /// No description provided for @labelTorrentSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get labelTorrentSortName;
+
+  /// No description provided for @labelTorrentSortProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get labelTorrentSortProgress;
+
+  /// No description provided for @labelTorrentSortRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratio'**
+  String get labelTorrentSortRatio;
+
+  /// No description provided for @labelTorrentSortSeedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed time'**
+  String get labelTorrentSortSeedTime;
+
+  /// No description provided for @labelTorrentStalledDl.
+  ///
+  /// In en, this message translates to:
+  /// **'Stalled (DL)'**
+  String get labelTorrentStalledDl;
+
+  /// No description provided for @labelTorrentStalledUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Stalled (UP)'**
+  String get labelTorrentStalledUp;
+
+  /// No description provided for @labelTrackerDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get labelTrackerDisabled;
+
+  /// No description provided for @labelTrackerNotContacted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not contacted'**
+  String get labelTrackerNotContacted;
+
+  /// No description provided for @labelTrackerNotWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Not working'**
+  String get labelTrackerNotWorking;
+
+  /// No description provided for @labelTrackerUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating'**
+  String get labelTrackerUpdating;
+
+  /// No description provided for @labelTrackerWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get labelTrackerWorking;
+
+  /// No description provided for @labelUnnamedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'an unnamed file'**
+  String get labelUnnamedFile;
+
+  /// No description provided for @labelViewModeGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get labelViewModeGrid;
+
+  /// No description provided for @labelViewModeList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get labelViewModeList;
+
+  /// No description provided for @labelWanted.
+  ///
+  /// In en, this message translates to:
+  /// **'Wanted'**
+  String get labelWanted;
+
   /// No description provided for @languagePromptSubtitle.
   ///
   /// In en, this message translates to:

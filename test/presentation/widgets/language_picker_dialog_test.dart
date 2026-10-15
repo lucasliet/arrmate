@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/presentation/providers/locale_provider.dart';
 import 'package:arrmate/presentation/providers/settings_provider.dart';

@@ -14,6 +14,8 @@ import '../../widgets/notification_icon_button.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_filter_bar.dart';
 import 'widgets/calendar_item.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Displays a timeline of upcoming releases (movies and episodes).
 class CalendarScreen extends ConsumerWidget {
@@ -74,7 +76,7 @@ class CalendarScreen extends ConsumerWidget {
                     instances.isNotEmpty,
                   ),
                   error: (error, stack) => ErrorDisplay(
-                    message: error.toString(),
+                    message: describeError(error, context.l10n),
                     onRetry: () =>
                         ref.read(calendarProvider.notifier).refresh(),
                   ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../l10n/labels.dart';
 
 class TorrentListItem extends StatelessWidget {
   final Torrent torrent;
@@ -194,7 +195,10 @@ class TorrentListItem extends StatelessWidget {
                           formatRuntime(torrent.eta ~/ 60),
                         ),
                     ] else ...[
-                      _buildDetail(context, torrent.status.label),
+                      _buildDetail(
+                        context,
+                        torrent.status.localizedLabel(context.l10n),
+                      ),
                     ],
                   ],
                 ),
@@ -346,7 +350,7 @@ class TorrentListItem extends StatelessWidget {
           context,
           key: const ValueKey('torrent-link-badge'),
           icon: status.icon,
-          label: link!.displayLabel,
+          label: link!.localizedDisplayLabel(context.l10n),
           color: color,
         ),
         // The inherited-relation marker is metadata about the link, not the

@@ -1,6 +1,8 @@
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/widgets/filter_sections.dart';
 import 'package:flutter/material.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 
 /// Outcome of the torrent filters sheet: the configured query and whether it
 /// should be persisted for future sessions.
@@ -92,7 +94,8 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                       title: 'Status',
                       values: TorrentStatusFilter.values,
                       selected: _query.status,
-                      labelBuilder: (value) => value.label,
+                      labelBuilder: (value) =>
+                          value.localizedLabel(context.l10n),
                       onSelected: (value) => setState(
                         () => _query = _query.copyWith(status: value),
                       ),
@@ -102,7 +105,8 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                         title: 'Library link',
                         values: TorrentLinkFilter.values,
                         selected: _query.linkFilter,
-                        labelBuilder: (value) => value.label,
+                        labelBuilder: (value) =>
+                            value.localizedLabel(context.l10n),
                         onSelected: (value) => setState(
                           () => _query = _query.copyWith(linkFilter: value),
                         ),

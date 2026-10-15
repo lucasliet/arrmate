@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/watching_provider.dart';
 import 'widgets/watching_list_item.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Activity tab listing Jellyfin items matched to the library: in-progress
 /// media under "Continue Watching" followed by the next episode of each
@@ -56,7 +58,7 @@ class WatchingTab extends ConsumerWidget {
         );
       },
       error: (error, stack) => ErrorDisplay(
-        message: error.toString(),
+        message: describeError(error, context.l10n),
         onRetry: () => ref.read(watchingItemsProvider.notifier).refresh(),
       ),
       loading: () =>

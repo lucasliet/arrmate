@@ -13,6 +13,8 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_lookup_provider.dart';
 import 'providers/series_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// A modal sheet for searching and adding new series to Sonarr.
 class SeriesAddSheet extends ConsumerStatefulWidget {
@@ -249,7 +251,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                           .map(
                             (option) => DropdownMenuItem(
                               value: option,
-                              child: Text(option.label),
+                              child: Text(option.localizedLabel(context.l10n)),
                             ),
                           )
                           .toList(),
@@ -321,7 +323,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                           : const Icon(Icons.tv),
                       title: Text(series.title),
                       subtitle: Text(
-                        '${series.yearLabel} · '
+                        '${series.localizedYearLabel(context.l10n)} · '
                         '${series.ratings?.value.toStringAsFixed(1) ?? 'No rating'}',
                       ),
                       trailing: series.exists
@@ -380,7 +382,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   ),
                 const SizedBox(height: 16),
                 Text(
-                  '${series.title} (${series.yearLabel})',
+                  '${series.title} (${series.localizedYearLabel(context.l10n)})',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -476,7 +478,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                       .map(
                         (monitor) => DropdownMenuItem(
                           value: monitor,
-                          child: Text(monitor.label),
+                          child: Text(monitor.localizedLabel(context.l10n)),
                         ),
                       )
                       .toList(),
@@ -503,7 +505,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   items: SeriesType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
-                      child: Text(type.label),
+                      child: Text(type.localizedLabel(context.l10n)),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _seriesType = val!),

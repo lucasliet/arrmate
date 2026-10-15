@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/extensions/date_extensions.dart';
 import '../../core/network/custom_cache_manager.dart';
 import '../providers/network_status_provider.dart';
+import '../../core/extensions/context_extensions.dart';
 
 /// Displays an explicit offline state above the current application screen.
 class OfflineStatusBanner extends ConsumerWidget {
@@ -20,7 +21,9 @@ class OfflineStatusBanner extends ConsumerWidget {
         final lastOnline = status.lastOnlineAt;
         final lastOnlineText = lastOnline == null
             ? 'No previous online connection recorded'
-            : 'Last online ${lastOnline.relativeDate}';
+            : context.l10n.formatLastOnline(
+                lastOnline.relativeDateL10n(context.l10n),
+              );
         return Material(
           color: Theme.of(context).colorScheme.errorContainer,
           child: SafeArea(

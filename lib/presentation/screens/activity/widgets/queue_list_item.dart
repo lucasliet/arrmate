@@ -6,6 +6,8 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../../widgets/instance_origin_badge.dart';
 import 'queue_item_sheet.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// A card widget displaying a summary of a download queue item.
 class QueueListItem extends ConsumerWidget {
@@ -43,7 +45,7 @@ class QueueListItem extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                item.displayTitle,
+                                item.localizedDisplayTitle(context.l10n),
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -74,10 +76,10 @@ class QueueListItem extends ConsumerWidget {
                             ],
                           ],
                         ),
-                        if (_metadata.isNotEmpty) ...[
+                        if (_metadata(context.l10n).isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            formatListWithSeparator(_metadata),
+                            formatListWithSeparator(_metadata(context.l10n)),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -88,7 +90,7 @@ class QueueListItem extends ConsumerWidget {
                         if (item.episode != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            item.episode!.fullLabel,
+                            item.episode!.localizedFullLabel(context.l10n),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -185,10 +187,10 @@ class QueueListItem extends ConsumerWidget {
     );
   }
 
-  List<String> get _metadata {
+  List<String> _metadata(AppLocalizations l10n) {
     return [
       if (item.qualityLabel != null) item.qualityLabel!,
-      if (item.languages.isNotEmpty) item.languagesLabel,
+      if (item.languages.isNotEmpty) item.localizedLanguagesLabel(l10n),
       item.protocol.toUpperCase(),
       if (item.downloadClient?.trim().isNotEmpty ?? false) item.downloadClient!,
     ];
@@ -246,7 +248,7 @@ class QueueListItem extends ConsumerWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
-        item.status.label.toUpperCase(),
+        item.status.localizedLabel(context.l10n).toUpperCase(),
         style: TextStyle(
           color: color,
           fontSize: 10,

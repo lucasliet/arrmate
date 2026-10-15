@@ -18,6 +18,8 @@ import '../../widgets/sort_bottom_sheet.dart';
 import 'providers/series_provider.dart';
 import 'widgets/series_card.dart';
 import 'widgets/series_list_tile.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// The main screen displaying the list of series in the library, with sorting and filtering.
 class SeriesScreen extends ConsumerStatefulWidget {
@@ -85,8 +87,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           currentFilter: currentSort.filter,
           sortOptions: SeriesSortOption.values,
           filterOptions: SeriesFilter.values,
-          sortLabelBuilder: (option) => option.label,
-          filterLabelBuilder: (filter) => filter.label,
+          sortLabelBuilder: (option) => option.localizedLabel(context.l10n),
+          filterLabelBuilder: (filter) => filter.localizedLabel(context.l10n),
           onSortChanged: (option) {
             ref
                 .read(seriesSortProvider.notifier)
@@ -276,7 +278,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     },
                     error: (error, stack) => SliverFillRemaining(
                       child: ErrorDisplay(
-                        message: error.toString(),
+                        message: describeError(error, context.l10n),
                         onRetry: () =>
                             ref.read(seriesProvider.notifier).refresh(),
                       ),

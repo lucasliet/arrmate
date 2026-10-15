@@ -22,6 +22,7 @@ import '../../theme/app_theme.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/app_tour_service.dart';
 import '../../widgets/notification_icon_button.dart';
+import '../../l10n/labels.dart';
 
 /// Main settings screen for configuring instances, appearance, notifications, and about info.
 class SettingsScreen extends ConsumerWidget {
@@ -186,7 +187,7 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.brightness_6),
           title: const Text('Theme Mode'),
-          subtitle: Text(settings.appearance.label),
+          subtitle: Text(settings.appearance.localizedLabel(context.l10n)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             _showAppearanceDialog(context, ref, settings.appearance);
@@ -195,7 +196,7 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: const Text('Color Scheme'),
-          subtitle: Text(settings.colorScheme.label),
+          subtitle: Text(settings.colorScheme.localizedLabel(context.l10n)),
           trailing: Icon(Icons.circle, color: settings.colorScheme.color),
           onTap: () {
             _showColorSchemeDialog(context, ref, settings.colorScheme);
@@ -216,7 +217,7 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.home_outlined),
           title: const Text('Home Tab'),
-          subtitle: Text(settings.homeTab.label),
+          subtitle: Text(settings.homeTab.localizedLabel(context.l10n)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             _showHomeTabDialog(context, ref, settings.homeTab);
@@ -242,7 +243,7 @@ class SettingsScreen extends ConsumerWidget {
               children: AppAppearance.values.map((mode) {
                 final isSelected = mode == current;
                 return ListTile(
-                  title: Text(mode.label),
+                  title: Text(mode.localizedLabel(context.l10n)),
                   leading: Icon(
                     mode == AppAppearance.light
                         ? Icons.light_mode
@@ -366,7 +367,7 @@ class SettingsScreen extends ConsumerWidget {
               children: selectableTabs.map((tab) {
                 final isSelected = tab == current;
                 return ListTile(
-                  title: Text(tab.label),
+                  title: Text(tab.localizedLabel(context.l10n)),
                   leading: Icon(tab.icon),
                   trailing: isSelected
                       ? const Icon(Icons.check, color: Colors.blue)

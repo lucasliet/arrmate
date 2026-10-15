@@ -13,6 +13,7 @@ import '../qbittorrent/torrent_files_sheet.dart';
 import '../qbittorrent/torrent_peers_sheet.dart';
 import '../qbittorrent/torrent_trackers_sheet.dart';
 import 'torrent_import_target_sheet.dart';
+import '../../../l10n/labels.dart';
 
 class TorrentDetailsSheet extends ConsumerWidget {
   final Torrent torrent;
@@ -522,7 +523,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      status.label,
+                      status.localizedLabel(context.l10n),
                       style: context.textTheme.titleSmall?.copyWith(
                         color: color,
                         fontWeight: FontWeight.bold,
@@ -530,7 +531,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      status.description,
+                      status.localizedDescription(context.l10n),
                       style: context.textTheme.bodySmall?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
@@ -567,7 +568,11 @@ class TorrentDetailsSheet extends ConsumerWidget {
           ),
         ),
         if (link!.mediaTitle != null)
-          _buildInfoRow(context, 'Media', link!.displayLabel),
+          _buildInfoRow(
+            context,
+            'Media',
+            link!.localizedDisplayLabel(context.l10n),
+          ),
         if (link!.instanceLabel != null)
           _buildInfoRow(context, 'Instance', link!.instanceLabel!),
         if (link!.hasMedia && showOpenInLibrary) ...[

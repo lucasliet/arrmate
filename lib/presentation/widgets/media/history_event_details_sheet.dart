@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 
 /// A modal sheet displaying detailed information about a history event.
 class HistoryEventDetailsSheet extends StatelessWidget {
@@ -58,7 +60,11 @@ class HistoryEventDetailsSheet extends StatelessWidget {
                   _buildEventHeader(context),
                   const SizedBox(height: 16),
                   _buildSection(context, 'General', [
-                    _buildInfoRow(context, 'Event Type', _getEventTypeLabel()),
+                    _buildInfoRow(
+                      context,
+                      'Event Type',
+                      _getEventTypeLabel(context.l10n),
+                    ),
                     _buildInfoRow(context, 'Date', formatDate(event.date)),
                     if (event.sourceTitle != null)
                       _buildInfoRow(
@@ -144,7 +150,7 @@ class HistoryEventDetailsSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getEventTypeLabel(),
+                  _getEventTypeLabel(context.l10n),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: color,
                     fontWeight: FontWeight.bold,
@@ -244,7 +250,7 @@ class HistoryEventDetailsSheet extends StatelessWidget {
     }
   }
 
-  String _getEventTypeLabel() {
-    return event.eventType.title;
+  String _getEventTypeLabel(AppLocalizations l10n) {
+    return event.eventType.localizedTitle(l10n);
   }
 }

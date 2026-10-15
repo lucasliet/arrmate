@@ -19,6 +19,8 @@ import 'widgets/add_torrent_sheet.dart';
 import 'widgets/torrent_details_sheet.dart';
 import 'widgets/torrent_filters_sheet.dart';
 import 'widgets/torrent_list_item.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 class QBittorrentTab extends ConsumerStatefulWidget {
   const QBittorrentTab({super.key});
@@ -374,7 +376,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                         .map(
                           (option) => PopupMenuItem(
                             value: option,
-                            child: Text(option.label),
+                            child: Text(option.localizedLabel(context.l10n)),
                           ),
                         )
                         .toList(),

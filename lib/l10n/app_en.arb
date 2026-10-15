@@ -62,6 +62,282 @@
   "commonUnmonitored": "Unmonitored",
   "commonWatchInJellyfin": "Watch in Jellyfin",
   "commonYes": "Yes",
+  "errorConnectionFailed": "Connection failed. Please check your network.",
+  "errorInvalidUrl": "Invalid URL: {url}",
+  "@errorInvalidUrl": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNotFound": "Resource not found.",
+  "errorRequestCancelled": "Request cancelled",
+  "errorRequestTimedOut": "Request timed out. Please try again.",
+  "errorServer": "Server error. Please try again later.",
+  "errorUnauthorized": "Unauthorized. Please check your API key.",
+  "errorUnknown": "An unknown error occurred.",
+  "errorValidationFailed": "Validation failed.",
+  "formatDaysAgo": "{count}d ago",
+  "@formatDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatHoursAgo": "{count}h ago",
+  "@formatHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatJustNow": "Just now",
+  "formatLastOnline": "Last online {time}",
+  "@formatLastOnline": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "formatMinutesAgo": "{count}m ago",
+  "@formatMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatMonthsAgo": "{count}mo ago",
+  "@formatMonthsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatSeason": "Season {number}",
+  "@formatSeason": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "formatSeasonEpisode": "Season {season}, Episode {episode}",
+  "@formatSeasonEpisode": {
+    "placeholders": {
+      "season": {
+        "type": "int"
+      },
+      "episode": {
+        "type": "int"
+      }
+    }
+  },
+  "formatTitleWithSeason": "{title} (Season {season})",
+  "@formatTitleWithSeason": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "formatWeeksAgo": "{count}w ago",
+  "@formatWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatYearsAgo": "{count}y ago",
+  "@formatYearsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatYesterday": "Yesterday",
+  "labelAll": "All",
+  "labelAppearanceDark": "Dark",
+  "labelAppearanceLight": "Light",
+  "labelAppearanceSystem": "System",
+  "labelCalendarAllMedia": "All media",
+  "labelCalendarUnknownMovie": "Unknown Movie",
+  "labelCalendarUnknownSeries": "Unknown Series",
+  "labelColorAmber": "Amber",
+  "labelColorBlue": "Blue",
+  "labelColorGreen": "Green",
+  "labelColorIndigo": "Indigo",
+  "labelColorOrange": "Orange",
+  "labelColorPink": "Pink",
+  "labelColorPurple": "Purple",
+  "labelColorRed": "Red",
+  "labelColorTeal": "Teal",
+  "labelDangling": "Dangling",
+  "labelDeleted": "Deleted",
+  "labelDigitalRelease": "Digital Release",
+  "labelDiscoverySortLatest": "Latest",
+  "labelDiscoverySortRelevant": "Relevant",
+  "labelDownloaded": "Downloaded",
+  "labelDownloading": "Downloading",
+  "labelEpisode": "Episode",
+  "labelError": "Error",
+  "labelFailed": "Failed",
+  "labelFilePriorityDoNotDownload": "Do Not Download",
+  "labelFilePriorityHigh": "High Priority",
+  "labelFilePriorityLow": "Low Priority",
+  "labelFilePriorityMaximal": "Maximal Priority",
+  "labelFilePriorityNormal": "Normal Priority",
+  "labelFilterAllMovies": "All Movies",
+  "labelFilterAllSeries": "All Series",
+  "labelGrabbed": "Grabbed",
+  "labelHistoryDeletedGeneric": "File was deleted.",
+  "labelHistoryDeletedManual": "File was deleted manually or by a client through the API.",
+  "labelHistoryDeletedMissingFromDisk": "File was not found on disk so it was unlinked from the database.",
+  "labelHistoryDeletedUpgrade": "File was deleted to import an upgrade.",
+  "labelHistoryDownloadFailedDescription": "Download failed.",
+  "labelHistoryDownloadIgnoredDescription": "Download ignored.",
+  "labelHistoryEpisodeGrabbed": "Episode grabbed from {indexer} and sent to {client}.",
+  "@labelHistoryEpisodeGrabbed": {
+    "placeholders": {
+      "indexer": {
+        "type": "String"
+      },
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryEpisodeImported": "Episode downloaded successfully and imported from {client}.",
+  "@labelHistoryEpisodeImported": {
+    "placeholders": {
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryEpisodeRenamed": "Episode file was renamed.",
+  "labelHistoryFallbackClient": "download client",
+  "labelHistoryFallbackIndexer": "indexer",
+  "labelHistoryIgnored": "Ignored",
+  "labelHistoryImported": "Imported",
+  "labelHistoryMovieGrabbed": "Movie grabbed from {indexer} and sent to {client}.",
+  "@labelHistoryMovieGrabbed": {
+    "placeholders": {
+      "indexer": {
+        "type": "String"
+      },
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryMovieImported": "Movie downloaded successfully and imported from {client}.",
+  "@labelHistoryMovieImported": {
+    "placeholders": {
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryMovieRenamed": "Movie file was renamed.",
+  "labelHistoryRenamed": "Renamed",
+  "labelHistoryTitleDeleted": "File Deleted",
+  "labelHistoryTitleFailed": "Download Failed",
+  "labelHistoryTitleGrabbed": "Release Grabbed",
+  "labelHistoryTitleIgnored": "Download Ignored",
+  "labelHistoryTitleImported": "Folder Imported",
+  "labelHistoryTitleRenamed": "File Renamed",
+  "labelHistoryTitleUnknown": "Unknown Event",
+  "labelHistoryUnknownEventDescription": "Unknown event.",
+  "labelInCinemas": "In Cinemas",
+  "labelMissing": "Missing",
+  "labelMovieMonitorMovieAndCollection": "Movie + Collection",
+  "labelMovieMonitorMovieOnly": "Movie",
+  "labelMovieStateUnreleased": "Unreleased",
+  "labelMovieStateUnwanted": "Unwanted",
+  "labelMovieStateWaiting": "Waiting",
+  "labelMovieStatusAnnounced": "Announced",
+  "labelMovieStatusReleased": "Released",
+  "labelMovieStatusTba": "Unannounced",
+  "labelNone": "None",
+  "labelPaused": "Paused",
+  "labelPhysicalRelease": "Physical Release",
+  "labelQueueCompleted": "Completed",
+  "labelQueuePending": "Pending",
+  "labelQueueWarning": "Warning",
+  "labelQueued": "Queued",
+  "labelSeeding": "Seeding",
+  "labelSeriesMonitorAll": "All Episodes",
+  "labelSeriesMonitorExisting": "Existing Episodes",
+  "labelSeriesMonitorFirstSeason": "First Season",
+  "labelSeriesMonitorFuture": "Future Episodes",
+  "labelSeriesMonitorLastSeason": "Last Season",
+  "labelSeriesMonitorMissing": "Missing Episodes",
+  "labelSeriesMonitorPilot": "Pilot Episode",
+  "labelSeriesMonitorRecent": "Recent Episodes",
+  "labelSeriesMonitorSpecials": "Monitor Specials",
+  "labelSeriesStatusContinuing": "Continuing",
+  "labelSeriesStatusEnded": "Ended",
+  "labelSeriesStatusUpcoming": "Upcoming",
+  "labelSeriesTypeAnime": "Anime",
+  "labelSeriesTypeDaily": "Daily",
+  "labelSeriesTypeStandard": "Standard",
+  "labelSeriesUnmonitorSpecials": "Unmonitor Specials",
+  "labelSortAdded": "Added",
+  "labelSortNextAiring": "Next Airing",
+  "labelSortPreviousAiring": "Previous Airing",
+  "labelSortRating": "Rating",
+  "labelSortRuntime": "Runtime",
+  "labelSortTitle": "Title",
+  "labelSortYear": "Year",
+  "labelSpecials": "Specials",
+  "labelTabActivity": "Activity",
+  "labelTabCalendar": "Calendar",
+  "labelTabSettings": "Settings",
+  "labelTba": "TBA",
+  "labelTorrentChecking": "Checking",
+  "labelTorrentLinkExternal": "Not in library",
+  "labelTorrentLinkExternalDescription": "This torrent was downloaded outside the media library.",
+  "labelTorrentLinkFileMissing": "File removed",
+  "labelTorrentLinkFileMissingDescription": "The catalog item still exists, but its media file was deleted.",
+  "labelTorrentLinkLinked": "In library",
+  "labelTorrentLinkLinkedDescription": "This torrent backs an item that is still in the media library.",
+  "labelTorrentLinkOrphan": "Orphan",
+  "labelTorrentLinkOrphanDescription": "Radarr/Sonarr downloaded this torrent, but the catalog item is gone. Only the torrent is left.",
+  "labelTorrentLinkUnknownDescription": "The library relation could not be determined.",
+  "labelTorrentMissingFiles": "Missing Files",
+  "labelTorrentPausedDl": "Paused (DL)",
+  "labelTorrentPausedUp": "Paused (UP)",
+  "labelTorrentQueuedDl": "Queued (DL)",
+  "labelTorrentQueuedUp": "Queued (UP)",
+  "labelTorrentSortActivity": "Activity",
+  "labelTorrentSortAddedDate": "Added date",
+  "labelTorrentSortDownloadSpeed": "Download speed",
+  "labelTorrentSortName": "Name",
+  "labelTorrentSortProgress": "Progress",
+  "labelTorrentSortRatio": "Ratio",
+  "labelTorrentSortSeedTime": "Seed time",
+  "labelTorrentStalledDl": "Stalled (DL)",
+  "labelTorrentStalledUp": "Stalled (UP)",
+  "labelTrackerDisabled": "Disabled",
+  "labelTrackerNotContacted": "Not contacted",
+  "labelTrackerNotWorking": "Not working",
+  "labelTrackerUpdating": "Updating",
+  "labelTrackerWorking": "Working",
+  "labelUnnamedFile": "an unnamed file",
+  "labelViewModeGrid": "Grid",
+  "labelViewModeList": "List",
+  "labelWanted": "Wanted",
   "languagePromptSubtitle": "You can change it later in Settings.",
   "languagePromptTitle": "Choose your language",
   "languageSystemDefault": "System default",

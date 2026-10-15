@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// One tracker row: host, status, peer counts, and the announce URL.
 class TorrentTrackerItem extends StatelessWidget {
@@ -44,7 +46,7 @@ class TorrentTrackerItem extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      tracker.status.label,
+                      tracker.status.localizedLabel(context.l10n),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: statusColor,
                         fontWeight: FontWeight.bold,

@@ -13,6 +13,8 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_lookup_provider.dart';
 import 'providers/movies_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// A modal sheet for searching and adding new movies to Radarr.
 class MovieAddSheet extends ConsumerStatefulWidget {
@@ -242,7 +244,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                           .map(
                             (option) => DropdownMenuItem(
                               value: option,
-                              child: Text(option.label),
+                              child: Text(option.localizedLabel(context.l10n)),
                             ),
                           )
                           .toList(),
@@ -314,7 +316,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                           : const Icon(Icons.movie),
                       title: Text(movie.title),
                       subtitle: Text(
-                        '${movie.yearLabel} · '
+                        '${movie.localizedYearLabel(context.l10n)} · '
                         '${movie.ratings?.tmdb?.value.toStringAsFixed(1) ?? 'No rating'}',
                       ),
                       trailing: movie.exists
@@ -373,7 +375,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                   ),
                 const SizedBox(height: 16),
                 Text(
-                  '${movie.title} (${movie.yearLabel})',
+                  '${movie.title} (${movie.localizedYearLabel(context.l10n)})',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -464,7 +466,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       .map(
                         (monitor) => DropdownMenuItem(
                           value: monitor,
-                          child: Text(monitor.label),
+                          child: Text(monitor.localizedLabel(context.l10n)),
                         ),
                       )
                       .toList(),
@@ -486,7 +488,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       ].map((status) {
                         return DropdownMenuItem(
                           value: status,
-                          child: Text(status.label),
+                          child: Text(status.localizedLabel(context.l10n)),
                         );
                       }).toList(),
                   onChanged: (val) =>

@@ -7,6 +7,7 @@ import '../../../domain/models/models.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/manual_import_provider.dart';
 import 'widgets/importable_file_item.dart';
+import '../../l10n/labels.dart';
 
 /// A modal sheet for manually importing files from a download.
 class ManualImportScreen extends ConsumerStatefulWidget {
@@ -118,7 +119,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.item.displayTitle,
+          widget.item.localizedDisplayTitle(context.l10n),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),

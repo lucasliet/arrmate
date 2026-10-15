@@ -7,6 +7,8 @@ import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Screen for editing an existing series' configuration (monitor status, profile, path).
 class SeriesEditScreen extends ConsumerStatefulWidget {
@@ -218,7 +220,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
 
               ListTile(
                 title: const Text('Series Type'),
-                subtitle: Text(_seriesType.label),
+                subtitle: Text(_seriesType.localizedLabel(context.l10n)),
                 trailing: DropdownButtonHideUnderline(
                   child: DropdownButton<SeriesType>(
                     value: _seriesType,
@@ -230,7 +232,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
                     items: SeriesType.values.map((SeriesType type) {
                       return DropdownMenuItem<SeriesType>(
                         value: type,
-                        child: Text(type.label),
+                        child: Text(type.localizedLabel(context.l10n)),
                       );
                     }).toList(),
                   ),

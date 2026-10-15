@@ -26,6 +26,8 @@ import 'providers/movie_metadata_provider.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_metadata_section.dart';
 import 'widgets/movie_poster.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Displays detailed information about a specific movie, including options to manage it.
 class MovieDetailsScreen extends ConsumerWidget {
@@ -45,7 +47,7 @@ class MovieDetailsScreen extends ConsumerWidget {
             error: (error, stack) => Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: ErrorDisplay(
-                message: error.toString(),
+                message: describeError(error, context.l10n),
                 onRetry: () => ref.refresh(movieDetailsProvider(movieId)),
               ),
             ),
@@ -665,20 +667,21 @@ class MovieDetailsScreen extends ConsumerWidget {
 
   Widget _buildStatusChip(BuildContext context, Movie movie) {
     Color color;
-    String label = movie.status.label;
+    final l10n = context.l10n;
+    String label = movie.status.localizedLabel(l10n);
 
     if (movie.isDownloaded) {
       color = Colors.green;
-      label = 'Downloaded';
+      label = l10n.labelDownloaded;
     } else if (!movie.monitored) {
       color = Colors.grey;
-      label = 'Unmonitored';
+      label = l10n.commonUnmonitored;
     } else if (movie.isAvailable) {
       color = Colors.red;
-      label = 'Missing';
+      label = l10n.labelMissing;
     } else {
       color = Colors.blue;
-      label = movie.status.label;
+      label = movie.status.localizedLabel(l10n);
     }
 
     return Container(
@@ -832,7 +835,7 @@ class MovieDetailsScreen extends ConsumerWidget {
 
     final items = [
       if (movie.studio != null) _InfoItem('Studio', movie.studio!),
-      _InfoItem('Status', movie.status.label),
+      _InfoItem('Status', movie.status.localizedLabel(context.l10n)),
       _InfoItem('Quality Profile', qualityProfileLabel),
       if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0)
         _InfoItem('Size', formatBytes(movie.sizeOnDisk!)),
