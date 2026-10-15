@@ -106,13 +106,18 @@ Future<bool?> showCrossSeedConfirmationDialog({
 /// Shows a confirmation dialog when some torrents being purged have seeded for
 /// less than the configured minimum.
 ///
-/// The catalog and media files are always purged; this dialog only governs
-/// which torrents are removed from qBittorrent. Returns the user's
-/// [SeedingAction], or `null` if the dialog was dismissed.
+/// The dialog only governs which torrents are removed from qBittorrent.
+/// [footnote] explains what happens regardless of the choice; it defaults to
+/// the library purge wording, where the catalog and media files are always
+/// purged. Returns the user's [SeedingAction], or `null` if the dialog was
+/// dismissed.
 Future<SeedingAction?> showSeedingWarningDialog({
   required BuildContext context,
   required List<Torrent> belowThreshold,
   required int minimumSeedingDays,
+  String footnote =
+      'The title will still be removed from the library and its '
+      'files deleted either way.',
 }) {
   return showDialog<SeedingAction>(
     context: context,
@@ -134,11 +139,7 @@ Future<SeedingAction?> showSeedingWarningDialog({
               const SizedBox(height: 12),
               ...belowThreshold.map((t) => TorrentSeedingTile(torrent: t)),
               const SizedBox(height: 12),
-              Text(
-                'The title will still be removed from the library and its '
-                'files deleted either way.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(footnote, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
