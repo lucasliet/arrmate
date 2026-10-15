@@ -6,6 +6,7 @@ import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../screens/activity/providers/qbittorrent_provider.dart';
 import '../../screens/movies/providers/movies_provider.dart';
 import '../../screens/series/providers/series_provider.dart';
 import 'seeding_warning_dialog.dart';
@@ -20,7 +21,8 @@ class BatchActionResult {
 }
 
 /// Orchestrates the three batch operations (Delete, Delete files, Purge) for
-/// the movies and series home screens.
+/// the movies and series home screens, plus the bulk delete of the torrent
+/// list.
 ///
 /// Each method shows the appropriate confirmation dialog (and the seeding
 /// warning dialog for Purge), runs the operation with a loading overlay, and
@@ -520,6 +522,91 @@ class BatchActionsHandler {
             'series${_plural(seriesList.length)} before error: $e',
         refreshCatalog: updated > 0,
       );
+    }
+  }
+
+  // ---- Torrents ----------------------------------------------------------
+
+  /// Batch-deletes [torrents] from qBittorrent together with their files on
+  /// disk.
+  ///
+  /// Applies the same seeding-time rule as the library purge: when any torrent
+  /// seeded for less than the configured minimum, [showSeedingWarningDialog]
+  /// lets the user cancel, keep those torrents seeding, or delete them all.
+  Future<BatchActionResult?> deleteTorrentsWithFiles(
+    BuildContext context,
+    List<Torrent> torrents,
+  ) async {
+    if (torrents.isEmpty) return null;
+    if (_ref.read(qbittorrentServiceProvider) == null) {
+      return const BatchActionResult(
+        message: 'No qBittorrent instance configured',
+      );
+    }
+
+    final minimumSeedingDays = _ref.read(settingsProvider).minimumSeedingDays;
+    final minimumSeconds = minimumSeedingDays * 86400;
+    final navigator = Navigator.of(context);
+
+    final confirmed = await _confirm(
+      context,
+      title: 'Delete ${torrents.length} torrent${_plural(torrents.length)}',
+      content:
+          'This removes the selected torrents from qBittorrent and deletes '
+          'their files from disk.',
+    );
+    if (confirmed != true) return null;
+    if (!context.mounted) return null;
+
+    final belowThreshold = torrents
+        .where((t) => isBelowSeedingThreshold(t, minimumSeconds))
+        .toList();
+    var toDelete = torrents;
+    if (belowThreshold.isNotEmpty) {
+      final action = await showSeedingWarningDialog(
+        context: context,
+        belowThreshold: belowThreshold,
+        minimumSeedingDays: minimumSeedingDays,
+        footnote: belowThreshold.length == torrents.length
+            ? 'Keep seeding leaves them and their files untouched.'
+            : 'The other selected torrents and their files are deleted '
+                  'either way.',
+      );
+      if (action == null || action == SeedingAction.cancel) return null;
+      if (action == SeedingAction.keepBelowThreshold) {
+        toDelete = torrents
+            .where((t) => !isBelowSeedingThreshold(t, minimumSeconds))
+            .toList();
+      }
+    }
+
+    final kept = torrents.length - toDelete.length;
+    final keptSuffix = kept > 0 ? ' (kept $kept still seeding)' : '';
+    if (toDelete.isEmpty) {
+      return BatchActionResult(message: 'No torrents deleted$keptSuffix');
+    }
+    if (!context.mounted) return null;
+
+    _showLoading(navigator);
+
+    try {
+      await _ref
+          .read(qbittorrentTorrentsProvider.notifier)
+          .deleteTorrents(
+            toDelete.map((t) => t.hash).toList(),
+            deleteFiles: true,
+          );
+      if (!context.mounted) return null;
+      _hideLoading(navigator);
+      return BatchActionResult(
+        message:
+            'Deleted ${toDelete.length} torrent${_plural(toDelete.length)} '
+            'and files$keptSuffix',
+      );
+    } catch (e) {
+      if (!context.mounted) return null;
+      _hideLoading(navigator);
+      return BatchActionResult(message: 'Failed to delete torrents: $e');
     }
   }
 

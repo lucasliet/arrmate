@@ -57,6 +57,15 @@ enum SeedingAction {
   deleteAll,
 }
 
+/// Whether [torrent] seeded for less than [minimumSeedingSeconds].
+///
+/// The single seeding-time rule shared by every flow that deletes torrents
+/// with their files (library purges and the torrent list bulk delete), so the
+/// warning fires under the same conditions everywhere. A threshold of `0`
+/// disables the guard.
+bool isBelowSeedingThreshold(Torrent torrent, int minimumSeedingSeconds) =>
+    minimumSeedingSeconds > 0 && torrent.seedingTime < minimumSeedingSeconds;
+
 /// Context of a purge operation, used when emitting per-torrent
 /// notifications so the notification carries the origin (movie/series/season).
 typedef PurgeContext = ({String type, int id, int? seasonNumber});
@@ -658,9 +667,9 @@ class PurgeService {
     }
     final resolved = await _resolveTorrents(sourceHashes);
     final all = [...resolved.source, ...resolved.crossSeed];
-    final below = minimumSeedingSeconds > 0
-        ? all.where((t) => t.seedingTime < minimumSeedingSeconds).toList()
-        : const <Torrent>[];
+    final below = all
+        .where((t) => isBelowSeedingThreshold(t, minimumSeedingSeconds))
+        .toList();
     return PurgePreview(
       torrentsToDelete: all,
       crossSeedCandidates: resolved.crossSeed,
@@ -820,7 +829,7 @@ class PurgeService {
 
     bool isBelowThreshold(Torrent t) =>
         action == SeedingAction.keepBelowThreshold &&
-        t.seedingTime < minimumSeedingSeconds;
+        isBelowSeedingThreshold(t, minimumSeedingSeconds);
 
     for (final t in source) {
       if (isBelowThreshold(t)) {

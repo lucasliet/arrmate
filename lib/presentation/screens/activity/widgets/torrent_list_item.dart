@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
@@ -11,6 +12,12 @@ class TorrentListItem extends StatelessWidget {
 
   final VoidCallback? onTap;
 
+  /// Called on long press; the torrent list uses it to start bulk selection.
+  final VoidCallback? onLongPress;
+
+  /// Whether the torrent is part of the current bulk selection.
+  final bool isSelected;
+
   /// Outer spacing of the card.
   ///
   /// Defaults to the activity list inset; screens that already pad their content
@@ -22,6 +29,8 @@ class TorrentListItem extends StatelessWidget {
     required this.torrent,
     this.link,
     this.onTap,
+    this.onLongPress,
+    this.isSelected = false,
     this.margin = const EdgeInsets.only(bottom: 12, left: 16, right: 16),
   });
 
@@ -29,22 +38,29 @@ class TorrentListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCritical = link?.status.isCritical ?? false;
 
+    // The selection highlight wins over the critical one: while selecting, the
+    // user needs to see what the bulk action will hit.
     return Card(
       margin: margin,
       elevation: 0,
-      color: isCritical
+      color: isSelected
+          ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : isCritical
           ? context.colorScheme.errorContainer.withValues(alpha: 0.35)
           : context.colorScheme.surfaceContainer,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isCritical
+        side: isSelected
+            ? BorderSide(color: context.colorScheme.primary, width: 2)
+            : isCritical
             ? BorderSide(color: context.colorScheme.error, width: 1.5)
             : BorderSide.none,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

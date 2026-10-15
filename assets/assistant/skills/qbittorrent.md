@@ -1,6 +1,6 @@
 ---
 name: qbittorrent
-description: Listar/pausar/retomar torrents, adicionar torrent, import torrent, filtros, alternative URL failover local externa
+description: Listar/pausar/retomar torrents, excluir vários torrents com arquivos (seleção em lote), adicionar torrent, import torrent, filtros, alternative URL failover local externa
 ---
 
 # qBittorrent
@@ -87,7 +87,32 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
 **Observações:**
 - O qBittorrent precisa estar configurado em Configurações → Instances para que essa aba apareça.
 - A lista atualiza em tempo real conforme torrents progridem.
-- Múltiplos torrents podem ser operados individualmente.
+- Para remover vários torrents de uma vez (ex.: todos os órfãos), use a seleção em lote — veja a seção abaixo.
+
+## Excluir vários torrents com arquivos — seleção em lote, limpar órfãos
+
+**Onde fica:** Aba Atividade → aba Torrents → **pressionar e segurar** um torrent da lista.
+
+**Passo a passo:**
+1. Abrir Atividade → aba **"Torrents"**.
+2. (Opcional) Filtrar a lista — por exemplo, funil → **Library link → Orphan** para ver só os torrents órfãos (o item saiu do Radarr/Sonarr e só o torrent sobrou).
+3. **Pressionar e segurar** um torrent: ele fica destacado (borda e fundo na cor primária) e a tela entra em modo de seleção.
+4. No modo de seleção:
+   - O topo troca a busca/ordenação/filtros por um cabeçalho **"N selected"** com **X** (sai da seleção) e **Select all** (seleciona todos os torrents **visíveis** com os filtros atuais).
+   - **Tocar** em um torrent marca/desmarca (não abre os detalhes).
+   - O botão "+" some e aparece a barra inferior com **"Delete with files"** (vermelho).
+5. Tocar **"Delete with files"** → diálogo **"Delete N torrents"** → **Confirm**.
+6. **Aviso de seeding (mesma regra do Purge da biblioteca):** se algum torrent selecionado semeou menos que o mínimo de dias configurado em Configurações → System Management (padrão 20 dias), aparece o diálogo **"Torrents still seeding"** listando esses torrents e o tempo semeado:
+   - **Cancel** — não exclui nada.
+   - **Keep seeding** — exclui só os que já cumpriram o mínimo; os outros continuam no qBittorrent com seus arquivos.
+   - **Delete all** — exclui todos os selecionados.
+   - Com o mínimo em 0 dias o aviso não aparece.
+7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final.
+
+**Observações:**
+- A exclusão remove o torrent do qBittorrent **e apaga os arquivos do disco** (não há opção de manter arquivos neste fluxo; para isso use "Remove Torrent" no sheet de detalhes de um torrent).
+- Só os torrents selecionados **e visíveis** são excluídos: um torrent selecionado que some da lista (filtro, remoção pelo qBittorrent) não é afetado.
+- Cópias cross-seed compartilham os arquivos com o torrent irmão; apagar uma delas com arquivos pode deixar a outra sem arquivos. Selecione as duas se a ideia é limpar o release inteiro.
 
 ## Adicionar torrent — magnet URL ou arquivo .torrent
 

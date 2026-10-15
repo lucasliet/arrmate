@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/services/torrent_query_store.dart';
 import '../../../../domain/models/models.dart';
+import '../../shared/widgets/batch_action_bar.dart';
+import '../../shared/widgets/batch_actions_handler.dart';
 import '../../tour/app_tour_keys.dart';
 import '../../tour/tour_mock_data.dart';
 import '../../tour/tour_mockup_provider.dart';
@@ -30,6 +33,11 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
   TorrentQuery _query = const TorrentQuery();
   bool _rememberFilters = false;
   bool _queryModified = false;
+
+  /// Hashes of the torrents picked for a bulk action. Always resolved against
+  /// the visible list, so a torrent hidden or gone since it was picked is
+  /// never acted on.
+  final Set<String> _selectedHashes = {};
 
   @override
   void initState() {
@@ -72,6 +80,79 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
   void _clearQuery() {
     _searchController.clear();
     _updateQuery(_query.clearFilters());
+  }
+
+  /// Flips [torrent] in the selection, dropping picks no longer in
+  /// [visibleTorrents] so a torrent that left the list and comes back is not
+  /// silently selected again.
+  void _toggleSelection(Torrent torrent, List<Torrent> visibleTorrents) {
+    final visibleHashes = visibleTorrents.map((t) => t.hash).toSet();
+    setState(() {
+      _selectedHashes.retainWhere(visibleHashes.contains);
+      if (!_selectedHashes.remove(torrent.hash)) {
+        _selectedHashes.add(torrent.hash);
+      }
+    });
+  }
+
+  void _clearSelection() => setState(_selectedHashes.clear);
+
+  void _selectAll(List<Torrent> torrents) {
+    setState(() {
+      _selectedHashes
+        ..clear()
+        ..addAll(torrents.map((torrent) => torrent.hash));
+    });
+  }
+
+  /// Deletes [torrents] with their files, then reports the outcome and leaves
+  /// selection mode.
+  Future<void> _deleteSelectedWithFiles(List<Torrent> torrents) async {
+    final result = await BatchActionsHandler(
+      ref,
+    ).deleteTorrentsWithFiles(context, torrents);
+    if (!mounted) return;
+    if (result != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
+    _clearSelection();
+  }
+
+  /// Header replacing the search and sort controls while torrents are
+  /// selected, so the filters that define the selection cannot shift under it.
+  Widget _buildSelectionHeader(
+    BuildContext context,
+    int selectedCount,
+    List<Torrent> visibleTorrents,
+  ) {
+    return Padding(
+      key: const Key('torrentSelectionHeader'),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Clear selection',
+            onPressed: _clearSelection,
+            icon: const Icon(Icons.close),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$selectedCount selected',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            key: const Key('torrentSelectAllButton'),
+            tooltip: 'Select all',
+            onPressed: () => _selectAll(visibleTorrents),
+            icon: const Icon(Icons.select_all),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Tag names carried by the current torrent list, offered as filter chips.
@@ -214,18 +295,45 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     );
     final hiddenCount = torrents.length - visibleTorrents.length;
     final hasVisibleActiveFilters = effectiveQuery.hasActiveFilters;
+    final selectedTorrents = showsTourMockup
+        ? const <Torrent>[]
+        : visibleTorrents
+              .where((torrent) => _selectedHashes.contains(torrent.hash))
+              .toList();
+    final isSelecting = selectedTorrents.isNotEmpty;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTorrentSheet,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: isSelecting
+          ? null
+          : FloatingActionButton(
+              onPressed: _showAddTorrentSheet,
+              child: const Icon(Icons.add),
+            ),
+      bottomNavigationBar: isSelecting
+          ? BatchActionBar(
+              selectedCount: selectedTorrents.length,
+              actions: [
+                BatchAction(
+                  icon: Icons.delete_forever,
+                  label: 'Delete with files',
+                  isDestructive: true,
+                  onPressed: () => _deleteSelectedWithFiles(selectedTorrents),
+                ),
+              ],
+            )
+          : null,
       body: Column(
         children: [
+          if (isSelecting)
+            _buildSelectionHeader(
+              context,
+              selectedTorrents.length,
+              visibleTorrents,
+            ),
           // While the guided tour mockup stands in for the real list, the
           // search and sort controls stay hidden so they never answer with the
           // empty state the mockup replaces.
-          if (!showsTourMockup) ...[
+          if (!showsTourMockup && !isSelecting) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: TextField(
@@ -310,8 +418,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                 ],
               ),
             ),
-            const Divider(height: 1),
           ],
+          if (!showsTourMockup) const Divider(height: 1),
 
           if (linkIndex.failures.isNotEmpty)
             InstanceLoadFailureBanner(
@@ -364,8 +472,12 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                         key: index == 0 ? tourKeys.activityTorrentKey : null,
                         torrent: torrent,
                         link: link,
-                        onTap: () =>
-                            _showTorrentDetails(context, torrent, link),
+                        isSelected: _selectedHashes.contains(torrent.hash),
+                        onTap: isSelecting
+                            ? () => _toggleSelection(torrent, visibleTorrents)
+                            : () => _showTorrentDetails(context, torrent, link),
+                        onLongPress: () =>
+                            _toggleSelection(torrent, visibleTorrents),
                       );
                     },
                   ),

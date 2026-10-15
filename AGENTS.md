@@ -19,6 +19,9 @@ and **qBittorrent** (for downloads).
     - **Live Status**: Real-time progress, speed, ETA, and seeds/peers.
     - **Control**: Pause, resume, delete (with optional file deletion), and
       recheck.
+    - **Bulk Delete**: Long-press selection in the torrent list with a "Delete
+      with files" action (e.g. to clear filtered orphans), guarded by the same
+      minimum-seeding-days warning as the library Purge.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
