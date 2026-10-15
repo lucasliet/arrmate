@@ -33,11 +33,10 @@ class ActivityScreen extends ConsumerWidget {
     final hasQBittorrent = qbittorrentInstance != null;
     final jellyfinInstance = ref.watch(currentJellyfinInstanceProvider);
     final hasJellyfin = jellyfinInstance != null;
-    final watchingItems = hasJellyfin
-        ? (ref.watch(watchingItemsProvider).valueOrNull ??
-              const <WatchingItem>[])
-        : const <WatchingItem>[];
-    final showsWatching = hasJellyfin && watchingItems.isNotEmpty;
+    final watchingFeed = hasJellyfin
+        ? (ref.watch(watchingItemsProvider).valueOrNull ?? WatchingFeed.empty)
+        : WatchingFeed.empty;
+    final showsWatching = hasJellyfin && watchingFeed.isNotEmpty;
     final tourKeys = ref.watch(appTourKeysProvider);
     // The tour explains torrents, so the tab is also shown while it runs
     // without a qBittorrent instance, backed by sample torrents.

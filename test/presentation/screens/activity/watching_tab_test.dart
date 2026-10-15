@@ -28,15 +28,20 @@ class _EmptyHistoryNotifier extends HistoryNotifier {
 
 class _StubWatchingNotifier extends WatchingNotifier {
   final List<WatchingItem> _items;
+  final List<WatchingItem> _nextUp;
   final void Function()? _onBuild;
 
-  _StubWatchingNotifier(this._items, {void Function()? onBuild})
-    : _onBuild = onBuild;
+  _StubWatchingNotifier(
+    this._items, {
+    List<WatchingItem> nextUp = const [],
+    void Function()? onBuild,
+  }) : _nextUp = nextUp,
+       _onBuild = onBuild;
 
   @override
-  Future<List<WatchingItem>> build() async {
+  Future<WatchingFeed> build() async {
     _onBuild?.call();
-    return _items;
+    return WatchingFeed(continueWatching: _items, nextUp: _nextUp);
   }
 }
 
@@ -182,6 +187,21 @@ void main() {
     series: sampleSeries,
   );
 
+  final nextUpWatchingItem = WatchingItem(
+    jellyfinItem: const JellyfinItem(
+      id: 'jf-ep-99-next',
+      name: 'Half Loop',
+      seriesName: 'Severance',
+      type: 'Episode',
+      parentIndexNumber: 1,
+      indexNumber: 2,
+      runTimeTicks: 50 * 60 * 10000000,
+      mediaSources: [JellyfinMediaSource(id: 'ms-99-next')],
+    ),
+    mediaInstance: sonarrInstance,
+    series: sampleSeries,
+  );
+
   group('ActivityScreen Watching tab', () {
     testWidgets('hides Watching tab when Jellyfin is not configured', (
       tester,
@@ -273,6 +293,127 @@ void main() {
         expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
       },
     );
+
+    testWidgets(
+      'renders Next Up below Continue Watching with a next episode footer',
+      (tester) async {
+        // Given
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentJellyfinInstanceProvider.overrideWithValue(
+                jellyfinInstance,
+              ),
+              currentQBittorrentInstanceProvider.overrideWithValue(null),
+              queueProvider.overrideWith(_EmptyQueueNotifier.new),
+              activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+              watchingItemsProvider.overrideWith(
+                () => _StubWatchingNotifier(
+                  [movieWatchingItem],
+                  nextUp: [nextUpWatchingItem],
+                ),
+              ),
+            ],
+            child: const MaterialApp(home: ActivityScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // When
+        await tester.tap(find.widgetWithText(Tab, 'Watching'));
+        await tester.pumpAndSettle();
+
+        // Then
+        final continueHeader = find.text('Continue Watching');
+        final nextUpHeader = find.text('Next Up');
+        expect(continueHeader, findsOneWidget);
+        expect(nextUpHeader, findsOneWidget);
+        expect(find.byType(WatchingListItem), findsNWidgets(2));
+        expect(
+          tester.getTopLeft(nextUpHeader).dy,
+          greaterThan(tester.getTopLeft(find.text('Blade Runner 2049')).dy),
+        );
+        expect(
+          tester.getTopLeft(find.text('S01E02 · Half Loop')).dy,
+          greaterThan(tester.getTopLeft(nextUpHeader).dy),
+        );
+        expect(find.text('Next episode · 50m'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets('shows Watching tab when only Next Up has items', (
+      tester,
+    ) async {
+      // Given
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            currentQBittorrentInstanceProvider.overrideWithValue(null),
+            queueProvider.overrideWith(_EmptyQueueNotifier.new),
+            activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+            watchingItemsProvider.overrideWith(
+              () =>
+                  _StubWatchingNotifier(const [], nextUp: [nextUpWatchingItem]),
+            ),
+          ],
+          child: const MaterialApp(home: ActivityScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final watchingTab = find.widgetWithText(Tab, 'Watching');
+      expect(watchingTab, findsOneWidget);
+
+      // When
+      await tester.tap(watchingTab);
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(find.text('Continue Watching'), findsNothing);
+      expect(find.text('Next Up'), findsOneWidget);
+      expect(find.byType(WatchingListItem), findsOneWidget);
+    });
+
+    testWidgets('tapping a Next Up item starts playback via playItem', (
+      tester,
+    ) async {
+      // Given
+      final fakeLaunchService = _FakePlaybackLaunchService();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            currentQBittorrentInstanceProvider.overrideWithValue(null),
+            queueProvider.overrideWith(_EmptyQueueNotifier.new),
+            activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+            watchingItemsProvider.overrideWith(
+              () =>
+                  _StubWatchingNotifier(const [], nextUp: [nextUpWatchingItem]),
+            ),
+            playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
+          ],
+          child: const MaterialApp(home: ActivityScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Watching'));
+      await tester.pumpAndSettle();
+
+      // When
+      await tester.tap(find.byType(WatchingListItem));
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(fakeLaunchService.lastPlayedItem?.id, 'jf-ep-99-next');
+      expect(
+        fakeLaunchService.lastPlayedTitle,
+        'Severance · S01E02 · Half Loop',
+      );
+    });
 
     testWidgets('tapping WatchingListItem resumes playback via playItem', (
       tester,

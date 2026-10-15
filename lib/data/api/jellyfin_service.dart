@@ -1015,6 +1015,67 @@ class JellyfinService {
     }
   }
 
+  /// Fetches the next unwatched episode of each series the user is following
+  /// (`GET /Shows/NextUp`).
+  ///
+  /// In-progress episodes are excluded server-side (`EnableResumable=false`)
+  /// because they already appear in [getResumeItems], and so are episodes the
+  /// user is rewatching. Items without media sources or already marked as
+  /// played are dropped. Returns an empty list outside user mode
+  /// ([supportsProgressSync] is false or no user id is available), because
+  /// Next Up is per-user data. Rethrows [UnauthorizedError] so callers can
+  /// mark the session as expired.
+  Future<List<JellyfinItem>> getNextUpItems({int limit = 50}) async {
+    await _ensureAuthenticated();
+    final userId = _userId;
+    if (!supportsProgressSync || userId == null || userId.isEmpty) {
+      logger.debug(
+        '[JellyfinService] Skipping next up fetch: no user scope available',
+      );
+      return const [];
+    }
+    try {
+      final response = await _request<dynamic>(
+        '/Shows/NextUp',
+        queryParameters: {
+          'userId': userId,
+          'Fields': 'Path,MediaSources,ProviderIds',
+          'EnableResumable': 'false',
+          'EnableRewatching': 'false',
+          'EnableTotalRecordCount': 'false',
+          'Limit': '$limit',
+        },
+      );
+      final data = response.data;
+      if (response.statusCode != 200 || data is! Map) return const [];
+      final rawItems = data['Items'];
+      if (rawItems is! List) return const [];
+      final result = <JellyfinItem>[];
+      for (final entry in rawItems) {
+        if (entry is! Map) continue;
+        final item = JellyfinItem.fromJson(Map<String, dynamic>.from(entry));
+        if (item.type?.toLowerCase() != 'episode') continue;
+        if (item.played == true) continue;
+        if (item.mediaSources.isEmpty) continue;
+        result.add(item);
+      }
+      logger.debug(
+        '[JellyfinService] Loaded ${result.length} next up item(s) for user '
+        '$userId',
+      );
+      return result;
+    } on UnauthorizedError {
+      rethrow;
+    } catch (e, stackTrace) {
+      logger.warning(
+        '[JellyfinService] Could not fetch next up items',
+        e,
+        stackTrace,
+      );
+      return const [];
+    }
+  }
+
   /// Locates the Jellyfin item backing a Radarr/Sonarr media file.
   ///
   /// Jellyfin's server-side filters are treated as hints only:

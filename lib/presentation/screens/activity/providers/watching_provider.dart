@@ -103,6 +103,11 @@ class WatchingItem {
     return series!.title;
   }
 
+  /// Whether Jellyfin holds a resume position for this item.
+  ///
+  /// `false` for Next Up episodes, which start from the beginning.
+  bool get hasResumePosition => (jellyfinItem.playbackPositionTicks ?? 0) > 0;
+
   /// Watched fraction between `0.0` and `1.0`.
   double get progress {
     final pos = jellyfinItem.playbackPositionTicks ?? 0;
@@ -131,23 +136,49 @@ class WatchingItem {
   }
 }
 
-/// Provider for Jellyfin "Continue Watching" items that have parity with the
+/// The Jellyfin items shown on the Watching tab, already matched to the
 /// configured Radarr/Sonarr libraries.
+class WatchingFeed {
+  /// In-progress movies and episodes, in Jellyfin's resume order.
+  final List<WatchingItem> continueWatching;
+
+  /// The next unwatched episode of each series the user is following, in
+  /// Jellyfin's Next Up order.
+  final List<WatchingItem> nextUp;
+
+  /// Creates a [WatchingFeed].
+  const WatchingFeed({
+    this.continueWatching = const [],
+    this.nextUp = const [],
+  });
+
+  /// A feed with no items in either section.
+  static const empty = WatchingFeed();
+
+  /// Whether both sections are empty.
+  bool get isEmpty => continueWatching.isEmpty && nextUp.isEmpty;
+
+  /// Whether at least one section has items.
+  bool get isNotEmpty => !isEmpty;
+}
+
+/// Provider for the Jellyfin "Continue Watching" and "Next Up" items that
+/// have parity with the configured Radarr/Sonarr libraries.
 final watchingItemsProvider =
-    AsyncNotifierProvider.autoDispose<WatchingNotifier, List<WatchingItem>>(
+    AsyncNotifierProvider.autoDispose<WatchingNotifier, WatchingFeed>(
       WatchingNotifier.new,
     );
 
-/// Notifier that loads Jellyfin resume items and filters them against the
-/// configured Radarr and Sonarr libraries.
-class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
+/// Notifier that loads Jellyfin resume and Next Up items and filters them
+/// against the configured Radarr and Sonarr libraries.
+class WatchingNotifier extends AutoDisposeAsyncNotifier<WatchingFeed> {
   @override
-  Future<List<WatchingItem>> build() async {
+  Future<WatchingFeed> build() async {
     final jellyfinInstance = ref.watch(currentJellyfinInstanceProvider);
-    if (jellyfinInstance == null) return const [];
+    if (jellyfinInstance == null) return WatchingFeed.empty;
 
     final expiredIds = ref.watch(jellyfinSessionExpiredProvider);
-    if (expiredIds.contains(jellyfinInstance.id)) return const [];
+    if (expiredIds.contains(jellyfinInstance.id)) return WatchingFeed.empty;
 
     final radarrInstances = ref.watch(
       instancesByTypeProvider(InstanceType.radarr),
@@ -156,7 +187,7 @@ class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
       instancesByTypeProvider(InstanceType.sonarr),
     );
     if (radarrInstances.isEmpty && sonarrInstances.isEmpty) {
-      return const [];
+      return WatchingFeed.empty;
     }
 
     final jellyfin = ref
@@ -164,8 +195,17 @@ class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
         .serviceFor(jellyfinInstance);
 
     List<JellyfinItem> resumeItems;
+    List<JellyfinItem> nextUpItems;
     try {
-      resumeItems = await jellyfin.getResumeItems();
+      final fetched = await Future.wait([
+        _fetch('resume', jellyfin.getResumeItems),
+        // Next Up only lists episodes, so it needs a Sonarr library.
+        sonarrInstances.isEmpty
+            ? Future.value(const <JellyfinItem>[])
+            : _fetch('next up', jellyfin.getNextUpItems),
+      ]);
+      resumeItems = fetched[0];
+      nextUpItems = fetched[1];
     } on UnauthorizedError {
       logger.warning(
         '[WatchingNotifier] Jellyfin session expired for instance '
@@ -179,24 +219,22 @@ class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
           () => sessionExpiredNotifier.markExpired(jellyfinInstance.id),
         ),
       );
-      return const [];
-    } catch (e, stackTrace) {
-      logger.warning(
-        '[WatchingNotifier] Failed to fetch Jellyfin resume items',
-        e,
-        stackTrace,
-      );
-      return const [];
+      return WatchingFeed.empty;
     }
 
-    if (resumeItems.isEmpty) return const [];
+    final resumeIds = {for (final item in resumeItems) item.id};
+    nextUpItems = [
+      for (final item in nextUpItems)
+        if (!resumeIds.contains(item.id)) item,
+    ];
+    if (resumeItems.isEmpty && nextUpItems.isEmpty) return WatchingFeed.empty;
 
     final needsMovies = resumeItems.any(
       (item) => item.type?.toLowerCase() == 'movie',
     );
-    final needsSeries = resumeItems.any(
-      (item) => item.type?.toLowerCase() == 'episode',
-    );
+    final needsSeries =
+        nextUpItems.isNotEmpty ||
+        resumeItems.any((item) => item.type?.toLowerCase() == 'episode');
 
     final moviesFuture = needsMovies
         ? _loadMovies(radarrInstances)
@@ -209,14 +247,41 @@ class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
     final movies = results[0] as List<LibraryMovieEntry>;
     final series = results[1] as List<LibrarySeriesEntry>;
 
-    return matchResumeItemsToLibrary(
-      resumeItems: resumeItems,
-      movies: movies,
-      series: series,
+    return WatchingFeed(
+      continueWatching: matchResumeItemsToLibrary(
+        resumeItems: resumeItems,
+        movies: movies,
+        series: series,
+      ),
+      nextUp: matchResumeItemsToLibrary(
+        resumeItems: nextUpItems,
+        movies: const [],
+        series: series,
+      ),
     );
   }
 
-  /// Refreshes the Continue Watching list.
+  /// Runs one Jellyfin list request, degrading any failure other than an
+  /// [UnauthorizedError] to an empty list so the other section still loads.
+  Future<List<JellyfinItem>> _fetch(
+    String label,
+    Future<List<JellyfinItem>> Function() request,
+  ) async {
+    try {
+      return await request();
+    } on UnauthorizedError {
+      rethrow;
+    } catch (e, stackTrace) {
+      logger.warning(
+        '[WatchingNotifier] Failed to fetch Jellyfin $label items',
+        e,
+        stackTrace,
+      );
+      return const [];
+    }
+  }
+
+  /// Refreshes the Continue Watching and Next Up lists.
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;
@@ -270,7 +335,9 @@ class WatchingNotifier extends AutoDisposeAsyncNotifier<List<WatchingItem>> {
 }
 
 /// Filters and pairs Jellyfin [resumeItems] with [movies] and [series] from
-/// the user's Radarr/Sonarr libraries, preserving Jellyfin's resume order.
+/// the user's Radarr/Sonarr libraries, preserving Jellyfin's order.
+///
+/// Used for both the resume list and the Next Up list.
 List<WatchingItem> matchResumeItemsToLibrary({
   required List<JellyfinItem> resumeItems,
   required List<LibraryMovieEntry> movies,

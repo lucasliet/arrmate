@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../player/playback_stop_gate.dart';
 import 'providers/watching_provider.dart';
 
-/// Refreshes Continue Watching when the router leaves `/player`.
+/// Refreshes Continue Watching and Next Up when the router leaves `/player`.
 ///
 /// Browser Back on web updates the reported location without reliably
 /// disposing the player route. The in-app back button pops through the
@@ -105,7 +105,7 @@ class _WatchingRouteRefreshState extends ConsumerState<WatchingRouteRefresh> {
     });
   }
 
-  /// Invalidates Continue Watching once [gate] has finished its stop report.
+  /// Invalidates the Watching feed once [gate] has finished its stop report.
   Future<void> _refreshAfterStop(
     ProviderContainer container,
     PlaybackStopGate gate,

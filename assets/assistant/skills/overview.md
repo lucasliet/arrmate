@@ -39,7 +39,7 @@ Arrmate uses bottom navigation below 600 logical pixels, an icon sidebar from 60
 1. **Filmes** — Biblioteca de filmes do Radarr.
 2. **Séries** — Biblioteca de séries do Sonarr.
 3. **Calendário** — Próximos lançamentos e episódios organizados por data.
-4. **Atividade** — Fila de downloads, histórico, torrents do qBittorrent e Continue Assistindo (Watching, exibida quando há itens em andamento no Jellyfin).
+4. **Atividade** — Fila de downloads, histórico, torrents do qBittorrent e Watching do Jellyfin (Continue Watching com os itens em andamento e, abaixo, Next Up com o próximo episódio das séries acompanhadas; exibida quando há itens).
 5. **Configurações** — seções Instances, Appearance, System (System Management + Assistant), Notifications e About.
 
 A aba ativa é destacada com ícone preenchido e cor de destaque. Tocar em qualquer aba navega diretamente.

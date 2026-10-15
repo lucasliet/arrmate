@@ -413,6 +413,10 @@ void main() {
           ],
         );
 
+        when(
+          () => jellyfinService.getNextUpItems(),
+        ).thenAnswer((_) async => const []);
+
         final movieRepo = _MockMovieRepository();
         when(() => movieRepo.getMovies()).thenAnswer(
           (_) async => [
@@ -452,12 +456,14 @@ void main() {
         addTearDown(container.dispose);
 
         // When
-        final items = await container.read(watchingItemsProvider.future);
+        final feed = await container.read(watchingItemsProvider.future);
 
         // Then
+        final items = feed.continueWatching;
         expect(items, hasLength(2));
         expect(items[0].movie?.id, 7);
         expect(items[1].series?.id, 9);
+        expect(feed.nextUp, isEmpty);
       },
     );
 
@@ -470,6 +476,9 @@ void main() {
         when(
           () => jellyfinService.getResumeItems(),
         ).thenThrow(const UnauthorizedError('Expired'));
+        when(
+          () => jellyfinService.getNextUpItems(),
+        ).thenAnswer((_) async => const []);
 
         final launchService = PlaybackLaunchService(
           jellyfinServiceFactory: (_) => jellyfinService,
@@ -490,15 +499,221 @@ void main() {
         addTearDown(container.dispose);
 
         // When
-        final items = await container.read(watchingItemsProvider.future);
+        final feed = await container.read(watchingItemsProvider.future);
         await pumpEventQueue();
 
         // Then
-        expect(items, isEmpty);
+        expect(feed.isEmpty, isTrue);
         expect(
           container.read(jellyfinSessionExpiredProvider),
           contains(jellyfinInstance.id),
         );
+      },
+    );
+
+    test(
+      'matches Next Up episodes to Sonarr and drops ones already in progress',
+      () async {
+        // Given
+        final jellyfinService = _MockJellyfinService();
+        when(() => jellyfinService.instance).thenReturn(jellyfinInstance);
+        when(() => jellyfinService.getResumeItems()).thenAnswer(
+          (_) async => [
+            _jellyfinEpisode(
+              id: 'jf-sev-1',
+              name: 'Good News About Hell',
+              seriesName: 'Severance',
+              seasonNumber: 1,
+              episodeNumber: 1,
+            ),
+          ],
+        );
+        when(() => jellyfinService.getNextUpItems()).thenAnswer(
+          (_) async => [
+            _jellyfinEpisode(
+              id: 'jf-sev-1',
+              name: 'Good News About Hell',
+              seriesName: 'Severance',
+              seasonNumber: 1,
+              episodeNumber: 1,
+            ),
+            _jellyfinEpisode(
+              id: 'jf-andor-3',
+              name: 'Reckoning',
+              seriesName: 'Andor',
+              seasonNumber: 1,
+              episodeNumber: 3,
+              playbackPositionTicks: 0,
+            ),
+            _jellyfinEpisode(
+              id: 'jf-unknown',
+              name: 'Pilot',
+              seriesName: 'Not In Sonarr',
+              seasonNumber: 1,
+              episodeNumber: 1,
+              playbackPositionTicks: 0,
+            ),
+          ],
+        );
+
+        final seriesRepo = _MockSeriesRepository();
+        when(() => seriesRepo.getSeries()).thenAnswer(
+          (_) async => [
+            _series(id: 9, title: 'Severance', path: '/tv/Severance'),
+            _series(id: 10, title: 'Andor', path: '/tv/Andor'),
+          ],
+        );
+
+        final launchService = PlaybackLaunchService(
+          jellyfinServiceFactory: (_) => jellyfinService,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            instancesByTypeProvider(
+              InstanceType.radarr,
+            ).overrideWithValue(const []),
+            instancesByTypeProvider(
+              InstanceType.sonarr,
+            ).overrideWithValue([sonarrInstance]),
+            playbackLaunchServiceProvider.overrideWithValue(launchService),
+            seriesRepositoryForInstanceProvider(
+              sonarrInstance,
+            ).overrideWithValue(seriesRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // When
+        final feed = await container.read(watchingItemsProvider.future);
+
+        // Then
+        expect(feed.continueWatching.map((item) => item.jellyfinItem.id), [
+          'jf-sev-1',
+        ]);
+        expect(feed.nextUp.map((item) => item.jellyfinItem.id), ['jf-andor-3']);
+        expect(feed.nextUp.single.series?.id, 10);
+        expect(feed.nextUp.single.hasResumePosition, isFalse);
+        verify(() => seriesRepo.getSeries()).called(1);
+      },
+    );
+
+    test('keeps Continue Watching when the Next Up request fails', () async {
+      // Given
+      final jellyfinService = _MockJellyfinService();
+      when(() => jellyfinService.instance).thenReturn(jellyfinInstance);
+      when(() => jellyfinService.getResumeItems()).thenAnswer(
+        (_) async => [
+          _jellyfinEpisode(
+            id: 'jf-sev-1',
+            name: 'Good News About Hell',
+            seriesName: 'Severance',
+            seasonNumber: 1,
+            episodeNumber: 1,
+          ),
+        ],
+      );
+      when(
+        () => jellyfinService.getNextUpItems(),
+      ).thenThrow(StateError('boom'));
+
+      final seriesRepo = _MockSeriesRepository();
+      when(() => seriesRepo.getSeries()).thenAnswer(
+        (_) async => [
+          _series(id: 9, title: 'Severance', path: '/tv/Severance'),
+        ],
+      );
+
+      final launchService = PlaybackLaunchService(
+        jellyfinServiceFactory: (_) => jellyfinService,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+          instancesByTypeProvider(
+            InstanceType.radarr,
+          ).overrideWithValue(const []),
+          instancesByTypeProvider(
+            InstanceType.sonarr,
+          ).overrideWithValue([sonarrInstance]),
+          playbackLaunchServiceProvider.overrideWithValue(launchService),
+          seriesRepositoryForInstanceProvider(
+            sonarrInstance,
+          ).overrideWithValue(seriesRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // When
+      final feed = await container.read(watchingItemsProvider.future);
+
+      // Then
+      expect(feed.continueWatching, hasLength(1));
+      expect(feed.nextUp, isEmpty);
+    });
+
+    test(
+      'skips Next Up without a Sonarr instance and marks the session expired '
+      'when Next Up is rejected',
+      () async {
+        // Given
+        final jellyfinService = _MockJellyfinService();
+        when(() => jellyfinService.instance).thenReturn(jellyfinInstance);
+        when(
+          () => jellyfinService.getResumeItems(),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => jellyfinService.getNextUpItems(),
+        ).thenThrow(const UnauthorizedError('Expired'));
+
+        final launchService = PlaybackLaunchService(
+          jellyfinServiceFactory: (_) => jellyfinService,
+        );
+
+        final radarrOnly = ProviderContainer(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            instancesByTypeProvider(
+              InstanceType.radarr,
+            ).overrideWithValue([radarrInstance]),
+            instancesByTypeProvider(
+              InstanceType.sonarr,
+            ).overrideWithValue(const []),
+            playbackLaunchServiceProvider.overrideWithValue(launchService),
+          ],
+        );
+        addTearDown(radarrOnly.dispose);
+        final withSonarr = ProviderContainer(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            instancesByTypeProvider(
+              InstanceType.radarr,
+            ).overrideWithValue(const []),
+            instancesByTypeProvider(
+              InstanceType.sonarr,
+            ).overrideWithValue([sonarrInstance]),
+            playbackLaunchServiceProvider.overrideWithValue(launchService),
+          ],
+        );
+        addTearDown(withSonarr.dispose);
+
+        // When
+        final radarrFeed = await radarrOnly.read(watchingItemsProvider.future);
+        await pumpEventQueue();
+        final sonarrFeed = await withSonarr.read(watchingItemsProvider.future);
+        await pumpEventQueue();
+
+        // Then
+        expect(radarrFeed.isEmpty, isTrue);
+        expect(radarrOnly.read(jellyfinSessionExpiredProvider), isEmpty);
+        expect(sonarrFeed.isEmpty, isTrue);
+        expect(
+          withSonarr.read(jellyfinSessionExpiredProvider),
+          contains(jellyfinInstance.id),
+        );
+        verify(() => jellyfinService.getNextUpItems()).called(1);
       },
     );
   });
@@ -590,6 +805,7 @@ JellyfinItem _jellyfinEpisode({
   required int episodeNumber,
   String? path,
   int? productionYear,
+  int playbackPositionTicks = 15000000000,
 }) {
   return JellyfinItem(
     id: id,
@@ -600,7 +816,7 @@ JellyfinItem _jellyfinEpisode({
     indexNumber: episodeNumber,
     path: path,
     productionYear: productionYear,
-    playbackPositionTicks: 15000000000,
+    playbackPositionTicks: playbackPositionTicks,
     runTimeTicks: 30000000000,
     mediaSources: const [JellyfinMediaSource(id: 'src-1', container: 'mkv')],
   );
