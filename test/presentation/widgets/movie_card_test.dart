@@ -7,6 +7,7 @@ import 'package:arrmate/presentation/screens/movies/widgets/movie_card.dart';
 // Mock NetworkImage to avoid HTTP calls in widget tests
 import 'dart:io';
 import 'mock_image_http.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   final testMovie = Movie(
@@ -31,6 +32,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               home: Scaffold(
                 body: MovieCard(movie: testMovie, onTap: () {}),
               ),
@@ -53,6 +57,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               home: Scaffold(
                 body: MovieCard(movie: testMovie, onTap: () => tapped = true),
               ),
@@ -74,6 +81,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: SizedBox(
               width: 120,
@@ -103,6 +113,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               home: Scaffold(
                 body: MovieCard(movie: testMovie, onTap: () {}),
               ),

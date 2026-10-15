@@ -4,6 +4,7 @@ import 'package:arrmate/presentation/widgets/queue_status_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   testWidgets(
@@ -31,6 +32,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: QueueStatusIndicator(
                 instanceType: InstanceType.radarr,
@@ -61,6 +65,9 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: QueueStatusIndicator(
               instanceType: InstanceType.radarr,
@@ -103,6 +110,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: QueueStatusIndicator(
                 instanceType: InstanceType.radarr,
@@ -157,6 +167,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: QueueStatusIndicator(
                 instanceType: InstanceType.radarr,
@@ -202,6 +215,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: QueueStatusIndicator(
                 instanceType: InstanceType.radarr,
@@ -248,6 +264,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: QueueStatusIndicator(
                 instanceType: InstanceType.radarr,

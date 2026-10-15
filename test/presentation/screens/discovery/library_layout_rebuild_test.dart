@@ -3,6 +3,7 @@ import 'package:arrmate/presentation/screens/discovery/discovery_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets('add-movie search header survives a width change', (
@@ -23,6 +24,9 @@ void main() {
       ProviderScope(
         overrides: [currentRadarrInstanceProvider.overrideWithValue(null)],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: ValueListenableBuilder<double>(
             valueListenable: width,
             builder: (context, value, _) => Align(

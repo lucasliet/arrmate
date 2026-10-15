@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class MockMovieRepository extends Mock implements MovieRepository {}
 
@@ -124,6 +125,9 @@ Widget _host(MovieRepository repository) {
       ).overrideWithValue(repository),
     ],
     child: MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
       home: Scaffold(
         body: Builder(
           builder: (context) => TextButton(

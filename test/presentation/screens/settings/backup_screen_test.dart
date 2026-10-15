@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class FakeBackupNotifier extends BackupNotifier {
   BackupState fakeState;
@@ -464,7 +465,12 @@ Future<void> _pumpScreen(
         ),
         ...overrides,
       ],
-      child: const MaterialApp(home: BackupScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: BackupScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

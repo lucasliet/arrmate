@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arrmate/presentation/providers/notifications_provider.dart';
 import 'package:arrmate/presentation/widgets/notification_icon_button.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,9 @@ void main() {
           unreadNotificationCountProvider.overrideWith((ref) => unreadCount),
         ],
         child: MaterialApp.router(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           routerConfig: GoRouter(
             routes: [
               GoRoute(
@@ -99,6 +103,9 @@ void main() {
               unreadNotificationCountProvider.overrideWith((ref) => 0),
             ],
             child: const MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               home: Scaffold(body: NotificationIconButton(showTooltip: false)),
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class _MockQBittorrentService extends Mock implements QBittorrentService {}
 
@@ -477,7 +478,12 @@ Future<_StaticTorrentsNotifier> _pumpTab(
         qbittorrentTorrentsProvider.overrideWith(() => notifier),
         qbittorrentServiceProvider.overrideWithValue(_MockQBittorrentService()),
       ],
-      child: const MaterialApp(home: QBittorrentTab()),
+      child: const MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: QBittorrentTab(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

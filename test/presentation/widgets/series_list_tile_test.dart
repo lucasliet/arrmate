@@ -4,6 +4,7 @@ import 'package:arrmate/presentation/screens/series/widgets/series_list_tile.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   final series = Series(
@@ -25,7 +26,12 @@ void main() {
           const AsyncValue.data(QueueMediaLookup.empty),
         ),
       ],
-      child: MaterialApp(home: Scaffold(body: child)),
+      child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: Scaffold(body: child),
+      ),
     );
   }
 

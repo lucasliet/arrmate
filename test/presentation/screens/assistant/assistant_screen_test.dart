@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 class _AssistantNotifier extends AssistantNotifier {
   _AssistantNotifier({
@@ -67,6 +68,9 @@ Widget _assistantApp(
       platformCapabilitiesProvider.overrideWithValue(capabilities),
     ],
     child: MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
       theme: AppTheme.light(AppColorScheme.blue),
       home: const AssistantScreen(),
     ),

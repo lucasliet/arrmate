@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class _DelayedInstancesNotifier extends InstancesNotifier {
   final Instance instance;
@@ -84,7 +85,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [instancesProvider.overrideWith(() => notifier)],
-        child: MaterialApp(home: InstanceEditScreen(instanceId: instance.id)),
+        child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: InstanceEditScreen(instanceId: instance.id),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -299,7 +305,12 @@ Widget _screen(String instanceId, {Set<String> expiredIds = const {}}) {
         () => _FlaggedSessionsNotifier(expiredIds),
       ),
     ],
-    child: MaterialApp(home: InstanceEditScreen(instanceId: instanceId)),
+    child: MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
+      home: InstanceEditScreen(instanceId: instanceId),
+    ),
   );
 }
 

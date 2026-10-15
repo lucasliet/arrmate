@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../helpers/localized_app.dart';
 
 /// Sets the logical window size seen by both [MediaQuery] and layout.
 ///
@@ -81,6 +82,9 @@ void main() {
             ),
           ],
           child: MaterialApp.router(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             theme: ThemeData(platform: platform),
             routerConfig: router,
           ),
@@ -175,7 +179,12 @@ void main() {
             (ref) => const Stream<NetworkAvailability>.empty(),
           ),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -224,7 +233,12 @@ void main() {
           currentRadarrInstanceProvider.overrideWithValue(null),
           currentSonarrInstanceProvider.overrideWithValue(null),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -311,7 +325,12 @@ void main() {
             (ref) => const Stream<NetworkAvailability>.empty(),
           ),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pumpAndSettle();

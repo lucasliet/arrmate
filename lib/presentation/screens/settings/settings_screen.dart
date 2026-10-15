@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/extensions/context_extensions.dart';
+import '../../../core/l10n/app_locale.dart';
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
@@ -200,6 +202,18 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
         ListTile(
+          key: const ValueKey('settings_language_tile'),
+          leading: const Icon(Icons.language),
+          title: Text(context.l10n.settingsLanguage),
+          subtitle: Text(
+            settings.language.nativeName ?? context.l10n.languageSystemDefault,
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            _showLanguageDialog(context, ref, settings.language);
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.home_outlined),
           title: const Text('Home Tab'),
           subtitle: Text(settings.homeTab.label),
@@ -287,6 +301,47 @@ class SettingsScreen extends ConsumerWidget {
                           : null,
                     ),
                   ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLanguageDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppLanguage current,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(context.l10n.settingsSelectLanguage),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: AppLanguage.values.map((language) {
+                final isSelected = language == current;
+                return ListTile(
+                  key: ValueKey('settings_language_${language.name}'),
+                  title: Text(
+                    language.nativeName ?? context.l10n.languageSystemDefault,
+                  ),
+                  leading: Icon(
+                    language == AppLanguage.system
+                        ? Icons.phone_android
+                        : Icons.translate,
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    ref.read(settingsProvider.notifier).setLanguage(language);
+                    context.pop();
+                  },
                 );
               }).toList(),
             ),

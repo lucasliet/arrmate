@@ -3,6 +3,7 @@ import 'package:arrmate/presentation/screens/settings/system_management_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets('should group system controls on a dedicated screen', (
@@ -13,7 +14,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [settingsProvider.overrideWith(_TestSettingsNotifier.new)],
-        child: const MaterialApp(home: screen),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: screen,
+        ),
       ),
     );
 

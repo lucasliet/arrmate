@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../helpers/localized_app.dart';
 
 class MockMovieRepository extends Mock implements MovieRepository {}
 
@@ -29,6 +30,9 @@ void main() {
       ProviderScope(
         overrides: [movieRepositoryProvider.overrideWithValue(repository)],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Consumer(
             builder: (context, ref, child) => Scaffold(
               body: ElevatedButton(
@@ -78,6 +82,9 @@ void main() {
       ProviderScope(
         overrides: [seriesRepositoryProvider.overrideWithValue(repository)],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Consumer(
             builder: (context, ref, child) => Scaffold(
               body: ElevatedButton(

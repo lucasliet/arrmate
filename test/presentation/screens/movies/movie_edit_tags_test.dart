@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../helpers/localized_app.dart';
 
 class _MockMovieRepository extends Mock implements MovieRepository {}
 
@@ -41,6 +42,9 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: MovieEditScreen(
             movie: TourMockData.movies().first.copyWith(
               rootFolderPath: '/movies',

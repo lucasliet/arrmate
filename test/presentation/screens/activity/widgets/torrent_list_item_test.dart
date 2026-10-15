@@ -2,6 +2,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/localized_app.dart';
 
 void main() {
   group('TorrentListItem', () {
@@ -32,6 +33,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -67,6 +71,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -102,6 +109,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -119,6 +129,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: TorrentListItem(
               torrent: torrent,
@@ -147,6 +160,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: TorrentListItem(
               torrent: torrent,
@@ -172,6 +188,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: TorrentListItem(torrent: torrent, link: TorrentLink.unknown),
           ),
@@ -191,6 +210,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: TorrentListItem(
               torrent: torrent,
@@ -223,6 +245,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -241,6 +266,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -270,6 +298,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -291,6 +322,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -320,6 +354,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
             child: Scaffold(body: TorrentListItem(torrent: torrent)),
@@ -352,6 +389,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(body: TorrentListItem(torrent: torrent)),
         ),
       );
@@ -375,6 +415,9 @@ void main() {
       // When
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: TorrentListItem(
               torrent: torrent,

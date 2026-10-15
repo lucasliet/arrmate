@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'playback_session_controller_test.dart' show FakeStreamPlayer;
+import '../../../helpers/localized_app.dart';
 
 const _fallbackMessage = 'In-app playback is not supported on the web yet';
 const _externalUnavailableMessage =
@@ -72,6 +73,9 @@ Future<void> _pumpScreen(
     ProviderScope(
       overrides: [platformCapabilitiesProvider.overrideWithValue(capabilities)],
       child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: MediaPlayerScreen(request: request, playerFactory: playerFactory),
       ),
     ),

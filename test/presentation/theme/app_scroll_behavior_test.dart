@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -35,6 +36,9 @@ void main() {
                 seriesProvider.overrideWith(() => _Series(() => loads++)),
             ],
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               scrollBehavior: const AppScrollBehavior(),
               home: movies ? const MoviesScreen() : const SeriesScreen(),
             ),
@@ -102,6 +106,9 @@ void main() {
                 seriesProvider.overrideWith(() => _Series(() {})),
             ],
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               scrollBehavior: const AppScrollBehavior(),
               home: movies ? const MoviesScreen() : const SeriesScreen(),
             ),

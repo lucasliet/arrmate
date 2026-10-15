@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets('should show only the movie add flow for movie discovery', (
@@ -62,7 +63,12 @@ void main() {
             currentRadarrInstanceProvider.overrideWithValue(null),
             currentSonarrInstanceProvider.overrideWithValue(null),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            routerConfig: router,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -110,7 +116,12 @@ void main() {
             currentRadarrInstanceProvider.overrideWithValue(null),
             currentSonarrInstanceProvider.overrideWithValue(null),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            routerConfig: router,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -131,6 +142,11 @@ Widget _wrap(Widget child) {
       currentRadarrInstanceProvider.overrideWithValue(null),
       currentSonarrInstanceProvider.overrideWithValue(null),
     ],
-    child: MaterialApp(home: child),
+    child: MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
+      home: child,
+    ),
   );
 }

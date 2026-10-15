@@ -5,11 +5,15 @@ import 'package:media_kit/media_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/l10n/app_locale.dart';
 import 'core/platform/platform_capabilities.dart';
 import 'core/services/legacy_web_google_token_cleanup.dart';
 import 'core/services/logger_service.dart';
 import 'presentation/providers/app_providers.dart';
+import 'presentation/providers/locale_provider.dart';
 import 'presentation/providers/notifications_provider.dart';
+import 'presentation/providers/onboarding_provider.dart';
+import 'presentation/providers/settings_provider.dart';
 import 'presentation/router/app_router.dart';
 
 /// Main entry point for the application.
@@ -50,9 +54,21 @@ void main() async {
 
   initializeRouter(homeTab.path);
 
+  final storedLanguage = prefs.getString(appLocalePreferenceKey);
+  final initialLanguage = AppLanguage.fromStorage(storedLanguage);
+  // Only a fresh install is asked for its language: existing installs keep
+  // following the device language until changed in Settings.
+  final languagePromptPending =
+      storedLanguage == null &&
+      !(prefs.getBool(OnboardingNotifier.kOnboardingCompleteKey) ?? false);
+
   final defaultCapabilities = PlatformCapabilities.current();
   final container = ProviderContainer(
     overrides: [
+      initialLanguageProvider.overrideWithValue(initialLanguage),
+      languagePromptPendingProvider.overrideWith(
+        (ref) => languagePromptPending,
+      ),
       if (!kIsWeb && !mediaKitAvailable)
         platformCapabilitiesProvider.overrideWithValue(
           PlatformCapabilities(
@@ -87,8 +103,9 @@ void main() async {
         e,
         stackTrace,
       );
-      container.read(initializationErrorProvider.notifier).state =
-          'Failed to initialize notification services. Some features may not work correctly.';
+      container.read(initializationErrorProvider.notifier).state = container
+          .read(appLocalizationsProvider)
+          .appInitNotificationServicesFailed;
     }
   }
 

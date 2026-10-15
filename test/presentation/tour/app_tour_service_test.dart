@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../helpers/localized_app.dart';
 
 /// Captures what each segment presents and lets the test act as the user
 /// walking through or skipping the coach mark.
@@ -269,6 +270,9 @@ Future<_Harness> _pumpHarness(
 
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
       home: Scaffold(
         body: DefaultTabController(
           length: 3,

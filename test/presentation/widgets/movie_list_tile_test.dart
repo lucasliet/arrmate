@@ -4,6 +4,7 @@ import 'package:arrmate/presentation/screens/movies/widgets/movie_list_tile.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   final movie = Movie(
@@ -29,7 +30,12 @@ void main() {
           const AsyncValue.data(QueueMediaLookup.empty),
         ),
       ],
-      child: MaterialApp(home: Scaffold(body: child)),
+      child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: Scaffold(body: child),
+      ),
     );
   }
 

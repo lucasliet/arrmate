@@ -6,6 +6,7 @@ import 'package:arrmate/presentation/screens/settings/health_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 class _StubHealthNotifier extends HealthNotifier {
   _StubHealthNotifier(this.overview);
@@ -135,7 +136,12 @@ void main() {
             () => _PendingHealthNotifier(result.future),
           ),
         ],
-        child: const MaterialApp(home: HealthScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: HealthScreen(),
+        ),
       ),
     );
     await tester.pump();
@@ -162,7 +168,12 @@ Future<void> _pumpScreen(WidgetTester tester, HealthOverview overview) async {
       overrides: [
         healthProvider.overrideWith(() => _StubHealthNotifier(overview)),
       ],
-      child: const MaterialApp(home: HealthScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: HealthScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

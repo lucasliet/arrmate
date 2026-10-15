@@ -5,6 +5,7 @@ import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sh
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/localized_app.dart';
 
 void main() {
   group('TorrentDetailsSheet', () {
@@ -81,6 +82,9 @@ Future<void> _pump(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Scaffold(body: TorrentDetailsSheet(torrent: torrent)),
       ),
     ),

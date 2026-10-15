@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../helpers/localized_app.dart';
 
 /// Tour notifier that starts already running, reproducing the state a fresh
 /// install is in while the onboarding walks through the app.
@@ -220,7 +221,12 @@ Future<void> _pumpWithRunningTour(
         tourActiveProvider.overrideWith(_RunningTourNotifier.new),
         ...overrides,
       ],
-      child: MaterialApp(home: screen),
+      child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: screen,
+      ),
     ),
   );
   await tester.pumpAndSettle();

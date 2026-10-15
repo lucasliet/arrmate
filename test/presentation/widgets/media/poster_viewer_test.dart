@@ -2,6 +2,7 @@ import 'package:arrmate/presentation/widgets/media/poster_viewer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets('should open and close the full-screen poster viewer', (
@@ -10,6 +11,9 @@ void main() {
     // Given
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Builder(
           builder: (context) {
             return TextButton(
@@ -80,6 +84,9 @@ Future<double> _scaleAfterScroll(
 ) async {
   await tester.pumpWidget(
     const MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
       home: PosterViewer(
         title: 'Dune',
         poster: ColoredBox(color: Color(0xFF4CAF50)),

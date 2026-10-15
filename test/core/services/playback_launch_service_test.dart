@@ -18,6 +18,7 @@ import 'package:arrmate/presentation/providers/jellyfin_session_state_provider.d
 import 'package:arrmate/presentation/screens/player/playback_request.dart';
 import 'package:arrmate/presentation/screens/series/providers/episode_providers.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
+import '../../helpers/localized_app.dart';
 
 class MockJellyfinService extends Mock implements JellyfinService {}
 
@@ -254,7 +255,14 @@ Future<void> _pumpHarness(
     ],
   );
 
-  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpWidget(
+    MaterialApp.router(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
+      routerConfig: router,
+    ),
+  );
   await tester.tap(find.byKey(_launchButtonKey));
   await tester.pump();
 }
