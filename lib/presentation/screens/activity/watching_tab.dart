@@ -5,7 +5,9 @@ import '../../widgets/common_widgets.dart';
 import 'providers/watching_provider.dart';
 import 'widgets/watching_list_item.dart';
 
-/// Activity tab listing in-progress Jellyfin items matched to the library.
+/// Activity tab listing Jellyfin items matched to the library: in-progress
+/// media under "Continue Watching" followed by the next episode of each
+/// followed series under "Next Up".
 class WatchingTab extends ConsumerWidget {
   /// Creates a [WatchingTab].
   const WatchingTab({super.key});
@@ -15,8 +17,8 @@ class WatchingTab extends ConsumerWidget {
     final watchingState = ref.watch(watchingItemsProvider);
 
     return watchingState.when(
-      data: (items) {
-        if (items.isEmpty) {
+      data: (feed) {
+        if (feed.isEmpty) {
           return RefreshIndicator(
             onRefresh: () => ref.read(watchingItemsProvider.notifier).refresh(),
             child: SingleChildScrollView(
@@ -26,7 +28,9 @@ class WatchingTab extends ConsumerWidget {
                 child: const EmptyState(
                   icon: Icons.play_circle_outline,
                   title: 'Nothing in progress',
-                  subtitle: 'Media you pause in Jellyfin will appear here.',
+                  subtitle:
+                      'Media you pause in Jellyfin and the next episodes of '
+                      'series you follow will appear here.',
                 ),
               ),
             ),
@@ -35,12 +39,19 @@ class WatchingTab extends ConsumerWidget {
 
         return RefreshIndicator(
           onRefresh: () => ref.read(watchingItemsProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 16, bottom: 16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              return WatchingListItem(item: items[index]);
-            },
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 16),
+            children: [
+              if (feed.continueWatching.isNotEmpty) ...[
+                const _SectionHeader(title: 'Continue Watching'),
+                for (final item in feed.continueWatching)
+                  WatchingListItem(item: item),
+              ],
+              if (feed.nextUp.isNotEmpty) ...[
+                const _SectionHeader(title: 'Next Up'),
+                for (final item in feed.nextUp) WatchingListItem(item: item),
+              ],
+            ],
           ),
         );
       },
@@ -50,6 +61,31 @@ class WatchingTab extends ConsumerWidget {
       ),
       loading: () =>
           const LoadingIndicator(message: 'Loading continue watching...'),
+    );
+  }
+}
+
+/// Section title shown above each group of [WatchingListItem]s.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Semantics(
+        header: true,
+        child: Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }

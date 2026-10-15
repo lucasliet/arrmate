@@ -3234,6 +3234,32 @@ class Handler(BaseHTTPRequestHandler):
             items.append(copied)
         return {"Items": items[: max(limit, 0)], "TotalRecordCount": len(items)}
 
+    def _jellyfin_next_up_envelope(self, query: dict) -> dict:
+        """Return the episode after the last played one of each series for `GET /Shows/NextUp`.
+
+        In-progress episodes are skipped, mirroring `EnableResumable=false`.
+        """
+        limit = int((query.get("Limit") or ["50"])[0] or 50)
+        by_series: dict[str, list[dict]] = {}
+        for item in LAB.jellyfin_items:
+            if item.get("Type") != "Episode" or not item.get("SeriesId"):
+                continue
+            by_series.setdefault(item["SeriesId"], []).append(self._jellyfin_with_position(item))
+        items = []
+        for episodes in by_series.values():
+            episodes.sort(key=lambda ep: (ep.get("ParentIndexNumber") or 0, ep.get("IndexNumber") or 0))
+            played = [index for index, ep in enumerate(episodes) if (ep.get("UserData") or {}).get("Played")]
+            if not played:
+                continue
+            for ep in episodes[played[-1] + 1 :]:
+                user_data = ep.get("UserData") or {}
+                if user_data.get("Played") or (user_data.get("PlaybackPositionTicks") or 0) > 0:
+                    continue
+                if ep.get("MediaSources"):
+                    items.append(ep)
+                break
+        return {"Items": items[: max(limit, 0)], "TotalRecordCount": len(items)}
+
     def _jellyfin_episodes_envelope(self, series_id: str, query: dict) -> dict | None:
         """List a series' indexed episodes, honoring the `season` filter."""
         series = next(
@@ -3364,6 +3390,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if method == "GET" and path == "/UserItems/Resume":
                 self._json(self._jellyfin_resume_envelope(query))
+                return
+            if method == "GET" and path == "/Shows/NextUp":
+                self._json(self._jellyfin_next_up_envelope(query))
                 return
             match = re.fullmatch(r"/Shows/([^/]+)/Episodes", path)
             if match and method == "GET":

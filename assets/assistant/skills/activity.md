@@ -1,6 +1,6 @@
 ---
 name: activity
-description: Fila de downloads (queue), import manual, histórico de atividade, Continue Assistindo (Watching) do Jellyfin
+description: Fila de downloads (queue), import manual, histórico de atividade, Continue Assistindo e Next Up (Watching) do Jellyfin
 ---
 
 # Atividade
@@ -123,22 +123,27 @@ O histórico mostra **eventos passados em ordem cronológica reversa** (mais rec
 - Útil para auditar o que foi baixado, quando falhas ocorreram, etc.
 - Dados persistem entre sessões do app.
 
-## Continue Assistindo (Watching) — retomar reprodução do Jellyfin
+## Continue Assistindo e Próximos Episódios (Watching) — Jellyfin
 
-**Onde fica:** Aba Atividade → aba "Watching" (exibida automaticamente no TabBar somente quando há uma instância do Jellyfin configurada com login de usuário e pelo menos um item em andamento que tenha paridade com a biblioteca de filmes/séries do Radarr/Sonarr; se a lista estiver vazia, a aba fica oculta).
+**Onde fica:** Aba Atividade → aba "Watching" (exibida automaticamente no TabBar somente quando há uma instância do Jellyfin configurada com login de usuário e pelo menos um item — em andamento ou próximo episódio — que tenha paridade com a biblioteca de filmes/séries do Radarr/Sonarr; se as duas seções estiverem vazias, a aba fica oculta).
 
-**Estrutura visual:**
-- **Lista de cards contendo:**
-  - **Capa** (poster do filme ou série).
-  - **Título** (e código/nome do episódio no formato `SxxExx · Título` para episódios, ou ano para filmes).
-  - **Tempo assistido/total** (ex: tempo decorrido e duração total).
-  - **Porcentagem concluída** e **barra de progresso linear**.
+**Estrutura visual:** duas seções, na ordem:
+1. **Continue Watching** — filmes e episódios pausados no meio.
+2. **Next Up** — o próximo episódio ainda não assistido de cada série que o usuário está acompanhando no Jellyfin (a mesma lista "Next Up" da home do Jellyfin). Episódios já em andamento não se repetem aqui, pois aparecem em Continue Watching.
+
+Cada seção só aparece quando tem itens. Os cards contêm:
+- **Capa** (poster do filme ou série).
+- **Título** (e código/nome do episódio no formato `SxxExx · Título` para episódios, ou ano para filmes).
+- **Continue Watching:** tempo assistido/total, porcentagem concluída e barra de progresso linear.
+- **Next Up:** rótulo "Next episode" com a duração do episódio (sem barra de progresso).
 
 **Ações:**
-- **Tocar no card:** retoma a reprodução diretamente no player interno do app (`/player`) na posição onde parou.
+- **Tocar no card:** em Continue Watching, retoma a reprodução no player interno do app (`/player`) na posição onde parou; em Next Up, começa o episódio do início.
 - **Botão "Open in library" (ícone no canto direito do card):** alterna para a instância correspondente e abre a tela de detalhes do filme ou série na biblioteca (`/movies/:id` ou `/series/:id`).
+- **Puxar para baixo / botão de atualizar:** recarrega as duas seções. Elas também são recarregadas ao sair do player, então ao terminar um episódio o próximo passa a aparecer em Next Up.
 
 **Observações:**
-- Requer uma instância do Jellyfin configurada com **login de usuário** (para leitura de watch-state / Continue Watching).
-- Apenas itens que possuem correspondência (paridade) com a biblioteca do Radarr/Sonarr são exibidos na lista.
+- Requer uma instância do Jellyfin configurada com **login de usuário** (Continue Watching e Next Up são dados por usuário; com API key a aba não aparece).
+- Next Up só lista episódios, então depende de uma instância do Sonarr.
+- Apenas itens que possuem correspondência (paridade) com a biblioteca do Radarr/Sonarr são exibidos.
 

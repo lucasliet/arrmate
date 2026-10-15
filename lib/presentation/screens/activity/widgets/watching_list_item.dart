@@ -11,12 +11,14 @@ import '../../movies/widgets/movie_poster.dart';
 import '../../series/widgets/series_poster.dart';
 import '../providers/watching_provider.dart';
 
-/// Card widget displaying an in-progress Jellyfin item matched to the library.
+/// Card widget displaying a Jellyfin item matched to the library: an
+/// in-progress movie or episode, or a Next Up episode.
 ///
-/// Tapping the card resumes playback in the in-app player, while the trailing
-/// library action opens the corresponding Movie or Series details screen.
+/// Tapping the card resumes (or, for Next Up, starts) playback in the in-app
+/// player, while the trailing library action opens the corresponding Movie
+/// or Series details screen.
 class WatchingListItem extends ConsumerWidget {
-  /// Matched Continue Watching entry to render.
+  /// Matched Continue Watching or Next Up entry to render.
   final WatchingItem item;
 
   /// Creates a [WatchingListItem].
@@ -26,7 +28,6 @@ class WatchingListItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final subtitle = item.subtitle;
-    final timeLabel = _buildTimeLabel();
 
     return Card(
       elevation: 0,
@@ -91,48 +92,10 @@ class WatchingListItem extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.play_circle_outline,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        if (timeLabel != null)
-                          Expanded(
-                            child: Text(
-                              timeLabel,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          )
-                        else
-                          const Spacer(),
-                        Text(
-                          formatPercentage(item.progress * 100),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: item.progress,
-                        backgroundColor: theme.colorScheme.surfaceDim,
-                        valueColor: AlwaysStoppedAnimation(
-                          theme.colorScheme.primary,
-                        ),
-                        minHeight: 4,
-                      ),
-                    ),
+                    if (item.hasResumePosition)
+                      ..._buildProgressFooter(theme)
+                    else
+                      _buildNextUpFooter(theme),
                   ],
                 ),
               ),
@@ -140,6 +103,84 @@ class WatchingListItem extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Watched time, percentage and progress bar for an in-progress item.
+  List<Widget> _buildProgressFooter(ThemeData theme) {
+    final timeLabel = _buildTimeLabel();
+    return [
+      Row(
+        children: [
+          Icon(
+            Icons.play_circle_outline,
+            size: 16,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          if (timeLabel != null)
+            Expanded(
+              child: Text(
+                timeLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            )
+          else
+            const Spacer(),
+          Text(
+            formatPercentage(item.progress * 100),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 6),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: LinearProgressIndicator(
+          value: item.progress,
+          backgroundColor: theme.colorScheme.surfaceDim,
+          valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+          minHeight: 4,
+        ),
+      ),
+    ];
+  }
+
+  /// "Next episode" label with the runtime for a Next Up item, which has no
+  /// progress to show yet.
+  Widget _buildNextUpFooter(ThemeData theme) {
+    final runSeconds = item.totalDuration?.inSeconds ?? 0;
+    final runtimeLabel = runSeconds > 0
+        ? formatDurationSeconds(runSeconds)
+        : null;
+    return Row(
+      children: [
+        Icon(
+          Icons.skip_next_rounded,
+          size: 16,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            runtimeLabel != null
+                ? 'Next episode · $runtimeLabel'
+                : 'Next episode',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -163,7 +204,7 @@ class WatchingListItem extends ConsumerWidget {
     return '$watched / $total';
   }
 
-  /// Starts playback of this Continue Watching item.
+  /// Starts playback of this Continue Watching or Next Up item.
   ///
   /// The list reloads when the router leaves `/player`, after any in-flight
   /// Stopped report has finished.

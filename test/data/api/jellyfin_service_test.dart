@@ -2173,6 +2173,133 @@ void main() {
       },
     );
   });
+
+  group('JellyfinService getNextUpItems', () {
+    test(
+      'returns unplayed Next Up episodes with media sources in user mode',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/Users/AuthenticateByName':
+              return {
+                'AccessToken': 'user-token-next-up',
+                'User': {'Id': 'user-9'},
+              };
+            case '/Shows/NextUp':
+              return {
+                'Items': [
+                  {
+                    'Id': 'ep-next',
+                    'Name': 'Half Loop',
+                    'Type': 'Episode',
+                    'SeriesName': 'Severance',
+                    'ParentIndexNumber': 1,
+                    'IndexNumber': 2,
+                    'Path': '/data/tv/Severance/Season 01/S01E02.mkv',
+                    'RunTimeTicks': 30000000000,
+                    'UserData': {'PlaybackPositionTicks': 0, 'Played': false},
+                    'MediaSources': [
+                      _mediaSourceJson(
+                        id: 'src-next',
+                        path: '/data/tv/Severance/Season 01/S01E02.mkv',
+                      ),
+                    ],
+                  },
+                  {
+                    'Id': 'ep-played',
+                    'Name': 'Already Seen',
+                    'Type': 'Episode',
+                    'SeriesName': 'Andor',
+                    'UserData': {'PlaybackPositionTicks': 0, 'Played': true},
+                    'MediaSources': [_mediaSourceJson(id: 'src-played')],
+                  },
+                  {
+                    'Id': 'ep-missing',
+                    'Name': 'Not Downloaded',
+                    'Type': 'Episode',
+                    'SeriesName': 'Andor',
+                    'UserData': {'PlaybackPositionTicks': 0, 'Played': false},
+                  },
+                ],
+              };
+          }
+          return <String, dynamic>{};
+        });
+        final service = _serviceUserPassword(adapter);
+
+        // When
+        final items = await service.getNextUpItems();
+
+        // Then
+        expect(items.map((item) => item.id).toList(), ['ep-next']);
+        final nextUpUri = adapter.requests.singleWhere(
+          (uri) => uri.path == '/Shows/NextUp',
+        );
+        expect(nextUpUri.queryParameters['userId'], 'user-9');
+        expect(nextUpUri.queryParameters['EnableResumable'], 'false');
+        expect(nextUpUri.queryParameters['EnableRewatching'], 'false');
+        expect(
+          nextUpUri.queryParameters['Fields'],
+          'Path,MediaSources,ProviderIds',
+        );
+      },
+    );
+
+    test(
+      'returns empty list in api-key mode without calling /Shows/NextUp',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          switch (options.uri.path) {
+            case '/System/Info':
+              return {'ServerName': 'Jelly', 'Version': '10.9.0'};
+          }
+          return <String, dynamic>{};
+        });
+        final service = _serviceApiKey(adapter);
+
+        // When
+        final items = await service.getNextUpItems();
+
+        // Then
+        expect(items, isEmpty);
+        expect(
+          adapter.requests.any((uri) => uri.path == '/Shows/NextUp'),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'rethrows UnauthorizedError when stored session is rejected on /Shows/NextUp',
+      () async {
+        // Given
+        final adapter = _RecordingAdapter((options) {
+          if (options.uri.path == '/Shows/NextUp') {
+            return const _StatusBody(401, 'Unauthorized');
+          }
+          return <String, dynamic>{};
+        });
+        final service = _buildService(
+          adapter,
+          apiKey: '',
+          userSession: const InstanceUserSession(
+            accessToken: 'expired-token',
+            userId: 'user-9',
+            userName: 'admin',
+            deviceId: 'dev-1',
+          ),
+        );
+
+        // When
+        Future<List<JellyfinItem>> action() => service.getNextUpItems();
+
+        // Then
+        await expectLater(action(), throwsA(isA<UnauthorizedError>()));
+      },
+    );
+  });
 }
 
 /// Jellyfin item JSON used across playback search assertions.
