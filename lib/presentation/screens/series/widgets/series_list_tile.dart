@@ -148,7 +148,7 @@ class SeriesListTile extends StatelessWidget {
     return Row(
       children: [
         Text(
-          '${series.seasonCount} Seasons',
+          context.l10n.seriesSeasonCount(series.seasonCount),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

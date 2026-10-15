@@ -5,6 +5,7 @@ import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/services/purge_service.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../core/utils/formatters.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
 import 'package:arrmate/presentation/shared/widgets/releases_sheet.dart';
@@ -48,18 +49,20 @@ class SeasonDetailsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${series.title} - Season ${season.seasonNumber}'),
+        title: Text(
+          context.l10n.seriesTitleWithSeason(series.title, season.seasonNumber),
+        ),
         actions: [
           IconButton(
             key: const Key('seasonAutomaticSearchBtn'),
             icon: const Icon(Icons.travel_explore),
-            tooltip: 'Automatic Search',
+            tooltip: context.l10n.commonAutomaticSearch,
             onPressed: () => _handleAutomaticSearch(context, ref),
           ),
           IconButton(
             key: const Key('seasonInteractiveSearchBtn'),
             icon: const Icon(Icons.troubleshoot),
-            tooltip: 'Interactive Search',
+            tooltip: context.l10n.commonInteractiveSearch,
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -67,8 +70,11 @@ class SeasonDetailsScreen extends ConsumerWidget {
                 builder: (context) => ReleasesSheet(
                   id: 0,
                   isMovie: false,
-                  title: '${series.title} - Season ${season.seasonNumber}',
-                  episodeCode: 'Season ${season.seasonNumber}',
+                  title: context.l10n.seriesTitleWithSeason(
+                    series.title,
+                    season.seasonNumber,
+                  ),
+                  episodeCode: context.l10n.formatSeason(season.seasonNumber),
                   seriesId: series.id,
                   seasonNumber: season.seasonNumber,
                   originalLanguage: series.originalLanguage?.name,
@@ -79,7 +85,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
           IconButton(
             key: const Key('deleteSeasonFilesBtn'),
             icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Delete season files',
+            tooltip: context.l10n.seriesDeleteSeasonFiles,
             onPressed: hasAnyFile
                 ? () => _handleDeleteFiles(context, ref)
                 : null,
@@ -87,7 +93,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
           IconButton(
             key: const Key('purgeSeasonBtn'),
             icon: const Icon(Icons.delete_forever),
-            tooltip: 'Purge season',
+            tooltip: context.l10n.seriesPurgeSeason,
             onPressed: hasAnyFile ? () => _handlePurge(context, ref) : null,
           ),
         ],
@@ -95,7 +101,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
       body: episodesAsync.when(
         data: (episodes) {
           if (episodes.isEmpty) {
-            return const Center(child: Text('No episodes found'));
+            return Center(child: Text(context.l10n.seriesNoEpisodesFound));
           }
           return ListView.builder(
             itemCount: episodes.length,
@@ -107,7 +113,9 @@ class SeasonDetailsScreen extends ConsumerWidget {
         },
         loading: () => const LoadingIndicator(),
         error: (e, st) => ErrorDisplay(
-          message: 'Failed to load episodes: $e',
+          message: context.l10n.seriesLoadEpisodesFailed(
+            describeError(e, context.l10n),
+          ),
           onRetry: () => ref.refresh(
             seasonEpisodesProvider(series.id, season.seasonNumber),
           ),
@@ -117,27 +125,30 @@ class SeasonDetailsScreen extends ConsumerWidget {
   }
 
   Future<void> _handleDeleteFiles(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete season files'),
+        title: Text(l10n.seriesDeleteSeasonFiles),
         content: Text(
-          'Delete all files for "${series.title} - Season ${season.seasonNumber}"? '
-          'This removes every episode file in this season from disk.',
+          l10n.seriesDeleteSeasonFilesConfirm(
+            series.title,
+            season.seasonNumber,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -166,8 +177,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               count == 0
-                  ? 'No files to delete'
-                  : 'Deleted $count file${count == 1 ? '' : 's'}',
+                  ? l10n.seriesNoFilesToDelete
+                  : l10n.seriesDeletedFilesCount(count),
             ),
           ),
         );
@@ -177,7 +188,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete files: $e'),
+            content: Text(l10n.seriesDeleteFilesFailed(describeError(e, l10n))),
             backgroundColor: theme.colorScheme.error,
           ),
         );
@@ -189,13 +200,16 @@ class SeasonDetailsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Searching for ${series.title} - Season ${season.seasonNumber}...',
+          l10n.seriesSearchingFor(
+            l10n.seriesTitleWithSeason(series.title, season.seasonNumber),
+          ),
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -207,8 +221,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
           .seasonAutomaticSearch(season.seasonNumber);
       if (context.mounted) {
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Search started'),
+          SnackBar(
+            content: Text(l10n.commonSearchStarted),
             backgroundColor: Colors.green,
           ),
         );
@@ -217,7 +231,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to search: $e'),
+            content: Text(l10n.seriesSearchFailed(describeError(e, l10n))),
             backgroundColor: theme.colorScheme.error,
           ),
         );
@@ -226,6 +240,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
   }
 
   Future<void> _handlePurge(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -235,7 +250,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
 
     if (repository == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('No Sonarr instance configured')),
+        SnackBar(content: Text(l10n.seriesNoSonarrInstance)),
       );
       return;
     }
@@ -243,23 +258,21 @@ class SeasonDetailsScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Purge season'),
+        title: Text(l10n.seriesPurgeSeason),
         content: Text(
-          'Delete all files for "${series.title} - Season ${season.seasonNumber}" '
-          'and remove their source torrents from qBittorrent? '
-          'The series stays in Sonarr.',
+          l10n.seriesPurgeSeasonConfirm(series.title, season.seasonNumber),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
             ),
-            child: const Text('Purge'),
+            child: Text(l10n.commonPurge),
           ),
         ],
       ),
@@ -281,7 +294,9 @@ class SeasonDetailsScreen extends ConsumerWidget {
           .toList();
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Failed to load episodes: $e')),
+        SnackBar(
+          content: Text(l10n.seriesLoadEpisodesFailed(describeError(e, l10n))),
+        ),
       );
       return;
     }
@@ -312,7 +327,11 @@ class SeasonDetailsScreen extends ConsumerWidget {
         );
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Failed to preview: $e')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.seriesPreviewFailed(describeError(e, l10n))),
+        ),
+      );
       return;
     }
 
@@ -344,10 +363,10 @@ class SeasonDetailsScreen extends ConsumerWidget {
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              'Purged: ${result.mediaFilesDeleted} '
-              'file${result.mediaFilesDeleted == 1 ? '' : 's'}, '
-              '${result.torrentHashesDeleted.length} '
-              'torrent${result.torrentHashesDeleted.length == 1 ? '' : 's'}.',
+              l10n.seriesPurgedSummary(
+                result.mediaFilesDeleted,
+                result.torrentHashesDeleted.length,
+              ),
             ),
           ),
         );
@@ -357,7 +376,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to purge: $e'),
+            content: Text(l10n.seriesPurgeFailed(describeError(e, l10n))),
             backgroundColor: theme.colorScheme.error,
           ),
         );
@@ -400,9 +419,11 @@ class _EpisodeTile extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         child: Text('${episode.episodeNumber}'),
       ),
-      title: Text(episode.title ?? 'TBA'),
+      title: Text(episode.title ?? context.l10n.labelTba),
       subtitle: Text(
-        episode.airDate != null ? formatDate(episode.airDate!) : 'TBA',
+        episode.airDate != null
+            ? formatDate(episode.airDate!)
+            : context.l10n.labelTba,
         style: TextStyle(color: statusColor),
       ),
       trailing: context.isLargeScreen
@@ -449,24 +470,26 @@ class _EpisodeTile extends ConsumerWidget {
         if (canWatch)
           IconButton(
             icon: const Icon(Icons.play_circle_outline),
-            tooltip: 'Watch in Jellyfin',
+            tooltip: context.l10n.commonWatchInJellyfin,
             onPressed: () => _watch(context, ref),
           ),
         IconButton(
           icon: Icon(
             episode.monitored ? Icons.bookmark : Icons.bookmark_border,
           ),
-          tooltip: episode.monitored ? 'Unmonitor episode' : 'Monitor episode',
+          tooltip: episode.monitored
+              ? context.l10n.seriesUnmonitorEpisode
+              : context.l10n.seriesMonitorEpisode,
           onPressed: () => _handleMonitoring(context, ref),
         ),
         IconButton(
           icon: const Icon(Icons.travel_explore),
-          tooltip: 'Automatic Search',
+          tooltip: context.l10n.commonAutomaticSearch,
           onPressed: () => _handleAutomaticSearch(context, ref),
         ),
         IconButton(
           icon: const Icon(Icons.troubleshoot),
-          tooltip: 'Interactive Search',
+          tooltip: context.l10n.commonInteractiveSearch,
           onPressed: () => _openInteractiveSearch(context),
         ),
       ],
@@ -480,7 +503,7 @@ class _EpisodeTile extends ConsumerWidget {
   ) {
     return PopupMenuButton<_EpisodeAction>(
       key: Key('episodeActionsMenu_${episode.id}'),
-      tooltip: 'Episode actions',
+      tooltip: context.l10n.seriesEpisodeActions,
       onSelected: (action) {
         switch (action) {
           case _EpisodeAction.watch:
@@ -495,11 +518,11 @@ class _EpisodeTile extends ConsumerWidget {
       },
       itemBuilder: (context) => [
         if (canWatch)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: _EpisodeAction.watch,
             child: ListTile(
-              leading: Icon(Icons.play_circle_outline),
-              title: Text('Watch in Jellyfin'),
+              leading: const Icon(Icons.play_circle_outline),
+              title: Text(context.l10n.commonWatchInJellyfin),
             ),
           ),
         PopupMenuItem(
@@ -509,22 +532,24 @@ class _EpisodeTile extends ConsumerWidget {
               episode.monitored ? Icons.bookmark : Icons.bookmark_border,
             ),
             title: Text(
-              episode.monitored ? 'Unmonitor episode' : 'Monitor episode',
+              episode.monitored
+                  ? context.l10n.seriesUnmonitorEpisode
+                  : context.l10n.seriesMonitorEpisode,
             ),
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: _EpisodeAction.automaticSearch,
           child: ListTile(
-            leading: Icon(Icons.travel_explore),
-            title: Text('Automatic Search'),
+            leading: const Icon(Icons.travel_explore),
+            title: Text(context.l10n.commonAutomaticSearch),
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: _EpisodeAction.interactiveSearch,
           child: ListTile(
-            leading: Icon(Icons.troubleshoot),
-            title: Text('Interactive Search'),
+            leading: const Icon(Icons.troubleshoot),
+            title: Text(context.l10n.commonInteractiveSearch),
           ),
         ),
       ],
@@ -532,6 +557,7 @@ class _EpisodeTile extends ConsumerWidget {
   }
 
   Future<void> _handleMonitoring(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     try {
       await ref
           .read(seriesControllerProvider(series.id))
@@ -540,7 +566,9 @@ class _EpisodeTile extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              episode.monitored ? 'Episode unmonitored' : 'Episode monitored',
+              episode.monitored
+                  ? l10n.seriesEpisodeUnmonitored
+                  : l10n.seriesEpisodeMonitored,
             ),
           ),
         );
@@ -549,7 +577,9 @@ class _EpisodeTile extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update episode: $error'),
+            content: Text(
+              l10n.seriesUpdateEpisodeFailed(describeError(error, l10n)),
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -561,17 +591,18 @@ class _EpisodeTile extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final l10n = context.l10n;
     final repository = ref.read(seriesRepositoryProvider);
     if (repository == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No Sonarr instance configured')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.seriesNoSonarrInstance)));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Searching for ${episode.episodeLabel}...'),
+        content: Text(l10n.seriesSearchingFor(episode.episodeLabel)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -581,7 +612,7 @@ class _EpisodeTile extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Search started for ${episode.episodeLabel}'),
+            content: Text(l10n.seriesSearchStartedFor(episode.episodeLabel)),
             backgroundColor: Colors.green,
           ),
         );
@@ -590,7 +621,7 @@ class _EpisodeTile extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to search: $e'),
+            content: Text(l10n.seriesSearchFailed(describeError(e, l10n))),
             backgroundColor: Colors.red,
           ),
         );

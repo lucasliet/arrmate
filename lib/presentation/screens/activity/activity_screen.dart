@@ -63,7 +63,7 @@ class ActivityScreen extends ConsumerWidget {
             length: tabCount,
             child: Scaffold(
               appBar: AppBar(
-                title: const Text('Activity'),
+                title: Text(context.l10n.labelTabActivity),
                 toolbarHeight: isWide ? 88 : null,
                 titleSpacing: isWide ? 32 : null,
                 bottom: TabBar(
@@ -74,14 +74,15 @@ class ActivityScreen extends ConsumerWidget {
                       ? const EdgeInsets.symmetric(horizontal: 32)
                       : null,
                   tabs: [
-                    const Tab(text: 'Queue'),
-                    const Tab(text: 'History'),
+                    Tab(text: context.l10n.activityTabQueue),
+                    Tab(text: context.l10n.activityTabHistory),
                     if (showsTorrents)
                       Tab(
                         key: tourKeys.activityTorrentsTabKey,
-                        text: 'Torrents',
+                        text: context.l10n.activityTabTorrents,
                       ),
-                    if (showsWatching) const Tab(text: 'Watching'),
+                    if (showsWatching)
+                      Tab(text: context.l10n.activityTabWatching),
                   ],
                 ),
                 actions: [
@@ -131,7 +132,10 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
   @override
   Widget build(BuildContext context) {
     final queueState = ref.watch(queueProvider);
-    final failures = ref.watch(queueFailuresProvider);
+    final failures = ref
+        .watch(queueFailuresProvider)
+        .map((failure) => failure.withMessage(context.l10n.queueLoadFailed))
+        .toList();
     final tourKeys = ref.watch(appTourKeysProvider);
     final showsTourMockup = ref.watch(tourMediaMockupProvider);
 
@@ -154,10 +158,10 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: SizedBox(
                       height: MediaQuery.of(context).size.height - 200,
-                      child: const EmptyState(
+                      child: EmptyState(
                         icon: Icons.check_circle_outline,
-                        title: 'Queue is empty',
-                        subtitle: 'No active downloads at the moment.',
+                        title: context.l10n.queueEmptyTitle,
+                        subtitle: context.l10n.queueEmptySubtitle,
                       ),
                     ),
                   ),
@@ -180,8 +184,8 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
                         height: MediaQuery.sizeOf(context).height - 300,
                         child: EmptyState(
                           icon: Icons.filter_alt_off_outlined,
-                          title: 'No matching tasks',
-                          subtitle: 'Adjust or reset the queue filters.',
+                          title: context.l10n.queueNoMatchTitle,
+                          subtitle: context.l10n.queueNoMatchSubtitle,
                           action: TextButton(
                             onPressed: () => setState(() {
                               _query = QueueQuery(
@@ -189,7 +193,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
                                 ascending: _query.ascending,
                               );
                             }),
-                            child: const Text('Clear filters'),
+                            child: Text(context.l10n.commonClearFilters),
                           ),
                         ),
                       );
@@ -206,7 +210,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
               message: describeError(error, context.l10n),
               onRetry: () => ref.refresh(queueProvider),
             ),
-            loading: () => const LoadingIndicator(message: 'Loading queue...'),
+            loading: () => LoadingIndicator(message: context.l10n.queueLoading),
           ),
         ),
       ],
@@ -245,21 +249,20 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
     QueueViewResult view,
   ) {
     final theme = Theme.of(context);
-    final taskLabel = view.items.length == 1 ? 'task' : 'tasks';
-    final problemLabel = view.problemCount == 1 ? 'problem' : 'problems';
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 8, 12),
       child: Row(
         children: [
           Text(
-            '${view.items.length} $taskLabel',
+            l10n.queueTaskCount(view.items.length),
             style: theme.textTheme.titleSmall,
           ),
           if (view.problemCount > 0) ...[
             const SizedBox(width: 6),
             Text(
-              '(${view.problemCount} $problemLabel)',
+              l10n.queueProblemCount(view.problemCount),
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.error,
               ),
@@ -267,7 +270,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
           ],
           const Spacer(),
           IconButton(
-            tooltip: 'Queue options',
+            tooltip: l10n.queueOptions,
             onPressed: () => _showOptions(context, source),
             icon: Badge(
               isLabelVisible: _query.hasFilters,

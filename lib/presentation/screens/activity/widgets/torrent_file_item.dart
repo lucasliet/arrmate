@@ -210,7 +210,7 @@ class _PrioritySelectionSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Text(
-              'Set Priority',
+              context.l10n.torrentSetPriority,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),

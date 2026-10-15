@@ -21,18 +21,42 @@ enum UpdateStatus {
   upToDate,
 }
 
+/// The kinds of failure [UpdateState.errorMessage] can describe, so the UI can
+/// translate it (see `UpdateStateL10n.localizedErrorMessage`).
+enum UpdateErrorKind {
+  /// The check for a new release failed.
+  checkFailed,
+
+  /// The Android OTA installer reported an error status.
+  otaFailed,
+
+  /// Installing failed with a [cause] such as a `DesktopUpdateException`.
+  installFailed,
+}
+
 /// State for [UpdateNotifier].
 class UpdateState {
   final UpdateStatus status;
   final AppUpdateInfo? info;
   final double progress;
+
+  /// English description of the failure, for logs and as a fallback.
   final String? errorMessage;
+
+  /// What kind of failure [errorMessage] describes, when it is translatable.
+  final UpdateErrorKind? errorKind;
+
+  /// The OTA status name for [UpdateErrorKind.otaFailed], or the exception
+  /// behind [UpdateErrorKind.installFailed].
+  final Object? errorDetail;
 
   UpdateState({
     this.status = UpdateStatus.idle,
     this.info,
     this.progress = 0,
     this.errorMessage,
+    this.errorKind,
+    this.errorDetail,
   });
 
   UpdateState copyWith({
@@ -40,12 +64,16 @@ class UpdateState {
     AppUpdateInfo? info,
     double? progress,
     String? errorMessage,
+    UpdateErrorKind? errorKind,
+    Object? errorDetail,
   }) {
     return UpdateState(
       status: status ?? this.status,
       info: info ?? this.info,
       progress: progress ?? this.progress,
       errorMessage: errorMessage ?? this.errorMessage,
+      errorKind: errorKind ?? this.errorKind,
+      errorDetail: errorDetail ?? this.errorDetail,
     );
   }
 }
@@ -91,6 +119,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
         state = state.copyWith(
           status: UpdateStatus.error,
           errorMessage: 'Could not check for updates. Please try again.',
+          errorKind: UpdateErrorKind.checkFailed,
         );
       }
       return;
@@ -197,7 +226,9 @@ class UpdateNotifier extends Notifier<UpdateState> {
                   logger.error('OTA Update Failed: ${event.status.name}');
                   state = state.copyWith(
                     status: UpdateStatus.error,
-                    errorMessage: 'Erro na atualização: ${event.status.name}',
+                    errorMessage: 'Update failed: ${event.status.name}',
+                    errorKind: UpdateErrorKind.otaFailed,
+                    errorDetail: event.status.name,
                   );
                   _otaSubscription?.cancel();
                   _otaSubscription = null;
@@ -209,6 +240,8 @@ class UpdateNotifier extends Notifier<UpdateState> {
               state = state.copyWith(
                 status: UpdateStatus.error,
                 errorMessage: e.toString(),
+                errorKind: UpdateErrorKind.installFailed,
+                errorDetail: e,
               );
               _otaSubscription?.cancel();
               _otaSubscription = null;
@@ -219,6 +252,8 @@ class UpdateNotifier extends Notifier<UpdateState> {
       state = state.copyWith(
         status: UpdateStatus.error,
         errorMessage: e.toString(),
+        errorKind: UpdateErrorKind.installFailed,
+        errorDetail: e,
       );
     }
   }

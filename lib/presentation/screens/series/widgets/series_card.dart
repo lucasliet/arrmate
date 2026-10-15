@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/models/models.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../adaptive/content_layout.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import 'series_poster.dart';
@@ -86,7 +87,8 @@ class SeriesCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${series.year} • ${series.seasonCount} Seasons',
+                        '${series.year} • '
+                        '${context.l10n.seriesSeasonCount(series.seasonCount)}',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: isLargePoster ? 12 : 10,

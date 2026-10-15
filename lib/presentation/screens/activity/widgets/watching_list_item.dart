@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/logger_service.dart';
 import '../../../../core/services/playback_launch_service.dart';
 import '../../../../core/utils/formatters.dart';
@@ -79,7 +80,7 @@ class WatchingListItem extends ConsumerWidget {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Open in library',
+                          tooltip: context.l10n.commonOpenInLibrary,
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(

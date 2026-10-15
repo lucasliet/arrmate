@@ -179,6 +179,43 @@ and **qBittorrent** (for downloads).
 - Widget tests pump `MaterialApp` with the delegates from
   `test/helpers/localized_app.dart` and run in English.
 
+### Keeping new features localized
+
+Localization is part of the definition of done: a feature, screen, dialog or
+fix that adds or changes user-facing text is not finished until it ships in
+English, Portuguese (pt-BR) and Spanish in the same change.
+
+- **Never hardcode user-facing text.** Labels, titles, hints, tooltips,
+  semantics labels, snackbars, dialogs, empty/error states, validation
+  messages, chips, menu items and notification text all go through
+  `AppLocalizations`. A string literal in a widget, provider or service that a
+  user can read is a bug, whatever its language.
+- **Never write text in a single language.** Do not leave English (or
+  Portuguese) copy in the code expecting a later pass, and do not translate
+  only some of the three languages. Add the key to `app_en.arb`,
+  `app_pt_BR.arb`, `app_es.arb` and `app_pt.arb` together, then run
+  `flutter gen-l10n` and commit `lib/l10n/generated/`.
+- **Providers and services** that surface a message keep a typed error or an
+  English constant and let the UI translate it (see `describeError` in
+  `lib/presentation/l10n/error_messages.dart`); do not read
+  `appLocalizationsProvider` from data providers, it breaks provider tests.
+  Pure helpers take an `AppLocalizations` parameter.
+- **New domain enums or models** shown to the user get a `localizedLabel` /
+  `localizedDescription` extension in `lib/presentation/l10n/`; keep the
+  English getters for logs and tests.
+- **Counts and dynamic values** use ICU plurals and placeholders, never string
+  concatenation or `count == 1 ? 'x' : 'xs'`.
+- **Merging or rebasing `main`** can bring in hardcoded English. Before the
+  branch is merged, localize every string introduced by the incoming commits
+  and re-run the audit below.
+- **Review checklist:** `test/l10n/arb_parity_test.dart` passes, and
+  `rg "Text\('[A-Z]|(title|label|tooltip|labelText|hintText|message): '[A-Z]" lib/presentation`
+  only shows intentional literals (product names such as Radarr, Sonarr,
+  qBittorrent, Jellyfin; server-provided text; sample titles in
+  `tour_mock_data.dart`).
+- Keep `assets/assistant/skills/*.md` in sync with user-facing flows as well;
+  the assistant answers in the app language.
+
 ## Logging Guidelines
 
 All logging must be meaningful, useful, and secure. We use `LoggerService`
@@ -324,6 +361,8 @@ does not guarantee a green CI run.
 
 Additionally:
 
+- New or changed user-facing text must already exist in all three languages
+  (see **Keeping new features localized**); do not push hardcoded strings.
 - After pushing, **watch the workflow runs to completion** (e.g.
   `gh run watch` / GitHub Actions tab) and treat a red run as an unresolved
   task: diagnose via the failed job log, fix, and push again. Never report the

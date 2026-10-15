@@ -55,14 +55,14 @@ class CalendarFilterBar extends StatelessWidget {
         children: [
           PopupMenuButton<String>(
             key: const ValueKey('calendar-instance-filter'),
-            tooltip: 'Filter by instance',
+            tooltip: context.l10n.calendarFilterByInstance,
             initialValue: filters.instanceId ?? _allInstancesValue,
             onSelected: (value) =>
                 onInstanceChanged(value == _allInstancesValue ? null : value),
             itemBuilder: (context) => [
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: _allInstancesValue,
-                child: Text('Any instance'),
+                child: Text(context.l10n.calendarAnyInstance),
               ),
               ...instances.map(
                 (instance) => PopupMenuItem<String>(
@@ -73,13 +73,13 @@ class CalendarFilterBar extends StatelessWidget {
             ],
             child: Chip(
               avatar: const Icon(Icons.dns_outlined, size: 18),
-              label: Text('Instance: ${_selectedInstanceLabel()}'),
+              label: Text(_selectedInstanceLabel(context.l10n)),
             ),
           ),
           const SizedBox(width: 8),
           PopupMenuButton<CalendarMediaType>(
             key: const ValueKey('calendar-media-filter'),
-            tooltip: 'Filter by media type',
+            tooltip: context.l10n.calendarFilterByMediaType,
             initialValue: filters.mediaType,
             onSelected: onMediaTypeChanged,
             itemBuilder: (context) => CalendarMediaType.values
@@ -99,7 +99,7 @@ class CalendarFilterBar extends StatelessWidget {
           FilterChip(
             key: const ValueKey('calendar-monitored-filter'),
             avatar: const Icon(Icons.bookmark_outline, size: 18),
-            label: const Text('Monitored'),
+            label: Text(context.l10n.commonMonitored),
             selected: filters.onlyMonitored,
             onSelected: onOnlyMonitoredChanged,
           ),
@@ -107,7 +107,7 @@ class CalendarFilterBar extends StatelessWidget {
           FilterChip(
             key: const ValueKey('calendar-premieres-filter'),
             avatar: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('Premieres'),
+            label: Text(context.l10n.calendarPremieres),
             selected: filters.onlyPremieres,
             onSelected: onOnlyPremieresChanged,
           ),
@@ -115,7 +115,7 @@ class CalendarFilterBar extends StatelessWidget {
           FilterChip(
             key: const ValueKey('calendar-specials-filter'),
             avatar: const Icon(Icons.star_outline, size: 18),
-            label: const Text('Hide specials'),
+            label: Text(context.l10n.calendarHideSpecials),
             selected: filters.hideSpecials,
             onSelected: onHideSpecialsChanged,
           ),
@@ -124,7 +124,7 @@ class CalendarFilterBar extends StatelessWidget {
             ActionChip(
               key: const ValueKey('calendar-reset-filters'),
               avatar: const Icon(Icons.filter_alt_off_outlined, size: 18),
-              label: const Text('Reset'),
+              label: Text(context.l10n.commonReset),
               onPressed: onReset,
             ),
           ],
@@ -133,16 +133,16 @@ class CalendarFilterBar extends StatelessWidget {
     );
   }
 
-  String _selectedInstanceLabel() {
+  String _selectedInstanceLabel(AppLocalizations l10n) {
     final selectedId = filters.instanceId;
     if (selectedId == null) {
-      return 'Any';
+      return l10n.calendarInstanceAny;
     }
     for (final instance in instances) {
       if (instance.id == selectedId) {
-        return instance.label;
+        return l10n.calendarInstanceNamed(instance.label);
       }
     }
-    return 'Any';
+    return l10n.calendarInstanceAny;
   }
 }

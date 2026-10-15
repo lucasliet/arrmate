@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 
@@ -47,7 +48,9 @@ class ImportableFileItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      file.name ?? file.relativePath ?? 'Unknown',
+                      file.name ??
+                          file.relativePath ??
+                          context.l10n.commonUnknown,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

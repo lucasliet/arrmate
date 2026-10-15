@@ -7,6 +7,7 @@ import '../../data/repositories/repositories.dart';
 import '../../data/api/api.dart';
 import 'instances_provider.dart';
 import 'notifications_provider.dart';
+import '../l10n/core_labels.dart';
 
 /// Provider for a [RadarrApi] connected to a specific Radarr [Instance].
 final radarrApiForInstanceProvider = Provider.family<RadarrApi, Instance>((
@@ -101,5 +102,6 @@ final purgeServiceProvider = Provider<PurgeService>((ref) {
     qbittorrentServiceFactory: () => ref.read(qbittorrentServiceProvider),
     inAppNotificationServiceFactory: () =>
         ref.read(inAppNotificationServiceProvider),
+    localizations: () => readAppLocalizations(ref),
   );
 });

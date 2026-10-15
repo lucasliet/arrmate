@@ -139,10 +139,10 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         icon: const Icon(Icons.open_in_new),
         label: Text(
           isMovie
-              ? 'Open Movie'
+              ? context.l10n.queueOpenMovie
               : isSeries
-              ? 'Open Series'
-              : 'Open Details',
+              ? context.l10n.queueOpenSeries
+              : context.l10n.queueOpenDetails,
         ),
       ),
     );
@@ -237,7 +237,10 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
             ),
             if (item.estimatedCompletionTime != null)
               Text(
-                _formatTimeRemaining(item.estimatedCompletionTime!),
+                _formatTimeRemaining(
+                  context.l10n,
+                  item.estimatedCompletionTime!,
+                ),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -259,7 +262,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         ? errorMessage!
         : item.statusMessages.firstOrNull?.messages.firstOrNull ??
               item.statusMessages.firstOrNull?.title ??
-              'Unknown error';
+              context.l10n.queueUnknownError;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -292,14 +295,14 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Manual Import Required',
+          context.l10n.queueManualImportRequired,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'This download requires manual intervention. Select which files to import.',
+          context.l10n.queueManualImportDescription,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -310,7 +313,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
           child: FilledButton.icon(
             onPressed: () => _showManualImportScreen(context),
             icon: const Icon(Icons.file_download),
-            label: const Text('Manual Import'),
+            label: Text(context.l10n.manualImportTitle),
           ),
         ),
       ],
@@ -335,22 +338,22 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Removal Options',
+          context.l10n.queueRemovalOptions,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         SwitchListTile(
-          title: const Text('Remove from Download Client'),
-          subtitle: const Text('Delete the download from the client'),
+          title: Text(context.l10n.queueRemoveFromClient),
+          subtitle: Text(context.l10n.queueRemoveFromClientSubtitle),
           value: _removeFromClient,
           onChanged: (value) => setState(() => _removeFromClient = value),
           contentPadding: EdgeInsets.zero,
         ),
         SwitchListTile(
-          title: const Text('Add to Blocklist'),
-          subtitle: const Text('Prevent this release from being grabbed again'),
+          title: Text(context.l10n.queueAddToBlocklist),
+          subtitle: Text(context.l10n.queueAddToBlocklistSubtitle),
           value: _addToBlocklist,
           onChanged: (value) => setState(() {
             _addToBlocklist = value;
@@ -360,8 +363,8 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
         ),
         if (!_addToBlocklist)
           SwitchListTile(
-            title: const Text('Search for Replacement'),
-            subtitle: const Text('Automatically search for another release'),
+            title: Text(context.l10n.queueSearchReplacement),
+            subtitle: Text(context.l10n.queueSearchReplacementSubtitle),
             value: _searchForReplacement,
             onChanged: (value) => setState(() => _searchForReplacement = value),
             contentPadding: EdgeInsets.zero,
@@ -376,7 +379,7 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             icon: const Icon(Icons.delete),
-            label: const Text('Remove from Queue'),
+            label: Text(context.l10n.queueRemoveFromQueue),
           ),
         ),
       ],
@@ -384,40 +387,50 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
   }
 
   Widget _buildDetailsSection(BuildContext context, QueueItem item) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Information',
+          l10n.queueInformation,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (item.qualityLabel != null)
-          _DetailRow(label: 'Quality', value: item.qualityLabel!),
+          _DetailRow(label: l10n.commonQuality, value: item.qualityLabel!),
         _DetailRow(
-          label: 'Language',
-          value: item.localizedLanguagesLabel(context.l10n),
+          label: l10n.commonLanguage,
+          value: item.localizedLanguagesLabel(l10n),
         ),
         if (item.customFormatsLabel != null)
-          _DetailRow(label: 'Custom Formats', value: item.customFormatsLabel!),
+          _DetailRow(
+            label: l10n.queueCustomFormats,
+            value: item.customFormatsLabel!,
+          ),
         if (item.customFormatScore != null)
           _DetailRow(
-            label: 'Custom Format Score',
+            label: l10n.queueCustomFormatScore,
             value: formatCustomScore(item.customFormatScore!),
           ),
         if (item.indexer != null)
-          _DetailRow(label: 'Indexer', value: item.indexer!),
-        _DetailRow(label: 'Protocol', value: item.protocol),
+          _DetailRow(label: l10n.commonIndexer, value: item.indexer!),
+        _DetailRow(label: l10n.commonProtocol, value: item.protocol),
         if (item.downloadClient != null)
-          _DetailRow(label: 'Client', value: item.downloadClient!),
+          _DetailRow(label: l10n.commonClient, value: item.downloadClient!),
         if (item.added != null)
-          _DetailRow(label: 'Added', value: formatDate(item.added!.toLocal())),
+          _DetailRow(
+            label: l10n.labelSortAdded,
+            value: formatDate(item.added!.toLocal()),
+          ),
         if (item.taskGroupCount > 1)
-          _DetailRow(label: 'Grouped Tasks', value: '${item.taskGroupCount}'),
+          _DetailRow(
+            label: l10n.queueGroupedTasks,
+            value: '${item.taskGroupCount}',
+          ),
         if (item.outputPath != null)
-          _DetailRow(label: 'Path', value: item.outputPath!),
+          _DetailRow(label: l10n.queueDetailPath, value: item.outputPath!),
       ],
     );
   }
@@ -453,18 +466,23 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
     );
   }
 
-  String _formatTimeRemaining(DateTime eta) {
+  String _formatTimeRemaining(AppLocalizations l10n, DateTime eta) {
     final diff = eta.difference(DateTime.now());
-    if (diff.isNegative) return 'Done';
+    if (diff.isNegative) return l10n.queueEtaDone;
 
     if (diff.inDays > 0) {
-      return '${diff.inDays}d ${diff.inHours % 24}h remaining';
+      return l10n.queueTimeRemainingDaysHours(diff.inDays, diff.inHours % 24);
     }
     if (diff.inHours > 0) {
-      return '${diff.inHours}h ${diff.inMinutes % 60}m remaining';
+      return l10n.queueTimeRemainingHoursMinutes(
+        diff.inHours,
+        diff.inMinutes % 60,
+      );
     }
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m remaining';
-    return 'Less than a minute';
+    if (diff.inMinutes > 0) {
+      return l10n.queueTimeRemainingMinutes(diff.inMinutes);
+    }
+    return l10n.queueTimeRemainingLessThanMinute;
   }
 
   Future<void> _handleRemove() async {
@@ -485,12 +503,16 @@ class _QueueItemSheetState extends ConsumerState<QueueItemSheet> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Item removed from queue')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.queueItemRemoved)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.commonErrorWithDetails(describeError(e, context.l10n)),
+          ),
+        ),
+      );
     }
   }
 }

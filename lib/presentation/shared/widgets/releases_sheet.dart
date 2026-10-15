@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/core/services/release_query_store.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/l10n/error_messages.dart';
 import 'package:arrmate/presentation/shared/providers/releases_provider.dart';
 import 'package:arrmate/presentation/shared/widgets/filter_sections.dart';
 import 'package:arrmate/presentation/widgets/common_widgets.dart';
@@ -103,16 +106,16 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Download Release'),
-          content: Text('Are you sure you want to grab "${release.title}"?'),
+          title: Text(dialogContext.l10n.releasesDownloadTitle),
+          content: Text(dialogContext.l10n.releasesGrabConfirm(release.title)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+              child: Text(dialogContext.l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Download'),
+              child: Text(dialogContext.l10n.releasesDownload),
             ),
           ],
         ),
@@ -130,14 +133,16 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       if (!mounted) return;
 
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Release grabbed successfully')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.releasesGrabSuccess)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error grabbing release: $error'),
+          content: Text(
+            context.l10n.releasesGrabError(describeError(error, context.l10n)),
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -210,6 +215,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
       originalLanguage: widget.originalLanguage,
     );
     final hiddenCount = releases.length - visibleReleases.length;
+    final l10n = context.l10n;
     final hasOriginalLanguage =
         widget.originalLanguage?.trim().isNotEmpty ?? false;
     final hasVisibleActiveFilters = _query
@@ -257,12 +263,12 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                 key: const Key('releaseSearchField'),
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search releases',
+                  hintText: l10n.releasesSearchHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.search.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: l10n.releasesClearSearch,
                           onPressed: () {
                             _searchController.clear();
                             _updateQuery(_query.copyWith(search: ''));
@@ -284,14 +290,14 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                     key: const Key('releaseSortButton'),
                     icon: const Icon(Icons.sort),
                     initialValue: _query.sortOption,
-                    tooltip: 'Sort by',
+                    tooltip: l10n.commonSortBy,
                     onSelected: (value) =>
                         _updateQuery(_query.copyWith(sortOption: value)),
                     itemBuilder: (context) => ReleaseSortOption.values
                         .map(
                           (option) => PopupMenuItem(
                             value: option,
-                            child: Text(_sortLabel(option)),
+                            child: Text(_sortLabel(option, l10n)),
                           ),
                         )
                         .toList(),
@@ -302,14 +308,16 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                           ? Icons.arrow_upward
                           : Icons.arrow_downward,
                     ),
-                    tooltip: _query.sortAscending ? 'Ascending' : 'Descending',
+                    tooltip: _query.sortAscending
+                        ? l10n.sharedAscending
+                        : l10n.sharedDescending,
                     onPressed: () => _updateQuery(
                       _query.copyWith(sortAscending: !_query.sortAscending),
                     ),
                   ),
                   IconButton(
                     key: const Key('releaseFilterButton'),
-                    tooltip: 'Filter releases',
+                    tooltip: l10n.releasesFilterTooltip,
                     onPressed: () => _showFilters(releases),
                     icon: Badge(
                       isLabelVisible: hasVisibleActiveFilters,
@@ -323,13 +331,16 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                         _searchController.clear();
                         _updateQuery(_query.clearFilters());
                       },
-                      child: const Text('Clear'),
+                      child: Text(l10n.commonClear),
                     ),
                   const Spacer(),
                   Text(
                     hiddenCount == 0
-                        ? '${visibleReleases.length} results'
-                        : '${visibleReleases.length} results · $hiddenCount hidden',
+                        ? l10n.releasesResultCount(visibleReleases.length)
+                        : l10n.releasesResultCountHidden(
+                            visibleReleases.length,
+                            hiddenCount,
+                          ),
                     key: const Key('releaseResultCount'),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
@@ -344,23 +355,21 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                     releaseListAsync.when(
                       data: (items) {
                         if (items.isEmpty) {
-                          return const Center(child: Text('No releases found'));
+                          return Center(child: Text(l10n.releasesNoneFound));
                         }
                         if (visibleReleases.isEmpty) {
                           return Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text(
-                                  'No releases match the current filters',
-                                ),
+                                Text(l10n.releasesNoMatch),
                                 const SizedBox(height: 8),
                                 TextButton(
                                   onPressed: () {
                                     _searchController.clear();
                                     _updateQuery(_query.clearFilters());
                                   },
-                                  child: const Text('Clear filters'),
+                                  child: Text(l10n.commonClearFilters),
                                 ),
                               ],
                             ),
@@ -385,8 +394,13 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
                         );
                       },
                       loading: () => const Center(child: LoadingIndicator()),
-                      error: (error, stackTrace) =>
-                          Center(child: Text('Error: $error')),
+                      error: (error, stackTrace) => Center(
+                        child: Text(
+                          l10n.commonErrorWithDetails(
+                            describeError(error, l10n),
+                          ),
+                        ),
+                      ),
                     ),
               ),
             ),
@@ -448,6 +462,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
         (release) => release.customFormats.map((format) => format.name),
       ),
     );
+    final l10n = context.l10n;
 
     return SafeArea(
       child: FractionallySizedBox(
@@ -455,8 +470,8 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
         child: Column(
           children: [
             ListTile(
-              title: const Text('Release filters'),
-              subtitle: const Text('Combine any number of filters'),
+              title: Text(l10n.releasesFiltersTitle),
+              subtitle: Text(l10n.releasesFiltersSubtitle),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(context).pop(),
@@ -470,35 +485,35 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ChoiceSection<ReleaseApprovalFilter>(
-                      title: 'Approval',
+                      title: l10n.releasesApproval,
                       values: ReleaseApprovalFilter.values,
                       selected: _query.approval,
-                      labelBuilder: _approvalLabel,
+                      labelBuilder: (value) => _approvalLabel(value, l10n),
                       onSelected: (value) => setState(
                         () => _query = _query.copyWith(approval: value),
                       ),
                     ),
                     ChoiceSection<ReleaseFreeleechFilter>(
-                      title: 'Freeleech',
+                      title: l10n.releasesFreeleech,
                       values: ReleaseFreeleechFilter.values,
                       selected: _query.freeleech,
-                      labelBuilder: _freeleechLabel,
+                      labelBuilder: (value) => _freeleechLabel(value, l10n),
                       onSelected: (value) => setState(
                         () => _query = _query.copyWith(freeleech: value),
                       ),
                     ),
                     if (widget.showReleaseType)
                       ChoiceSection<ReleaseTypeFilter>(
-                        title: 'Release type',
+                        title: l10n.releasesReleaseType,
                         values: ReleaseTypeFilter.values,
                         selected: _query.releaseType,
-                        labelBuilder: _releaseTypeLabel,
+                        labelBuilder: (value) => _releaseTypeLabel(value, l10n),
                         onSelected: (value) => setState(
                           () => _query = _query.copyWith(releaseType: value),
                         ),
                       ),
                     FilterSection(
-                      title: 'Protocol',
+                      title: l10n.commonProtocol,
                       values: protocols,
                       selected: _query.protocols,
                       onChanged: (selected) => setState(
@@ -506,7 +521,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                       ),
                     ),
                     FilterSection(
-                      title: 'Indexer',
+                      title: l10n.commonIndexer,
                       values: indexers,
                       selected: _query.indexers,
                       onChanged: (selected) => setState(
@@ -514,7 +529,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                       ),
                     ),
                     FilterSection(
-                      title: 'Quality',
+                      title: l10n.commonQuality,
                       values: qualities,
                       selected: _query.qualities,
                       onChanged: (selected) => setState(
@@ -522,7 +537,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                       ),
                     ),
                     FilterSection(
-                      title: 'Language',
+                      title: l10n.commonLanguage,
                       values: languages,
                       selected: _query.languages,
                       onChanged: (selected) => setState(
@@ -530,7 +545,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                       ),
                     ),
                     FilterSection(
-                      title: 'Custom format',
+                      title: l10n.releasesCustomFormat,
                       values: customFormats,
                       selected: _query.customFormats,
                       onChanged: (selected) => setState(
@@ -540,7 +555,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                     if (widget.originalLanguage?.trim().isNotEmpty ?? false)
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Original language only'),
+                        title: Text(l10n.releasesOriginalLanguageOnly),
                         subtitle: Text(widget.originalLanguage!),
                         value: _query.originalLanguageOnly,
                         onChanged: (value) => setState(
@@ -553,10 +568,8 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                     SwitchListTile(
                       key: const Key('rememberReleaseFiltersSwitch'),
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Remember filters'),
-                      subtitle: const Text(
-                        'Keep this configuration for future searches',
-                      ),
+                      title: Text(l10n.releasesRememberFilters),
+                      subtitle: Text(l10n.releasesRememberFiltersSubtitle),
                       value: _rememberFilters,
                       onChanged: (value) =>
                           setState(() => _rememberFilters = value),
@@ -572,7 +585,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                   TextButton(
                     onPressed: () =>
                         setState(() => _query = _query.clearFilters()),
-                    child: const Text('Clear filters'),
+                    child: Text(l10n.commonClearFilters),
                   ),
                   const Spacer(),
                   FilledButton(
@@ -583,7 +596,7 @@ class _ReleaseFiltersSheetState extends State<_ReleaseFiltersSheet> {
                         rememberFilters: _rememberFilters,
                       ),
                     ),
-                    child: const Text('Apply'),
+                    child: Text(l10n.commonApply),
                   ),
                 ],
               ),
@@ -626,6 +639,7 @@ class _ReleaseTile extends StatelessWidget {
         .map((language) => language.name)
         .whereType<String>()
         .join(', ');
+    final l10n = context.l10n;
 
     return Opacity(
       opacity: isRejected ? 0.55 : 1,
@@ -649,15 +663,18 @@ class _ReleaseTile extends StatelessWidget {
                   color: Colors.blueAccent,
                 ),
                 _Badge(label: _formatSize(release.size), color: Colors.grey),
-                _Badge(label: '${release.age}d', color: Colors.orange),
+                _Badge(
+                  label: l10n.releasesAgeShort(release.age),
+                  color: Colors.orange,
+                ),
                 _Badge(
                   label: release.protocol.toUpperCase(),
                   color: Colors.teal,
                 ),
                 if (release.fullSeason)
-                  const _Badge(label: 'Season pack', color: Colors.purple),
+                  _Badge(label: l10n.releasesSeasonPack, color: Colors.purple),
                 if (release.isFreeleech)
-                  const _Badge(label: 'Freeleech', color: Colors.green),
+                  _Badge(label: l10n.releasesFreeleech, color: Colors.green),
               ],
             ),
             const SizedBox(height: 4),
@@ -702,17 +719,17 @@ class _ReleaseTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Release details',
+              tooltip: l10n.releasesDetailsTitle,
               onPressed: onDetails,
               icon: const Icon(Icons.info_outline),
             ),
             IconButton(
               key: isGrabbing ? const Key('releaseGrabProgress') : null,
               tooltip: isGrabbing
-                  ? 'Sending release to the download client'
+                  ? l10n.releasesSendingTooltip
                   : isRejected
-                  ? 'Rejected release'
-                  : 'Download release',
+                  ? l10n.releasesRejectedTooltip
+                  : l10n.releasesDownloadRelease,
               onPressed: canDownload ? onDownload : null,
               icon: isGrabbing
                   ? SizedBox.square(
@@ -747,6 +764,7 @@ class _ReleaseDetailsSheet extends StatelessWidget {
         .map((format) => format.name)
         .join(', ');
     final mappedEpisodes = release.mappedEpisodeNumbers.join(', ');
+    final l10n = context.l10n;
 
     return SafeArea(
       child: FractionallySizedBox(
@@ -754,7 +772,7 @@ class _ReleaseDetailsSheet extends StatelessWidget {
         child: Column(
           children: [
             ListTile(
-              title: const Text('Release details'),
+              title: Text(l10n.releasesDetailsTitle),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(context).pop(),
@@ -771,60 +789,76 @@ class _ReleaseDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _DetailRow(
-                    label: 'Status',
-                    value: release.rejected ? 'Rejected' : 'Approved',
+                    label: l10n.commonStatus,
+                    value: release.rejected
+                        ? l10n.releasesRejected
+                        : l10n.releasesApproved,
                   ),
                   _DetailRow(
-                    label: 'Quality',
+                    label: l10n.commonQuality,
                     value: release.quality.name.trim(),
                   ),
-                  _DetailRow(label: 'Size', value: _formatSize(release.size)),
-                  _DetailRow(label: 'Age', value: '${release.age} days'),
-                  _DetailRow(label: 'Indexer', value: release.indexer),
-                  _DetailRow(label: 'Protocol', value: release.protocol),
                   _DetailRow(
-                    label: 'Seeds / peers',
+                    label: l10n.commonSize,
+                    value: _formatSize(release.size),
+                  ),
+                  _DetailRow(
+                    label: l10n.releasesAge,
+                    value: l10n.releasesAgeDays(release.age),
+                  ),
+                  _DetailRow(label: l10n.commonIndexer, value: release.indexer),
+                  _DetailRow(
+                    label: l10n.commonProtocol,
+                    value: release.protocol,
+                  ),
+                  _DetailRow(
+                    label: l10n.releasesSeedsPeers,
                     value: '${release.seeders} / ${release.leechers}',
                   ),
                   _DetailRow(
-                    label: 'Release weight',
+                    label: l10n.releasesReleaseWeight,
                     value: '${release.releaseWeight}',
                   ),
                   _DetailRow(
-                    label: 'Quality weight',
+                    label: l10n.releasesQualityWeight,
                     value: '${release.qualityWeight}',
                   ),
                   _DetailRow(
-                    label: 'Custom format score',
+                    label: l10n.releasesCustomFormatScore,
                     value: '${release.customFormatScore}',
                   ),
                   _DetailRow(
-                    label: 'Languages',
-                    value: languages.isEmpty ? 'Unknown' : languages,
+                    label: l10n.releasesLanguages,
+                    value: languages.isEmpty ? l10n.commonUnknown : languages,
                   ),
                   _DetailRow(
-                    label: 'Custom formats',
-                    value: customFormats.isEmpty ? 'None' : customFormats,
+                    label: l10n.releasesCustomFormats,
+                    value: customFormats.isEmpty
+                        ? l10n.labelNone
+                        : customFormats,
                   ),
                   _DetailRow(
-                    label: 'Release type',
+                    label: l10n.releasesReleaseType,
                     value: release.fullSeason
-                        ? 'Season pack'
+                        ? l10n.releasesSeasonPack
                         : release.episodeRequested
-                        ? 'Requested episode'
-                        : 'Episode or movie',
+                        ? l10n.releasesRequestedEpisode
+                        : l10n.releasesEpisodeOrMovie,
                   ),
                   if (mappedEpisodes.isNotEmpty)
-                    _DetailRow(label: 'Mapped episodes', value: mappedEpisodes),
+                    _DetailRow(
+                      label: l10n.releasesMappedEpisodes,
+                      value: mappedEpisodes,
+                    ),
                   if (release.indexerFlags.isNotEmpty)
                     _DetailRow(
-                      label: 'Indexer flags',
+                      label: l10n.releasesIndexerFlags,
                       value: release.indexerFlags.join(', '),
                     ),
                   if (release.rejections.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'Rejection reasons',
+                      l10n.releasesRejectionReasons,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -852,7 +886,9 @@ class _ReleaseDetailsSheet extends StatelessWidget {
                   onPressed: onDownload,
                   icon: const Icon(Icons.download),
                   label: Text(
-                    release.rejected ? 'Release rejected' : 'Download release',
+                    release.rejected
+                        ? l10n.releasesReleaseRejected
+                        : l10n.releasesDownloadRelease,
                   ),
                 ),
               ),
@@ -949,38 +985,38 @@ List<String> _distinct(Iterable<String> values) {
   return result;
 }
 
-String _sortLabel(ReleaseSortOption option) {
+String _sortLabel(ReleaseSortOption option, AppLocalizations l10n) {
   return switch (option) {
-    ReleaseSortOption.releaseWeight => 'Release weight',
-    ReleaseSortOption.qualityWeight => 'Quality weight',
-    ReleaseSortOption.customFormatScore => 'Custom format score',
-    ReleaseSortOption.seeders => 'Seeders',
-    ReleaseSortOption.age => 'Age',
-    ReleaseSortOption.size => 'Size',
-    ReleaseSortOption.indexer => 'Indexer',
+    ReleaseSortOption.releaseWeight => l10n.releasesReleaseWeight,
+    ReleaseSortOption.qualityWeight => l10n.releasesQualityWeight,
+    ReleaseSortOption.customFormatScore => l10n.releasesCustomFormatScore,
+    ReleaseSortOption.seeders => l10n.releasesSeeders,
+    ReleaseSortOption.age => l10n.releasesAge,
+    ReleaseSortOption.size => l10n.commonSize,
+    ReleaseSortOption.indexer => l10n.commonIndexer,
   };
 }
 
-String _approvalLabel(ReleaseApprovalFilter filter) {
+String _approvalLabel(ReleaseApprovalFilter filter, AppLocalizations l10n) {
   return switch (filter) {
-    ReleaseApprovalFilter.all => 'All',
-    ReleaseApprovalFilter.approved => 'Approved',
-    ReleaseApprovalFilter.rejected => 'Rejected',
+    ReleaseApprovalFilter.all => l10n.labelAll,
+    ReleaseApprovalFilter.approved => l10n.releasesApproved,
+    ReleaseApprovalFilter.rejected => l10n.releasesRejected,
   };
 }
 
-String _freeleechLabel(ReleaseFreeleechFilter filter) {
+String _freeleechLabel(ReleaseFreeleechFilter filter, AppLocalizations l10n) {
   return switch (filter) {
-    ReleaseFreeleechFilter.all => 'All',
-    ReleaseFreeleechFilter.only => 'Freeleech only',
-    ReleaseFreeleechFilter.excluded => 'Exclude freeleech',
+    ReleaseFreeleechFilter.all => l10n.labelAll,
+    ReleaseFreeleechFilter.only => l10n.releasesFreeleechOnly,
+    ReleaseFreeleechFilter.excluded => l10n.releasesExcludeFreeleech,
   };
 }
 
-String _releaseTypeLabel(ReleaseTypeFilter filter) {
+String _releaseTypeLabel(ReleaseTypeFilter filter, AppLocalizations l10n) {
   return switch (filter) {
-    ReleaseTypeFilter.all => 'All',
-    ReleaseTypeFilter.seasonPacks => 'Season packs',
-    ReleaseTypeFilter.episodes => 'Episodes',
+    ReleaseTypeFilter.all => l10n.labelAll,
+    ReleaseTypeFilter.seasonPacks => l10n.releasesSeasonPacks,
+    ReleaseTypeFilter.episodes => l10n.releasesEpisodes,
   };
 }

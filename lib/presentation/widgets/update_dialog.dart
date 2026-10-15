@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/extensions/context_extensions.dart';
+import '../l10n/core_labels.dart' show UpdateStateL10n;
 import '../providers/update_provider.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/platform/platform_capabilities.dart';
@@ -14,6 +16,7 @@ class UpdateDialog extends ConsumerWidget {
     final updateState = ref.watch(updateProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     if (updateState.info == null) return const SizedBox.shrink();
 
@@ -28,8 +31,10 @@ class UpdateDialog extends ConsumerWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Text(
         isDownloading
-            ? 'Baixando Atualização'
-            : (isInstalling ? 'Instalando...' : 'Nova Versão Disponível'),
+            ? l10n.updateDownloadingTitle
+            : (isInstalling
+                  ? l10n.updateInstallingTitle
+                  : l10n.updateAvailableTitle),
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
         ),
@@ -41,12 +46,12 @@ class UpdateDialog extends ConsumerWidget {
           children: [
             if (isInstalling) ...[
               const SizedBox(height: 16),
-              const Center(
+              Center(
                 child: Column(
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Preparando a atualização...'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(l10n.updatePreparing),
                   ],
                 ),
               ),
@@ -66,20 +71,18 @@ class UpdateDialog extends ConsumerWidget {
               ),
             ] else ...[
               if (desktopUpdate) ...[
-                const Text(
-                  'O aplicativo será fechado e reiniciado para concluir a atualização.',
-                ),
+                Text(l10n.updateRestartNotice),
                 const SizedBox(height: 12),
               ],
               Text(
-                'Versão: ${info.version}',
+                l10n.updateVersion(info.version),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
-              Text('Changelog:', style: theme.textTheme.titleSmall),
+              Text(l10n.updateChangelog, style: theme.textTheme.titleSmall),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -93,7 +96,8 @@ class UpdateDialog extends ConsumerWidget {
             if (updateState.status == UpdateStatus.error) ...[
               const SizedBox(height: 12),
               Text(
-                updateState.errorMessage ?? 'Ocorreu um erro inesperado.',
+                updateState.localizedErrorMessage(l10n) ??
+                    l10n.updateUnexpectedError,
                 style: TextStyle(
                   color: colorScheme.error,
                   fontWeight: FontWeight.bold,
@@ -108,7 +112,7 @@ class UpdateDialog extends ConsumerWidget {
           : [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Mais Tarde'),
+                child: Text(l10n.updateLater),
               ),
               FilledButton(
                 onPressed: () {
@@ -116,7 +120,7 @@ class UpdateDialog extends ConsumerWidget {
                   ref.read(updateProvider.notifier).startUpdate();
                 },
                 child: Text(
-                  desktopUpdate ? 'Atualizar e reiniciar' : 'Atualizar Agora',
+                  desktopUpdate ? l10n.updateAndRestart : l10n.updateNow,
                 ),
               ),
             ],

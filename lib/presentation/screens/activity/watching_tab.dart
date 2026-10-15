@@ -27,12 +27,10 @@ class WatchingTab extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               child: SizedBox(
                 height: MediaQuery.sizeOf(context).height - 200,
-                child: const EmptyState(
+                child: EmptyState(
                   icon: Icons.play_circle_outline,
-                  title: 'Nothing in progress',
-                  subtitle:
-                      'Media you pause in Jellyfin and the next episodes of '
-                      'series you follow will appear here.',
+                  title: context.l10n.watchingEmptyTitle,
+                  subtitle: context.l10n.watchingEmptySubtitle,
                 ),
               ),
             ),
@@ -61,8 +59,7 @@ class WatchingTab extends ConsumerWidget {
         message: describeError(error, context.l10n),
         onRetry: () => ref.read(watchingItemsProvider.notifier).refresh(),
       ),
-      loading: () =>
-          const LoadingIndicator(message: 'Loading continue watching...'),
+      loading: () => LoadingIndicator(message: context.l10n.watchingLoading),
     );
   }
 }

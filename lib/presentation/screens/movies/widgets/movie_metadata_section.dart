@@ -11,6 +11,7 @@ import 'package:arrmate/presentation/widgets/media/history_event_details_sheet.d
 import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
 import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart';
 import '../../../../core/services/playback_launch_service.dart';
+import '../../../l10n/labels.dart';
 import '../../../providers/instances_provider.dart';
 import '../providers/movie_details_provider.dart';
 import '../providers/movie_metadata_provider.dart';
@@ -49,7 +50,7 @@ class MovieMetadataSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Files',
+          context.l10n.moviesFilesSection,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -61,7 +62,7 @@ class MovieMetadataSection extends ConsumerWidget {
               return _buildEmptyState(
                 context,
                 Icons.movie_outlined,
-                'No media files',
+                context.l10n.moviesNoMediaFiles,
               );
             }
             return Column(
@@ -87,12 +88,16 @@ class MovieMetadataSection extends ConsumerWidget {
                                 await controller.deleteFile(file.id);
                                 if (context.mounted) {
                                   Navigator.pop(context);
-                                  context.showSnackBar('File deleted');
+                                  context.showSnackBar(
+                                    context.l10n.moviesFileDeleted,
+                                  );
                                 }
                               } catch (e) {
                                 if (context.mounted) {
                                   context.showErrorSnackBar(
-                                    'Failed to delete: $e',
+                                    context.l10n.moviesDeleteFailed(
+                                      describeError(e, context.l10n),
+                                    ),
                                   );
                                 }
                               }
@@ -109,11 +114,17 @@ class MovieMetadataSection extends ConsumerWidget {
                             );
                             await controller.deleteFile(file.id);
                             if (context.mounted) {
-                              context.showSnackBar('File deleted');
+                              context.showSnackBar(
+                                context.l10n.moviesFileDeleted,
+                              );
                             }
                           } catch (e) {
                             if (context.mounted) {
-                              context.showErrorSnackBar('Failed to delete: $e');
+                              context.showErrorSnackBar(
+                                context.l10n.moviesDeleteFailed(
+                                  describeError(e, context.l10n),
+                                ),
+                              );
                             }
                           }
                         }
@@ -130,7 +141,7 @@ class MovieMetadataSection extends ConsumerWidget {
             ),
           ),
           error: (error, stack) => ErrorDisplay(
-            message: 'Failed to load files',
+            message: context.l10n.moviesLoadFilesFailed,
             onRetry: () => ref.refresh(movieFilesProvider(movieId)),
           ),
         ),
@@ -159,7 +170,7 @@ class MovieMetadataSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'History',
+          context.l10n.moviesHistorySection,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -171,7 +182,7 @@ class MovieMetadataSection extends ConsumerWidget {
               return _buildEmptyState(
                 context,
                 Icons.history,
-                'No history events',
+                context.l10n.moviesNoHistoryEvents,
               );
             }
             final limitedEvents = events.take(10).toList();
@@ -195,7 +206,7 @@ class MovieMetadataSection extends ConsumerWidget {
             ),
           ),
           error: (error, stack) => ErrorDisplay(
-            message: 'Failed to load history',
+            message: context.l10n.moviesLoadHistoryFailed,
             onRetry: () => ref.refresh(movieHistoryProvider(movieId)),
           ),
         ),
@@ -232,21 +243,19 @@ class MovieMetadataSection extends ConsumerWidget {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete File'),
-        content: const Text(
-          'Are you sure you want to delete this file? This action cannot be undone.',
-        ),
+        title: Text(context.l10n.moviesDeleteFileTitle),
+        content: Text(context.l10n.moviesDeleteFileConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),

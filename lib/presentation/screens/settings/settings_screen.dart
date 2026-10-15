@@ -35,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
         final isWide = ContentLayout.of(context).hasWideSections;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Settings'),
+            title: Text(context.l10n.labelTabSettings),
             toolbarHeight: isWide ? 88 : null,
             titleSpacing: isWide ? 32 : null,
             actions: const [NotificationIconButton()],
@@ -108,7 +108,7 @@ class SettingsScreen extends ConsumerWidget {
           key: tourKeys.settingsInstancesHeaderKey,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Instances',
+            context.l10n.settingsInstances,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -116,13 +116,13 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         if (instancesState.instances.isEmpty)
-          const _PasteMessage(message: 'No instances configured'),
+          _PasteMessage(message: context.l10n.settingsNoInstances),
         ...instancesState.instances.map((instance) {
           final versionInfo = instance.version != null
               ? ' · ${formatInstanceVersion(instance.version)}'
               : '';
           final tagsInfo = instance.tags.isNotEmpty
-              ? ' · ${instance.tags.length} tags'
+              ? ' · ${context.l10n.settingsInstanceTagCount(instance.tags.length)}'
               : '';
 
           final sessionExpired =
@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(instance.label),
             subtitle: sessionExpired
                 ? Text(
-                    'Session expired · tap to sign in',
+                    context.l10n.settingsSessionExpiredSignIn,
                     style: TextStyle(color: errorColor),
                   )
                 : Text(instance.url + versionInfo + tagsInfo),
@@ -159,7 +159,7 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           key: tourKeys.settingsAddInstanceKey,
           leading: const Icon(Icons.add),
-          title: const Text('Add Instance'),
+          title: Text(context.l10n.settingsAddInstance),
           onTap: () {
             context.push('/settings/instance/new');
           },
@@ -177,7 +177,7 @@ class SettingsScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Appearance',
+            context.l10n.settingsAppearance,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -186,7 +186,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.brightness_6),
-          title: const Text('Theme Mode'),
+          title: Text(context.l10n.settingsThemeMode),
           subtitle: Text(settings.appearance.localizedLabel(context.l10n)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
@@ -195,7 +195,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.palette_outlined),
-          title: const Text('Color Scheme'),
+          title: Text(context.l10n.settingsColorScheme),
           subtitle: Text(settings.colorScheme.localizedLabel(context.l10n)),
           trailing: Icon(Icons.circle, color: settings.colorScheme.color),
           onTap: () {
@@ -216,7 +216,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.home_outlined),
-          title: const Text('Home Tab'),
+          title: Text(context.l10n.settingsHomeTab),
           subtitle: Text(settings.homeTab.localizedLabel(context.l10n)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
@@ -236,7 +236,7 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Select Mode'),
+          title: Text(context.l10n.settingsSelectMode),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -276,7 +276,7 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Select Color'),
+          title: Text(context.l10n.settingsSelectColor),
           content: SingleChildScrollView(
             child: Wrap(
               spacing: 16,
@@ -360,7 +360,7 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Select Home Tab'),
+          title: Text(context.l10n.settingsSelectHomeTab),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -395,7 +395,7 @@ class SettingsScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Notifications',
+            context.l10n.settingsNotifications,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -411,25 +411,25 @@ class SettingsScreen extends ConsumerWidget {
                 ? Theme.of(context).colorScheme.primary
                 : null,
           ),
-          title: const Text('Notification Settings'),
+          title: Text(context.l10n.settingsNotificationSettings),
           subtitle: Text(
             notifications.enabled
-                ? 'Enabled · ntfy.sh integration'
-                : 'Setup notifications',
+                ? context.l10n.settingsNotificationsEnabledSubtitle
+                : context.l10n.settingsNotificationsSetupSubtitle,
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/notifications'),
         ),
         ListTile(
           leading: const Icon(Icons.inbox),
-          title: const Text('Notification Center'),
+          title: Text(context.l10n.settingsNotificationCenter),
           subtitle: Consumer(
             builder: (context, ref, _) {
               final unreadCount = ref.watch(unreadNotificationCountProvider);
               return Text(
                 unreadCount > 0
-                    ? '$unreadCount unread notification${unreadCount > 1 ? 's' : ''}'
-                    : 'View all notifications',
+                    ? context.l10n.settingsUnreadNotifications(unreadCount)
+                    : context.l10n.settingsViewAllNotifications,
               );
             },
           ),
@@ -449,7 +449,7 @@ class SettingsScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'System',
+            context.l10n.settingsSystem,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -458,19 +458,17 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.settings_suggest_outlined),
-          title: const Text('System Management'),
-          subtitle: const Text(
-            'Diagnostics, status, logs, and app maintenance',
-          ),
+          title: Text(context.l10n.systemManagementTitle),
+          subtitle: Text(context.l10n.settingsSystemManagementSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/system-management'),
         ),
         ListTile(
           leading: const Icon(Icons.cloud_sync_outlined),
-          title: const Text('Backup & Restore'),
+          title: Text(context.l10n.backupTitle),
           subtitle: Text(
             capabilities.isWeb
-                ? 'Import or export a local file'
+                ? context.l10n.settingsBackupLocalFileSubtitle
                 : 'Google Drive',
           ),
           trailing: const Icon(Icons.chevron_right),
@@ -478,8 +476,8 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.smart_toy_outlined),
-          title: const Text('Assistant'),
-          subtitle: const Text('Ask how the app works'),
+          title: Text(context.l10n.settingsAssistant),
+          subtitle: Text(context.l10n.settingsAssistantSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/settings/assistant'),
         ),
@@ -499,7 +497,7 @@ class SettingsScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'About',
+            context.l10n.settingsAbout,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -508,8 +506,8 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.school_outlined),
-          title: const Text('Getting Started'),
-          subtitle: const Text('Replay the setup tour'),
+          title: Text(context.l10n.settingsGettingStarted),
+          subtitle: Text(context.l10n.settingsGettingStartedSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => ref.read(appTourServiceProvider).startFull(),
         ),
@@ -519,10 +517,10 @@ class SettingsScreen extends ConsumerWidget {
             final version = snapshot.data?.version ?? '...';
             return ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('Version'),
+              title: Text(context.l10n.settingsVersion),
               subtitle: Text(
                 updatesViaAltStore
-                    ? '$version • updates via AltStore'
+                    ? context.l10n.settingsVersionViaAltStore(version)
                     : version,
               ),
               trailing: !capabilities.supportsAppUpdates
@@ -552,7 +550,9 @@ class SettingsScreen extends ConsumerWidget {
                           ref.read(updateProvider).status ==
                               UpdateStatus.upToDate) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('App is up to date')),
+                          SnackBar(
+                            content: Text(context.l10n.settingsAppUpToDate),
+                          ),
                         );
                       }
                       if (context.mounted &&
@@ -561,8 +561,10 @@ class SettingsScreen extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              ref.read(updateProvider).errorMessage ??
-                                  'Could not check for updates',
+                              ref
+                                      .read(updateProvider)
+                                      .localizedErrorMessage(context.l10n) ??
+                                  context.l10n.settingsCouldNotCheckUpdates,
                             ),
                           ),
                         );
@@ -573,7 +575,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.code),
-          title: const Text('Source Code'),
+          title: Text(context.l10n.settingsSourceCode),
           subtitle: const Text('GitHub'),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () {

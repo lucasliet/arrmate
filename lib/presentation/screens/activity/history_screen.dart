@@ -18,7 +18,10 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(filteredActivityHistoryProvider);
-    final failures = ref.watch(historyFailuresProvider);
+    final failures = ref
+        .watch(historyFailuresProvider)
+        .map((failure) => failure.withMessage(context.l10n.historyLoadFailed))
+        .toList();
 
     return Column(
       children: [
@@ -65,11 +68,15 @@ class HistoryScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error: $error'),
+                  Text(
+                    context.l10n.commonErrorWithDetails(
+                      describeError(error, context.l10n),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => ref.invalidate(activityHistoryProvider),
-                    child: const Text('Retry'),
+                    child: Text(context.l10n.commonRetry),
                   ),
                 ],
               ),
@@ -86,13 +93,13 @@ class _HistoryEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.history, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('No history events'),
+          const Icon(Icons.history, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(context.l10n.historyEmpty),
         ],
       ),
     );
@@ -129,7 +136,7 @@ class _HistoryFilterBar extends ConsumerWidget {
             _EventTypeFilterChip(selectedEventType: selectedEventType),
             if (hasActiveFilters)
               ActionChip(
-                label: const Text('Clear'),
+                label: Text(context.l10n.commonClear),
                 avatar: const Icon(Icons.clear, size: 18),
                 onPressed: () {
                   ref.read(historyInstanceFilterProvider.notifier).state = null;
@@ -156,7 +163,7 @@ class _InstanceFilterChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final label = selectedInstance == null
-        ? 'All instances'
+        ? context.l10n.historyAllInstances
         : instances
                   .where((instance) => instance.id == selectedInstance)
                   .firstOrNull
@@ -174,7 +181,10 @@ class _InstanceFilterChip extends ConsumerWidget {
                   ref.read(historyInstanceFilterProvider.notifier).state = null,
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem<String?>(value: null, child: Text('All instances')),
+        PopupMenuItem<String?>(
+          value: null,
+          child: Text(context.l10n.historyAllInstances),
+        ),
         ...instances.map(
           (instance) => PopupMenuItem<String?>(
             value: instance.id,
@@ -199,7 +209,7 @@ class _EventTypeFilterChip extends ConsumerWidget {
       child: InputChip(
         label: Text(
           selectedEventType == null
-              ? 'All events'
+              ? context.l10n.historyAllEvents
               : selectedEventType!.localizedTitle(context.l10n),
         ),
         avatar: const Icon(Icons.filter_list, size: 18),
@@ -210,9 +220,9 @@ class _EventTypeFilterChip extends ConsumerWidget {
                   null,
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem<HistoryEventType?>(
+        PopupMenuItem<HistoryEventType?>(
           value: null,
-          child: Text('All events'),
+          child: Text(context.l10n.historyAllEvents),
         ),
         ...HistoryEventType.values
             .where((type) => type != HistoryEventType.unknown)
@@ -258,7 +268,7 @@ class _HistoryEventCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                event.sourceTitle ?? 'Unknown',
+                event.sourceTitle ?? context.l10n.commonUnknown,
                 style: Theme.of(context).textTheme.titleSmall,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -398,7 +408,7 @@ class _HistoryEventSheet extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               Text(
-                event.sourceTitle ?? 'Unknown',
+                event.sourceTitle ?? context.l10n.commonUnknown,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
@@ -407,18 +417,33 @@ class _HistoryEventSheet extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
-              _DetailRow(label: 'Quality', value: event.quality.quality.name),
               _DetailRow(
-                label: 'Language',
+                label: context.l10n.commonQuality,
+                value: event.quality.quality.name,
+              ),
+              _DetailRow(
+                label: context.l10n.commonLanguage,
                 value: event.localizedLanguageLabel(context.l10n),
               ),
-              _DetailRow(label: 'Date', value: formatDate(event.date)),
+              _DetailRow(
+                label: context.l10n.historyDetailDate,
+                value: formatDate(event.date),
+              ),
               if (event.indexer != null)
-                _DetailRow(label: 'Indexer', value: event.indexer!),
+                _DetailRow(
+                  label: context.l10n.commonIndexer,
+                  value: event.indexer!,
+                ),
               if (event.downloadClient != null)
-                _DetailRow(label: 'Client', value: event.downloadClient!),
+                _DetailRow(
+                  label: context.l10n.commonClient,
+                  value: event.downloadClient!,
+                ),
               if (event.scoreLabel != null)
-                _DetailRow(label: 'Score', value: event.scoreLabel!),
+                _DetailRow(
+                  label: context.l10n.historyDetailScore,
+                  value: event.scoreLabel!,
+                ),
             ],
           ),
         );
@@ -470,7 +495,7 @@ class _LoadMoreButton extends StatelessWidget {
       child: Center(
         child: OutlinedButton(
           onPressed: onPressed,
-          child: const Text('Load More'),
+          child: Text(context.l10n.historyLoadMore),
         ),
       ),
     );

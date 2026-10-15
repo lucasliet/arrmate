@@ -108,11 +108,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
         _qualityProfileId == null ||
         _rootFolderPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select a movie, quality profile, and root folder',
-          ),
-        ),
+        SnackBar(content: Text(context.l10n.moviesAddMissingSelection)),
       );
       return;
     }
@@ -151,10 +147,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
         final container = ProviderScope.containerOf(context);
+        final successMessage = context.l10n.moviesAddedSuccessfully;
         _closeSheet();
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Movie added successfully')),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
         // Reload the library on the next frame, after the pop and the
         // snackbar have been scheduled.
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -165,7 +160,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding movie: $e'),
+            content: Text(
+              context.l10n.moviesAddFailed(describeError(e, context.l10n)),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -196,11 +193,11 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: const Text('Add Movie'),
+            title: Text(context.l10n.moviesAddMovieTitle),
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
-                tooltip: 'Close',
+                tooltip: context.l10n.commonClose,
                 icon: const Icon(Icons.close),
                 onPressed: _closeSheet,
               ),
@@ -212,8 +209,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
             child: TextField(
               controller: _searchController,
               autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'Search',
+              decoration: InputDecoration(
+                labelText: context.l10n.commonSearch,
                 hintText: 'Interstellar, tmdb:157336, imdb:tt0816692',
                 isDense: true,
               ),
@@ -236,8 +233,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                     DropdownButtonFormField<DiscoverySortOption>(
                       initialValue: _sort,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Sort',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonSort,
                         isDense: true,
                       ),
                       items: DiscoverySortOption.values
@@ -254,7 +251,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                     );
                 final hideExistingFilter = FilterChip(
                   selected: _hideExisting,
-                  label: const Text('Hide already added'),
+                  label: Text(context.l10n.discoveryHideAlreadyAdded),
                   onSelected: (value) {
                     setState(() => _hideExisting = value);
                   },
@@ -293,11 +290,13 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                   hideExisting: _hideExisting,
                 );
                 if (results.isEmpty && _searchController.text.isNotEmpty) {
-                  return const Center(child: Text('No results found'));
+                  return Center(
+                    child: Text(context.l10n.discoveryNoResultsFound),
+                  );
                 }
                 if (results.isEmpty) {
-                  return const Center(
-                    child: Text('Search by title, provider ID, or URL'),
+                  return Center(
+                    child: Text(context.l10n.discoverySearchPrompt),
                   );
                 }
                 return ListView.builder(
@@ -317,7 +316,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       title: Text(movie.title),
                       subtitle: Text(
                         '${movie.localizedYearLabel(context.l10n)} · '
-                        '${movie.ratings?.tmdb?.value.toStringAsFixed(1) ?? 'No rating'}',
+                        '${movie.ratings?.tmdb?.value.toStringAsFixed(1) ?? context.l10n.discoveryNoRating}',
                       ),
                       trailing: movie.exists
                           ? const Icon(Icons.check_circle, color: Colors.green)
@@ -334,7 +333,13 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                 );
               },
               loading: () => const Center(child: LoadingIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+              error: (err, stack) => Center(
+                child: Text(
+                  context.l10n.commonErrorWithDetails(
+                    describeError(err, context.l10n),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -348,7 +353,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: const Text('Movie Preview'),
+            title: Text(context.l10n.moviesPreviewTitle),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => setState(() => _selectedMovie = null),
@@ -383,18 +388,19 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                 Text(
                   [
                     if (movie.certification != null) movie.certification!,
-                    if (movie.runtime > 0) '${movie.runtime} min',
+                    if (movie.runtime > 0)
+                      context.l10n.discoveryRuntimeMinutes(movie.runtime),
                     ...movie.genres.take(3),
                   ].join(' · '),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text(movie.overview ?? 'No overview available.'),
+                Text(movie.overview ?? context.l10n.discoveryNoOverview),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => setState(() => _isConfiguring = true),
                   icon: const Icon(Icons.tune),
-                  label: const Text('Configure Addition'),
+                  label: Text(context.l10n.discoveryConfigureAddition),
                 ),
               ],
             ),
@@ -431,7 +437,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: Text(_selectedMovie?.title ?? 'Add Movie'),
+            title: Text(
+              _selectedMovie?.title ?? context.l10n.moviesAddMovieTitle,
+            ),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => setState(() => _isConfiguring = false),
@@ -445,9 +453,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text(
-                        'Add',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    : Text(
+                        context.l10n.commonAdd,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
               ),
             ],
@@ -460,7 +468,9 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 DropdownButtonFormField<MovieMonitorType>(
-                  decoration: const InputDecoration(labelText: 'Monitor'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.commonMonitor,
+                  ),
                   initialValue: _monitor,
                   items: MovieMonitorType.values
                       .map(
@@ -476,8 +486,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<MovieStatus>(
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum Availability',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.moviesMinimumAvailability,
                   ),
                   initialValue: _minimumAvailability,
                   items:
@@ -513,8 +523,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       });
                     }
                     return DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
-                        labelText: 'Quality Profile',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonQualityProfile,
                       ),
                       initialValue: effectiveProfileId,
                       items: profiles
@@ -530,7 +540,11 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) => Text('Error loading profiles: $e'),
+                  error: (e, _) => Text(
+                    context.l10n.discoveryLoadProfilesFailed(
+                      describeError(e, context.l10n),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 rootFolders.when(
@@ -550,8 +564,8 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                       });
                     }
                     return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Root Folder',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonRootFolder,
                       ),
                       initialValue: effectiveRootFolder,
                       items: rootFolderList.map((f) {
@@ -560,7 +574,10 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                         return DropdownMenuItem(
                           value: f.path,
                           child: Text(
-                            '${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)',
+                            context.l10n.discoveryRootFolderFreeSpace(
+                              f.path,
+                              freeSpaceGb.toStringAsFixed(1),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -568,11 +585,18 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) => Text('Error loading folders: $e'),
+                  error: (e, _) => Text(
+                    context.l10n.discoveryLoadFoldersFailed(
+                      describeError(e, context.l10n),
+                    ),
+                  ),
                 ),
                 if (tags.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text('Tags', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    context.l10n.commonTags,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   TagList(
                     tags: tags,
                     selectedTagIds: _selectedTagIds,

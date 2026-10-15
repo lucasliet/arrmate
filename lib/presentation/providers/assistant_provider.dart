@@ -4,6 +4,7 @@ import 'package:apple_foundation_models/apple_foundation_models.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_locale.dart';
 import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/assistant_apple_intelligence_service.dart';
 import '../../core/services/assistant_chat_service.dart';
@@ -11,7 +12,9 @@ import '../../core/services/assistant_knowledge_service.dart';
 import '../../core/services/assistant_model_service.dart';
 import '../../core/services/assistant_online_chat_service.dart';
 import '../../core/services/logger_service.dart';
+import '../l10n/error_messages.dart';
 import 'locale_provider.dart';
+import '../l10n/core_labels.dart';
 
 /// Conversation message roles supported by the assistant.
 enum AssistantMessageRole { user, assistant }
@@ -253,7 +256,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       logger.error('[AssistantNotifier] Failed to initialize assistant', e, st);
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to initialize assistant resources.',
+        error: _l10n.providerAssistantInitFailed,
       );
     }
   }
@@ -315,7 +318,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       logger.error('[AssistantNotifier] Failed to refresh models', e, st);
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to refresh installed models.',
+        error: _l10n.providerAssistantRefreshModelsFailed,
       );
     }
   }
@@ -344,7 +347,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       logger.error('[AssistantNotifier] Failed to import model', e, st);
       state = state.copyWith(
         isImporting: false,
-        error: 'Failed to import model.',
+        error: _l10n.providerAssistantImportFailed,
       );
     }
   }
@@ -382,7 +385,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       state = state.copyWith(
         isDownloading: false,
         downloadProgress: 0,
-        error: 'Failed to download model: $e',
+        error: _l10n.providerAssistantDownloadFailed(describeError(e, _l10n)),
       );
     }
   }
@@ -398,7 +401,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       (candidate) => candidate.id == modelId,
     );
     if (model == null) {
-      state = state.copyWith(error: 'Model not found.');
+      state = state.copyWith(error: _l10n.providerAssistantModelNotFound);
       return;
     }
 
@@ -416,7 +419,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
       if (!_isLatestSelection(generation)) return;
-      state = state.copyWith(error: 'Failed to enable online model.');
+      state = state.copyWith(error: _l10n.providerAssistantEnableOnlineFailed);
     }
   }
 
@@ -435,7 +438,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
       state = state.copyWith(
         appleIntelligenceAvailability: availability,
-        error: availability.unavailableReason,
+        error: availability.localizedUnavailableReason(_l10n),
       );
       return;
     }
@@ -459,7 +462,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
 
     if (!state.hasModel) {
-      state = state.copyWith(error: 'Select a model before chatting.');
+      state = state.copyWith(error: _l10n.providerAssistantSelectModelFirst);
       return;
     }
 
@@ -506,15 +509,22 @@ class AssistantNotifier extends Notifier<AssistantState> {
         isGenerating: false,
       );
     } on AssistantAppleIntelligenceException catch (e) {
-      state = state.copyWith(isGenerating: false, error: e.message);
+      state = state.copyWith(
+        isGenerating: false,
+        error: e.localizedMessage(_l10n),
+      );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to generate response', e, st);
       state = state.copyWith(
         isGenerating: false,
-        error: 'Failed to generate a response.',
+        error: _l10n.providerAssistantGenerateFailed,
       );
     }
   }
+
+  /// The translations for the current interface language, used for the
+  /// user-facing errors stored in [AssistantState.error].
+  AppLocalizations get _l10n => readAppLocalizations(ref);
 
   /// The interface language code the assistant must reply in.
   String get _replyLanguageCode => ref.read(currentLocaleProvider).languageCode;
@@ -587,7 +597,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to delete model', e, st);
-      state = state.copyWith(error: 'Failed to delete model.');
+      state = state.copyWith(error: _l10n.providerAssistantDeleteFailed);
     }
   }
 
@@ -598,9 +608,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
         model,
       );
       if (!toolCalling) {
-        state = state.copyWith(
-          error: 'This model does not support tool-calling. Use a Gemma model.',
-        );
+        state = state.copyWith(error: _l10n.providerAssistantNoToolCalling);
         return false;
       }
       _chatService.setKnowledgeService(_knowledgeService);
@@ -621,7 +629,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to select model', e, st);
       if (!_isLatestSelection(generation)) return false;
-      state = state.copyWith(error: 'Failed to load the selected model.');
+      state = state.copyWith(error: _l10n.providerAssistantLoadModelFailed);
       return false;
     }
   }

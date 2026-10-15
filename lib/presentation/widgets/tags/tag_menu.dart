@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../domain/models/models.dart';
 
 /// A dropdown menu for selecting tags.
@@ -7,18 +8,21 @@ class TagMenu extends StatelessWidget {
   final List<Tag> tags;
   final Set<int> selectedTagIds;
   final ValueChanged<Set<int>> onSelectionChanged;
-  final String buttonLabel;
+
+  /// Label of the menu button; defaults to the translated "Select Tags".
+  final String? buttonLabel;
 
   const TagMenu({
     super.key,
     required this.tags,
     required this.selectedTagIds,
     required this.onSelectionChanged,
-    this.buttonLabel = 'Select Tags',
+    this.buttonLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    final buttonLabel = this.buttonLabel ?? context.l10n.widgetsSelectTags;
     return MenuAnchor(
       builder: (context, controller, child) {
         return OutlinedButton.icon(
@@ -33,15 +37,18 @@ class TagMenu extends StatelessWidget {
           label: Text(
             selectedTagIds.isEmpty
                 ? buttonLabel
-                : '$buttonLabel (${selectedTagIds.length})',
+                : context.l10n.widgetsTagButtonWithCount(
+                    buttonLabel,
+                    selectedTagIds.length,
+                  ),
           ),
         );
       },
       menuChildren: [
         if (tags.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('No tags available'),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(context.l10n.widgetsNoTagsAvailable),
           )
         else
           ...tags.map((tag) {

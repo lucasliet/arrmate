@@ -107,7 +107,10 @@ class TorrentDetailsSheet extends ConsumerWidget {
                   ),
                   children: [
                     // Progress Section
-                    _buildSectionTitle(context, 'Progress'),
+                    _buildSectionTitle(
+                      context,
+                      context.l10n.torrentSectionProgress,
+                    ),
                     const SizedBox(height: 8),
 
                     ClipRRect(
@@ -127,13 +130,17 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${formatPercentage(torrent.progress * 100)} completed',
+                          context.l10n.torrentPercentCompleted(
+                            formatPercentage(torrent.progress * 100),
+                          ),
                           style: context.textTheme.bodyMedium,
                         ),
                         Text(
                           torrent.eta > 0 && torrent.eta < 8640000
-                              ? 'ETA: ${formatRuntime(torrent.eta ~/ 60)}'
-                              : 'ETA: ∞',
+                              ? context.l10n.torrentEta(
+                                  formatRuntime(torrent.eta ~/ 60),
+                                )
+                              : context.l10n.torrentEta('∞'),
                           style: context.textTheme.bodyMedium,
                         ),
                       ],
@@ -150,39 +157,39 @@ class TorrentDetailsSheet extends ConsumerWidget {
                           children: [
                             _buildStatItem(
                               context,
-                              'Total Size',
+                              context.l10n.torrentStatTotalSize,
                               formatBytes(torrent.size),
                               width: width,
                             ),
                             _buildStatItem(
                               context,
-                              'Downloaded',
+                              context.l10n.torrentStatDownloaded,
                               formatBytes(torrent.downloaded),
                               width: width,
                             ),
                             _buildStatItem(
                               context,
-                              'Uploaded',
+                              context.l10n.torrentStatUploaded,
                               formatBytes(torrent.uploaded),
                               width: width,
                             ),
                             _buildStatItem(
                               context,
-                              'Ratio',
+                              context.l10n.torrentStatRatio,
                               torrent.ratio.toStringAsFixed(2),
                               width: width,
                             ),
                             if (torrent.status.isActive) ...[
                               _buildStatItem(
                                 context,
-                                'DL Speed',
+                                context.l10n.torrentStatDlSpeed,
                                 '${formatBytes(torrent.dlspeed)}/s',
                                 width: width,
                                 color: Colors.blue,
                               ),
                               _buildStatItem(
                                 context,
-                                'UL Speed',
+                                context.l10n.torrentStatUlSpeed,
                                 '${formatBytes(torrent.upspeed)}/s',
                                 width: width,
                                 color: Colors.green,
@@ -190,22 +197,26 @@ class TorrentDetailsSheet extends ConsumerWidget {
                             ],
                             _buildStatItem(
                               context,
-                              'Seeds',
-                              '${torrent.numSeeds} connected',
+                              context.l10n.torrentStatSeeds,
+                              context.l10n.torrentConnectedCount(
+                                torrent.numSeeds,
+                              ),
                               width: width,
                               onTap: () => _showPeersSheet(context),
                             ),
                             _buildStatItem(
                               context,
-                              'Leechers',
-                              '${torrent.numLeechs} connected',
+                              context.l10n.torrentStatLeechers,
+                              context.l10n.torrentConnectedCount(
+                                torrent.numLeechs,
+                              ),
                               width: width,
                               onTap: () => _showPeersSheet(context),
                             ),
                             if (torrent.hasSeedingTime)
                               _buildStatItem(
                                 context,
-                                'Seed Time',
+                                context.l10n.torrentStatSeedTime,
                                 formatDurationSeconds(torrent.seedingTime),
                                 width: width,
                                 key: const ValueKey('torrent-seed-time-stat'),
@@ -218,28 +229,42 @@ class TorrentDetailsSheet extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // Info Section
-                    _buildSectionTitle(context, 'Information'),
+                    _buildSectionTitle(
+                      context,
+                      context.l10n.torrentSectionInformation,
+                    ),
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       context,
-                      'Added On',
+                      context.l10n.torrentInfoAddedOn,
                       _formatDate(torrent.addedOn),
                     ),
                     _buildInfoRow(
                       context,
-                      'Category',
+                      context.l10n.torrentInfoCategory,
                       torrent.category?.isNotEmpty == true
                           ? torrent.category!
-                          : 'None',
+                          : context.l10n.labelNone,
                     ),
-                    _buildInfoRow(context, 'Save Path', torrent.savePath),
+                    _buildInfoRow(
+                      context,
+                      context.l10n.torrentInfoSavePath,
+                      torrent.savePath,
+                    ),
                     _buildTagsRow(context),
-                    _buildInfoRow(context, 'Hash', torrent.hash),
+                    _buildInfoRow(
+                      context,
+                      context.l10n.torrentInfoHash,
+                      torrent.hash,
+                    ),
 
                     if (link != null &&
                         link!.status != TorrentLinkStatus.unknown) ...[
                       const SizedBox(height: 24),
-                      _buildSectionTitle(context, 'Media Library'),
+                      _buildSectionTitle(
+                        context,
+                        context.l10n.torrentSectionMediaLibrary,
+                      ),
                       const SizedBox(height: 8),
                       _buildLibrarySection(context, ref),
                     ],
@@ -247,7 +272,10 @@ class TorrentDetailsSheet extends ConsumerWidget {
                     const SizedBox(height: 32),
 
                     // Actions
-                    _buildSectionTitle(context, 'Actions'),
+                    _buildSectionTitle(
+                      context,
+                      context.l10n.torrentSectionActions,
+                    ),
                     const SizedBox(height: 16),
 
                     Row(
@@ -264,7 +292,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                                     Navigator.pop(context);
                                   },
                                   icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Resume'),
+                                  label: Text(context.l10n.torrentResume),
                                 )
                               : FilledButton.icon(
                                   onPressed: () {
@@ -276,7 +304,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                                     Navigator.pop(context);
                                   },
                                   icon: const Icon(Icons.pause),
-                                  label: const Text('Pause'),
+                                  label: Text(context.l10n.torrentPause),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: Colors.orange,
                                   ),
@@ -292,7 +320,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               Navigator.pop(context);
                             },
                             icon: const Icon(Icons.sync),
-                            label: const Text('Recheck'),
+                            label: Text(context.l10n.torrentRecheck),
                           ),
                         ),
                       ],
@@ -312,7 +340,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               );
                             },
                             icon: const Icon(Icons.folder_open),
-                            label: const Text('Files'),
+                            label: Text(context.l10n.torrentFiles),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -328,7 +356,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               );
                             },
                             icon: const Icon(Icons.drive_file_move_outline),
-                            label: const Text('Move'),
+                            label: Text(context.l10n.torrentMove),
                           ),
                         ),
                       ],
@@ -340,7 +368,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                         key: const ValueKey('torrent-trackers-button'),
                         onPressed: () => _showTrackersSheet(context),
                         icon: const Icon(Icons.podcasts_outlined),
-                        label: const Text('Trackers'),
+                        label: Text(context.l10n.torrentTrackers),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -352,7 +380,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                           child: FilledButton.tonalIcon(
                             onPressed: () => _showImportTargetSheet(context),
                             icon: const Icon(Icons.download_done),
-                            label: const Text('Import to Media Library'),
+                            label: Text(context.l10n.torrentImportToLibrary),
                           ),
                         ),
                       ),
@@ -361,7 +389,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       child: TextButton.icon(
                         onPressed: () => _confirmDelete(context, ref),
                         icon: const Icon(Icons.delete),
-                        label: const Text('Remove Torrent'),
+                        label: Text(context.l10n.torrentRemoveTorrent),
                         style: TextButton.styleFrom(
                           foregroundColor: context.colorScheme.error,
                         ),
@@ -432,15 +460,15 @@ class TorrentDetailsSheet extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Remove Torrent?'),
+            title: Text(context.l10n.torrentRemoveTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Are you sure you want to remove "${torrent.name}"?'),
+                Text(context.l10n.torrentRemoveConfirm(torrent.name)),
                 const SizedBox(height: 12),
                 CheckboxListTile(
-                  title: const Text('Also delete files on disk'),
+                  title: Text(context.l10n.torrentAlsoDeleteFiles),
                   contentPadding: EdgeInsets.zero,
                   value: deleteFiles,
                   onChanged: (val) =>
@@ -452,7 +480,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancel),
               ),
               FilledButton(
                 onPressed: () async {
@@ -476,7 +504,11 @@ class TorrentDetailsSheet extends ConsumerWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Failed to remove torrent: $e'),
+                          content: Text(
+                            context.l10n.torrentRemoveFailed(
+                              describeError(e, context.l10n),
+                            ),
+                          ),
                           backgroundColor: context.colorScheme.error,
                         ),
                       );
@@ -487,7 +519,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: context.colorScheme.error,
                 ),
-                child: const Text('Remove'),
+                child: Text(context.l10n.torrentRemove),
               ),
             ],
           );
@@ -549,9 +581,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Matched as a cross-seed: same release name as '
-                              'the torrent Radarr/Sonarr grabbed, different '
-                              'infohash.',
+                              context.l10n.torrentCrossSeedExplanation,
                               style: context.textTheme.bodySmall?.copyWith(
                                 color: context.colorScheme.onSurfaceVariant,
                                 fontStyle: FontStyle.italic,
@@ -570,11 +600,15 @@ class TorrentDetailsSheet extends ConsumerWidget {
         if (link!.mediaTitle != null)
           _buildInfoRow(
             context,
-            'Media',
+            context.l10n.torrentInfoMedia,
             link!.localizedDisplayLabel(context.l10n),
           ),
         if (link!.instanceLabel != null)
-          _buildInfoRow(context, 'Instance', link!.instanceLabel!),
+          _buildInfoRow(
+            context,
+            context.l10n.torrentInfoInstance,
+            link!.instanceLabel!,
+          ),
         if (link!.hasMedia && showOpenInLibrary) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -582,7 +616,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () => _openInLibrary(context, ref),
               icon: const Icon(Icons.open_in_new),
-              label: const Text('Open in library'),
+              label: Text(context.l10n.commonOpenInLibrary),
             ),
           ),
         ],
@@ -722,7 +756,11 @@ class TorrentDetailsSheet extends ConsumerWidget {
   /// The tags info row, rendered as chips to mirror the torrent card.
   Widget _buildTagsRow(BuildContext context) {
     if (torrent.tags.isEmpty) {
-      return _buildInfoRow(context, 'Tags', 'None');
+      return _buildInfoRow(
+        context,
+        context.l10n.commonTags,
+        context.l10n.labelNone,
+      );
     }
 
     final color = context.colorScheme.onSurfaceVariant;
@@ -734,7 +772,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
           SizedBox(
             width: 100,
             child: Text(
-              'Tags',
+              context.l10n.commonTags,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),

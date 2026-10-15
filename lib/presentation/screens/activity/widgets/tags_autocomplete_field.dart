@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
+
 /// A text field with autocomplete support for qBittorrent tags.
 ///
 /// Features:
@@ -72,9 +74,9 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
         });
         // Show visual feedback to user
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not load tags. Using free text mode.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.torrentTagsLoadFailed),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -142,8 +144,8 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
             controller: _textController,
             focusNode: _focusNode,
             decoration: InputDecoration(
-              labelText: 'Tags (Optional)',
-              hintText: 'Comma separated',
+              labelText: context.l10n.torrentTagsOptional,
+              hintText: context.l10n.torrentTagsCommaSeparated,
               prefixIcon: _isLoading
                   ? const Padding(
                       padding: EdgeInsets.all(12.0),
@@ -190,8 +192,8 @@ class _TagsAutocompleteFieldState extends State<TagsAutocompleteField> {
                     controller: textEditingController,
                     focusNode: focusNode,
                     decoration: InputDecoration(
-                      labelText: 'Tags (Optional)',
-                      hintText: 'Type to search or add custom tags',
+                      labelText: context.l10n.torrentTagsOptional,
+                      hintText: context.l10n.torrentTagsSearchHint,
                       prefixIcon: _isLoading
                           ? const Padding(
                               padding: EdgeInsets.all(12.0),

@@ -56,7 +56,7 @@ class TorrentTrackerItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _metaLine(tracker),
+                  _metaLine(tracker, context.l10n),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -106,21 +106,17 @@ class TorrentTrackerItem extends StatelessWidget {
   }
 }
 
-String _metaLine(TorrentTracker tracker) {
+String _metaLine(TorrentTracker tracker, AppLocalizations l10n) {
   final parts = <String>[
-    _count(tracker.numSeeds, 'seed', 'seeds'),
-    _count(tracker.numLeeches, 'leecher', 'leechers'),
-    _count(tracker.numPeers, 'peer', 'peers'),
+    l10n.torrentTrackerSeeds(tracker.numSeeds),
+    l10n.torrentTrackerLeechers(tracker.numLeeches),
+    l10n.torrentTrackerPeers(tracker.numPeers),
   ];
   if (tracker.numDownloaded > 0) {
-    parts.add(_count(tracker.numDownloaded, 'download', 'downloads'));
+    parts.add(l10n.torrentTrackerDownloads(tracker.numDownloaded));
   }
   if (!tracker.isSpecial && tracker.tier > 0) {
-    parts.add('Tier ${tracker.tier}');
+    parts.add(l10n.torrentTrackerTier(tracker.tier));
   }
   return parts.join(' · ');
-}
-
-String _count(int value, String singular, String plural) {
-  return '$value ${value == 1 ? singular : plural}';
 }

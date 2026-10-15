@@ -11,6 +11,13 @@ import '../../../providers/instances_provider.dart';
 import '../../../widgets/instance_load_failure_banner.dart';
 import 'qbittorrent_provider.dart';
 
+/// English message of the [InstanceLoadFailure]s reported by
+/// [torrentLinkIndexProvider].
+///
+/// The provider stays locale-agnostic; screens showing the failures swap it
+/// for the translated `torrentLibraryLinksLoadFailed` string.
+const String torrentLinkFailureMessage = 'Library links could not be loaded.';
+
 /// Maximum number of history pages scanned per instance.
 ///
 /// Acts as a backstop: the scan normally stops much earlier, either because
@@ -436,7 +443,7 @@ Future<_InstanceLinkResult> _collectLinks({
         instanceId: instance.id,
         instanceType: instance.type,
         instanceLabel: instance.label,
-        message: 'Library links could not be loaded.',
+        message: torrentLinkFailureMessage,
       ),
     );
   }

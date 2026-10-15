@@ -81,7 +81,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                 .toList()
               ..sort();
         return SortBottomSheet<SeriesSortOption, SeriesFilter>(
-          title: 'Sort & Filter',
+          title: context.l10n.seriesSortAndFilter,
           currentSort: currentSort.option,
           isAscending: currentSort.isAscending,
           currentFilter: currentSort.filter,
@@ -112,7 +112,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ROOT FOLDER',
+                        context.l10n.seriesRootFolderHeader,
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
                               color: Theme.of(context).colorScheme.primary,
@@ -124,7 +124,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         runSpacing: 8,
                         children: [
                           FilterChip(
-                            label: const Text('All folders'),
+                            label: Text(context.l10n.seriesAllFolders),
                             selected: currentSort.rootFolderPath == null,
                             onSelected: (selected) {
                               if (!selected) return;
@@ -227,11 +227,11 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                                 ? Icons.filter_list_off
                                 : Icons.tv_outlined,
                             title: isFiltered
-                                ? 'No results found'
-                                : 'No series found',
+                                ? context.l10n.seriesNoResultsFound
+                                : context.l10n.seriesNoSeriesFound,
                             subtitle: isFiltered
-                                ? 'Try clearing or adjusting your search query or filters.'
-                                : 'Add series to your Sonarr library to see them here.',
+                                ? context.l10n.seriesNoResultsSubtitle
+                                : context.l10n.seriesEmptySubtitle,
                           ),
                         );
                       }
@@ -283,8 +283,10 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             ref.read(seriesProvider.notifier).refresh(),
                       ),
                     ),
-                    loading: () => const SliverFillRemaining(
-                      child: LoadingIndicator(message: 'Loading series...'),
+                    loading: () => SliverFillRemaining(
+                      child: LoadingIndicator(
+                        message: context.l10n.seriesLoadingSeries,
+                      ),
                     ),
                   ),
                 ),
@@ -298,7 +300,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                   actions: [
                     BatchAction(
                       icon: Icons.bookmark,
-                      label: 'Monitor',
+                      label: context.l10n.commonMonitor,
                       onPressed: () => _runBatchAction(
                         context,
                         (h) => h.setSeriesMonitored(
@@ -312,7 +314,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     ),
                     BatchAction(
                       icon: Icons.bookmark_border,
-                      label: 'Unmonitor',
+                      label: context.l10n.commonUnmonitor,
                       onPressed: () => _runBatchAction(
                         context,
                         (h) => h.setSeriesMonitored(
@@ -326,12 +328,12 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     ),
                     BatchAction(
                       icon: Icons.delete_outline,
-                      label: 'Delete',
+                      label: context.l10n.commonDelete,
                       isDestructive: true,
                       submenu: [
                         BatchAction(
                           icon: Icons.delete_outline,
-                          label: 'Delete',
+                          label: context.l10n.commonDelete,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -344,7 +346,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         ),
                         BatchAction(
                           icon: Icons.delete_sweep,
-                          label: 'Delete files',
+                          label: context.l10n.commonDeleteFiles,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -356,7 +358,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                         ),
                         BatchAction(
                           icon: Icons.delete_forever,
-                          label: 'Purge',
+                          label: context.l10n.commonPurge,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -460,8 +462,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
               : Icons.grid_view,
         ),
         tooltip: settings.viewMode == ViewMode.grid
-            ? 'Switch to List'
-            : 'Switch to Grid',
+            ? context.l10n.seriesSwitchToList
+            : context.l10n.seriesSwitchToGrid,
         onPressed: () {
           final newMode = settings.viewMode == ViewMode.grid
               ? ViewMode.list
@@ -475,7 +477,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         FilledButton.icon(
           onPressed: () => context.push('/discover?type=series'),
           icon: const Icon(Icons.add),
-          label: const Text('Add series'),
+          label: Text(context.l10n.seriesAddSeries),
         ),
         const SizedBox(width: 24),
       ],
@@ -484,14 +486,14 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       return SliverAppBar(
         toolbarHeight: 88,
         titleSpacing: 32,
-        title: const Text('Series'),
+        title: Text(context.l10n.commonSeries),
         actions: actions,
       );
     }
     return SliverAppBar.medium(
       pinned: false,
       floating: false,
-      title: const Text('Series'),
+      title: Text(context.l10n.commonSeries),
       actions: actions,
     );
   }
@@ -506,8 +508,8 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         child: TextField(
           controller: _searchController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search series...',
+          decoration: InputDecoration(
+            hintText: context.l10n.seriesSearchHint,
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,
           ),
@@ -537,7 +539,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
     final allSeries = seriesAsync.valueOrNull ?? const <Series>[];
     return SliverAppBar(
       pinned: true,
-      title: Text('${_selectedIds.length} selected'),
+      title: Text(context.l10n.seriesSelectedCount(_selectedIds.length)),
       leading: IconButton(
         icon: const Icon(Icons.close),
         onPressed: _clearSelection,
@@ -545,7 +547,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.select_all),
-          tooltip: 'Select all',
+          tooltip: context.l10n.commonSelectAll,
           onPressed: () => _selectAll(allSeries),
         ),
       ],

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/purge_service.dart';
 import '../../../domain/models/models.dart';
+import '../../l10n/error_messages.dart';
+import '../../l10n/shared_labels.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -43,19 +46,19 @@ class BatchActionsHandler {
     List<int> movieIds, {
     required bool deleteFiles,
   }) async {
+    final l10n = context.l10n;
     final repository = _ref.read(movieRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Radarr instance configured');
+      return BatchActionResult(message: l10n.sharedNoRadarrInstance);
     }
 
     final navigator = Navigator.of(context);
     final options = await _confirmDeletion(
       context,
-      title: 'Delete ${movieIds.length} movie${_plural(movieIds.length)}',
+      title: l10n.sharedBatchDeleteMoviesTitle(movieIds.length),
       content: deleteFiles
-          ? 'This removes the selected movies from Radarr and deletes their '
-                'files from disk.'
-          : 'This removes the selected movies from Radarr. Files stay on disk.',
+          ? l10n.sharedBatchDeleteMoviesWithFiles
+          : l10n.sharedBatchDeleteMoviesKeepFiles,
     );
     if (options == null) return null;
     if (!context.mounted) return null;
@@ -77,18 +80,20 @@ class BatchActionsHandler {
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
-        message:
-            'Deleted $deleted movie${_plural(deleted)}'
-            '${deleteFiles ? ' and files' : ''}',
+        message: deleteFiles
+            ? l10n.sharedBatchDeletedMoviesAndFiles(deleted)
+            : l10n.sharedBatchDeletedMovies(deleted),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message:
-            'Deleted $deleted of ${movieIds.length} '
-            'movie${_plural(movieIds.length)} before error: $e',
+        message: l10n.sharedBatchDeleteMoviesPartial(
+          deleted,
+          movieIds.length,
+          describeError(e, l10n),
+        ),
         refreshCatalog: deleted > 0,
       );
     }
@@ -100,19 +105,17 @@ class BatchActionsHandler {
     BuildContext context,
     List<int> movieIds,
   ) async {
+    final l10n = context.l10n;
     final repository = _ref.read(movieRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Radarr instance configured');
+      return BatchActionResult(message: l10n.sharedNoRadarrInstance);
     }
 
     final navigator = Navigator.of(context);
     final confirmed = await _confirm(
       context,
-      title:
-          'Delete files for ${movieIds.length} movie${_plural(movieIds.length)}',
-      content:
-          'This deletes the media files of the selected movies from disk. '
-          'They stay in Radarr.',
+      title: l10n.sharedBatchDeleteMovieFilesTitle(movieIds.length),
+      content: l10n.sharedBatchDeleteMovieFilesContent,
     );
     if (confirmed != true) return null;
     if (!context.mounted) return null;
@@ -128,13 +131,15 @@ class BatchActionsHandler {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
+        message: l10n.sharedBatchDeletedFiles(filesDeleted),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
-      return BatchActionResult(message: 'Failed to delete files: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchDeleteFilesFailed(describeError(e, l10n)),
+      );
     }
   }
 
@@ -144,17 +149,15 @@ class BatchActionsHandler {
     BuildContext context,
     List<int> movieIds,
   ) async {
+    final l10n = context.l10n;
     final purgeService = _ref.read(purgeServiceProvider);
     final minimumSeedingDays = _ref.read(settingsProvider).minimumSeedingDays;
     final navigator = Navigator.of(context);
 
     final confirmed = await _confirm(
       context,
-      title: 'Purge ${movieIds.length} movie${_plural(movieIds.length)}',
-      content:
-          'This permanently removes the selected movies from Radarr, '
-          'deletes their files, and deletes all source torrents from '
-          'qBittorrent.',
+      title: l10n.sharedBatchPurgeMoviesTitle(movieIds.length),
+      content: l10n.sharedBatchPurgeMoviesContent,
     );
     if (confirmed != true) return null;
 
@@ -188,7 +191,9 @@ class BatchActionsHandler {
         },
       );
     } catch (e) {
-      return BatchActionResult(message: 'Failed to preview: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPreviewFailed(describeError(e, l10n)),
+      );
     }
 
     if (action == null || action == SeedingAction.cancel) return null;
@@ -207,7 +212,11 @@ class BatchActionsHandler {
         ),
       );
     } catch (e) {
-      return BatchActionResult(message: 'Failed to preview cross-seeds: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPreviewCrossSeedsFailed(
+          describeError(e, l10n),
+        ),
+      );
     }
     if (!context.mounted) return null;
     _showLoading(navigator);
@@ -224,17 +233,18 @@ class BatchActionsHandler {
       _ref.invalidate(moviesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
-        message: result.formatSummary(
-          label:
-              'Purged ${movieIds.length} '
-              'movie${_plural(movieIds.length)}.',
+        message: result.localizedSummary(
+          l10n,
+          label: l10n.sharedBatchPurgedMovies(movieIds.length),
         ),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
-      return BatchActionResult(message: 'Failed to purge: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPurgeFailed(describeError(e, l10n)),
+      );
     }
   }
 
@@ -245,9 +255,10 @@ class BatchActionsHandler {
     List<Movie> movies, {
     required bool monitored,
   }) async {
+    final l10n = context.l10n;
     final repository = _ref.read(movieRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Radarr instance configured');
+      return BatchActionResult(message: l10n.sharedNoRadarrInstance);
     }
 
     final navigator = Navigator.of(context);
@@ -264,18 +275,20 @@ class BatchActionsHandler {
       _hideLoading(navigator);
       _ref.invalidate(moviesProvider);
       return BatchActionResult(
-        message:
-            '${monitored ? 'Monitored' : 'Unmonitored'} $updated '
-            'movie${_plural(updated)}',
+        message: monitored
+            ? l10n.sharedBatchMonitoredMovies(updated)
+            : l10n.sharedBatchUnmonitoredMovies(updated),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message:
-            'Updated $updated of ${movies.length} '
-            'movie${_plural(movies.length)} before error: $e',
+        message: l10n.sharedBatchUpdateMoviesPartial(
+          updated,
+          movies.length,
+          describeError(e, l10n),
+        ),
         refreshCatalog: updated > 0,
       );
     }
@@ -288,19 +301,19 @@ class BatchActionsHandler {
     List<int> seriesIds, {
     required bool deleteFiles,
   }) async {
+    final l10n = context.l10n;
     final repository = _ref.read(seriesRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Sonarr instance configured');
+      return BatchActionResult(message: l10n.seriesNoSonarrInstance);
     }
 
     final navigator = Navigator.of(context);
     final options = await _confirmDeletion(
       context,
-      title: 'Delete ${seriesIds.length} series${_plural(seriesIds.length)}',
+      title: l10n.sharedBatchDeleteSeriesTitle(seriesIds.length),
       content: deleteFiles
-          ? 'This removes the selected series from Sonarr and deletes their '
-                'files from disk.'
-          : 'This removes the selected series from Sonarr. Files stay on disk.',
+          ? l10n.sharedBatchDeleteSeriesWithFiles
+          : l10n.sharedBatchDeleteSeriesKeepFiles,
     );
     if (options == null) return null;
     if (!context.mounted) return null;
@@ -322,18 +335,20 @@ class BatchActionsHandler {
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
-        message:
-            'Deleted $deleted series${_plural(deleted)}'
-            '${deleteFiles ? ' and files' : ''}',
+        message: deleteFiles
+            ? l10n.sharedBatchDeletedSeriesAndFiles(deleted)
+            : l10n.sharedBatchDeletedSeries(deleted),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message:
-            'Deleted $deleted of ${seriesIds.length} '
-            'series${_plural(seriesIds.length)} before error: $e',
+        message: l10n.sharedBatchDeleteSeriesPartial(
+          deleted,
+          seriesIds.length,
+          describeError(e, l10n),
+        ),
         refreshCatalog: deleted > 0,
       );
     }
@@ -343,19 +358,17 @@ class BatchActionsHandler {
     BuildContext context,
     List<int> seriesIds,
   ) async {
+    final l10n = context.l10n;
     final repository = _ref.read(seriesRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Sonarr instance configured');
+      return BatchActionResult(message: l10n.seriesNoSonarrInstance);
     }
 
     final navigator = Navigator.of(context);
     final confirmed = await _confirm(
       context,
-      title:
-          'Delete files for ${seriesIds.length} series${_plural(seriesIds.length)}',
-      content:
-          'This deletes the media files of the selected series from disk. '
-          'They stay in Sonarr.',
+      title: l10n.sharedBatchDeleteSeriesFilesTitle(seriesIds.length),
+      content: l10n.sharedBatchDeleteSeriesFilesContent,
     );
     if (confirmed != true) return null;
     if (!context.mounted) return null;
@@ -371,13 +384,15 @@ class BatchActionsHandler {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message: 'Deleted $filesDeleted file${_plural(filesDeleted)}',
+        message: l10n.sharedBatchDeletedFiles(filesDeleted),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
-      return BatchActionResult(message: 'Failed to delete files: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchDeleteFilesFailed(describeError(e, l10n)),
+      );
     }
   }
 
@@ -385,17 +400,15 @@ class BatchActionsHandler {
     BuildContext context,
     List<int> seriesIds,
   ) async {
+    final l10n = context.l10n;
     final purgeService = _ref.read(purgeServiceProvider);
     final minimumSeedingDays = _ref.read(settingsProvider).minimumSeedingDays;
     final navigator = Navigator.of(context);
 
     final confirmed = await _confirm(
       context,
-      title: 'Purge ${seriesIds.length} series${_plural(seriesIds.length)}',
-      content:
-          'This permanently removes the selected series from Sonarr, '
-          'deletes their files, and deletes all source torrents from '
-          'qBittorrent.',
+      title: l10n.sharedBatchPurgeSeriesTitle(seriesIds.length),
+      content: l10n.sharedBatchPurgeSeriesContent,
     );
     if (confirmed != true) return null;
 
@@ -431,7 +444,9 @@ class BatchActionsHandler {
         },
       );
     } catch (e) {
-      return BatchActionResult(message: 'Failed to preview: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPreviewFailed(describeError(e, l10n)),
+      );
     }
 
     if (action == null || action == SeedingAction.cancel) return null;
@@ -450,7 +465,11 @@ class BatchActionsHandler {
         ),
       );
     } catch (e) {
-      return BatchActionResult(message: 'Failed to preview cross-seeds: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPreviewCrossSeedsFailed(
+          describeError(e, l10n),
+        ),
+      );
     }
     if (!context.mounted) return null;
     _showLoading(navigator);
@@ -467,17 +486,18 @@ class BatchActionsHandler {
       _ref.invalidate(seriesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
-        message: result.formatSummary(
-          label:
-              'Purged ${seriesIds.length} '
-              'series${_plural(seriesIds.length)}.',
+        message: result.localizedSummary(
+          l10n,
+          label: l10n.sharedBatchPurgedSeries(seriesIds.length),
         ),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
-      return BatchActionResult(message: 'Failed to purge: $e');
+      return BatchActionResult(
+        message: l10n.sharedBatchPurgeFailed(describeError(e, l10n)),
+      );
     }
   }
 
@@ -489,9 +509,10 @@ class BatchActionsHandler {
     List<Series> seriesList, {
     required bool monitored,
   }) async {
+    final l10n = context.l10n;
     final repository = _ref.read(seriesRepositoryProvider);
     if (repository == null) {
-      return const BatchActionResult(message: 'No Sonarr instance configured');
+      return BatchActionResult(message: l10n.seriesNoSonarrInstance);
     }
 
     final navigator = Navigator.of(context);
@@ -508,18 +529,20 @@ class BatchActionsHandler {
       _hideLoading(navigator);
       _ref.invalidate(seriesProvider);
       return BatchActionResult(
-        message:
-            '${monitored ? 'Monitored' : 'Unmonitored'} $updated '
-            'series${_plural(updated)}',
+        message: monitored
+            ? l10n.sharedBatchMonitoredSeries(updated)
+            : l10n.sharedBatchUnmonitoredSeries(updated),
         refreshCatalog: true,
       );
     } catch (e) {
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
-        message:
-            'Updated $updated of ${seriesList.length} '
-            'series${_plural(seriesList.length)} before error: $e',
+        message: l10n.sharedBatchUpdateSeriesPartial(
+          updated,
+          seriesList.length,
+          describeError(e, l10n),
+        ),
         refreshCatalog: updated > 0,
       );
     }
@@ -612,8 +635,6 @@ class BatchActionsHandler {
 
   // ---- helpers -----------------------------------------------------------
 
-  String _plural(int count) => count == 1 ? '' : 's';
-
   Future<Set<String>> _resolveCrossSeedApprovals(
     BuildContext context,
     Future<List<PurgePreview>> Function() previews,
@@ -643,14 +664,14 @@ class BatchActionsHandler {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
             ),
-            child: const Text('Confirm'),
+            child: Text(context.l10n.commonConfirm),
           ),
         ],
       ),
@@ -678,10 +699,8 @@ class BatchActionsHandler {
               CheckboxListTile(
                 value: addExclusion,
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Add to import exclusion list'),
-                subtitle: const Text(
-                  'Prevent the item from being added again by an import list.',
-                ),
+                title: Text(context.l10n.sharedAddImportExclusion),
+                subtitle: Text(context.l10n.sharedAddImportExclusionSubtitle),
                 controlAffinity: ListTileControlAffinity.leading,
                 onChanged: (value) {
                   setState(() => addExclusion = value ?? false);
@@ -692,7 +711,7 @@ class BatchActionsHandler {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
@@ -702,7 +721,7 @@ class BatchActionsHandler {
               style: FilledButton.styleFrom(
                 backgroundColor: theme.colorScheme.error,
               ),
-              child: const Text('Confirm'),
+              child: Text(context.l10n.commonConfirm),
             ),
           ],
         ),

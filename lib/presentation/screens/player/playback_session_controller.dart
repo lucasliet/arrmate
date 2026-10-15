@@ -208,6 +208,18 @@ class PlaybackSessionController {
   bool _stopReported = false;
   bool _disposed = false;
 
+  /// English [errorMessage] set when the media cannot be opened.
+  ///
+  /// The screen recognizes it and shows the translated equivalent.
+  static const String startFailedMessage =
+      'Could not start playback. Check your connection and try again.';
+
+  /// English [errorMessage] set when the engine fails without a message.
+  ///
+  /// The screen recognizes it and shows the translated equivalent.
+  static const String unexpectedFailureMessage =
+      'Playback failed unexpectedly.';
+
   /// Last fatal error message, or `null` while playback is healthy.
   final ValueNotifier<String?> errorMessage = ValueNotifier<String?>(null);
 
@@ -415,8 +427,7 @@ class PlaybackSessionController {
         error,
         stackTrace,
       );
-      errorMessage.value =
-          'Could not start playback. Check your connection and try again.';
+      errorMessage.value = startFailedMessage;
       _progressTimer?.cancel();
       unawaited(player.pause());
     }
@@ -492,7 +503,7 @@ class PlaybackSessionController {
     _progressTimer?.cancel();
     unawaited(_player?.pause());
     errorMessage.value = sanitized.isEmpty
-        ? 'Playback failed unexpectedly.'
+        ? unexpectedFailureMessage
         : sanitized;
   }
 

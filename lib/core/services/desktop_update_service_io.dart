@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
+import 'desktop_update_failure.dart';
 import 'desktop_update_scripts.dart';
 import 'logger_service.dart';
 import 'update_service.dart';
@@ -102,8 +103,8 @@ class DesktopUpdateService {
       final deadline = DateTime.now().add(const Duration(seconds: 10));
       while (!await ready.exists()) {
         if (DateTime.now().isAfter(deadline)) {
-          throw StateError(
-            'The update installer could not start. The app has not been changed.',
+          throw DesktopUpdateException(
+            DesktopUpdateFailure.installerNotStarted,
           );
         }
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -149,9 +150,7 @@ class DesktopUpdateService {
         uri.port != 443 ||
         !RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(info.sha256Digest ?? '') ||
         (info.sizeBytes ?? 0) <= 0) {
-      throw StateError(
-        'The release does not contain a verified package for this platform.',
-      );
+      throw DesktopUpdateException(DesktopUpdateFailure.unverifiedPackage);
     }
     final target = await _installationPath();
     final parent = Directory(path.dirname(target));
@@ -159,9 +158,7 @@ class DesktopUpdateService {
     try {
       work = await parent.createTemp('.arrmate-update-');
     } on FileSystemException {
-      throw StateError(
-        'The application folder is read-only. Move Arrmate to a folder writable by your user and try again.',
-      );
+      throw DesktopUpdateException(DesktopUpdateFailure.readOnlyFolder);
     }
     try {
       final download = File(path.join(work.path, expectedName));
@@ -174,7 +171,7 @@ class DesktopUpdateService {
       if (await download.length() != info.sizeBytes ||
           (await sha256.bind(download.openRead()).first).toString() !=
               info.sha256Digest!.toLowerCase()) {
-        throw StateError('The update failed its size or SHA-256 verification.');
+        throw DesktopUpdateException(DesktopUpdateFailure.verificationFailed);
       }
       String staged;
       if (_platform == TargetPlatform.linux) {
@@ -190,7 +187,7 @@ class DesktopUpdateService {
             header[9] != 0x49 ||
             header[10] != 2 ||
             header[18] != 0x3e) {
-          throw StateError('The update is not an x64 AppImage.');
+          throw DesktopUpdateException(DesktopUpdateFailure.notAppImage);
         }
         await _run('chmod', ['755', download.path]);
         staged = download.path;
@@ -221,9 +218,7 @@ class DesktopUpdateService {
             path.join(staged, 'Contents', 'Info.plist'),
           ]);
           if (result.stdout.toString().trim() != info.version) {
-            throw StateError(
-              'The downloaded application version does not match the release.',
-            );
+            throw DesktopUpdateException(DesktopUpdateFailure.versionMismatch);
           }
         } else {
           await _run('powershell.exe', [
@@ -241,9 +236,7 @@ class DesktopUpdateService {
           ]);
           if (version.stdout.toString().trim().split('+').first !=
               info.version) {
-            throw StateError(
-              'The downloaded application version does not match the release.',
-            );
+            throw DesktopUpdateException(DesktopUpdateFailure.versionMismatch);
           }
         }
       }
@@ -264,8 +257,8 @@ class DesktopUpdateService {
     if (_platform == TargetPlatform.linux) {
       final appImage = _environment['APPIMAGE'];
       if (appImage == null || appImage.isEmpty || !path.isAbsolute(appImage)) {
-        throw StateError(
-          'Automatic Linux updates require the AppImage. Download and run the AppImage release first.',
+        throw DesktopUpdateException(
+          DesktopUpdateFailure.linuxRequiresAppImage,
         );
       }
       return File(appImage).resolveSymbolicLinks();
@@ -277,16 +270,14 @@ class DesktopUpdateService {
           !await Directory(
             path.join(directory, 'data', 'flutter_assets'),
           ).exists()) {
-        throw StateError(
-          'Run Arrmate from the complete Windows release directory to update it.',
-        );
+        throw DesktopUpdateException(DesktopUpdateFailure.windowsIncomplete);
       }
       return directory;
     }
     final directory = path.dirname(path.dirname(path.dirname(_executablePath)));
     if (!directory.endsWith('.app') ||
         !await File(path.join(directory, 'Contents', 'Info.plist')).exists()) {
-      throw StateError('Run the installed Arrmate.app bundle to update it.');
+      throw DesktopUpdateException(DesktopUpdateFailure.macBundleRequired);
     }
     return directory;
   }
@@ -294,7 +285,10 @@ class DesktopUpdateService {
   Future<ProcessResult> _run(String executable, List<String> arguments) async {
     final result = await Process.run(executable, arguments);
     if (result.exitCode != 0) {
-      throw StateError('Could not prepare the update package ($executable).');
+      throw DesktopUpdateException(
+        DesktopUpdateFailure.prepareFailed,
+        executable,
+      );
     }
     return result;
   }
@@ -322,12 +316,12 @@ void validateDesktopArchive(Archive archive, TargetPlatform platform) {
                 )) ||
         normalized == '..' ||
         normalized.startsWith('../')) {
-      throw StateError('The update archive contains an unsafe path.');
+      throw DesktopUpdateException(DesktopUpdateFailure.archiveUnsafePath);
     }
     names.add(normalized);
     size += file.size;
     if (size > 2 * 1024 * 1024 * 1024 || archive.length > 50000) {
-      throw StateError('The update archive exceeds its extraction limits.');
+      throw DesktopUpdateException(DesktopUpdateFailure.archiveTooLarge);
     }
     if (file.isSymbolicLink) {
       final destination = file.symbolicLink!.replaceAll('\\', '/');
@@ -339,9 +333,7 @@ void validateDesktopArchive(Archive archive, TargetPlatform platform) {
           destination.contains(':') ||
           resolved == '..' ||
           resolved.startsWith('../')) {
-        throw StateError(
-          'The update archive contains an unsafe symbolic link.',
-        );
+        throw DesktopUpdateException(DesktopUpdateFailure.archiveUnsafeLink);
       }
       links.add(normalized);
     }
@@ -350,7 +342,9 @@ void validateDesktopArchive(Archive archive, TargetPlatform platform) {
     var parent = path.posix.dirname(name);
     while (parent != '.') {
       if (links.contains(parent)) {
-        throw StateError('The update archive writes through a symbolic link.');
+        throw DesktopUpdateException(
+          DesktopUpdateFailure.archiveWritesThroughLink,
+        );
       }
       parent = path.posix.dirname(parent);
     }
@@ -366,8 +360,6 @@ void validateDesktopArchive(Archive archive, TargetPlatform platform) {
           'Arrmate.app/Contents/MacOS/Arrmate',
         ];
   if (!requiredFiles.every(names.contains)) {
-    throw StateError(
-      'The update archive is missing required application files.',
-    );
+    throw DesktopUpdateException(DesktopUpdateFailure.archiveMissingFiles);
   }
 }

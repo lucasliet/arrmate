@@ -95,7 +95,7 @@ class TorrentListItem extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${torrent.totalPeers} peers',
+                              context.l10n.torrentPeerCount(torrent.totalPeers),
                               style: context.textTheme.labelMedium?.copyWith(
                                 color: context.colorScheme.onSurfaceVariant,
                               ),
@@ -169,7 +169,9 @@ class TorrentListItem extends StatelessWidget {
                   children: [
                     _buildDetail(
                       context,
-                      '${formatPercentage(torrent.progress * 100)} done',
+                      context.l10n.torrentPercentDone(
+                        formatPercentage(torrent.progress * 100),
+                      ),
                     ),
                     if (torrent.hasSeedingTime) _buildSeedTime(context),
                     if (torrent.status.isActive) ...[

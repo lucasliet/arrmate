@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../l10n/labels.dart';
 import '../../../widgets/common_widgets.dart';
 import '../providers/torrent_import_provider.dart';
 
@@ -57,7 +58,9 @@ class _TorrentImportFilesSheetState
             children: [
               AppBar(
                 title: Text(
-                  widget.isMovie ? 'Import to Movie' : 'Import to Series',
+                  widget.isMovie
+                      ? context.l10n.torrentImportToMovie
+                      : context.l10n.torrentImportToSeries,
                 ),
                 automaticallyImplyLeading: false,
                 actions: [
@@ -70,7 +73,7 @@ class _TorrentImportFilesSheetState
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Import'),
+                          : Text(context.l10n.commonImport),
                     ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -87,9 +90,10 @@ class _TorrentImportFilesSheetState
                     if (files.isEmpty) {
                       return EmptyState(
                         icon: Icons.file_download_off_outlined,
-                        title: 'No Files Found',
-                        subtitle:
-                            'No importable files found in ${widget.torrent.savePath}',
+                        title: context.l10n.torrentImportNoFilesTitle,
+                        subtitle: context.l10n.torrentImportNoFilesSubtitle(
+                          widget.torrent.savePath,
+                        ),
                       );
                     }
 
@@ -103,10 +107,13 @@ class _TorrentImportFilesSheetState
                       },
                     );
                   },
-                  loading: () =>
-                      const LoadingIndicator(message: 'Loading files...'),
+                  loading: () => LoadingIndicator(
+                    message: context.l10n.torrentLoadingFiles,
+                  ),
                   error: (error, stack) => ErrorDisplay(
-                    message: 'Failed to load files: $error',
+                    message: context.l10n.torrentLoadFilesFailed(
+                      describeError(error, context.l10n),
+                    ),
                     onRetry: () =>
                         ref.refresh(importableFilesByFolderProvider(params)),
                   ),
@@ -121,8 +128,8 @@ class _TorrentImportFilesSheetState
 
   Widget _buildHeader(ThemeData theme) {
     final targetName = widget.isMovie
-        ? widget.movie?.title ?? 'Unknown Movie'
-        : widget.series?.title ?? 'Unknown Series';
+        ? widget.movie?.title ?? context.l10n.labelCalendarUnknownMovie
+        : widget.series?.title ?? context.l10n.labelCalendarUnknownSeries;
 
     return Padding(
       padding: const EdgeInsets.all(paddingMd),
@@ -150,7 +157,7 @@ class _TorrentImportFilesSheetState
           ),
           const SizedBox(height: 8),
           Text(
-            'Select files to import. Tap on a file to configure its mapping.',
+            context.l10n.torrentImportSelectFilesHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -159,7 +166,7 @@ class _TorrentImportFilesSheetState
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '${_fileMappings.length} file(s) selected for import',
+                context.l10n.torrentImportFilesSelected(_fileMappings.length),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,
@@ -208,7 +215,9 @@ class _TorrentImportFilesSheetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          file.name ?? file.relativePath ?? 'Unknown',
+                          file.name ??
+                              file.relativePath ??
+                              context.l10n.commonUnknown,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -361,7 +370,7 @@ class _TorrentImportFilesSheetState
 
   Future<void> _handleImport() async {
     if (_fileMappings.isEmpty) {
-      context.showErrorSnackBar('No files selected');
+      context.showErrorSnackBar(context.l10n.torrentImportNoFilesSelected);
       return;
     }
 
@@ -377,15 +386,18 @@ class _TorrentImportFilesSheetState
       );
 
       if (mounted) {
-        Navigator.pop(context);
-        context.showSnackBar(
-          '${_fileMappings.length} file(s) imported successfully',
+        final message = context.l10n.torrentImportFilesImported(
+          _fileMappings.length,
         );
+        Navigator.pop(context);
+        context.showSnackBar(message);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isImporting = false);
-        context.showErrorSnackBar('Failed to import: $e');
+        context.showErrorSnackBar(
+          context.l10n.torrentImportFailed(describeError(e, context.l10n)),
+        );
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/extensions/context_extensions.dart';
 import '../../domain/models/models.dart';
 
 /// Describes a request failure for one configured instance, surfaced alongside
@@ -63,13 +64,16 @@ class InstanceLoadFailureBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Some instances could not be loaded',
+                  context.l10n.widgetsSomeInstancesFailed,
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
-              TextButton(onPressed: onRetry, child: const Text('Retry')),
+              TextButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.commonRetry),
+              ),
             ],
           ),
           ...failures.map(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
 import '../../../widgets/common_widgets.dart';
 import '../providers/torrent_import_provider.dart';
@@ -53,7 +54,7 @@ class _TorrentImportTargetSheetState
           child: Column(
             children: [
               AppBar(
-                title: const Text('Select Target'),
+                title: Text(context.l10n.torrentImportSelectTarget),
                 automaticallyImplyLeading: false,
                 actions: [
                   IconButton(
@@ -63,9 +64,15 @@ class _TorrentImportTargetSheetState
                 ],
                 bottom: TabBar(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Movies', icon: Icon(Icons.movie_outlined)),
-                    Tab(text: 'Series', icon: Icon(Icons.tv_outlined)),
+                  tabs: [
+                    Tab(
+                      text: context.l10n.commonMovies,
+                      icon: const Icon(Icons.movie_outlined),
+                    ),
+                    Tab(
+                      text: context.l10n.commonSeries,
+                      icon: const Icon(Icons.tv_outlined),
+                    ),
                   ],
                 ),
               ),
@@ -73,7 +80,7 @@ class _TorrentImportTargetSheetState
                 padding: const EdgeInsets.all(16),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search...',
+                    hintText: context.l10n.torrentImportSearchHint,
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -113,10 +120,10 @@ class _TorrentImportTargetSheetState
         }).toList();
 
         if (filtered.isEmpty) {
-          return const EmptyState(
+          return EmptyState(
             icon: Icons.movie_outlined,
-            title: 'No Movies Found',
-            subtitle: 'No monitored movies match your search.',
+            title: context.l10n.torrentImportNoMoviesTitle,
+            subtitle: context.l10n.torrentImportNoMoviesSubtitle,
           );
         }
 
@@ -130,9 +137,10 @@ class _TorrentImportTargetSheetState
           },
         );
       },
-      loading: () => const LoadingIndicator(message: 'Loading movies...'),
+      loading: () =>
+          LoadingIndicator(message: context.l10n.torrentImportLoadingMovies),
       error: (error, stack) => ErrorDisplay(
-        message: 'Failed to load movies',
+        message: context.l10n.torrentImportLoadMoviesFailed,
         onRetry: () => ref.refresh(moviesForImportProvider),
       ),
     );
@@ -149,10 +157,10 @@ class _TorrentImportTargetSheetState
         }).toList();
 
         if (filtered.isEmpty) {
-          return const EmptyState(
+          return EmptyState(
             icon: Icons.tv_outlined,
-            title: 'No Series Found',
-            subtitle: 'No monitored series match your search.',
+            title: context.l10n.torrentImportNoSeriesTitle,
+            subtitle: context.l10n.torrentImportNoSeriesSubtitle,
           );
         }
 
@@ -166,9 +174,10 @@ class _TorrentImportTargetSheetState
           },
         );
       },
-      loading: () => const LoadingIndicator(message: 'Loading series...'),
+      loading: () =>
+          LoadingIndicator(message: context.l10n.torrentImportLoadingSeries),
       error: (error, stack) => ErrorDisplay(
-        message: 'Failed to load series',
+        message: context.l10n.torrentImportLoadSeriesFailed,
         onRetry: () => ref.refresh(seriesForImportProvider),
       ),
     );

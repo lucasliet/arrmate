@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 
@@ -21,7 +22,7 @@ class MediaFileDetailsSheet extends StatelessWidget {
         return Column(
           children: [
             AppBar(
-              title: const Text('File Details'),
+              title: Text(context.l10n.widgetsFileDetailsTitle),
               automaticallyImplyLeading: false,
               actions: [
                 if (onDelete != null)
@@ -31,7 +32,7 @@ class MediaFileDetailsSheet extends StatelessWidget {
                       Navigator.pop(context);
                       onDelete?.call();
                     },
-                    tooltip: 'Delete File',
+                    tooltip: context.l10n.widgetsDeleteFile,
                   ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -45,42 +46,48 @@ class MediaFileDetailsSheet extends StatelessWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.all(paddingMd),
                 children: [
-                  _buildSection(context, 'General', [
+                  _buildSection(context, context.l10n.widgetsFileGeneral, [
                     _buildInfoRow(
                       context,
-                      'Path',
-                      file.relativePath ?? file.path ?? 'Unknown',
+                      context.l10n.widgetsFilePath,
+                      file.relativePath ??
+                          file.path ??
+                          context.l10n.commonUnknown,
                     ),
-                    _buildInfoRow(context, 'Size', formatBytes(file.size)),
                     _buildInfoRow(
                       context,
-                      'Date Added',
+                      context.l10n.commonSize,
+                      formatBytes(file.size),
+                    ),
+                    _buildInfoRow(
+                      context,
+                      context.l10n.widgetsFileDateAdded,
                       formatDate(file.dateAdded),
                     ),
                   ]),
                   if (file.quality != null) ...[
                     const SizedBox(height: 16),
-                    _buildSection(context, 'Quality', [
+                    _buildSection(context, context.l10n.commonQuality, [
                       _buildInfoRow(
                         context,
-                        'Quality',
+                        context.l10n.commonQuality,
                         file.quality!.quality.name,
                       ),
                       if (file.quality!.quality.source != null)
                         _buildInfoRow(
                           context,
-                          'Source',
+                          context.l10n.widgetsFileSource,
                           file.quality!.quality.source!,
                         ),
                       if (file.quality!.quality.resolution != null)
                         _buildInfoRow(
                           context,
-                          'Resolution',
+                          context.l10n.widgetsFileResolution,
                           '${file.quality!.quality.resolution}p',
                         ),
                       _buildInfoRow(
                         context,
-                        'Revision',
+                        context.l10n.widgetsFileRevision,
                         'v${file.quality!.revision}',
                       ),
                     ]),
@@ -93,11 +100,14 @@ class MediaFileDetailsSheet extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSection(
                       context,
-                      'Languages',
+                      context.l10n.releasesLanguages,
                       file.languages!
                           .map(
-                            (lang) =>
-                                _buildInfoRow(context, 'Language', lang.name),
+                            (lang) => _buildInfoRow(
+                              context,
+                              context.l10n.commonLanguage,
+                              lang.name,
+                            ),
                           )
                           .toList(),
                     ),
@@ -151,62 +161,108 @@ class MediaFileDetailsSheet extends StatelessWidget {
 
     if (mediaInfo.videoCodec != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Video Codec', mediaInfo.videoCodec!),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileVideoCodec,
+          mediaInfo.videoCodec!,
+        ),
       );
     }
     if (mediaInfo.resolution != null) {
-      infoRows.add(_buildInfoRow(context, 'Resolution', mediaInfo.resolution!));
+      infoRows.add(
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileResolution,
+          mediaInfo.resolution!,
+        ),
+      );
     }
     if (mediaInfo.videoFps != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Frame Rate', '${mediaInfo.videoFps} fps'),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileFrameRate,
+          '${mediaInfo.videoFps} fps',
+        ),
       );
     }
     if (mediaInfo.videoBitrate != null) {
       infoRows.add(
         _buildInfoRow(
           context,
-          'Video Bitrate',
+          context.l10n.widgetsFileVideoBitrate,
           '${mediaInfo.videoBitrate} kbps',
         ),
       );
     }
     if (mediaInfo.videoBitDepth != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Bit Depth', '${mediaInfo.videoBitDepth} bit'),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileBitDepth,
+          '${mediaInfo.videoBitDepth} bit',
+        ),
       );
     }
     if (mediaInfo.videoDynamicRange != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Dynamic Range', mediaInfo.videoDynamicRange!),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileDynamicRange,
+          mediaInfo.videoDynamicRange!,
+        ),
       );
     }
     if (mediaInfo.videoDynamicRangeType != null) {
       infoRows.add(
-        _buildInfoRow(context, 'HDR Type', mediaInfo.videoDynamicRangeType!),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileHdrType,
+          mediaInfo.videoDynamicRangeType!,
+        ),
       );
     }
     if (mediaInfo.scanType != null) {
-      infoRows.add(_buildInfoRow(context, 'Scan Type', mediaInfo.scanType!));
+      infoRows.add(
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileScanType,
+          mediaInfo.scanType!,
+        ),
+      );
     }
     if (mediaInfo.runTime != null) {
-      infoRows.add(_buildInfoRow(context, 'Duration', mediaInfo.runTime!));
+      infoRows.add(
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileDuration,
+          mediaInfo.runTime!,
+        ),
+      );
     }
     if (mediaInfo.audioCodec != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Audio Codec', mediaInfo.audioCodec!),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileAudioCodec,
+          mediaInfo.audioCodec!,
+        ),
       );
     }
     if (mediaInfo.audioChannels != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Audio Channels', '${mediaInfo.audioChannels}'),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileAudioChannels,
+          '${mediaInfo.audioChannels}',
+        ),
       );
     }
     if (mediaInfo.audioBitrate != null) {
       infoRows.add(
         _buildInfoRow(
           context,
-          'Audio Bitrate',
+          context.l10n.widgetsFileAudioBitrate,
           '${mediaInfo.audioBitrate} kbps',
         ),
       );
@@ -215,21 +271,31 @@ class MediaFileDetailsSheet extends StatelessWidget {
       infoRows.add(
         _buildInfoRow(
           context,
-          'Audio Streams',
+          context.l10n.widgetsFileAudioStreams,
           '${mediaInfo.audioStreamCount}',
         ),
       );
     }
     if (mediaInfo.audioLanguages != null) {
       infoRows.add(
-        _buildInfoRow(context, 'Audio Languages', mediaInfo.audioLanguages!),
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileAudioLanguages,
+          mediaInfo.audioLanguages!,
+        ),
       );
     }
     if (mediaInfo.subtitles != null) {
-      infoRows.add(_buildInfoRow(context, 'Subtitles', mediaInfo.subtitles!));
+      infoRows.add(
+        _buildInfoRow(
+          context,
+          context.l10n.widgetsFileSubtitles,
+          mediaInfo.subtitles!,
+        ),
+      );
     }
 
-    return _buildSection(context, 'Media Info', infoRows);
+    return _buildSection(context, context.l10n.widgetsFileMediaInfo, infoRows);
   }
 
   Widget _buildCustomFormatsSection(BuildContext context) {
@@ -239,7 +305,7 @@ class MediaFileDetailsSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Custom Formats',
+          context.l10n.widgetsFileCustomFormats,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -272,7 +338,9 @@ class MediaFileDetailsSheet extends StatelessWidget {
         if (file.customFormatScore != null) ...[
           const SizedBox(height: 8),
           Text(
-            'Score: ${formatCustomScore(file.customFormatScore!)}',
+            context.l10n.widgetsCustomFormatScore(
+              formatCustomScore(file.customFormatScore!),
+            ),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

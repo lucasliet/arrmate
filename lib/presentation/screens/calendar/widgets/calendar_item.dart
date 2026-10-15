@@ -186,9 +186,15 @@ class CalendarItem extends ConsumerWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open item: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.calendarOpenItemFailed(
+              describeError(error, context.l10n),
+            ),
+          ),
+        ),
+      );
     }
   }
 }

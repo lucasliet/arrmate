@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 
@@ -50,7 +51,9 @@ class MediaFileCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          file.relativePath ?? file.path ?? 'Unknown File',
+                          file.relativePath ??
+                              file.path ??
+                              context.l10n.widgetsUnknownFile,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -70,7 +73,7 @@ class MediaFileCard extends StatelessWidget {
                   if (onPlay != null)
                     IconButton(
                       icon: const Icon(Icons.play_circle_outline),
-                      tooltip: 'Play',
+                      tooltip: context.l10n.widgetsPlay,
                       onPressed: onPlay,
                       color: theme.colorScheme.primary,
                       visualDensity: VisualDensity.compact,

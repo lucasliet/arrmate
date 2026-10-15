@@ -6,11 +6,13 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/network/request_diagnostics.dart';
 import '../../../core/services/logger_service.dart';
 import '../../../core/services/system_diagnostics_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
+import '../../l10n/labels.dart';
 import '../../providers/cache_maintenance_provider.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -155,17 +157,17 @@ class DiagnosticsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Connection Diagnostics'),
+        title: Text(context.l10n.diagnosticsTitle),
         actions: [
           IconButton(
-            tooltip: 'Run connection checks again',
+            tooltip: context.l10n.diagnosticsRunAgain,
             onPressed: snapshotAsync.isLoading
                 ? null
                 : () => ref.read(systemDiagnosticsProvider.notifier).run(),
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: 'Export report',
+            tooltip: context.l10n.diagnosticsExportReport,
             onPressed: snapshotAsync.hasValue
                 ? () => _exportReport(context, ref)
                 : null,
@@ -176,18 +178,17 @@ class DiagnosticsScreen extends ConsumerWidget {
       body: Column(
         children: [
           if (isRefreshing)
-            const _DiagnosticsProgress(
-              message: 'Refreshing endpoint checks...',
-            ),
+            _DiagnosticsProgress(message: context.l10n.diagnosticsRefreshing),
           Expanded(
             child: snapshotAsync.when(
               skipLoadingOnRefresh: true,
               data: (snapshot) => _DiagnosticsBody(snapshot: snapshot),
-              loading: () => const LoadingIndicator(
-                message: 'Checking configured endpoints...',
-              ),
+              loading: () =>
+                  LoadingIndicator(message: context.l10n.diagnosticsChecking),
               error: (error, _) => ErrorDisplay(
-                message: 'Failed to run connection diagnostics: $error',
+                message: context.l10n.diagnosticsRunFailed(
+                  describeError(error, context.l10n),
+                ),
                 onRetry: () =>
                     ref.read(systemDiagnosticsProvider.notifier).run(),
               ),
@@ -200,6 +201,7 @@ class DiagnosticsScreen extends ConsumerWidget {
 
   Future<void> _exportReport(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final platform = Theme.of(context).platform.name;
     final snapshot =
         ref.read(systemDiagnosticsProvider).valueOrNull ??
@@ -231,7 +233,11 @@ class DiagnosticsScreen extends ConsumerWidget {
       logger.error('[Diagnostics] Export failed', error, stackTrace);
       if (!context.mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Failed to export report: $error')),
+        SnackBar(
+          content: Text(
+            l10n.diagnosticsExportFailed(describeError(error, l10n)),
+          ),
+        ),
       );
     }
   }
@@ -279,14 +285,12 @@ class _DiagnosticsBody extends StatelessWidget {
         _NetworkSummary(snapshot: snapshot),
         const SizedBox(height: paddingMd),
         Text(
-          'Endpoint connectivity',
+          context.l10n.diagnosticsEndpointConnectivity,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: paddingSm),
         if (snapshot.checks.isEmpty)
-          const Text(
-            'No Radarr, Sonarr, or qBittorrent instances are configured.',
-          )
+          Text(context.l10n.diagnosticsNoInstances)
         else
           ...snapshot.checks.map(
             (check) => Padding(
@@ -296,7 +300,7 @@ class _DiagnosticsBody extends StatelessWidget {
           ),
         const SizedBox(height: paddingMd),
         Text(
-          'Recent request traces',
+          context.l10n.diagnosticsRecentRequests,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: paddingSm),
@@ -319,15 +323,11 @@ class _DiagnosticsPurpose extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Connection troubleshooting',
+              context.l10n.diagnosticsPurposeTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: paddingXs),
-            const Text(
-              'Tests every configured endpoint for reachability and latency, '
-              'shows recent request traces, and exports a sanitized report. '
-              'Health shows alerts reported by Radarr and Sonarr.',
-            ),
+            Text(context.l10n.diagnosticsPurposeBody),
           ],
         ),
       ),
@@ -343,15 +343,16 @@ class _NetworkSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final failedEndpointCount = snapshot.checks
         .where((check) => !check.isSuccessful)
         .length;
     final hasEndpointFailures = failedEndpointCount > 0;
     final endpointStatus = snapshot.areAllEndpointsUnavailable
-        ? 'Endpoints unavailable'
+        ? l10n.diagnosticsEndpointsUnavailable
         : hasEndpointFailures
-        ? 'Some endpoints unavailable'
-        : 'Endpoints available';
+        ? l10n.diagnosticsSomeEndpointsUnavailable
+        : l10n.diagnosticsEndpointsAvailable;
     return Card(
       elevation: 0,
       child: Padding(
@@ -372,8 +373,8 @@ class _NetworkSummary extends StatelessWidget {
                 const SizedBox(width: paddingSm),
                 Text(
                   snapshot.hasNetworkInterface
-                      ? 'Network available'
-                      : 'No network interface',
+                      ? l10n.diagnosticsNetworkAvailable
+                      : l10n.diagnosticsNoNetworkInterface,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -399,12 +400,16 @@ class _NetworkSummary extends StatelessWidget {
             ],
             const SizedBox(height: paddingSm),
             Text(
-              'Generated ${formatDate(snapshot.generatedAt.toLocal())}',
+              l10n.diagnosticsGenerated(
+                formatDate(snapshot.generatedAt.toLocal()),
+              ),
               style: theme.textTheme.bodySmall,
             ),
             if (snapshot.networkInterfaces.isNotEmpty)
               Text(
-                'Interfaces: ${snapshot.networkInterfaces.join(', ')}',
+                l10n.diagnosticsInterfaces(
+                  snapshot.networkInterfaces.join(', '),
+                ),
                 style: theme.textTheme.bodySmall,
               ),
           ],
@@ -422,6 +427,8 @@ class _CheckTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final durationMs = check.duration.inMilliseconds;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
@@ -429,23 +436,29 @@ class _CheckTile extends StatelessWidget {
         check.isSuccessful ? Icons.check_circle : Icons.error,
         color: check.isSuccessful ? Colors.green : theme.colorScheme.error,
       ),
-      title: Text('${check.instanceLabel} · ${_endpointLabel(check)}'),
+      title: Text('${check.instanceLabel} · ${_endpointLabel(check, l10n)}'),
       subtitle: Text(
         check.isSuccessful
-            ? 'OK · ${check.duration.inMilliseconds}ms'
-                  '${check.version != null ? ' · v${check.version}' : ''}'
-            : 'Failed · ${check.error ?? 'unknown error'}',
+            ? check.version != null
+                  ? l10n.diagnosticsCheckOkWithVersion(
+                      durationMs,
+                      '${check.version}',
+                    )
+                  : l10n.diagnosticsCheckOk(durationMs)
+            : l10n.diagnosticsCheckFailed(
+                check.error ?? l10n.diagnosticsUnknownError,
+              ),
       ),
     );
   }
 
-  String _endpointLabel(InstanceDiagnosticCheck check) {
+  String _endpointLabel(InstanceDiagnosticCheck check, AppLocalizations l10n) {
     return switch (check.endpointLabel) {
-      'Active' => 'Active endpoint',
-      'Primary' => 'Primary endpoint',
-      'Alternative' => 'Alternative endpoint',
-      'Primary · Active' => 'Primary endpoint · Active',
-      'Alternative · Active' => 'Alternative endpoint · Active',
+      'Active' => l10n.diagnosticsEndpointActive,
+      'Primary' => l10n.diagnosticsEndpointPrimary,
+      'Alternative' => l10n.diagnosticsEndpointAlternative,
+      'Primary · Active' => l10n.diagnosticsEndpointPrimaryActive,
+      'Alternative · Active' => l10n.diagnosticsEndpointAlternativeActive,
       _ => check.endpointLabel,
     };
   }
@@ -483,7 +496,7 @@ class _RequestDiagnosticsListState extends State<_RequestDiagnosticsList> {
   @override
   Widget build(BuildContext context) {
     if (_entries.isEmpty) {
-      return const Text('No recent requests recorded.');
+      return Text(context.l10n.diagnosticsNoRecentRequests);
     }
     return Column(
       children: _entries
@@ -512,7 +525,8 @@ class _RequestTile extends StatelessWidget {
       ),
       title: Text('${entry.method} ${entry.path}'),
       subtitle: Text(
-        '${entry.source} · ${entry.statusCode ?? entry.errorType ?? 'unknown'} '
+        '${entry.source} · '
+        '${entry.statusCode ?? entry.errorType ?? context.l10n.diagnosticsUnknownStatus} '
         '· ${entry.duration.inMilliseconds}ms',
       ),
     );

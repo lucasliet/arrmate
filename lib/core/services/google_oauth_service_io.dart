@@ -241,12 +241,16 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
       throw GoogleOAuthException(
         'Google sign-in failed: network or server error '
         '(status ${error.response?.statusCode ?? 'unavailable'}).',
+        failure: GoogleOAuthFailure.networkError,
+        detail: error.response?.statusCode?.toString(),
       );
     }
     if (response.statusCode != 200 || response.data == null) {
       throw GoogleOAuthException(
         'Google sign-in failed: the server returned status '
         '${response.statusCode ?? 'unavailable'}.',
+        failure: GoogleOAuthFailure.unexpectedStatus,
+        detail: response.statusCode?.toString(),
       );
     }
     return response.data!;
@@ -258,6 +262,7 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
     if (accessToken == null || accessToken.isEmpty || expiresIn == null) {
       throw const GoogleOAuthException(
         'Google sign-in failed: the token response was incomplete.',
+        failure: GoogleOAuthFailure.incompleteTokenResponse,
       );
     }
     await _persistTokens(
@@ -281,18 +286,23 @@ class GoogleOAuthServiceImpl extends GoogleOAuthService {
       throw GoogleOAuthException(
         'Google sign-in failed: network or server error '
         '(status ${error.response?.statusCode ?? 'unavailable'}).',
+        failure: GoogleOAuthFailure.networkError,
+        detail: error.response?.statusCode?.toString(),
       );
     }
     if (response.statusCode != 200 || response.data == null) {
       throw GoogleOAuthException(
         'Google sign-in failed: the account could not be loaded '
         '(status ${response.statusCode ?? 'unavailable'}).',
+        failure: GoogleOAuthFailure.accountLoadFailed,
+        detail: response.statusCode?.toString(),
       );
     }
     final email = response.data!['email'] as String?;
     if (email == null || email.isEmpty) {
       throw const GoogleOAuthException(
         'Google sign-in failed: the account has no e-mail.',
+        failure: GoogleOAuthFailure.missingEmail,
       );
     }
     final account = GoogleAccount(

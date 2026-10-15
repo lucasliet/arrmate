@@ -19,7 +19,7 @@ class BackupScreen extends ConsumerWidget {
     final supportsGoogleDrive = ref.watch(googleDriveBackupSupportedProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Backup & Restore')),
+      appBar: AppBar(title: Text(context.l10n.backupTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -36,9 +36,7 @@ class BackupScreen extends ConsumerWidget {
               _buildSignInCard(context, ref, state),
             const SizedBox(height: 8),
             Text(
-              'Automatic backups run about 30 seconds after you change '
-              'instances or settings, while signed in. Some settings (like '
-              'the home tab) apply fully after restarting the app.',
+              context.l10n.backupAutomaticNote,
               style: context.textTheme.bodySmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -72,15 +70,12 @@ class BackupScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Google Drive backup not available',
+                    context.l10n.backupDriveUnavailableTitle,
                     style: context.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'This build was compiled without Google credentials. '
-                    'Ask the developer to build with the Google OAuth '
-                    'configuration, or run locally with the --dart-define '
-                    'flags. Use the local file backup below instead.',
+                    context.l10n.backupDriveUnavailableMessage,
                     style: context.textTheme.bodyMedium?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
@@ -113,12 +108,13 @@ class BackupScreen extends ConsumerWidget {
               color: context.colorScheme.primary,
             ),
             const SizedBox(height: 12),
-            Text('Google Drive backup', style: context.textTheme.titleMedium),
+            Text(
+              context.l10n.backupDriveTitle,
+              style: context.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Text(
-              'Your settings, preferences and configured instances '
-              "(including their API keys) are stored in the app's private "
-              'folder on your Google Drive, invisible to other apps.',
+              context.l10n.backupDriveDescription,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -128,7 +124,7 @@ class BackupScreen extends ConsumerWidget {
               key: const Key('backupSignInButton'),
               onPressed: () => ref.read(backupProvider.notifier).signIn(),
               icon: const Icon(Icons.login),
-              label: const Text('Sign in with Google'),
+              label: Text(context.l10n.backupSignInWithGoogle),
             ),
             if (state.errorMessage != null) ...[
               const SizedBox(height: 8),
@@ -149,7 +145,7 @@ class BackupScreen extends ConsumerWidget {
   Widget _buildAccountCard(BuildContext context, BackupState state) {
     final lastBackupAt = state.lastBackupAt ?? state.remoteBackupAt;
     final lastBackup = lastBackupAt == null
-        ? 'never'
+        ? context.l10n.backupNever
         : _formatTimestamp(lastBackupAt);
 
     return Card(
@@ -179,7 +175,7 @@ class BackupScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Last backup: $lastBackup',
+                        context.l10n.backupLastBackup(lastBackup),
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.colorScheme.onSurfaceVariant,
                         ),
@@ -239,7 +235,7 @@ class BackupScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Backup found in your Google Drive',
+                    context.l10n.backupFoundTitle,
                     style: context.textTheme.titleMedium?.copyWith(
                       color: context.colorScheme.onPrimaryContainer,
                     ),
@@ -249,9 +245,9 @@ class BackupScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Saved ${_formatTimestamp(state.remoteBackupAt!)}. Restore it to '
-              'bring its settings and instances to this device. Automatic '
-              'backups stay paused until you restore or back up manually.',
+              context.l10n.backupFoundMessage(
+                _formatTimestamp(state.remoteBackupAt!),
+              ),
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onPrimaryContainer,
               ),
@@ -263,7 +259,7 @@ class BackupScreen extends ConsumerWidget {
                   ? null
                   : () => _startRestore(context, ref),
               icon: const Icon(Icons.restore),
-              label: const Text('Restore'),
+              label: Text(context.l10n.commonRestore),
             ),
           ],
         ),
@@ -284,7 +280,7 @@ class BackupScreen extends ConsumerWidget {
           ListTile(
             key: const Key('backupNowButton'),
             leading: const Icon(Icons.backup),
-            title: const Text('Back up now'),
+            title: Text(context.l10n.backupNow),
             trailing: state.isWorking
                 ? const SizedBox(
                     width: 24,
@@ -299,12 +295,12 @@ class BackupScreen extends ConsumerWidget {
           ListTile(
             key: const Key('backupRestoreButton'),
             leading: const Icon(Icons.restore),
-            title: const Text('Restore backup…'),
+            title: Text(context.l10n.backupRestoreBackupMenu),
             onTap: state.isWorking ? null : () => _startRestore(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Sign out'),
+            title: Text(context.l10n.backupSignOut),
             onTap: () => ref.read(backupProvider.notifier).signOut(),
           ),
         ],
@@ -325,14 +321,14 @@ class BackupScreen extends ConsumerWidget {
           ListTile(
             key: const Key('backupExportFileButton'),
             leading: const Icon(Icons.ios_share),
-            title: const Text('Export backup to file'),
-            subtitle: const Text('Save a .json copy on this device'),
+            title: Text(context.l10n.backupExportToFile),
+            subtitle: Text(context.l10n.backupExportToFileSubtitle),
             onTap: state.isWorking ? null : () => _exportToFile(context, ref),
           ),
           ListTile(
             key: const Key('backupImportFileButton'),
             leading: const Icon(Icons.folder_open),
-            title: const Text('Restore from file…'),
+            title: Text(context.l10n.backupRestoreFromFile),
             onTap: state.isWorking
                 ? null
                 : () => _startFileRestore(context, ref),
@@ -371,7 +367,7 @@ class BackupScreen extends ConsumerWidget {
     if (fileName != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Backup exported to $fileName'),
+          content: Text(context.l10n.backupExported(fileName)),
           backgroundColor: Colors.green,
         ),
       );
@@ -388,22 +384,25 @@ class BackupScreen extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         key: const Key('backupRestoreConfirmDialog'),
-        title: const Text('Restore backup?'),
+        title: Text(dialogContext.l10n.backupRestoreConfirmTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Created: ${_formatTimestamp(payload.createdAt)}'),
+            Text(
+              dialogContext.l10n.backupCreated(
+                _formatTimestamp(payload.createdAt),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('App version: ${payload.appVersion}'),
+            Text(dialogContext.l10n.backupAppVersion(payload.appVersion)),
             const SizedBox(height: 4),
-            Text('Platform: ${payload.platform}'),
+            Text(dialogContext.l10n.backupPlatform(payload.platform)),
             const SizedBox(height: 4),
-            Text('Instances: ${payload.instanceCount}'),
+            Text(dialogContext.l10n.backupInstanceCount(payload.instanceCount)),
             const SizedBox(height: 12),
             Text(
-              'This replaces the settings and instances currently on this '
-              'device.',
+              dialogContext.l10n.backupRestoreReplaceWarning,
               style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
                 color: Theme.of(dialogContext).colorScheme.error,
               ),
@@ -413,12 +412,12 @@ class BackupScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(dialogContext.l10n.commonCancel),
           ),
           FilledButton(
             key: const Key('backupRestoreConfirmButton'),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Restore'),
+            child: Text(dialogContext.l10n.commonRestore),
           ),
         ],
       ),
@@ -437,7 +436,11 @@ class BackupScreen extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(restored ? 'Backup restored' : 'Restore failed'),
+        content: Text(
+          restored
+              ? context.l10n.backupRestored
+              : context.l10n.backupRestoreFailed,
+        ),
         backgroundColor: restored ? Colors.green : context.colorScheme.error,
       ),
     );

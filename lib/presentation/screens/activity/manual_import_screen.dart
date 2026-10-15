@@ -38,7 +38,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
         return Column(
           children: [
             AppBar(
-              title: Text('Manual Import'),
+              title: Text(context.l10n.manualImportTitle),
               automaticallyImplyLeading: false,
               actions: [
                 if (_selectedFileIds.isNotEmpty)
@@ -50,7 +50,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Import'),
+                        : Text(context.l10n.commonImport),
                   ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -65,9 +65,8 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                   if (files.isEmpty) {
                     return EmptyState(
                       icon: Icons.file_download_off_outlined,
-                      title: 'No Importable Files',
-                      subtitle:
-                          'There are no files available for manual import.',
+                      title: context.l10n.manualImportEmptyTitle,
+                      subtitle: context.l10n.manualImportEmptySubtitle,
                     );
                   }
 
@@ -95,11 +94,10 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
                     ],
                   );
                 },
-                loading: () => const LoadingIndicator(
-                  message: 'Loading importable files...',
-                ),
+                loading: () =>
+                    LoadingIndicator(message: context.l10n.manualImportLoading),
                 error: (error, stack) => ErrorDisplay(
-                  message: 'Failed to load importable files',
+                  message: context.l10n.manualImportLoadFailed,
                   onRetry: () =>
                       ref.refresh(manualImportFilesProvider(widget.item)),
                 ),
@@ -131,7 +129,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
               Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
               const SizedBox(width: 4),
               Text(
-                '$validFiles valid',
+                context.l10n.manualImportValidCount(validFiles),
                 style: theme.textTheme.bodySmall?.copyWith(color: Colors.green),
               ),
             ],
@@ -140,7 +138,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
               Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
               const SizedBox(width: 4),
               Text(
-                '$rejectedFiles with issues',
+                context.l10n.manualImportIssueCount(rejectedFiles),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Colors.orange,
                 ),
@@ -151,7 +149,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
         if (_selectedFileIds.isNotEmpty) ...[
           const SizedBox(height: paddingSm),
           Text(
-            '${_selectedFileIds.length} file(s) selected',
+            context.l10n.manualImportSelectedCount(_selectedFileIds.length),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.w500,
@@ -173,7 +171,7 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
 
       if (selectedFiles.isEmpty) {
         if (mounted) {
-          context.showErrorSnackBar('No files selected');
+          context.showErrorSnackBar(context.l10n.manualImportNoFilesSelected);
         }
         return;
       }
@@ -186,13 +184,15 @@ class _ManualImportScreenState extends ConsumerState<ManualImportScreen> {
       if (mounted) {
         Navigator.pop(context);
         context.showSnackBar(
-          '${selectedFiles.length} file(s) imported successfully',
+          context.l10n.manualImportSuccess(selectedFiles.length),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isImporting = false);
-        context.showErrorSnackBar('Failed to import: $e');
+        context.showErrorSnackBar(
+          context.l10n.manualImportFailed(describeError(e, context.l10n)),
+        );
       }
     }
   }

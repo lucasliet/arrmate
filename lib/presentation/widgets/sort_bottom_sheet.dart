@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/extensions/context_extensions.dart';
+
 /// A customizable bottom sheet for sorting and filtering lists.
 class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
   /// The title of the sheet.
@@ -86,7 +88,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
-                  _buildSectionHeader(context, 'Sort By'),
+                  _buildSectionHeader(context, context.l10n.widgetsSortBy),
                   RadioGroup<T>(
                     groupValue: currentSort,
                     onChanged: (value) {
@@ -110,7 +112,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                     ),
                   ),
                   const Divider(),
-                  _buildSectionHeader(context, 'Order'),
+                  _buildSectionHeader(context, context.l10n.widgetsSortOrder),
                   RadioGroup<bool>(
                     groupValue: isAscending,
                     onChanged: (value) {
@@ -122,14 +124,14 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                     child: Column(
                       children: [
                         RadioListTile<bool>(
-                          title: const Text('Ascending'),
+                          title: Text(context.l10n.sharedAscending),
                           value: true,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 24,
                           ),
                         ),
                         RadioListTile<bool>(
-                          title: const Text('Descending'),
+                          title: Text(context.l10n.sharedDescending),
                           value: false,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -139,7 +141,7 @@ class SortBottomSheet<T extends Enum, F extends Enum> extends StatelessWidget {
                     ),
                   ),
                   const Divider(),
-                  _buildSectionHeader(context, 'Filter'),
+                  _buildSectionHeader(context, context.l10n.commonFilter),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,

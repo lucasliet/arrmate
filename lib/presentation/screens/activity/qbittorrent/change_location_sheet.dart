@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
+import '../../../l10n/labels.dart';
 
 import '../providers/torrent_file_providers.dart';
 
@@ -40,10 +42,8 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Location moved successfully. Data is being moved.',
-              ),
+            SnackBar(
+              content: Text(context.l10n.torrentLocationMoved),
               backgroundColor: Colors.green,
             ),
           );
@@ -52,7 +52,9 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to move: $e'),
+              content: Text(
+                context.l10n.torrentMoveFailed(describeError(e, context.l10n)),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -80,14 +82,14 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Change Save Location',
+              context.l10n.torrentChangeSaveLocation,
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'This will move all downloaded data to the new location.',
+              context.l10n.torrentChangeSaveLocationWarning,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.orange),
@@ -97,14 +99,14 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
               key: _formKey,
               child: TextFormField(
                 controller: _controller,
-                decoration: const InputDecoration(
-                  labelText: 'New Location',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.folder),
+                decoration: InputDecoration(
+                  labelText: context.l10n.torrentNewLocation,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.folder),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a valid path';
+                    return context.l10n.torrentEnterValidPath;
                   }
                   return null;
                 },
@@ -116,7 +118,7 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
               children: [
                 TextButton(
                   onPressed: isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(context.l10n.commonCancel),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -134,7 +136,7 @@ class _ChangeLocationSheetState extends ConsumerState<ChangeLocationSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Move'),
+                      : Text(context.l10n.torrentMove),
                 ),
               ],
             ),

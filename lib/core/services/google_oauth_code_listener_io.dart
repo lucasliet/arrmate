@@ -164,6 +164,7 @@ class LoopbackCodeListener implements GoogleCodeListener {
     if (!launched) {
       throw const GoogleOAuthException(
         'The sign-in browser could not be opened. Please try again.',
+        failure: GoogleOAuthFailure.browserUnavailable,
       );
     }
     logger.debug('[GoogleOAuth] Browser opened, waiting for the redirect');
@@ -175,6 +176,7 @@ class LoopbackCodeListener implements GoogleCodeListener {
     } on TimeoutException {
       throw const GoogleOAuthException(
         'Google sign-in timed out. Please try again.',
+        failure: GoogleOAuthFailure.timedOut,
       );
     }
   }
@@ -207,6 +209,7 @@ class LoopbackCodeListener implements GoogleCodeListener {
       } on TimeoutException {
         throw const GoogleOAuthException(
           'Google sign-in timed out. Please try again.',
+          failure: GoogleOAuthFailure.timedOut,
         );
       }
       if (request == null) {
@@ -223,11 +226,13 @@ class LoopbackCodeListener implements GoogleCodeListener {
         (error is PlatformException && error.code == 'CANCELED')) {
       return const GoogleOAuthException(
         'Google sign-in was cancelled before it finished.',
+        failure: GoogleOAuthFailure.cancelled,
       );
     }
     logger.warning('[GoogleOAuth] Authentication session failed: $error');
     return const GoogleOAuthException(
       'The sign-in browser could not be opened. Please try again.',
+      failure: GoogleOAuthFailure.browserUnavailable,
     );
   }
 
@@ -272,12 +277,15 @@ class LoopbackCodeListener implements GoogleCodeListener {
     if (error == 'access_denied') {
       return const GoogleOAuthException(
         'Google sign-in was cancelled: consent was denied.',
+        failure: GoogleOAuthFailure.consentDenied,
       );
     }
     if (error != null) {
       final description = params['error_description'];
       return GoogleOAuthException(
         'Google sign-in failed: ${description ?? error}',
+        failure: GoogleOAuthFailure.providerError,
+        detail: description ?? error,
       );
     }
     final state = params['state'];
@@ -286,12 +294,14 @@ class LoopbackCodeListener implements GoogleCodeListener {
         state != expectedState) {
       return const GoogleOAuthException(
         'Google sign-in failed: the redirect could not be verified.',
+        failure: GoogleOAuthFailure.redirectUnverified,
       );
     }
     final code = params['code'];
     if (code == null || code.isEmpty) {
       return const GoogleOAuthException(
         'Google sign-in failed: no authorization code was returned.',
+        failure: GoogleOAuthFailure.missingCode,
       );
     }
     return null;

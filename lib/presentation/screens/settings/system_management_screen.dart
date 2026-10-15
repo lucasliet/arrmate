@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../providers/cache_maintenance_provider.dart';
 import '../../providers/settings_provider.dart';
 
@@ -12,63 +13,62 @@ class SystemManagementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('System Management')),
+      appBar: AppBar(title: Text(l10n.systemManagementTitle)),
       body: ListView(
         children: [
-          _SectionHeader(title: 'Server'),
+          _SectionHeader(title: l10n.systemServer),
           ListTile(
             leading: const Icon(Icons.library_books_outlined),
-            title: const Text('Logs'),
-            subtitle: const Text('System event logs'),
+            title: Text(l10n.systemLogs),
+            subtitle: Text(l10n.systemLogsSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/logs'),
           ),
           ListTile(
             leading: const Icon(Icons.health_and_safety_outlined),
-            title: const Text('Health'),
-            subtitle: const Text('Server-reported Radarr and Sonarr alerts'),
+            title: Text(l10n.systemHealth),
+            subtitle: Text(l10n.systemHealthSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/health'),
           ),
           ListTile(
             leading: const Icon(Icons.network_check),
-            title: const Text('Connection Diagnostics'),
-            subtitle: const Text(
-              'Test endpoints, latency, request traces, and export a report',
-            ),
+            title: Text(l10n.diagnosticsTitle),
+            subtitle: Text(l10n.systemDiagnosticsSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/diagnostics'),
           ),
           ListTile(
             leading: const Icon(Icons.storage_outlined),
-            title: const Text('System Overview'),
-            subtitle: const Text('Storage, versions, and library sizes'),
+            title: Text(l10n.systemOverviewTitle),
+            subtitle: Text(l10n.systemOverviewSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/system-overview'),
           ),
           ListTile(
             leading: const Icon(Icons.high_quality_outlined),
-            title: const Text('Quality Profiles'),
-            subtitle: const Text('Available profiles from instances'),
+            title: Text(l10n.qualityProfilesTitle),
+            subtitle: Text(l10n.systemQualityProfilesSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/quality-profiles'),
           ),
           const Divider(),
-          _SectionHeader(title: 'Torrent Protection'),
+          _SectionHeader(title: l10n.systemTorrentProtection),
           ListTile(
             leading: const Icon(Icons.timer_outlined),
-            title: const Text('Minimum seeding days'),
+            title: Text(l10n.systemMinimumSeedingDays),
             subtitle: Text(
               settings.minimumSeedingDays == 0
-                  ? 'Seeding warning disabled'
-                  : 'Warn before deleting torrents that seeded for less than '
-                        '${settings.minimumSeedingDays} '
-                        'day${settings.minimumSeedingDays == 1 ? '' : 's'}.',
+                  ? l10n.systemSeedingWarningDisabled
+                  : l10n.systemSeedingWarningEnabled(
+                      settings.minimumSeedingDays,
+                    ),
             ),
             trailing: Text(
-              '${settings.minimumSeedingDays}d',
+              l10n.systemSeedingDaysShort(settings.minimumSeedingDays),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -81,18 +81,18 @@ class SystemManagementScreen extends ConsumerWidget {
             ),
           ),
           const Divider(),
-          _SectionHeader(title: 'App Maintenance'),
+          _SectionHeader(title: l10n.systemAppMaintenance),
           ListTile(
             leading: const Icon(Icons.history_rounded),
-            title: const Text('Version History'),
-            subtitle: const Text('Changelog for every published release'),
+            title: Text(l10n.versionHistoryTitle),
+            subtitle: Text(l10n.systemVersionHistorySubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/version-history'),
           ),
           ListTile(
             leading: const Icon(Icons.cleaning_services_outlined),
-            title: const Text('Clear image cache'),
-            subtitle: const Text('Free up cached poster and image storage'),
+            title: Text(l10n.systemClearImageCache),
+            subtitle: Text(l10n.systemClearImageCacheSubtitle),
             onTap: () => _clearImageCache(context, ref),
           ),
           ListTile(
@@ -101,12 +101,10 @@ class SystemManagementScreen extends ConsumerWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             title: Text(
-              'Reset app settings',
+              l10n.systemResetSettings,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-            subtitle: const Text(
-              'Restore appearance, view, and notification defaults',
-            ),
+            subtitle: Text(l10n.systemResetSettingsSubtitle),
             onTap: () => _confirmResetSettings(context, ref),
           ),
         ],
@@ -116,11 +114,10 @@ class SystemManagementScreen extends ConsumerWidget {
 
   Future<void> _clearImageCache(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final message = context.l10n.systemImageCacheCleared;
     final cacheService = ref.read(cacheMaintenanceProvider);
     await cacheService.clearImageCache();
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Image cache cleared')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _confirmResetSettings(
@@ -130,15 +127,12 @@ class SystemManagementScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset app settings?'),
-        content: const Text(
-          'This restores appearance, view mode, and notification preferences '
-          'to their defaults. Configured instances are preserved.',
-        ),
+        title: Text(dialogContext.l10n.systemResetConfirmTitle),
+        content: Text(dialogContext.l10n.systemResetConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(dialogContext.l10n.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -146,7 +140,7 @@ class SystemManagementScreen extends ConsumerWidget {
               foregroundColor: Theme.of(dialogContext).colorScheme.onError,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Reset'),
+            child: Text(dialogContext.l10n.commonReset),
           ),
         ],
       ),
@@ -155,9 +149,9 @@ class SystemManagementScreen extends ConsumerWidget {
 
     await ref.read(settingsProvider.notifier).resetSettings();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('App settings reset to defaults')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.systemSettingsReset)));
   }
 
   void _showMinimumSeedingDaysDialog(
@@ -171,7 +165,7 @@ class SystemManagementScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Minimum seeding days'),
+          title: Text(context.l10n.systemMinimumSeedingDays),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,16 +175,16 @@ class SystemManagementScreen extends ConsumerWidget {
                 child: TextFormField(
                   controller: controller,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Days',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.systemDaysLabel,
                     hintText: '0',
-                    border: OutlineInputBorder(),
-                    helperText: '0 disables the warning',
+                    border: const OutlineInputBorder(),
+                    helperText: context.l10n.systemDaysHelper,
                   ),
                   validator: (value) {
                     final parsed = int.tryParse(value ?? '');
                     if (parsed == null || parsed < 0) {
-                      return 'Enter a valid number (0 or more)';
+                      return context.l10n.systemDaysInvalid;
                     }
                     return null;
                   },
@@ -198,8 +192,7 @@ class SystemManagementScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Torrents that seeded for less than this are flagged for '
-                'confirmation before deletion. Set to 0 to disable.',
+                context.l10n.systemMinimumSeedingDaysDescription,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -207,7 +200,7 @@ class SystemManagementScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () {
@@ -218,7 +211,7 @@ class SystemManagementScreen extends ConsumerWidget {
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Save'),
+              child: Text(context.l10n.commonSave),
             ),
           ],
         );

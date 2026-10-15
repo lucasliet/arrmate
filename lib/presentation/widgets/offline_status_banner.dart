@@ -20,7 +20,7 @@ class OfflineStatusBanner extends ConsumerWidget {
         }
         final lastOnline = status.lastOnlineAt;
         final lastOnlineText = lastOnline == null
-            ? 'No previous online connection recorded'
+            ? context.l10n.widgetsNoPreviousOnline
             : context.l10n.formatLastOnline(
                 lastOnline.relativeDateL10n(context.l10n),
               );
@@ -42,7 +42,7 @@ class OfflineStatusBanner extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Offline',
+                          context.l10n.widgetsOffline,
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 color: Theme.of(
@@ -52,8 +52,10 @@ class OfflineStatusBanner extends ConsumerWidget {
                               ),
                         ),
                         Text(
-                          '$lastOnlineText · Cached images may be up to '
-                          '${CustomCacheManager.stalePeriod.inDays} days old',
+                          context.l10n.widgetsOfflineCacheCaveat(
+                            lastOnlineText,
+                            CustomCacheManager.stalePeriod.inDays,
+                          ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(

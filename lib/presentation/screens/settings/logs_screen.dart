@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 import '../../providers/advanced_providers.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/core/services/logger_service.dart';
@@ -53,24 +55,24 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Logs'),
+        title: Text(context.l10n.logsTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'ARR Logs'),
-            Tab(text: 'App Logs'),
+          tabs: [
+            Tab(text: context.l10n.logsTabArr),
+            Tab(text: context.l10n.logsTabApp),
           ],
         ),
         actions: [
           if (_tabController.index == 1) // Only show clear button for App Logs
             IconButton(
               icon: const Icon(Icons.clear_all),
-              tooltip: 'Clear App Logs',
+              tooltip: context.l10n.logsClearAppLogs,
               onPressed: () {
                 logger.clearLogs();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('App logs cleared')),
+                    SnackBar(content: Text(context.l10n.logsAppLogsCleared)),
                   );
                 }
               },
@@ -82,17 +84,18 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
                 _levelFilter = value;
               });
             },
-            itemBuilder: (context) => [
-              'All',
-              'Info',
-              'Warn',
-              'Error',
-              'Debug',
-            ].map((e) => PopupMenuItem(value: e, child: Text(e))).toList(),
+            itemBuilder: (context) => ['All', 'Info', 'Warn', 'Error', 'Debug']
+                .map(
+                  (e) => PopupMenuItem(
+                    value: e,
+                    child: Text(_levelLabel(context.l10n, e)),
+                  ),
+                )
+                .toList(),
           ),
           IconButton(
             icon: const Icon(Icons.copy_all),
-            tooltip: 'Copy all visible logs',
+            tooltip: context.l10n.logsCopyAllVisible,
             onPressed: () => _copyAllLogs(),
           ),
         ],
@@ -115,10 +118,10 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Log source',
-                prefixIcon: Icon(Icons.dns_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.logsSource,
+                prefixIcon: const Icon(Icons.dns_outlined),
+                border: const OutlineInputBorder(),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -161,10 +164,12 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
                 if (instances.isEmpty) {
                   return ListView(
                     controller: _scrollController,
-                    children: const [
-                      SizedBox(height: 160),
+                    children: [
+                      const SizedBox(height: 160),
                       Center(
-                        child: Text('No Radarr or Sonarr instances configured'),
+                        child: Text(
+                          context.l10n.settingsNoRadarrSonarrInstances,
+                        ),
                       ),
                     ],
                   );
@@ -173,9 +178,11 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
                 if (records.isEmpty) {
                   return ListView(
                     controller: _scrollController,
-                    children: const [
-                      SizedBox(height: 160),
-                      Center(child: Text('No logs found matching filter')),
+                    children: [
+                      const SizedBox(height: 160),
+                      Center(
+                        child: Text(context.l10n.logsNoLogsMatchingFilter),
+                      ),
                     ],
                   );
                 }
@@ -206,7 +213,13 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+              error: (err, stack) => Center(
+                child: Text(
+                  context.l10n.commonErrorWithDetails(
+                    describeError(err, context.l10n),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -243,7 +256,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
                   .toList();
 
         if (filteredLogs.isEmpty) {
-          return const Center(child: Text('No app logs found matching filter'));
+          return Center(child: Text(context.l10n.logsNoAppLogsMatchingFilter));
         }
 
         return ListView.builder(
@@ -261,7 +274,11 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => Center(
+        child: Text(
+          context.l10n.commonErrorWithDetails(describeError(err, context.l10n)),
+        ),
+      ),
     );
   }
 
@@ -304,9 +321,9 @@ class _LogsScreenState extends ConsumerState<LogsScreen>
     if (text.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All logs copied to clipboard')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.logsAllCopied)));
       }
     }
   }
@@ -362,7 +379,7 @@ class _LogTile extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('Log copied')));
+            ).showSnackBar(SnackBar(content: Text(context.l10n.logsLogCopied)));
           }
         },
       ),
@@ -371,6 +388,7 @@ class _LogTile extends StatelessWidget {
   }
 
   void _showLogDetail(BuildContext context) {
+    final l10n = context.l10n;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -384,17 +402,17 @@ class _LogTile extends StatelessWidget {
             controller: scrollController,
             children: [
               Text(
-                'Log Detail',
+                l10n.logsDetailTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const Divider(),
-              _buildDetailItem('Time', time.toLocal().toString()),
-              _buildDetailItem('Level', level),
-              _buildDetailItem('Logger', logger),
+              _buildDetailItem(l10n.logsDetailTime, time.toLocal().toString()),
+              _buildDetailItem(l10n.logsDetailLevel, level),
+              _buildDetailItem(l10n.logsDetailLogger, logger),
               const SizedBox(height: 16),
-              const Text(
-                'Message:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                l10n.logsDetailMessage,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Container(
                 width: double.infinity,
@@ -407,9 +425,9 @@ class _LogTile extends StatelessWidget {
               ),
               if (exception != null) ...[
                 const SizedBox(height: 16),
-                const Text(
-                  'Exception/Error:',
-                  style: TextStyle(
+                Text(
+                  l10n.logsDetailException,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.red,
                   ),
@@ -452,6 +470,21 @@ class _LogTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Returns the translated label of a log level filter [value].
+///
+/// The filter values stay in English because they are matched against the
+/// log level names; only the menu text is translated.
+String _levelLabel(AppLocalizations l10n, String value) {
+  return switch (value) {
+    'All' => l10n.labelAll,
+    'Info' => l10n.logsLevelInfo,
+    'Warn' => l10n.logsLevelWarn,
+    'Error' => l10n.labelError,
+    'Debug' => l10n.logsLevelDebug,
+    _ => value,
+  };
 }
 
 /// Renders a log entry the way the clipboard should carry it.

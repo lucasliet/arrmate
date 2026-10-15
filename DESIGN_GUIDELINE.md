@@ -585,6 +585,7 @@ context.showBottomSheet(
 - **Seletor de idioma em Settings:** `AlertDialog` com `ListTile` + `Icons.check` na opção atual, igual aos demais seletores da seção Appearance.
 - **Prompt de primeiro boot:** `Dialog.fullscreen` não-dispensável (`PopScope(canPop: false)`), ícone do app, `RadioListTile` por idioma dentro de um `Card` e `FilledButton` "Continue"; o próprio prompt pré-visualiza o idioma selecionado.
 - Mantenha as traduções com tamanho próximo do inglês em chips, badges e botões.
+- Toda feature nova nasce localizada: nenhum texto fixo no código e nenhum idioma único; as chaves entram juntas em `app_en.arb`, `app_pt_BR.arb`, `app_es.arb` e `app_pt.arb` (veja "Keeping new features localized" no `AGENTS.md`).
 - **Referência:** `lib/presentation/widgets/language_picker_dialog.dart`.
 
 ---

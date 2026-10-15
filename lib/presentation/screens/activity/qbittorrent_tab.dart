@@ -342,12 +342,12 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                 key: const Key('torrentSearchField'),
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search torrents',
+                  hintText: context.l10n.torrentSearchHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.search.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: context.l10n.torrentClearSearch,
                           onPressed: () {
                             _searchController.clear();
                             _updateQuery(_query.copyWith(search: ''));
@@ -369,7 +369,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                     key: const Key('torrentSortButton'),
                     icon: const Icon(Icons.sort),
                     initialValue: _query.sortOption,
-                    tooltip: 'Sort by',
+                    tooltip: context.l10n.commonSortBy,
                     onSelected: (value) =>
                         _updateQuery(_query.copyWith(sortOption: value)),
                     itemBuilder: (context) => TorrentSortOption.values
@@ -388,14 +388,16 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                           ? Icons.arrow_upward
                           : Icons.arrow_downward,
                     ),
-                    tooltip: _query.sortAscending ? 'Ascending' : 'Descending',
+                    tooltip: _query.sortAscending
+                        ? context.l10n.torrentSortAscending
+                        : context.l10n.torrentSortDescending,
                     onPressed: () => _updateQuery(
                       _query.copyWith(sortAscending: !_query.sortAscending),
                     ),
                   ),
                   IconButton(
                     key: const Key('torrentFilterButton'),
-                    tooltip: 'Filter torrents',
+                    tooltip: context.l10n.torrentFilterTooltip,
                     onPressed: () =>
                         _showFilters(showLinkFilters: showsLinkFilters),
                     icon: Badge(
@@ -407,13 +409,18 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                     TextButton(
                       key: const Key('clearTorrentFiltersButton'),
                       onPressed: _clearQuery,
-                      child: const Text('Clear'),
+                      child: Text(context.l10n.commonClear),
                     ),
                   const Spacer(),
                   Text(
                     hiddenCount == 0
-                        ? '${visibleTorrents.length} torrents'
-                        : '${visibleTorrents.length} torrents · $hiddenCount hidden',
+                        ? context.l10n.torrentResultCount(
+                            visibleTorrents.length,
+                          )
+                        : context.l10n.torrentResultCountWithHidden(
+                            visibleTorrents.length,
+                            hiddenCount,
+                          ),
                     key: const Key('torrentResultCount'),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
@@ -425,7 +432,17 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
 
           if (linkIndex.failures.isNotEmpty)
             InstanceLoadFailureBanner(
-              failures: linkIndex.failures,
+              // Every link-index failure carries the same fixed English
+              // message, so it is swapped for its translation here.
+              failures: [
+                for (final failure in linkIndex.failures)
+                  InstanceLoadFailure(
+                    instanceId: failure.instanceId,
+                    instanceType: failure.instanceType,
+                    instanceLabel: failure.instanceLabel,
+                    message: context.l10n.torrentLibraryLinksLoadFailed,
+                  ),
+              ],
               onRetry: () => ref.invalidate(torrentLinkIndexProvider),
             ),
 
@@ -437,11 +454,11 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                 if (torrents.isEmpty) {
                   return EmptyState(
                     icon: Icons.cloud_download_outlined,
-                    title: 'No Torrents',
-                    subtitle: 'Add a new torrent to start downloading',
+                    title: context.l10n.torrentEmptyTitle,
+                    subtitle: context.l10n.torrentEmptySubtitle,
                     action: FilledButton(
                       onPressed: _showAddTorrentSheet,
-                      child: const Text('Add Torrent'),
+                      child: Text(context.l10n.torrentAddTorrent),
                     ),
                   );
                 }
@@ -451,11 +468,11 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text('No torrents match the current filters'),
+                        Text(context.l10n.torrentNoFilterMatches),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: _clearQuery,
-                          child: const Text('Clear filters'),
+                          child: Text(context.l10n.commonClearFilters),
                         ),
                       ],
                     ),
@@ -487,12 +504,12 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               },
               error: (error, stack) => Center(
                 child: ErrorDisplay(
-                  message: 'Failed to load torrents',
+                  message: context.l10n.torrentLoadFailed,
                   onRetry: _refreshAll,
                 ),
               ),
-              loading: () => const Center(
-                child: LoadingIndicator(message: 'Loading torrents...'),
+              loading: () => Center(
+                child: LoadingIndicator(message: context.l10n.torrentLoading),
               ),
             ),
           ),

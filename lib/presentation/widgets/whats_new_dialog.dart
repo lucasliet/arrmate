@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/extensions/context_extensions.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/update_service.dart';
 
@@ -41,12 +42,12 @@ class WhatsNewDialog extends ConsumerWidget {
 
     return AlertDialog(
       icon: const Icon(Icons.new_releases_rounded),
-      title: Text('What\'s New in v${release.version}'),
+      title: Text(context.l10n.whatsNewTitle(release.version)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       content: SizedBox(
         width: double.maxFinite,
         child: release.changelog.isEmpty
-            ? const Text('This release does not include release notes.')
+            ? Text(context.l10n.whatsNewNoNotes)
             : SingleChildScrollView(
                 child: Text(
                   release.changelog,
@@ -57,14 +58,14 @@ class WhatsNewDialog extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Dismiss'),
+          child: Text(context.l10n.commonDismiss),
         ),
         FilledButton(
           onPressed: () {
             Navigator.of(context).pop();
             _openVersionHistory(context);
           },
-          child: const Text('View All Versions'),
+          child: Text(context.l10n.whatsNewViewAllVersions),
         ),
       ],
     );

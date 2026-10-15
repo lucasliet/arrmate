@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/update_service.dart';
+import '../../l10n/labels.dart';
 import '../../widgets/common_widgets.dart';
 
 /// Provider exposing the full release history from GitHub Releases.
@@ -21,16 +23,16 @@ class VersionHistoryScreen extends ConsumerWidget {
     final releasesAsync = ref.watch(appReleaseHistoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Version History')),
+      appBar: AppBar(title: Text(context.l10n.versionHistoryTitle)),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(appReleaseHistoryProvider.future),
         child: releasesAsync.when(
           data: (releases) {
             if (releases.isEmpty) {
-              return const EmptyState(
+              return EmptyState(
                 icon: Icons.history,
-                title: 'No releases available',
-                subtitle: 'Release history could not be loaded.',
+                title: context.l10n.versionHistoryEmptyTitle,
+                subtitle: context.l10n.versionHistoryEmptySubtitle,
               );
             }
             return ListView.separated(
@@ -44,9 +46,11 @@ class VersionHistoryScreen extends ConsumerWidget {
             );
           },
           loading: () =>
-              const LoadingIndicator(message: 'Loading version history...'),
+              LoadingIndicator(message: context.l10n.versionHistoryLoading),
           error: (error, _) => ErrorDisplay(
-            message: 'Failed to load version history: $error',
+            message: context.l10n.versionHistoryLoadFailed(
+              describeError(error, context.l10n),
+            ),
             onRetry: () => ref.invalidate(appReleaseHistoryProvider),
           ),
         ),
@@ -99,7 +103,7 @@ class _ReleaseCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 if (release.isCurrentVersion)
                   Text(
-                    'Installed',
+                    context.l10n.versionHistoryInstalled,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,

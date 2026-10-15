@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../playback_request.dart';
 
 /// Immersive overlay with playback controls rendered above the video surface.
@@ -213,12 +214,17 @@ class _PlayerControlsState extends State<PlayerControls> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const RadioListTile<int>(value: -1, title: Text('Disabled')),
+              RadioListTile<int>(
+                value: -1,
+                title: Text(sheetContext.l10n.playerSubtitlesDisabled),
+              ),
               for (final option in widget.subtitleTracks)
                 RadioListTile<int>(
                   value: option.index,
                   title: Text(option.label),
-                  subtitle: option.isExternal ? const Text('External') : null,
+                  subtitle: option.isExternal
+                      ? Text(sheetContext.l10n.playerSubtitleExternal)
+                      : null,
                 ),
             ],
           ),
@@ -462,21 +468,23 @@ class _PlayerControlsState extends State<PlayerControls> {
           IconButton(
             onPressed: _showAudioSheet,
             icon: const Icon(Icons.audiotrack),
-            tooltip: 'Audio',
+            tooltip: context.l10n.playerAudio,
             color: Colors.white,
           ),
         if (widget.subtitleTracks.isNotEmpty)
           IconButton(
             onPressed: _showSubtitleSheet,
             icon: const Icon(Icons.subtitles_outlined),
-            tooltip: 'Subtitles',
+            tooltip: context.l10n.widgetsFileSubtitles,
             color: Colors.white,
           ),
         if (widget.onToggleQuality != null)
           IconButton(
             onPressed: widget.onToggleQuality,
             icon: const Icon(Icons.high_quality),
-            tooltip: 'Quality: ${widget.qualityLabel}',
+            tooltip: context.l10n.playerQualityTooltip(
+              widget.qualityLabel ?? '',
+            ),
             color: Colors.white,
           ),
         const Spacer(),
@@ -484,7 +492,7 @@ class _PlayerControlsState extends State<PlayerControls> {
           IconButton(
             onPressed: widget.onOpenExternally,
             icon: const Icon(Icons.open_in_new),
-            tooltip: 'Open externally',
+            tooltip: context.l10n.commonOpenExternally,
             color: Colors.white,
           ),
       ],

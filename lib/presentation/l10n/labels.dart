@@ -6,8 +6,11 @@
 library;
 
 export '../../core/l10n/app_locale.dart' show AppLocalizations;
+export 'activity_labels.dart';
 export 'app_labels.dart';
+export 'core_labels.dart';
 export 'error_messages.dart';
 export 'history_queue_labels.dart';
 export 'media_labels.dart';
+export 'shared_labels.dart';
 export 'torrent_status_labels.dart';

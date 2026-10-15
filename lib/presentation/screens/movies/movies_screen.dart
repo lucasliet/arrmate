@@ -81,7 +81,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                 .toList()
               ..sort();
         return SortBottomSheet<MovieSortOption, MovieFilter>(
-          title: 'Sort & Filter',
+          title: context.l10n.moviesSortAndFilter,
           currentSort: currentSort.option,
           isAscending: currentSort.isAscending,
           currentFilter: currentSort.filter,
@@ -112,7 +112,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ROOT FOLDER',
+                        context.l10n.commonRootFolder.toUpperCase(),
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
                               color: Theme.of(context).colorScheme.primary,
@@ -124,7 +124,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         runSpacing: 8,
                         children: [
                           FilterChip(
-                            label: const Text('All folders'),
+                            label: Text(context.l10n.moviesAllFolders),
                             selected: currentSort.rootFolderPath == null,
                             onSelected: (selected) {
                               if (!selected) return;
@@ -227,11 +227,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                                 ? Icons.filter_list_off
                                 : Icons.movie_outlined,
                             title: isFiltered
-                                ? 'No results found'
-                                : 'No movies found',
+                                ? context.l10n.discoveryNoResultsFound
+                                : context.l10n.moviesEmptyTitle,
                             subtitle: isFiltered
-                                ? 'Try clearing or adjusting your search query or filters.'
-                                : 'Add movies to your Radarr library to see them here.',
+                                ? context.l10n.moviesEmptyFilteredSubtitle
+                                : context.l10n.moviesEmptySubtitle,
                           ),
                         );
                       }
@@ -283,8 +283,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ref.read(moviesProvider.notifier).refresh(),
                       ),
                     ),
-                    loading: () => const SliverFillRemaining(
-                      child: LoadingIndicator(message: 'Loading movies...'),
+                    loading: () => SliverFillRemaining(
+                      child: LoadingIndicator(
+                        message: context.l10n.moviesLoading,
+                      ),
                     ),
                   ),
                 ),
@@ -298,7 +300,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   actions: [
                     BatchAction(
                       icon: Icons.bookmark,
-                      label: 'Monitor',
+                      label: context.l10n.commonMonitor,
                       onPressed: () => _runBatchAction(
                         context,
                         (h) => h.setMoviesMonitored(
@@ -312,7 +314,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     ),
                     BatchAction(
                       icon: Icons.bookmark_border,
-                      label: 'Unmonitor',
+                      label: context.l10n.commonUnmonitor,
                       onPressed: () => _runBatchAction(
                         context,
                         (h) => h.setMoviesMonitored(
@@ -326,12 +328,12 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     ),
                     BatchAction(
                       icon: Icons.delete_outline,
-                      label: 'Delete',
+                      label: context.l10n.commonDelete,
                       isDestructive: true,
                       submenu: [
                         BatchAction(
                           icon: Icons.delete_outline,
-                          label: 'Delete',
+                          label: context.l10n.commonDelete,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -344,7 +346,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         ),
                         BatchAction(
                           icon: Icons.delete_sweep,
-                          label: 'Delete files',
+                          label: context.l10n.commonDeleteFiles,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -356,7 +358,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         ),
                         BatchAction(
                           icon: Icons.delete_forever,
-                          label: 'Purge',
+                          label: context.l10n.commonPurge,
                           isDestructive: true,
                           onPressed: () => _runBatchAction(
                             context,
@@ -461,8 +463,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
               : Icons.grid_view,
         ),
         tooltip: settings.viewMode == ViewMode.grid
-            ? 'Switch to List'
-            : 'Switch to Grid',
+            ? context.l10n.moviesSwitchToList
+            : context.l10n.moviesSwitchToGrid,
         onPressed: () {
           final newMode = settings.viewMode == ViewMode.grid
               ? ViewMode.list
@@ -476,7 +478,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         FilledButton.icon(
           onPressed: () => context.push('/discover?type=movie'),
           icon: const Icon(Icons.add),
-          label: const Text('Add movie'),
+          label: Text(context.l10n.moviesAddMovieButton),
         ),
         const SizedBox(width: 24),
       ],
@@ -485,14 +487,14 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       return SliverAppBar(
         toolbarHeight: 88,
         titleSpacing: 32,
-        title: const Text('Movies'),
+        title: Text(context.l10n.commonMovies),
         actions: actions,
       );
     }
     return SliverAppBar.medium(
       pinned: false,
       floating: false,
-      title: const Text('Movies'),
+      title: Text(context.l10n.commonMovies),
       actions: actions,
     );
   }
@@ -507,8 +509,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         child: TextField(
           controller: _searchController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search movies...',
+          decoration: InputDecoration(
+            hintText: context.l10n.moviesSearchHint,
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,
           ),
@@ -538,7 +540,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     final allMovies = moviesAsync.valueOrNull ?? const <Movie>[];
     return SliverAppBar(
       pinned: true,
-      title: Text('${_selectedIds.length} selected'),
+      title: Text(context.l10n.moviesSelectedCount(_selectedIds.length)),
       leading: IconButton(
         icon: const Icon(Icons.close),
         onPressed: _clearSelection,
@@ -546,7 +548,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.select_all),
-          tooltip: 'Select all',
+          tooltip: context.l10n.commonSelectAll,
           onPressed: () => _selectAll(allMovies),
         ),
       ],

@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/notification/app_notification.dart';
+import '../../core/l10n/app_locale.dart';
 import '../../core/services/in_app_notification_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/utils/cross_seed_matcher.dart';
@@ -157,23 +160,31 @@ class PurgeResult extends Equatable {
   /// Formats this result into a multi-line snackbar summary.
   ///
   /// [label] is the first line announcing the operation (e.g.
-  /// `'Movie purged.'`).
-  String formatSummary({required String label}) {
+  /// `'Movie purged.'`). The remaining lines are written in the language of
+  /// [l10n], or in English when it is omitted.
+  String formatSummary({required String label, AppLocalizations? l10n}) {
+    final strings = l10n ?? _englishLocalizations();
     final lines = <String>[label];
-    lines.add('Queue items: $queueItemsRemoved');
-    lines.add('Media files: $mediaFilesDeleted');
+    lines.add(strings.corePurgeSummaryQueueItems(queueItemsRemoved));
+    lines.add(strings.corePurgeSummaryMediaFiles(mediaFilesDeleted));
     if (qbittorrentSkipped) {
-      lines.add('qBittorrent skipped — configure a qBittorrent instance.');
+      lines.add(strings.corePurgeSummaryQbittorrentSkipped);
     } else {
       final crossSeed = crossSeedDuplicatesDeleted.length;
       final torrents = torrentHashesDeleted.length;
       lines.add(
-        'Torrents: $torrents${crossSeed > 0 ? ' (+$crossSeed cross-seed)' : ''}',
+        crossSeed > 0
+            ? strings.corePurgeSummaryTorrentsWithCrossSeed(torrents, crossSeed)
+            : strings.corePurgeSummaryTorrents(torrents),
       );
     }
     return lines.join('\n');
   }
 }
+
+/// English translations, used when no [AppLocalizations] is supplied.
+AppLocalizations _englishLocalizations() =>
+    appLocalizationsFor(const Locale('en'));
 
 /// Orchestrates a full purge of a movie or series across Radarr/Sonarr and
 /// qBittorrent.
@@ -189,16 +200,23 @@ class PurgeService {
   final SeriesRepository? Function() _seriesRepositoryFactory;
   final QBittorrentService? Function() _qbittorrentServiceFactory;
   final InAppNotificationService? Function() _inAppNotificationServiceFactory;
+  final AppLocalizations Function() _localizations;
   final Uuid _uuid;
 
+  /// Creates the service.
+  ///
+  /// [localizations] supplies the translations for the in-app notifications
+  /// the purge emits; English is used when it is omitted.
   PurgeService({
     required MovieRepository? Function() movieRepositoryFactory,
     required SeriesRepository? Function() seriesRepositoryFactory,
     required QBittorrentService? Function() qbittorrentServiceFactory,
     required InAppNotificationService? Function()
     inAppNotificationServiceFactory,
+    AppLocalizations Function()? localizations,
     Uuid? uuid,
-  }) : _movieRepositoryFactory = movieRepositoryFactory,
+  }) : _localizations = localizations ?? _englishLocalizations,
+       _movieRepositoryFactory = movieRepositoryFactory,
        _seriesRepositoryFactory = seriesRepositoryFactory,
        _qbittorrentServiceFactory = qbittorrentServiceFactory,
        _inAppNotificationServiceFactory = inAppNotificationServiceFactory,
@@ -926,8 +944,8 @@ class PurgeService {
     final notification = AppNotification(
       id: _uuid.v4(),
       title: season != null
-          ? 'Purged torrent (season $season)'
-          : 'Purged torrent',
+          ? _localizations().corePurgeNotificationTitleSeason(season)
+          : _localizations().corePurgeNotificationTitle,
       message: t.name,
       type: NotificationType.purged,
       priority: NotificationPriority.medium,

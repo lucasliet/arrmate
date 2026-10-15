@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/google_oauth_availability.dart';
+import '../../core/l10n/app_locale.dart';
 import '../../core/services/backup_file_service.dart';
 import '../../core/services/backup_scheduler.dart';
 import '../../core/services/backup_service.dart';
@@ -12,8 +13,10 @@ import '../../core/services/google_auth.dart';
 import '../../core/services/google_drive_service.dart';
 import '../../core/services/google_oauth_service.dart';
 import '../../core/services/logger_service.dart';
+import '../l10n/error_messages.dart';
 import 'instances_provider.dart';
 import 'settings_provider.dart';
+import '../l10n/core_labels.dart';
 
 /// Exposes the [BackupService] that snapshots and restores preferences.
 final backupServiceProvider = Provider<BackupService>((ref) => BackupService());
@@ -138,15 +141,6 @@ class BackupNotifier extends Notifier<BackupState> {
   /// this device last uploaded or restored.
   static const String syncedRemoteBackupKey = 'last_backup_remote_at';
 
-  static const String _sessionExpiredMessage =
-      'Google session expired. Sign in again.';
-  static const String _signedOutBackupMessage = 'Sign in to Google first.';
-  static const String _backupCompletedMessage = 'Backup completed.';
-  static const String _noBackupMessage =
-      'No backup found in your Google Drive.';
-  static const String _exportCompletedMessage = 'Backup exported to file.';
-  static const String _corruptBackupMessage =
-      'The backup file is corrupted or from an unsupported version.';
   static const Duration _suppressionDuration = Duration(minutes: 2);
 
   Timer? _suppressionTimer;
@@ -273,7 +267,7 @@ class BackupNotifier extends Notifier<BackupState> {
     if (!state.isSignedIn) {
       state = _workingState().copyWith(
         isWorking: false,
-        errorMessage: _signedOutBackupMessage,
+        errorMessage: _l10n.providerBackupSignedOut,
       );
       return;
     }
@@ -290,7 +284,7 @@ class BackupNotifier extends Notifier<BackupState> {
         lastBackupAt: payload.createdAt,
         remoteBackupAt: backup.modifiedTime,
         syncedRemoteAt: backup.modifiedTime,
-        statusMessage: _backupCompletedMessage,
+        statusMessage: _l10n.providerBackupCompleted,
       );
       logger.info('[Backup] Backup uploaded as ${backup.id}');
     } on DriveAuthException {
@@ -302,7 +296,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: 'Backup failed: ${_describe(error)}',
+        errorMessage: _l10n.providerBackupFailed(_describe(error)),
       );
     }
   }
@@ -358,14 +352,17 @@ class BackupNotifier extends Notifier<BackupState> {
     } on DriveBackupNotFoundException {
       logger.warning('[Backup] No backup file exists in Google Drive');
       if (_disposed) return null;
-      state = state.copyWith(isWorking: false, errorMessage: _noBackupMessage);
+      state = state.copyWith(
+        isWorking: false,
+        errorMessage: _l10n.providerBackupNotFound,
+      );
       return null;
     } on BackupFormatException catch (error) {
       logger.warning('[Backup] Backup file rejected: $error');
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: _corruptBackupMessage,
+        errorMessage: _l10n.providerBackupCorrupt,
       );
       return null;
     } on DriveAuthException {
@@ -378,7 +375,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: 'Could not load the backup: ${_describe(error)}',
+        errorMessage: _l10n.providerBackupLoadFailed(_describe(error)),
       );
       return null;
     }
@@ -401,7 +398,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        statusMessage: fileName == null ? null : _exportCompletedMessage,
+        statusMessage: fileName == null ? null : _l10n.providerBackupExported,
       );
       return fileName;
     } catch (error, stackTrace) {
@@ -409,7 +406,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: 'Backup export failed: ${_describe(error)}',
+        errorMessage: _l10n.providerBackupExportFailed(_describe(error)),
       );
       return null;
     }
@@ -440,7 +437,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: _corruptBackupMessage,
+        errorMessage: _l10n.providerBackupCorrupt,
       );
       return null;
     } on FormatException {
@@ -448,7 +445,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: _corruptBackupMessage,
+        errorMessage: _l10n.providerBackupCorrupt,
       );
       return null;
     } catch (error, stackTrace) {
@@ -456,7 +453,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (_disposed) return null;
       state = state.copyWith(
         isWorking: false,
-        errorMessage: 'Could not read the backup file: ${_describe(error)}',
+        errorMessage: _l10n.providerBackupReadFileFailed(_describe(error)),
       );
       return null;
     }
@@ -481,11 +478,15 @@ class BackupNotifier extends Notifier<BackupState> {
           isWorking: false,
           lastBackupAt: payload.createdAt,
           syncedRemoteAt: restoredRemoteAt,
-          statusMessage:
-              'Restored ${summary.restoredKeys} settings and '
-              '${summary.instanceCount} instances.',
+          statusMessage: _l10n.providerBackupRestored(
+            summary.restoredKeys,
+            summary.instanceCount,
+          ),
         );
-        logger.info('[Backup] ${state.statusMessage}');
+        logger.info(
+          '[Backup] Restored ${summary.restoredKeys} settings and '
+          '${summary.instanceCount} instances.',
+        );
       }
       _scheduleSuppressionReEnable();
       return true;
@@ -495,7 +496,7 @@ class BackupNotifier extends Notifier<BackupState> {
       if (!_disposed) {
         state = state.copyWith(
           isWorking: false,
-          errorMessage: 'Restore failed: ${_describe(error)}',
+          errorMessage: _l10n.providerBackupRestoreFailed(_describe(error)),
         );
       }
       return false;
@@ -558,20 +559,24 @@ class BackupNotifier extends Notifier<BackupState> {
       isConfigured: state.isConfigured,
       lastBackupAt: state.lastBackupAt,
       syncedRemoteAt: state.syncedRemoteAt,
-      errorMessage: _sessionExpiredMessage,
+      errorMessage: _l10n.providerBackupSessionExpired,
     );
   }
 
+  /// The translations for the current interface language, used for the
+  /// user-facing [BackupState.errorMessage] and [BackupState.statusMessage].
+  AppLocalizations get _l10n => readAppLocalizations(ref);
+
   /// Picks the user-readable message for a failed sign-in.
   String _signInErrorMessage(Object error) {
-    if (error is GoogleOAuthException) return error.message;
-    return 'Sign-in failed. Check your connection and try again.';
+    if (error is GoogleOAuthException) return error.localizedMessage(_l10n);
+    return _l10n.providerBackupSignInFailed;
   }
 
   /// Trims [error] into a short text safe to embed in an error message.
   String _describe(Object error) {
-    final message = error.toString().trim();
-    return message.isEmpty ? 'unknown error' : message;
+    final message = describeError(error, _l10n).trim();
+    return message.isEmpty ? _l10n.providerBackupUnknownError : message;
   }
 }
 

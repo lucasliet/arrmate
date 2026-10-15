@@ -74,7 +74,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
                             .read(playbackLaunchServiceProvider)
                             .playEpisode(context, ref, episode: episode),
                         icon: const Icon(Icons.play_circle_outline),
-                        label: const Text('Watch'),
+                        label: Text(context.l10n.seriesWatch),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -83,7 +83,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
                   const SizedBox(height: 16),
                   if (episode.overview != null) ...[
                     Text(
-                      'Overview',
+                      context.l10n.seriesOverview,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -121,20 +121,22 @@ class EpisodeDetailsSheet extends ConsumerWidget {
             context,
             Icons.calendar_today,
             dateFormat.format(episode.airDate!),
-            'Air Date',
+            context.l10n.seriesAirDate,
           ),
         if (episode.runtime > 0)
           _buildMetadataItem(
             context,
             Icons.timer_outlined,
-            '${episode.runtime}m',
-            'Runtime',
+            context.l10n.seriesRuntimeMinutes(episode.runtime),
+            context.l10n.labelSortRuntime,
           ),
         _buildMetadataItem(
           context,
           episode.monitored ? Icons.bookmark : Icons.bookmark_border,
-          episode.monitored ? 'Monitored' : 'Unmonitored',
-          'Status',
+          episode.monitored
+              ? context.l10n.commonMonitored
+              : context.l10n.commonUnmonitored,
+          context.l10n.commonStatus,
           color: episode.monitored ? theme.colorScheme.primary : null,
         ),
       ],
@@ -181,7 +183,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'File',
+            context.l10n.seriesFile,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -191,7 +193,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
             data: (fetchedFile) => _buildFileCard(context, ref, fetchedFile),
             loading: () => const LoadingIndicator(),
             error: (e, _) => ErrorDisplay(
-              message: 'Failed to load file info',
+              message: context.l10n.seriesLoadFileInfoFailed,
               onRetry: () =>
                   ref.refresh(episodeFileProvider(episode.episodeFileId!)),
             ),
@@ -204,7 +206,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'File',
+          context.l10n.seriesFile,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -225,7 +227,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 8),
-              Text('No file available'),
+              Text(context.l10n.seriesNoFileAvailable),
             ],
           ),
         ),
@@ -254,7 +256,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'History',
+          context.l10n.seriesHistory,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -263,7 +265,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
         historyAsync.when(
           data: (events) {
             if (events.isEmpty) {
-              return const Center(child: Text('No history events'));
+              return Center(child: Text(context.l10n.seriesNoHistoryEvents));
             }
             return Column(
               children: events
@@ -280,7 +282,7 @@ class EpisodeDetailsSheet extends ConsumerWidget {
           },
           loading: () => const LoadingIndicator(),
           error: (e, st) => ErrorDisplay(
-            message: 'Failed to load history',
+            message: context.l10n.seriesLoadHistoryFailed,
             onRetry: () => ref.refresh(episodeHistoryProvider(episode.id)),
           ),
         ),
@@ -296,21 +298,19 @@ class EpisodeDetailsSheet extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete File'),
-        content: const Text(
-          'Are you sure you want to delete this file? This action cannot be undone.',
-        ),
+        title: Text(context.l10n.seriesDeleteFile),
+        content: Text(context.l10n.seriesDeleteFileConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -324,11 +324,13 @@ class EpisodeDetailsSheet extends ConsumerWidget {
         await controller.deleteFile(fileId);
         if (context.mounted) {
           Navigator.of(context).pop();
-          context.showSnackBar('File deleted');
+          context.showSnackBar(context.l10n.seriesFileDeleted);
         }
       } catch (e) {
         if (context.mounted) {
-          context.showErrorSnackBar('Failed to delete: $e');
+          context.showErrorSnackBar(
+            context.l10n.seriesDeleteFailed(describeError(e, context.l10n)),
+          );
         }
       }
     }

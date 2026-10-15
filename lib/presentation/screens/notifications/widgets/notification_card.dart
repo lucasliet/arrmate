@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/notification/app_notification.dart';
 
 /// A card widget that displays an in-app notification.
@@ -110,7 +111,7 @@ class NotificationCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'NEW',
+                            context.l10n.notificationsNewBadge,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.bold,

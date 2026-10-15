@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/assistant_apple_intelligence_service.dart';
 import '../../../core/services/assistant_model_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../adaptive/content_layout.dart';
+import '../../l10n/error_messages.dart';
 import '../../providers/assistant_provider.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
@@ -62,7 +64,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         final layout = ContentLayout.of(context);
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Assistant'),
+            title: Text(context.l10n.assistantTitle),
             toolbarHeight: layout.hasWideSections ? 88 : null,
             titleSpacing: layout.hasWideSections ? 32 : null,
           ),
@@ -142,24 +144,25 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final showLocalAssistantOptions = runtime == LocalAssistantRuntime.liteRt;
     final showAppleIntelligence =
         runtime == LocalAssistantRuntime.appleIntelligence;
-    final appleIntelligenceReason =
-        state.appleIntelligenceAvailability?.unavailableReason;
+    final l10n = context.l10n;
+    final appleIntelligenceReason = state.appleIntelligenceAvailability
+        ?.localizedUnavailableReason(l10n);
     final title = switch (state.mode) {
-      AssistantModelMode.online => 'Cloud',
+      AssistantModelMode.online => l10n.assistantCloud,
       AssistantModelMode.local =>
-        state.selectedModel?.label ?? 'No local model selected',
+        state.selectedModel?.label ?? l10n.assistantNoLocalModel,
       AssistantModelMode.appleIntelligence => 'Apple Intelligence',
     };
     final subtitle = switch (state.mode) {
-      AssistantModelMode.online => 'Online model',
+      AssistantModelMode.online => l10n.assistantOnlineModel,
       AssistantModelMode.appleIntelligence =>
-        appleIntelligenceReason ?? 'On-device model',
+        appleIntelligenceReason ?? l10n.assistantOnDeviceModel,
       AssistantModelMode.local when hasModel => _formatModelSize(
         state.selectedModel!.sizeBytes,
       ),
       AssistantModelMode.local when showLocalAssistantOptions =>
-        'Use Cloud or import/download a local model',
-      AssistantModelMode.local => 'Use Cloud',
+        l10n.assistantUseCloudOrLocal,
+      AssistantModelMode.local => l10n.assistantUseCloud,
     };
     final icon = switch (state.mode) {
       AssistantModelMode.online => Icons.cloud_outlined,
@@ -197,13 +200,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               },
               itemBuilder: (context) {
                 final items = [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'online',
                     child: Row(
                       children: [
-                        Icon(Icons.cloud_outlined),
-                        SizedBox(width: 12),
-                        Text('Cloud'),
+                        const Icon(Icons.cloud_outlined),
+                        const SizedBox(width: 12),
+                        Text(l10n.assistantCloud),
                       ],
                     ),
                   ),
@@ -241,23 +244,23 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
                 if (showLocalAssistantOptions) {
                   items.addAll([
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'download',
                       child: Row(
                         children: [
-                          Icon(Icons.download),
-                          SizedBox(width: 12),
-                          Text('Download'),
+                          const Icon(Icons.download),
+                          const SizedBox(width: 12),
+                          Text(l10n.releasesDownload),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'import',
                       child: Row(
                         children: [
-                          Icon(Icons.upload_file),
-                          SizedBox(width: 12),
-                          Text('Import'),
+                          const Icon(Icons.upload_file),
+                          const SizedBox(width: 12),
+                          Text(l10n.commonImport),
                         ],
                       ),
                     ),
@@ -265,13 +268,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
                   if (state.installedModels.isNotEmpty) {
                     items.add(
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'switch',
                         child: Row(
                           children: [
-                            Icon(Icons.swap_horiz),
-                            SizedBox(width: 12),
-                            Text('Local Models'),
+                            const Icon(Icons.swap_horiz),
+                            const SizedBox(width: 12),
+                            Text(l10n.assistantLocalModels),
                           ],
                         ),
                       ),
@@ -301,7 +304,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              state.hasModel ? 'Ask about the app' : 'Select a model first',
+              state.hasModel
+                  ? context.l10n.assistantEmptyPrompt
+                  : context.l10n.assistantSelectModelFirst,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
               ),
@@ -379,12 +384,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             child: TextField(
               controller: _controller,
               textInputAction: TextInputAction.send,
-              decoration: const InputDecoration(
-                hintText: 'Ask about Arrmate...',
-                border: OutlineInputBorder(
+              decoration: InputDecoration(
+                hintText: context.l10n.assistantInputHint,
+                border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(24)),
                 ),
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,
                 ),
@@ -422,24 +427,22 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 
   Future<void> _openAssistantLink(BuildContext context, String url) async {
+    final l10n = context.l10n;
+    String? failure;
     try {
       final uri = Uri.parse(url);
       if (uri.scheme != 'https') {
-        throw const FormatException('Only HTTPS links are supported');
-      }
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        throw StateError('Unable to open link');
+        failure = l10n.assistantOnlyHttpsLinks;
+      } else if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        failure = l10n.assistantLinkNotOpened;
       }
     } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+      failure = describeError(error, l10n);
     }
+    if (failure == null || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.assistantOpenLinkFailed(failure))),
+    );
   }
 
   void _showDownloadDialog(BuildContext context) {
@@ -482,7 +485,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Download Model', style: theme.textTheme.titleLarge),
+              child: Text(
+                context.l10n.assistantDownloadModel,
+                style: theme.textTheme.titleLarge,
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -503,7 +509,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                       subtitle: Text(m.description),
                       trailing: isInstalled
                           ? Text(
-                              'Installed',
+                              context.l10n.assistantInstalled,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.primary,
                               ),
@@ -557,7 +563,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Switch Model', style: theme.textTheme.titleLarge),
+              child: Text(
+                context.l10n.assistantSwitchModel,
+                style: theme.textTheme.titleLarge,
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -616,19 +625,19 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Model'),
-        content: Text('Remove "${model.label}" from your device?'),
+        title: Text(context.l10n.assistantDeleteModelTitle),
+        content: Text(context.l10n.assistantDeleteModelContent(model.label)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
               notifier.deleteModel(model.id);
             },
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -665,7 +674,7 @@ class _DownloadProgressDialogState
       canPop: state.error != null,
       child: AlertDialog(
         title: Text(
-          'Downloading Model',
+          context.l10n.assistantDownloadingModel,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -686,7 +695,7 @@ class _DownloadProgressDialogState
               child: Text(
                 state.downloadProgress > 0
                     ? '${state.downloadProgress.toStringAsFixed(1)}%'
-                    : 'Starting download...',
+                    : context.l10n.assistantStartingDownload,
                 style: theme.textTheme.bodyMedium,
               ),
             ),
@@ -700,7 +709,7 @@ class _DownloadProgressDialogState
           if (state.error != null)
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(context.l10n.commonOk),
             )
           else
             TextButton(
@@ -708,7 +717,7 @@ class _DownloadProgressDialogState
                 notifier.cancelDownload();
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: Text(context.l10n.commonCancel),
             ),
         ],
       ),

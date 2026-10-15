@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/extensions/context_extensions.dart';
+
 /// A bottom action bar shown when items are selected in a list/grid.
 ///
 /// Displays the selection count and a row of [BatchAction] buttons. Typically
@@ -30,7 +32,7 @@ class BatchActionBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
-                '$selectedCount selected',
+                context.l10n.sharedSelectedCount(selectedCount),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

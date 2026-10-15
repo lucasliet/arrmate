@@ -1,4 +1,8 @@
+import 'dart:ui';
+
 import 'package:apple_foundation_models/apple_foundation_models.dart';
+
+import '../l10n/app_locale.dart';
 
 import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
@@ -22,32 +26,74 @@ class AssistantAppleIntelligenceTurn {
 
 /// Failure answering with Apple Intelligence, carrying a user-facing message.
 class AssistantAppleIntelligenceException implements Exception {
-  /// Creates an exception with a user-facing [message].
-  const AssistantAppleIntelligenceException(this.message);
+  /// Creates an exception with a user-facing [message], optionally tagged
+  /// with the model [error] it was derived from.
+  const AssistantAppleIntelligenceException(this.message, {this.error});
 
-  /// Explanation shown to the user.
+  /// Explanation shown to the user, in English.
   final String message;
+
+  /// The model failure behind this exception, when known; used to translate
+  /// [message] (see [localizedMessage]).
+  final AppleFoundationModelsError? error;
+
+  /// Returns [message] in the language of [l10n].
+  ///
+  /// Falls back to the English [message] when no [error] was recorded.
+  String localizedMessage(AppLocalizations l10n) {
+    final error = this.error;
+    return error == null ? message : _errorMessage(error, l10n);
+  }
 
   @override
   String toString() => message;
 }
 
+/// English translations, backing the English-only getters kept for logs and
+/// tests.
+final AppLocalizations _english = appLocalizationsFor(const Locale('en'));
+
 /// User-facing descriptions of [AppleFoundationModelsAvailability] values.
 extension AppleIntelligenceAvailabilityReason
     on AppleFoundationModelsAvailability {
-  /// Why Apple Intelligence cannot be used, or `null` when it is available.
-  String? get unavailableReason => switch (this) {
+  /// Why Apple Intelligence cannot be used, in English, or `null` when it is
+  /// available.
+  String? get unavailableReason => localizedUnavailableReason(_english);
+
+  /// Why Apple Intelligence cannot be used, in the language of [l10n], or
+  /// `null` when it is available.
+  String? localizedUnavailableReason(AppLocalizations l10n) => switch (this) {
     AppleFoundationModelsAvailability.available => null,
     AppleFoundationModelsAvailability.deviceNotEligible =>
-      'This device does not support Apple Intelligence.',
+      l10n.appleIntelligenceDeviceNotEligible,
     AppleFoundationModelsAvailability.appleIntelligenceNotEnabled =>
-      'Turn on Apple Intelligence in the system settings.',
+      l10n.appleIntelligenceNotEnabled,
     AppleFoundationModelsAvailability.modelNotReady =>
-      'The Apple Intelligence model is still downloading. Try again later.',
+      l10n.appleIntelligenceModelNotReady,
     AppleFoundationModelsAvailability.unsupportedOsVersion =>
-      'Apple Intelligence requires iOS 26 or macOS 26.',
+      l10n.appleIntelligenceUnsupportedOs,
     AppleFoundationModelsAvailability.unavailable =>
-      'Apple Intelligence is unavailable on this device.',
+      l10n.appleIntelligenceUnavailable,
+  };
+}
+
+/// Describes a model [error] in the language of [l10n].
+String _errorMessage(AppleFoundationModelsError error, AppLocalizations l10n) {
+  return switch (error) {
+    AppleFoundationModelsError.contextWindowExceeded =>
+      l10n.appleIntelligenceContextTooLong,
+    AppleFoundationModelsError.guardrailViolation ||
+    AppleFoundationModelsError.refusal => l10n.appleIntelligenceDeclined,
+    AppleFoundationModelsError.unsupportedLanguage =>
+      l10n.appleIntelligenceUnsupportedLanguage,
+    AppleFoundationModelsError.assetsUnavailable =>
+      l10n.appleIntelligenceAssetsUnavailable,
+    AppleFoundationModelsError.rateLimited ||
+    AppleFoundationModelsError.busy => l10n.appleIntelligenceBusy,
+    AppleFoundationModelsError.unavailable => l10n.appleIntelligenceUnavailable,
+    AppleFoundationModelsError.invalidArguments ||
+    AppleFoundationModelsError.generationFailed =>
+      l10n.appleIntelligenceGenerationFailed,
   };
 }
 
@@ -140,7 +186,10 @@ class AssistantAppleIntelligenceService {
           e,
           st,
         );
-        throw AssistantAppleIntelligenceException(_messageFor(e.error));
+        throw AssistantAppleIntelligenceException(
+          _errorMessage(e.error, _english),
+          error: e.error,
+        );
       }
     }
 
@@ -191,27 +240,5 @@ class AssistantAppleIntelligenceService {
     return content.length > _maxTurnCharacters
         ? '${content.substring(0, _maxTurnCharacters)}…'
         : content;
-  }
-
-  String _messageFor(AppleFoundationModelsError error) {
-    return switch (error) {
-      AppleFoundationModelsError.contextWindowExceeded =>
-        'The question is too long for Apple Intelligence. Try a shorter one.',
-      AppleFoundationModelsError.guardrailViolation ||
-      AppleFoundationModelsError.refusal =>
-        'Apple Intelligence declined to answer. Try rephrasing the question.',
-      AppleFoundationModelsError.unsupportedLanguage =>
-        'Apple Intelligence does not support this language on this device.',
-      AppleFoundationModelsError.assetsUnavailable =>
-        'The Apple Intelligence model is not ready yet. Try again later.',
-      AppleFoundationModelsError.rateLimited ||
-      AppleFoundationModelsError.busy =>
-        'Apple Intelligence is busy. Try again in a moment.',
-      AppleFoundationModelsError.unavailable =>
-        'Apple Intelligence is unavailable on this device.',
-      AppleFoundationModelsError.invalidArguments ||
-      AppleFoundationModelsError.generationFailed =>
-        'Apple Intelligence failed to generate a response.',
-    };
   }
 }

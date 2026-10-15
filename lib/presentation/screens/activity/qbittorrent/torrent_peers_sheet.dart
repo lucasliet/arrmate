@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
 import '../../../widgets/common_widgets.dart';
 import '../providers/torrent_file_providers.dart';
@@ -33,11 +34,10 @@ class TorrentPeersSheet extends ConsumerWidget {
                 child: peersAsync.when(
                   data: (peers) {
                     if (peers.isEmpty) {
-                      return const EmptyState(
+                      return EmptyState(
                         icon: Icons.people_outline,
-                        title: 'No peers connected',
-                        subtitle:
-                            'Peers will appear when the torrent is active',
+                        title: context.l10n.torrentNoPeers,
+                        subtitle: context.l10n.torrentNoPeersSubtitle,
                       );
                     }
                     final sorted = List<TorrentPeer>.from(peers)
@@ -55,10 +55,11 @@ class TorrentPeersSheet extends ConsumerWidget {
                           TorrentPeerItem(peer: sorted[index]),
                     );
                   },
-                  loading: () =>
-                      const LoadingIndicator(message: 'Loading peers...'),
+                  loading: () => LoadingIndicator(
+                    message: context.l10n.torrentLoadingPeers,
+                  ),
                   error: (error, stack) => ErrorDisplay(
-                    message: 'Failed to load peers',
+                    message: context.l10n.torrentLoadPeersFailed,
                     onRetry: () =>
                         ref.invalidate(torrentPeersProvider(torrent.hash)),
                   ),
@@ -100,7 +101,7 @@ class TorrentPeersSheet extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Peers',
+                      context.l10n.torrentPeers,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
