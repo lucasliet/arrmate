@@ -223,7 +223,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     if (instance.apiKey.contains(':')) {
       return context.l10n.instanceAuthUsernamePassword;
     }
-    return 'API Key';
+    return context.l10n.instanceAuthApiKey;
   }
 
   /// Flags the edited Jellyfin instance when [error] reports that its stored
@@ -600,7 +600,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               key: tourKeys.instanceUrlFieldKey,
               controller: _urlController,
               decoration: InputDecoration(
-                labelText: 'URL',
+                labelText: context.l10n.instanceUrlLabel,
                 hintText: 'http://192.168.1.10:7878',
                 border: const OutlineInputBorder(),
                 helperText: context.l10n.instanceUrlHelper,
@@ -683,7 +683,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               controller: _apiKeyController,
               obscureText: _obscureApiKey,
               decoration: InputDecoration(
-                labelText: 'API Key',
+                labelText: context.l10n.instanceApiKeyLabel,
                 border: const OutlineInputBorder(),
                 helperText: _type == InstanceType.qbittorrent
                     ? context.l10n.instanceQbittorrentApiKeyHelper

@@ -959,12 +959,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Deve ser diferente da URL principal';
 
   @override
+  String get instanceApiKeyLabel => 'API Key';
+
+  @override
   String get instanceApiKeyOrBasicAuthRequired =>
       'Informe uma API Key ou adicione Basic Auth abaixo';
 
   @override
   String get instanceApiKeySessionExpiredValidation =>
       'Adicione Basic Auth abaixo para entrar novamente ou informe uma API Key';
+
+  @override
+  String get instanceAuthApiKey => 'API Key';
 
   @override
   String get instanceAuthCustomHeader => 'Cabeçalho personalizado';
@@ -1114,6 +1120,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get instanceUrlInvalid => 'Deve ser uma URL HTTP ou HTTPS válida';
+
+  @override
+  String get instanceUrlLabel => 'URL';
 
   @override
   String get instanceUsername => 'Usuário';
@@ -5835,12 +5844,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Deve ser diferente da URL principal';
 
   @override
+  String get instanceApiKeyLabel => 'API Key';
+
+  @override
   String get instanceApiKeyOrBasicAuthRequired =>
       'Informe uma API Key ou adicione Basic Auth abaixo';
 
   @override
   String get instanceApiKeySessionExpiredValidation =>
       'Adicione Basic Auth abaixo para entrar novamente ou informe uma API Key';
+
+  @override
+  String get instanceAuthApiKey => 'API Key';
 
   @override
   String get instanceAuthCustomHeader => 'Cabeçalho personalizado';
@@ -5990,6 +6005,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get instanceUrlInvalid => 'Deve ser uma URL HTTP ou HTTPS válida';
+
+  @override
+  String get instanceUrlLabel => 'URL';
 
   @override
   String get instanceUsername => 'Usuário';

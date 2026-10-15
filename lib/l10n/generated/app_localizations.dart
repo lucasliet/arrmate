@@ -1661,6 +1661,12 @@ abstract class AppLocalizations {
   /// **'Must differ from the primary URL'**
   String get instanceAlternativeUrlSameAsPrimary;
 
+  /// No description provided for @instanceApiKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get instanceApiKeyLabel;
+
   /// No description provided for @instanceApiKeyOrBasicAuthRequired.
   ///
   /// In en, this message translates to:
@@ -1672,6 +1678,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Basic Auth below to sign in again, or enter an API key'**
   String get instanceApiKeySessionExpiredValidation;
+
+  /// No description provided for @instanceAuthApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get instanceAuthApiKey;
 
   /// No description provided for @instanceAuthCustomHeader.
   ///
@@ -1918,6 +1930,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Must be a valid HTTP or HTTPS URL'**
   String get instanceUrlInvalid;
+
+  /// No description provided for @instanceUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get instanceUrlLabel;
 
   /// No description provided for @instanceUsername.
   ///

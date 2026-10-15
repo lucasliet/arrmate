@@ -611,8 +611,10 @@
   "instanceAlternativeUrl": "Alternative URL",
   "instanceAlternativeUrlHelper": "Optional URL used outside your local network",
   "instanceAlternativeUrlSameAsPrimary": "Must differ from the primary URL",
+  "instanceApiKeyLabel": "API Key",
   "instanceApiKeyOrBasicAuthRequired": "Provide an API key or add Basic Auth below",
   "instanceApiKeySessionExpiredValidation": "Add Basic Auth below to sign in again, or enter an API key",
+  "instanceAuthApiKey": "API Key",
   "instanceAuthCustomHeader": "Custom Header",
   "instanceAuthUsernamePassword": "Username & Password",
   "instanceBasicAuthBase64Note": "Credentials will be encoded to Base64.",
@@ -712,6 +714,7 @@
   },
   "instanceUrlHelper": "Include http:// or https:// and port",
   "instanceUrlInvalid": "Must be a valid HTTP or HTTPS URL",
+  "instanceUrlLabel": "URL",
   "instanceUsername": "Username",
   "instanceValidationFailed": "Validation failed: {error}",
   "@instanceValidationFailed": {

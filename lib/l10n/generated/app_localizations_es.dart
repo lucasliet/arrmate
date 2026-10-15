@@ -962,12 +962,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Debe ser distinta de la URL principal';
 
   @override
+  String get instanceApiKeyLabel => 'API Key';
+
+  @override
   String get instanceApiKeyOrBasicAuthRequired =>
       'Introduce una API Key o añade Basic Auth abajo';
 
   @override
   String get instanceApiKeySessionExpiredValidation =>
       'Añade Basic Auth abajo para volver a iniciar sesión o introduce una API Key';
+
+  @override
+  String get instanceAuthApiKey => 'API Key';
 
   @override
   String get instanceAuthCustomHeader => 'Encabezado personalizado';
@@ -1117,6 +1123,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get instanceUrlInvalid => 'Debe ser una URL HTTP o HTTPS válida';
+
+  @override
+  String get instanceUrlLabel => 'URL';
 
   @override
   String get instanceUsername => 'Usuario';
