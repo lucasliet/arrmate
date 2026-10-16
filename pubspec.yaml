@@ -19,6 +19,8 @@ dependencies:
   equatable: ^2.0.7
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_litert_lm: ^0.3.0
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^10.0.0
@@ -68,6 +70,7 @@ dependency_overrides:
     path: packages/flutter_litert_lm
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/images/

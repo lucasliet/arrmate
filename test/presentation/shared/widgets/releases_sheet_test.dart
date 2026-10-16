@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,9 @@ void main() {
           movieReleasesProvider(1).overrideWith((ref) async => [release]),
         ],
         child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
           ),
@@ -70,6 +74,9 @@ void main() {
           ).overrideWith((ref) async => [matching, hidden]),
         ],
         child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
           ),
@@ -105,6 +112,9 @@ void main() {
           movieReleasesProvider(1).overrideWith((ref) async => [release]),
         ],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: Builder(
               builder: (context) => FilledButton(
@@ -158,6 +168,9 @@ void main() {
             movieReleasesProvider(1).overrideWith((ref) async => [release]),
           ],
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
             ),
@@ -198,6 +211,9 @@ void main() {
             ).overrideWith((ref) async => [matching, persistedMatch]),
           ],
           child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(
               body: ReleasesSheet(
                 id: 1,
@@ -359,6 +375,9 @@ Widget _sheetUnderTest({
       releaseActionsProvider.overrideWith(() => _PendingReleaseActions(grab)),
     ],
     child: const MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
       home: Scaffold(
         body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
       ),

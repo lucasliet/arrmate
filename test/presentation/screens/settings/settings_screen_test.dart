@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class _MockInstanceRepository extends Mock implements InstanceRepository {}
 
@@ -151,7 +152,12 @@ Future<void> _pumpSettings(
         platformCapabilitiesProvider.overrideWithValue(capabilities),
         ...overrides,
       ],
-      child: const MaterialApp(home: SettingsScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: SettingsScreen(),
+      ),
     ),
   );
   await tester.pump();

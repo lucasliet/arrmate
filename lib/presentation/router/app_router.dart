@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/extensions/context_extensions.dart';
 
 import '../../domain/models/models.dart';
 import '../screens/assistant/assistant_screen.dart';
@@ -51,11 +52,11 @@ void initializeRouter(String initialLocation) {
             return MediaPlayerScreen(request: request);
           }
           return Scaffold(
-            appBar: AppBar(title: const Text('Player')),
-            body: const Center(
+            appBar: AppBar(title: Text(context.l10n.playerTitle)),
+            body: Center(
               child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No media was requested for playback.'),
+                padding: const EdgeInsets.all(16),
+                child: Text(context.l10n.playerNoMediaRequested),
               ),
             ),
           );

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'mock_image_http.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   setUpAll(() {
@@ -81,6 +82,9 @@ void main() {
                   currentRadarrInstanceProvider.overrideWithValue(null),
                 ],
                 child: MaterialApp(
+                  localizationsDelegates: testLocalizationsDelegates,
+                  supportedLocales: testSupportedLocales,
+                  locale: testLocale,
                   home: Scaffold(
                     body: SizedBox(
                       width: 100,
@@ -115,6 +119,9 @@ void main() {
                 currentRadarrInstanceProvider.overrideWithValue(null),
               ],
               child: MaterialApp(
+                localizationsDelegates: testLocalizationsDelegates,
+                supportedLocales: testSupportedLocales,
+                locale: testLocale,
                 home: Scaffold(
                   body: SizedBox(
                     width: 100,
@@ -148,6 +155,9 @@ void main() {
                   currentRadarrInstanceProvider.overrideWithValue(null),
                 ],
                 child: MaterialApp(
+                  localizationsDelegates: testLocalizationsDelegates,
+                  supportedLocales: testSupportedLocales,
+                  locale: testLocale,
                   home: Scaffold(
                     body: SizedBox(
                       width: 100,
@@ -190,6 +200,9 @@ void main() {
                   currentRadarrInstanceProvider.overrideWithValue(testInstance),
                 ],
                 child: MaterialApp(
+                  localizationsDelegates: testLocalizationsDelegates,
+                  supportedLocales: testSupportedLocales,
+                  locale: testLocale,
                   home: Scaffold(
                     body: SizedBox(
                       width: 100,

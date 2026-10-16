@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/models/models.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'providers/season_episodes_provider.dart';
@@ -52,12 +54,15 @@ class _EpisodeRouteScreenState extends ConsumerState<EpisodeRouteScreen> {
             );
         return SeasonDetailsScreen(series: series, season: season);
       },
-      loading: () =>
-          const Scaffold(body: LoadingIndicator(message: 'Loading episode...')),
+      loading: () => Scaffold(
+        body: LoadingIndicator(message: context.l10n.seriesEpisodeLoading),
+      ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Episode')),
+        appBar: AppBar(title: Text(context.l10n.labelEpisode)),
         body: ErrorDisplay(
-          message: 'Failed to load the episode: $error',
+          message: context.l10n.seriesEpisodeLoadFailed(
+            describeError(error, context.l10n),
+          ),
           onRetry: () => ref.invalidate(seriesDetailsProvider(widget.seriesId)),
         ),
       ),

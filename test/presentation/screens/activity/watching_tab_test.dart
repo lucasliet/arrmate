@@ -15,6 +15,7 @@ import 'package:arrmate/presentation/screens/activity/providers/watching_provide
 import 'package:arrmate/presentation/screens/activity/widgets/watching_list_item.dart';
 import 'package:arrmate/presentation/screens/player/playback_request.dart';
 import 'package:arrmate/presentation/screens/player/playback_stop_gate.dart';
+import '../../../helpers/localized_app.dart';
 
 class _EmptyQueueNotifier extends QueueNotifier {
   @override
@@ -218,7 +219,12 @@ void main() {
               () => _StubWatchingNotifier([movieWatchingItem]),
             ),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -242,7 +248,12 @@ void main() {
               () => _StubWatchingNotifier(const []),
             ),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -271,7 +282,12 @@ void main() {
                 ]),
               ),
             ],
-            child: const MaterialApp(home: ActivityScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              home: ActivityScreen(),
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -314,7 +330,12 @@ void main() {
                 ),
               ),
             ],
-            child: const MaterialApp(home: ActivityScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              home: ActivityScreen(),
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -358,7 +379,12 @@ void main() {
                   _StubWatchingNotifier(const [], nextUp: [nextUpWatchingItem]),
             ),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -395,7 +421,12 @@ void main() {
             ),
             playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -433,7 +464,12 @@ void main() {
             ),
             playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
           ],
-          child: const MaterialApp(home: ActivityScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: ActivityScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -489,7 +525,12 @@ void main() {
               ),
               instancesProvider.overrideWith(() => _StubInstancesNotifier()),
             ],
-            child: MaterialApp.router(routerConfig: router),
+            child: MaterialApp.router(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              routerConfig: router,
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -666,7 +707,12 @@ void main() {
               () => _StubInstancesNotifier(failSelection: true),
             ),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            routerConfig: router,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -749,7 +795,12 @@ Future<_ShellHarness> _pumpActivityShell(
         ),
         playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

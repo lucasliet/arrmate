@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/platform/platform_capabilities.dart';
 import '../../../../core/services/logger_service.dart';
 import 'playback_request.dart';
@@ -225,7 +226,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
         stackTrace,
       );
       if (mounted) {
-        context.showErrorSnackBar('Could not open an external player');
+        context.showErrorSnackBar(context.l10n.playerExternalOpenFailed);
       }
     }
   }
@@ -328,7 +329,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
         builder: (context, errorMessage, _) {
           if (errorMessage != null) {
             return _PlaybackErrorView(
-              message: errorMessage,
+              message: _localizeError(errorMessage, context.l10n),
               onRetry: () => unawaited(controller.retry()),
               onBack: () => context.pop(),
             );
@@ -357,7 +358,9 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                 unawaited(_selectSubtitleOption(option)),
             qualityLabel: widget.request.hlsUrl == null
                 ? null
-                : (_useDataSaver ? 'Data saver' : 'Original'),
+                : (_useDataSaver
+                      ? context.l10n.playerQualityDataSaver
+                      : context.l10n.playerQualityOriginal),
             onToggleQuality: widget.request.hlsUrl == null
                 ? null
                 : () => unawaited(_toggleQuality()),
@@ -370,6 +373,17 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
       ),
     );
   }
+}
+
+/// Translates the fixed English messages raised by
+/// [PlaybackSessionController]; engine messages are shown as they are.
+String _localizeError(String message, AppLocalizations l10n) {
+  return switch (message) {
+    PlaybackSessionController.startFailedMessage => l10n.playerStartFailed,
+    PlaybackSessionController.unexpectedFailureMessage =>
+      l10n.playerUnexpectedFailure,
+    _ => message,
+  };
 }
 
 /// Fallback shown on platforms without in-app playback support (web).
@@ -400,7 +414,7 @@ class _UnsupportedPlaybackView extends StatelessWidget {
               ),
               const SizedBox(height: paddingMd),
               Text(
-                'In-app playback is not supported on the web yet',
+                context.l10n.playerUnsupportedOnWeb,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
@@ -409,13 +423,12 @@ class _UnsupportedPlaybackView extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onOpenExternally,
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open externally'),
+                  label: Text(context.l10n.commonOpenExternally),
                 ),
               ] else ...[
                 const SizedBox(height: paddingSm),
                 Text(
-                  'Opening this media in an external player is not available '
-                  'for the current server configuration.',
+                  context.l10n.playerExternalUnavailable,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -482,12 +495,15 @@ class _PlaybackErrorView extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  OutlinedButton(onPressed: onBack, child: const Text('Back')),
+                  OutlinedButton(
+                    onPressed: onBack,
+                    child: Text(context.l10n.playerBack),
+                  ),
                   const SizedBox(width: 12),
                   FilledButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(context.l10n.commonRetry),
                   ),
                 ],
               ),

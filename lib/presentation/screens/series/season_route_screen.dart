@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/models/models.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/series_provider.dart';
 import 'season_details_screen.dart';
@@ -33,12 +35,15 @@ class SeasonRouteScreen extends ConsumerWidget {
             );
         return SeasonDetailsScreen(series: series, season: season);
       },
-      loading: () =>
-          const Scaffold(body: LoadingIndicator(message: 'Loading season...')),
+      loading: () => Scaffold(
+        body: LoadingIndicator(message: context.l10n.seriesSeasonLoading),
+      ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Season')),
+        appBar: AppBar(title: Text(context.l10n.seriesSeasonTitle)),
         body: ErrorDisplay(
-          message: 'Failed to load the season: $error',
+          message: context.l10n.seriesSeasonLoadFailed(
+            describeError(error, context.l10n),
+          ),
           onRetry: () => ref.invalidate(seriesDetailsProvider(seriesId)),
         ),
       ),

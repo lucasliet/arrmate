@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/common_widgets.dart';
 import 'providers/watching_provider.dart';
 import 'widgets/watching_list_item.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Activity tab listing Jellyfin items matched to the library: in-progress
 /// media under "Continue Watching" followed by the next episode of each
@@ -25,12 +27,10 @@ class WatchingTab extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               child: SizedBox(
                 height: MediaQuery.sizeOf(context).height - 200,
-                child: const EmptyState(
+                child: EmptyState(
                   icon: Icons.play_circle_outline,
-                  title: 'Nothing in progress',
-                  subtitle:
-                      'Media you pause in Jellyfin and the next episodes of '
-                      'series you follow will appear here.',
+                  title: context.l10n.watchingEmptyTitle,
+                  subtitle: context.l10n.watchingEmptySubtitle,
                 ),
               ),
             ),
@@ -43,12 +43,12 @@ class WatchingTab extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 16),
             children: [
               if (feed.continueWatching.isNotEmpty) ...[
-                const _SectionHeader(title: 'Continue Watching'),
+                _SectionHeader(title: context.l10n.watchingContinueWatching),
                 for (final item in feed.continueWatching)
                   WatchingListItem(item: item),
               ],
               if (feed.nextUp.isNotEmpty) ...[
-                const _SectionHeader(title: 'Next Up'),
+                _SectionHeader(title: context.l10n.watchingNextUp),
                 for (final item in feed.nextUp) WatchingListItem(item: item),
               ],
             ],
@@ -56,11 +56,10 @@ class WatchingTab extends ConsumerWidget {
         );
       },
       error: (error, stack) => ErrorDisplay(
-        message: error.toString(),
+        message: describeError(error, context.l10n),
         onRetry: () => ref.read(watchingItemsProvider.notifier).refresh(),
       ),
-      loading: () =>
-          const LoadingIndicator(message: 'Loading continue watching...'),
+      loading: () => LoadingIndicator(message: context.l10n.watchingLoading),
     );
   }
 }

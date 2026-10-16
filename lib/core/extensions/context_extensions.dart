@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_locale.dart';
+
 /// Convenience extensions for [BuildContext] to access Theme, MediaQuery, and common UI actions.
 extension ContextExtensions on BuildContext {
   /// Returns the [ThemeData] from the current context.
@@ -10,6 +12,9 @@ extension ContextExtensions on BuildContext {
 
   /// Returns the [TextTheme] from the current theme.
   TextTheme get textTheme => theme.textTheme;
+
+  /// Returns the [AppLocalizations] for the current locale.
+  AppLocalizations get l10n => AppLocalizations.of(this);
 
   /// Returns the [MediaQueryData] from the current context.
   MediaQueryData get mediaQuery => MediaQuery.of(this);

@@ -8,10 +8,10 @@ import '../../core/constants/google_oauth_availability.dart';
 import '../../core/services/backup_file_service.dart';
 import '../../core/services/backup_scheduler.dart';
 import '../../core/services/backup_service.dart';
-import '../../core/services/google_auth.dart';
 import '../../core/services/google_drive_service.dart';
 import '../../core/services/google_oauth_service.dart';
 import '../../core/services/logger_service.dart';
+import '../l10n/provider_messages.dart';
 import 'instances_provider.dart';
 import 'settings_provider.dart';
 
@@ -72,11 +72,28 @@ class BackupState {
   /// Whether a long-running action (sign-in, backup, restore) is running.
   final bool isWorking;
 
-  /// Last user-readable error, cleared when the next action starts.
+  /// Last user-readable error in English, cleared when the next action starts.
+  ///
+  /// The screen shows [errorKind] translated through
+  /// `BackupStateL10n.localizedErrorMessage`; this text is the fallback for a
+  /// state that carries no kind.
   final String? errorMessage;
 
-  /// Transient hint for the user, such as a completed backup or export.
+  /// What [errorMessage] reports, translated when rendered.
+  final BackupMessageKind? errorKind;
+
+  /// The error or summary [errorKind] was raised for.
+  final Object? errorDetail;
+
+  /// Transient hint for the user in English, such as a completed backup or
+  /// export; translated through [statusKind] like [errorMessage].
   final String? statusMessage;
+
+  /// What [statusMessage] reports, translated when rendered.
+  final BackupMessageKind? statusKind;
+
+  /// The summary [statusKind] was raised for.
+  final Object? statusDetail;
 
   const BackupState({
     this.isConfigured = false,
@@ -87,7 +104,11 @@ class BackupState {
     this.syncedRemoteAt,
     this.isWorking = false,
     this.errorMessage,
+    this.errorKind,
+    this.errorDetail,
     this.statusMessage,
+    this.statusKind,
+    this.statusDetail,
   });
 
   /// Whether Google Drive holds a backup this device has neither uploaded nor
@@ -113,7 +134,11 @@ class BackupState {
     DateTime? syncedRemoteAt,
     bool? isWorking,
     String? errorMessage,
+    BackupMessageKind? errorKind,
+    Object? errorDetail,
     String? statusMessage,
+    BackupMessageKind? statusKind,
+    Object? statusDetail,
   }) {
     return BackupState(
       isConfigured: isConfigured ?? this.isConfigured,
@@ -124,7 +149,30 @@ class BackupState {
       syncedRemoteAt: syncedRemoteAt ?? this.syncedRemoteAt,
       isWorking: isWorking ?? this.isWorking,
       errorMessage: errorMessage ?? this.errorMessage,
+      errorKind: errorKind ?? this.errorKind,
+      errorDetail: errorDetail ?? this.errorDetail,
       statusMessage: statusMessage ?? this.statusMessage,
+      statusKind: statusKind ?? this.statusKind,
+      statusDetail: statusDetail ?? this.statusDetail,
+    );
+  }
+
+  /// Returns a copy reporting [kind] as the error, with [detail] as context.
+  BackupState withError(BackupMessageKind kind, [Object? detail]) {
+    return copyWith(
+      errorMessage: kind.english(detail),
+      errorKind: kind,
+      errorDetail: detail,
+    );
+  }
+
+  /// Returns a copy reporting [kind] as the status hint, with [detail] as
+  /// context.
+  BackupState withStatus(BackupMessageKind kind, [Object? detail]) {
+    return copyWith(
+      statusMessage: kind.english(detail),
+      statusKind: kind,
+      statusDetail: detail,
     );
   }
 }
@@ -138,15 +186,6 @@ class BackupNotifier extends Notifier<BackupState> {
   /// this device last uploaded or restored.
   static const String syncedRemoteBackupKey = 'last_backup_remote_at';
 
-  static const String _sessionExpiredMessage =
-      'Google session expired. Sign in again.';
-  static const String _signedOutBackupMessage = 'Sign in to Google first.';
-  static const String _backupCompletedMessage = 'Backup completed.';
-  static const String _noBackupMessage =
-      'No backup found in your Google Drive.';
-  static const String _exportCompletedMessage = 'Backup exported to file.';
-  static const String _corruptBackupMessage =
-      'The backup file is corrupted or from an unsupported version.';
   static const Duration _suppressionDuration = Duration(minutes: 2);
 
   Timer? _suppressionTimer;
@@ -242,10 +281,9 @@ class BackupNotifier extends Notifier<BackupState> {
       await refreshRemoteBackup();
     } catch (error, stackTrace) {
       logger.error('[Backup] Sign-in failed', error, stackTrace);
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: _signInErrorMessage(error),
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.signInFailed, error);
     }
   }
 
@@ -271,10 +309,9 @@ class BackupNotifier extends Notifier<BackupState> {
   /// Uploads a fresh payload to Google Drive and persists the timestamp.
   Future<void> backupNow() async {
     if (!state.isSignedIn) {
-      state = _workingState().copyWith(
-        isWorking: false,
-        errorMessage: _signedOutBackupMessage,
-      );
+      state = _workingState()
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.signedOut);
       return;
     }
     state = _workingState();
@@ -285,13 +322,14 @@ class BackupNotifier extends Notifier<BackupState> {
           .uploadBackup(payload.toEncodedJson());
       await _recordSync(payload.createdAt, backup.modifiedTime);
       if (_disposed) return;
-      state = state.copyWith(
-        isWorking: false,
-        lastBackupAt: payload.createdAt,
-        remoteBackupAt: backup.modifiedTime,
-        syncedRemoteAt: backup.modifiedTime,
-        statusMessage: _backupCompletedMessage,
-      );
+      state = state
+          .copyWith(
+            isWorking: false,
+            lastBackupAt: payload.createdAt,
+            remoteBackupAt: backup.modifiedTime,
+            syncedRemoteAt: backup.modifiedTime,
+          )
+          .withStatus(BackupMessageKind.completed);
       logger.info('[Backup] Backup uploaded as ${backup.id}');
     } on DriveAuthException {
       logger.warning('[Backup] Session expired during backup');
@@ -300,10 +338,9 @@ class BackupNotifier extends Notifier<BackupState> {
     } catch (error, stackTrace) {
       logger.error('[Backup] Backup failed', error, stackTrace);
       if (_disposed) return;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: 'Backup failed: ${_describe(error)}',
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.failed, error);
     }
   }
 
@@ -358,15 +395,16 @@ class BackupNotifier extends Notifier<BackupState> {
     } on DriveBackupNotFoundException {
       logger.warning('[Backup] No backup file exists in Google Drive');
       if (_disposed) return null;
-      state = state.copyWith(isWorking: false, errorMessage: _noBackupMessage);
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.notFound);
       return null;
     } on BackupFormatException catch (error) {
       logger.warning('[Backup] Backup file rejected: $error');
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: _corruptBackupMessage,
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.corrupt);
       return null;
     } on DriveAuthException {
       logger.warning('[Backup] Session expired while downloading backup');
@@ -376,10 +414,9 @@ class BackupNotifier extends Notifier<BackupState> {
     } catch (error, stackTrace) {
       logger.error('[Backup] Backup preview failed', error, stackTrace);
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: 'Could not load the backup: ${_describe(error)}',
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.loadFailed, error);
       return null;
     }
   }
@@ -399,18 +436,17 @@ class BackupNotifier extends Notifier<BackupState> {
           .read(backupFileServiceProvider)
           .exportBackup(payload.toEncodedJson());
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        statusMessage: fileName == null ? null : _exportCompletedMessage,
-      );
+      state = state.copyWith(isWorking: false);
+      if (fileName != null) {
+        state = state.withStatus(BackupMessageKind.exported);
+      }
       return fileName;
     } catch (error, stackTrace) {
       logger.error('[Backup] Local backup export failed', error, stackTrace);
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: 'Backup export failed: ${_describe(error)}',
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.exportFailed, error);
       return null;
     }
   }
@@ -438,26 +474,23 @@ class BackupNotifier extends Notifier<BackupState> {
     } on BackupFormatException catch (error) {
       logger.warning('[Backup] Local backup file rejected: $error');
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: _corruptBackupMessage,
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.corrupt);
       return null;
     } on FormatException {
       logger.warning('[Backup] Local backup file is not readable text');
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: _corruptBackupMessage,
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.corrupt);
       return null;
     } catch (error, stackTrace) {
       logger.error('[Backup] Local backup import failed', error, stackTrace);
       if (_disposed) return null;
-      state = state.copyWith(
-        isWorking: false,
-        errorMessage: 'Could not read the backup file: ${_describe(error)}',
-      );
+      state = state
+          .copyWith(isWorking: false)
+          .withError(BackupMessageKind.readFileFailed, error);
       return null;
     }
   }
@@ -477,15 +510,17 @@ class BackupNotifier extends Notifier<BackupState> {
       ref.invalidate(instancesProvider);
       ref.invalidate(settingsProvider);
       if (!_disposed) {
-        state = state.copyWith(
-          isWorking: false,
-          lastBackupAt: payload.createdAt,
-          syncedRemoteAt: restoredRemoteAt,
-          statusMessage:
-              'Restored ${summary.restoredKeys} settings and '
-              '${summary.instanceCount} instances.',
+        state = state
+            .copyWith(
+              isWorking: false,
+              lastBackupAt: payload.createdAt,
+              syncedRemoteAt: restoredRemoteAt,
+            )
+            .withStatus(BackupMessageKind.restored, summary);
+        logger.info(
+          '[Backup] Restored ${summary.restoredKeys} settings and '
+          '${summary.instanceCount} instances.',
         );
-        logger.info('[Backup] ${state.statusMessage}');
       }
       _scheduleSuppressionReEnable();
       return true;
@@ -493,10 +528,9 @@ class BackupNotifier extends Notifier<BackupState> {
       logger.error('[Backup] Restore failed', error, stackTrace);
       _clearSuppression();
       if (!_disposed) {
-        state = state.copyWith(
-          isWorking: false,
-          errorMessage: 'Restore failed: ${_describe(error)}',
-        );
+        state = state
+            .copyWith(isWorking: false)
+            .withError(BackupMessageKind.restoreFailed, error);
       }
       return false;
     }
@@ -558,20 +592,7 @@ class BackupNotifier extends Notifier<BackupState> {
       isConfigured: state.isConfigured,
       lastBackupAt: state.lastBackupAt,
       syncedRemoteAt: state.syncedRemoteAt,
-      errorMessage: _sessionExpiredMessage,
-    );
-  }
-
-  /// Picks the user-readable message for a failed sign-in.
-  String _signInErrorMessage(Object error) {
-    if (error is GoogleOAuthException) return error.message;
-    return 'Sign-in failed. Check your connection and try again.';
-  }
-
-  /// Trims [error] into a short text safe to embed in an error message.
-  String _describe(Object error) {
-    final message = error.toString().trim();
-    return message.isEmpty ? 'unknown error' : message;
+    ).withError(BackupMessageKind.sessionExpired);
   }
 }
 

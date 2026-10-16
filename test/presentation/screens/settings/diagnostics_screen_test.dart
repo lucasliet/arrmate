@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 final _instancesStateProvider =
     NotifierProvider<_InstancesStateController, InstancesState>(
@@ -89,7 +90,12 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: DiagnosticsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: DiagnosticsScreen(),
+          ),
         ),
       );
 
@@ -159,7 +165,12 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: DiagnosticsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: DiagnosticsScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -199,7 +210,12 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: DiagnosticsScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: DiagnosticsScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -260,7 +276,12 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: DiagnosticsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: DiagnosticsScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -334,7 +355,12 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: DiagnosticsScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: DiagnosticsScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -369,7 +395,14 @@ void main() {
 
     // When
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: SystemManagementScreen())),
+      const ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: SystemManagementScreen(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(

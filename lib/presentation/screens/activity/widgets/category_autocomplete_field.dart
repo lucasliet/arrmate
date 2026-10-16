@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
+
 /// A text field with autocomplete support for qBittorrent categories.
 ///
 /// Features:
@@ -67,9 +69,9 @@ class _CategoryAutocompleteFieldState extends State<CategoryAutocompleteField> {
         });
         // Show visual feedback to user
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not load categories. Using free text mode.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.torrentCategoriesLoadFailed),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -84,7 +86,7 @@ class _CategoryAutocompleteFieldState extends State<CategoryAutocompleteField> {
         controller: widget.controller,
         focusNode: _focusNode,
         decoration: InputDecoration(
-          labelText: 'Category (Optional)',
+          labelText: context.l10n.torrentCategoryOptional,
           prefixIcon: _isLoading
               ? const Padding(
                   padding: EdgeInsets.all(12.0),
@@ -124,7 +126,7 @@ class _CategoryAutocompleteFieldState extends State<CategoryAutocompleteField> {
               controller: textEditingController,
               focusNode: focusNode,
               decoration: InputDecoration(
-                labelText: 'Category (Optional)',
+                labelText: context.l10n.torrentCategoryOptional,
                 prefixIcon: _isLoading
                     ? const Padding(
                         padding: EdgeInsets.all(12.0),

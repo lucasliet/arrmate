@@ -1,6 +1,8 @@
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/widgets/filter_sections.dart';
 import 'package:flutter/material.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 
 /// Outcome of the torrent filters sheet: the configured query and whether it
 /// should be persisted for future sessions.
@@ -74,8 +76,8 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
         child: Column(
           children: [
             ListTile(
-              title: const Text('Torrent filters'),
-              subtitle: const Text('Combine any number of filters'),
+              title: Text(context.l10n.torrentFiltersTitle),
+              subtitle: Text(context.l10n.torrentFiltersSubtitle),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(context).pop(),
@@ -89,26 +91,28 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ChoiceSection<TorrentStatusFilter>(
-                      title: 'Status',
+                      title: context.l10n.commonStatus,
                       values: TorrentStatusFilter.values,
                       selected: _query.status,
-                      labelBuilder: (value) => value.label,
+                      labelBuilder: (value) =>
+                          value.localizedLabel(context.l10n),
                       onSelected: (value) => setState(
                         () => _query = _query.copyWith(status: value),
                       ),
                     ),
                     if (widget.showLinkFilters)
                       ChoiceSection<TorrentLinkFilter>(
-                        title: 'Library link',
+                        title: context.l10n.torrentFilterLibraryLink,
                         values: TorrentLinkFilter.values,
                         selected: _query.linkFilter,
-                        labelBuilder: (value) => value.label,
+                        labelBuilder: (value) =>
+                            value.localizedLabel(context.l10n),
                         onSelected: (value) => setState(
                           () => _query = _query.copyWith(linkFilter: value),
                         ),
                       ),
                     FilterSection(
-                      title: 'Category',
+                      title: context.l10n.torrentInfoCategory,
                       values: widget.availableCategories,
                       selected: _query.categories,
                       onChanged: (value) => setState(
@@ -116,7 +120,7 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                       ),
                     ),
                     FilterSection(
-                      title: 'Tags',
+                      title: context.l10n.commonTags,
                       values: widget.availableTags,
                       selected: _query.tags,
                       onChanged: (value) =>
@@ -126,9 +130,9 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                     SwitchListTile(
                       key: const Key('rememberTorrentFiltersSwitch'),
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Remember filters'),
-                      subtitle: const Text(
-                        'Keep this configuration for future sessions',
+                      title: Text(context.l10n.torrentRememberFilters),
+                      subtitle: Text(
+                        context.l10n.torrentRememberFiltersSubtitle,
                       ),
                       value: _rememberFilters,
                       onChanged: (value) =>
@@ -145,7 +149,7 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                   TextButton(
                     onPressed: () =>
                         setState(() => _query = _query.clearFilters()),
-                    child: const Text('Clear filters'),
+                    child: Text(context.l10n.commonClearFilters),
                   ),
                   const Spacer(),
                   FilledButton(
@@ -156,7 +160,7 @@ class _TorrentFiltersSheetState extends State<TorrentFiltersSheet> {
                         rememberFilters: _rememberFilters,
                       ),
                     ),
-                    child: const Text('Apply'),
+                    child: Text(context.l10n.commonApply),
                   ),
                 ],
               ),

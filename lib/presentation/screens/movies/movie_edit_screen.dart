@@ -8,6 +8,8 @@ import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_details_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Screen for editing an existing movie's configuration (monitor status, profile, path).
 class MovieEditScreen extends ConsumerStatefulWidget {
@@ -91,18 +93,16 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
         final confirmMove = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Move Files?'),
-            content: Text(
-              'Do you want to move the files to "$_rootFolderPath"?',
-            ),
+            title: Text(context.l10n.moviesMoveFilesTitle),
+            content: Text(context.l10n.moviesMoveFilesConfirm(_rootFolderPath)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('No'),
+                child: Text(context.l10n.commonNo),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes'),
+                child: Text(context.l10n.commonYes),
               ),
             ],
           ),
@@ -126,13 +126,15 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
         context.pop();
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Movie updated')));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.moviesUpdated)));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating movie: $e'),
+            content: Text(
+              context.l10n.moviesUpdateFailed(describeError(e, context.l10n)),
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -160,7 +162,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Movie'),
+        title: Text(context.l10n.moviesEditTitle),
         actions: [
           IconButton(
             icon: _isSaving
@@ -180,7 +182,13 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
               future: _dataFuture,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Text(
+                      context.l10n.commonErrorWithDetails(
+                        describeError(snapshot.error!, context.l10n),
+                      ),
+                    ),
+                  );
                 }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -204,16 +212,16 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SwitchListTile(
-                          title: const Text('Monitored'),
+                          title: Text(context.l10n.commonMonitored),
                           value: _monitored,
                           onChanged: (val) => setState(() => _monitored = val),
                         ),
                         const Divider(),
 
                         DropdownButtonFormField<int>(
-                          decoration: const InputDecoration(
-                            labelText: 'Quality Profile',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonQualityProfile,
+                            border: const OutlineInputBorder(),
                           ),
                           initialValue: _qualityProfileId,
                           items: qualityProfiles
@@ -230,9 +238,9 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                         const SizedBox(height: 16),
 
                         DropdownButtonFormField<MovieStatus>(
-                          decoration: const InputDecoration(
-                            labelText: 'Minimum Availability',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.moviesMinimumAvailability,
+                            border: const OutlineInputBorder(),
                           ),
                           initialValue: _minimumAvailability,
                           items:
@@ -244,7 +252,9 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                                   .map(
                                     (s) => DropdownMenuItem(
                                       value: s,
-                                      child: Text(s.label),
+                                      child: Text(
+                                        s.localizedLabel(context.l10n),
+                                      ),
                                     ),
                                   )
                                   .toList(),
@@ -254,11 +264,10 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                         const SizedBox(height: 16),
 
                         DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Root Folder',
-                            border: OutlineInputBorder(),
-                            helperText:
-                                'Changing this will move files if confirmed',
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonRootFolder,
+                            border: const OutlineInputBorder(),
+                            helperText: context.l10n.moviesRootFolderHelper,
                           ),
                           initialValue: effectiveRootFolder,
                           items: rootFolders
@@ -275,7 +284,7 @@ class _MovieEditScreenState extends ConsumerState<MovieEditScreen> {
                         if (tags.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           Text(
-                            'Tags',
+                            context.l10n.commonTags,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           TagList(

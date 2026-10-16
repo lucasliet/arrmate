@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/context_extensions.dart';
 import '../../screens/activity/widgets/torrent_details_sheet.dart';
 import '../../screens/activity/widgets/torrent_list_item.dart';
 import '../../widgets/common_widgets.dart';
@@ -44,7 +45,7 @@ class MediaTorrentsSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Torrents',
+          context.l10n.sharedTorrents,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -57,7 +58,7 @@ class MediaTorrentsSection extends ConsumerWidget {
               return _buildEmptyState(
                 context,
                 Icons.cloud_download_outlined,
-                'No torrents in the download client',
+                context.l10n.sharedNoTorrentsInClient,
               );
             }
             return Column(
@@ -88,7 +89,7 @@ class MediaTorrentsSection extends ConsumerWidget {
             ),
           ),
           error: (error, stack) => ErrorDisplay(
-            message: 'Failed to load torrents',
+            message: context.l10n.sharedFailedToLoadTorrents,
             onRetry: () => ref.invalidate(provider),
           ),
         ),

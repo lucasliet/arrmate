@@ -9,7 +9,19 @@ import '../../domain/models/movie/movie_sort.dart';
 import '../../domain/models/series/series_sort.dart';
 import '../../core/services/ntfy_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/l10n/app_locale.dart';
 import 'notifications_provider.dart';
+
+/// SharedPreferences key holding the interface language chosen by the user.
+const String appLocalePreferenceKey = 'app_locale';
+
+/// The interface language persisted before the app started.
+///
+/// Overridden in `main.dart` with the value read synchronously from
+/// SharedPreferences so the first frame already uses the right language.
+final initialLanguageProvider = Provider<AppLanguage>(
+  (ref) => AppLanguage.system,
+);
 
 /// Provider for managing application settings (theme, layout, notifications).
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(() {
@@ -59,6 +71,9 @@ class SettingsState {
   /// without a confirmation prompt. Defaults to 20.
   final int minimumSeedingDays;
 
+  /// The interface language; [AppLanguage.system] follows the device.
+  final AppLanguage language;
+
   const SettingsState({
     this.colorScheme = AppColorScheme.blue,
     this.appearance = AppAppearance.system,
@@ -68,6 +83,7 @@ class SettingsState {
     this.seriesSort = const SeriesSort(),
     this.homeTab = AppTab.movies,
     this.minimumSeedingDays = 20,
+    this.language = AppLanguage.system,
   });
 
   SettingsState copyWith({
@@ -79,6 +95,7 @@ class SettingsState {
     SeriesSort? seriesSort,
     AppTab? homeTab,
     int? minimumSeedingDays,
+    AppLanguage? language,
   }) {
     return SettingsState(
       colorScheme: colorScheme ?? this.colorScheme,
@@ -89,6 +106,7 @@ class SettingsState {
       seriesSort: seriesSort ?? this.seriesSort,
       homeTab: homeTab ?? this.homeTab,
       minimumSeedingDays: minimumSeedingDays ?? this.minimumSeedingDays,
+      language: language ?? this.language,
     );
   }
 }
@@ -107,7 +125,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   @override
   SettingsState build() {
     _loadSettings();
-    return const SettingsState();
+    return SettingsState(language: ref.read(initialLanguageProvider));
   }
 
   Future<void> _loadSettings() async {
@@ -121,6 +139,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final movieSortJson = prefs.getString(_movieSortKey);
     final seriesSortJson = prefs.getString(_seriesSortKey);
     final minimumSeedingDays = prefs.getInt(_minimumSeedingDaysKey);
+    final language = AppLanguage.fromStorage(
+      prefs.getString(appLocalePreferenceKey),
+    );
 
     final notifications = _parseNotificationSettings(notificationsJson);
     final movieSort = _parseMovieSort(movieSortJson);
@@ -155,6 +176,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       movieSort: movieSort,
       seriesSort: seriesSort,
       minimumSeedingDays: minimumSeedingDays,
+      language: language,
     );
 
     if (notifications.enabled && notifications.ntfyTopic != null) {
@@ -265,6 +287,14 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setInt(_minimumSeedingDaysKey, clamped);
   }
 
+  /// Sets and persists the interface language.
+  Future<void> setLanguage(AppLanguage language) async {
+    logger.info('[SettingsNotifier] Setting language: ${language.name}');
+    state = state.copyWith(language: language);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(appLocalePreferenceKey, language.storageValue);
+  }
+
   /// Clears every persisted application preference and restores the defaults.
   ///
   /// Only resets app-level settings; configured instances are preserved and
@@ -279,6 +309,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.remove(_movieSortKey);
     await prefs.remove(_seriesSortKey);
     await prefs.remove(_minimumSeedingDaysKey);
+    await prefs.remove(appLocalePreferenceKey);
     state = const SettingsState();
   }
 

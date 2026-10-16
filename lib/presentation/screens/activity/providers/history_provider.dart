@@ -235,6 +235,8 @@ class HistoryNotifier extends AutoDisposeAsyncNotifier<List<HistoryEvent>> {
           instanceId: instance.id,
           instanceType: instance.type,
           instanceLabel: instance.label,
+          // English fallback for logs and tests; the History tab shows the
+          // translated `historyLoadFailed` copy instead.
           message: 'History data could not be loaded.',
         ),
       );

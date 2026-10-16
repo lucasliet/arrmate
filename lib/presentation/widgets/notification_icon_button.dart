@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/extensions/context_extensions.dart';
 import '../providers/notifications_provider.dart';
 
 /// An icon button that displays a notification bell with an unread count badge.
@@ -32,11 +33,15 @@ class NotificationIconButton extends ConsumerWidget {
         ),
         child: const Icon(Icons.notifications_outlined),
       ),
-      tooltip: showTooltip ? 'Notifications' : null,
+      tooltip: showTooltip ? context.l10n.widgetsNotifications : null,
       onPressed: () => context.push('/notifications'),
     );
 
     if (showTooltip) return button;
-    return Semantics(label: 'Notifications', button: true, child: button);
+    return Semantics(
+      label: context.l10n.widgetsNotifications,
+      button: true,
+      child: button,
+    );
   }
 }

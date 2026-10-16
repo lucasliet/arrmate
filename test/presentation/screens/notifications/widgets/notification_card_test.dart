@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arrmate/domain/models/notification/app_notification.dart';
 import 'package:arrmate/presentation/screens/notifications/widgets/notification_card.dart';
+import '../../../../helpers/localized_app.dart';
 
 void main() {
   group('NotificationCard', () {
@@ -32,6 +33,9 @@ void main() {
       VoidCallback? onDismiss,
     }) {
       return MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Scaffold(
           body: NotificationCard(
             notification: notification,

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/domain/models/models.dart';
 
 /// A card widget displaying details of an extra file (subtitle, metadata, etc.).
 class ExtraFileCard extends StatelessWidget {
-  final String relativePath;
+  /// Path of the extra file relative to the media folder, or `null` when
+  /// unknown.
+  final String? relativePath;
   final String? extension;
   final ExtraFileType type;
   final VoidCallback? onTap;
@@ -22,7 +26,7 @@ class ExtraFileCard extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return ExtraFileCard(
-      relativePath: file.relativePath ?? 'Unknown',
+      relativePath: file.relativePath,
       extension: file.extension,
       type: file.type,
       onTap: onTap,
@@ -34,7 +38,7 @@ class ExtraFileCard extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return ExtraFileCard(
-      relativePath: file.relativePath ?? 'Unknown',
+      relativePath: file.relativePath,
       extension: file.extension,
       type: file.type,
       onTap: onTap,
@@ -44,6 +48,7 @@ class ExtraFileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -67,14 +72,14 @@ class ExtraFileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      relativePath,
+                      relativePath ?? l10n.commonUnknown,
                       style: theme.textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _getTypeLabel(),
+                      _getTypeLabel(l10n),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -100,14 +105,14 @@ class ExtraFileCard extends StatelessWidget {
     }
   }
 
-  String _getTypeLabel() {
+  String _getTypeLabel(AppLocalizations l10n) {
     switch (type) {
       case ExtraFileType.subtitle:
-        return 'Subtitle';
+        return l10n.widgetsExtraFileSubtitle;
       case ExtraFileType.metadata:
-        return 'Metadata';
+        return l10n.widgetsExtraFileMetadata;
       case ExtraFileType.other:
-        return 'Other';
+        return l10n.widgetsExtraFileOther;
     }
   }
 }

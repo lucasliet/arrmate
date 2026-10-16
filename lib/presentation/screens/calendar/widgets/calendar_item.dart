@@ -9,6 +9,8 @@ import '../../../providers/instances_provider.dart';
 import '../../../widgets/instance_origin_badge.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import '../providers/calendar_provider.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// A card widget displaying a single calendar event with poster and details.
 class CalendarItem extends ConsumerWidget {
@@ -70,7 +72,7 @@ class CalendarItem extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            event.title,
+                            event.localizedTitle(context.l10n),
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -110,7 +112,7 @@ class CalendarItem extends ConsumerWidget {
                               Icon(event.type.icon, size: 12, color: color),
                               const SizedBox(width: 4),
                               Text(
-                                event.type.label,
+                                event.type.localizedLabel(context.l10n),
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: color,
                                   fontWeight: FontWeight.bold,
@@ -133,7 +135,7 @@ class CalendarItem extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      event.subtitle,
+                      event.localizedSubtitle(context.l10n),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -184,9 +186,15 @@ class CalendarItem extends ConsumerWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open item: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.calendarOpenItemFailed(
+              describeError(error, context.l10n),
+            ),
+          ),
+        ),
+      );
     }
   }
 }

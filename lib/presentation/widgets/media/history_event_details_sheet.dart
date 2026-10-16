@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 
 /// A modal sheet displaying detailed information about a history event.
 class HistoryEventDetailsSheet extends StatelessWidget {
@@ -38,7 +40,7 @@ class HistoryEventDetailsSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Event Details',
+                      context.l10n.widgetsEventDetailsTitle,
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -57,33 +59,41 @@ class HistoryEventDetailsSheet extends StatelessWidget {
                 children: [
                   _buildEventHeader(context),
                   const SizedBox(height: 16),
-                  _buildSection(context, 'General', [
-                    _buildInfoRow(context, 'Event Type', _getEventTypeLabel()),
-                    _buildInfoRow(context, 'Date', formatDate(event.date)),
+                  _buildSection(context, context.l10n.widgetsFileGeneral, [
+                    _buildInfoRow(
+                      context,
+                      context.l10n.widgetsEventType,
+                      _getEventTypeLabel(context.l10n),
+                    ),
+                    _buildInfoRow(
+                      context,
+                      context.l10n.widgetsEventDate,
+                      formatDate(event.date),
+                    ),
                     if (event.sourceTitle != null)
                       _buildInfoRow(
                         context,
-                        'Source Title',
+                        context.l10n.widgetsEventSourceTitle,
                         event.sourceTitle!,
                       ),
                   ]),
                   const SizedBox(height: 16),
-                  _buildSection(context, 'Quality', [
+                  _buildSection(context, context.l10n.commonQuality, [
                     _buildInfoRow(
                       context,
-                      'Quality',
+                      context.l10n.commonQuality,
                       event.quality.quality.name,
                     ),
                     if (event.quality.quality.source != null)
                       _buildInfoRow(
                         context,
-                        'Source',
+                        context.l10n.widgetsFileSource,
                         event.quality.quality.source!,
                       ),
                     if (event.quality.quality.resolution != null)
                       _buildInfoRow(
                         context,
-                        'Resolution',
+                        context.l10n.widgetsFileResolution,
                         '${event.quality.quality.resolution}p',
                       ),
                   ]),
@@ -92,13 +102,13 @@ class HistoryEventDetailsSheet extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSection(
                       context,
-                      'Languages',
+                      context.l10n.releasesLanguages,
                       event.languages!
                           .map(
                             (lang) => _buildInfoRow(
                               context,
-                              'Language',
-                              lang.name ?? 'Unknown',
+                              context.l10n.commonLanguage,
+                              lang.name ?? context.l10n.commonUnknown,
                             ),
                           )
                           .toList(),
@@ -144,7 +154,7 @@ class HistoryEventDetailsSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getEventTypeLabel(),
+                  _getEventTypeLabel(context.l10n),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: color,
                     fontWeight: FontWeight.bold,
@@ -199,7 +209,11 @@ class HistoryEventDetailsSheet extends StatelessWidget {
       return _buildInfoRow(context, entry.key, entry.value?.toString() ?? '');
     }).toList();
 
-    return _buildSection(context, 'Additional Data', dataRows);
+    return _buildSection(
+      context,
+      context.l10n.widgetsEventAdditionalData,
+      dataRows,
+    );
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
@@ -244,7 +258,7 @@ class HistoryEventDetailsSheet extends StatelessWidget {
     }
   }
 
-  String _getEventTypeLabel() {
-    return event.eventType.title;
+  String _getEventTypeLabel(AppLocalizations l10n) {
+    return event.eventType.localizedTitle(l10n);
   }
 }

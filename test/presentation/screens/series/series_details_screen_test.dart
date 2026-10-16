@@ -10,6 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 // Mock models
 final mockInstance = Instance(
@@ -75,7 +76,12 @@ void main() {
             seriesHistoryProvider(1).overrideWith((ref) async => []),
             seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
-          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+          child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: SeriesDetailsScreen(seriesId: 1),
+          ),
         ),
       );
 
@@ -114,7 +120,12 @@ void main() {
             seriesHistoryProvider(1).overrideWith((ref) async => []),
             seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
-          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+          child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: SeriesDetailsScreen(seriesId: 1),
+          ),
         ),
       );
 
@@ -149,7 +160,12 @@ void main() {
             seriesHistoryProvider(1).overrideWith((ref) async => []),
             seriesQualityProfilesProvider.overrideWith((ref) async => []),
           ],
-          child: MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+          child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: SeriesDetailsScreen(seriesId: 1),
+          ),
         ),
       );
 
@@ -185,7 +201,12 @@ void main() {
           seriesHistoryProvider(1).overrideWith((ref) async => []),
           seriesQualityProfilesProvider.overrideWith((ref) async => []),
         ],
-        child: const MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: SeriesDetailsScreen(seriesId: 1),
+        ),
       ),
     );
 
@@ -213,7 +234,12 @@ void main() {
           seriesHistoryProvider(1).overrideWith((ref) async => []),
           seriesQualityProfilesProvider.overrideWith((ref) async => []),
         ],
-        child: const MaterialApp(home: SeriesDetailsScreen(seriesId: 1)),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: SeriesDetailsScreen(seriesId: 1),
+        ),
       ),
     );
     await tester.pump();

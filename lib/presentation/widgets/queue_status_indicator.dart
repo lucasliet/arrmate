@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/extensions/context_extensions.dart';
+import '../../core/l10n/app_locale.dart';
 import '../../domain/models/models.dart';
 import '../providers/instances_provider.dart';
 import '../providers/queue_lookup_provider.dart';
@@ -42,7 +44,7 @@ class QueueStatusIndicator extends ConsumerWidget {
 
     final appearance = _appearanceFor(status);
     return Tooltip(
-      message: _labelFor(status),
+      message: _labelFor(status, context.l10n),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
@@ -89,24 +91,24 @@ class QueueStatusIndicator extends ConsumerWidget {
     }
   }
 
-  static String _labelFor(QueueStatus status) {
+  static String _labelFor(QueueStatus status, AppLocalizations l10n) {
     switch (status) {
       case QueueStatus.failed:
-        return 'Download failed';
+        return l10n.widgetsQueueDownloadFailed;
       case QueueStatus.warning:
-        return 'Download warning';
+        return l10n.widgetsQueueDownloadWarning;
       case QueueStatus.paused:
-        return 'Download paused';
+        return l10n.widgetsQueueDownloadPaused;
       case QueueStatus.delay:
-        return 'Download pending';
+        return l10n.widgetsQueueDownloadPending;
       case QueueStatus.queued:
-        return 'Queued';
+        return l10n.labelQueued;
       case QueueStatus.downloading:
-        return 'Downloading';
+        return l10n.labelDownloading;
       case QueueStatus.completed:
-        return 'Completed';
+        return l10n.labelQueueCompleted;
       case QueueStatus.unknown:
-        return 'Status unknown';
+        return l10n.widgetsQueueStatusUnknown;
     }
   }
 }

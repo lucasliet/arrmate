@@ -6,6 +6,7 @@ import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 /// Stand-in for the real reverse-lookup providers.
 final _stubProvider = FutureProvider.autoDispose<MediaTorrents>(
@@ -122,6 +123,9 @@ Future<void> _pump(
     ProviderScope(
       overrides: [_stubProvider.overrideWith((ref) async => media)],
       child: MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Scaffold(
           body: SingleChildScrollView(
             child: MediaTorrentsSection(

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../utils/assistant_response_filter.dart';
 import 'assistant_knowledge_service.dart';
+import 'assistant_reply_language.dart';
 import 'logger_service.dart';
 
 const _loadSkillTool = LiteLmTool(
@@ -27,6 +28,7 @@ class AssistantChatService {
   LiteLmEngine? _engine;
   LiteLmConversation? _conversation;
   String? _loadedModelPath;
+  String? _loadedLanguageCode;
   AssistantKnowledgeService? _knowledgeService;
 
   /// Sets the knowledge source used by assistant tool calls.
@@ -34,9 +36,23 @@ class AssistantChatService {
     _knowledgeService = service;
   }
 
-  /// Loads the local model at [modelPath] and creates a conversation.
-  Future<void> loadModel(String modelPath) async {
+  /// Loads the local model at [modelPath] and creates a conversation that
+  /// replies in [languageCode].
+  ///
+  /// When the model is already loaded and only the language changed, the
+  /// engine is kept and just the conversation is recreated.
+  Future<void> loadModel(String modelPath, {String languageCode = 'pt'}) async {
     if (_loadedModelPath == modelPath && _engine != null) {
+      if (_loadedLanguageCode == languageCode) return;
+      logger.info(
+        '[AssistantChatService] Recreating conversation for language: '
+        '$languageCode',
+      );
+      final previous = _conversation;
+      _conversation = null;
+      await previous?.dispose();
+      _conversation = await _createConversation(_engine!, languageCode);
+      _loadedLanguageCode = languageCode;
       return;
     }
 
@@ -60,21 +76,8 @@ class AssistantChatService {
       rethrow;
     }
 
-    final systemPrompt = _buildSystemPrompt();
-
     try {
-      _conversation = await _engine!.createConversation(
-        LiteLmConversationConfig(
-          systemInstruction: systemPrompt,
-          tools: [_loadSkillTool],
-          automaticToolCalling: false,
-          samplerConfig: const LiteLmSamplerConfig(
-            temperature: 0.4,
-            topK: 40,
-            topP: 0.95,
-          ),
-        ),
-      );
+      _conversation = await _createConversation(_engine!, languageCode);
       logger.info('[AssistantChatService] Conversation created successfully');
     } catch (e, st) {
       logger.error(
@@ -99,7 +102,26 @@ class AssistantChatService {
     }
 
     _loadedModelPath = modelPath;
+    _loadedLanguageCode = languageCode;
     logger.info('[AssistantChatService] Model loaded: $modelPath');
+  }
+
+  Future<LiteLmConversation> _createConversation(
+    LiteLmEngine engine,
+    String languageCode,
+  ) {
+    return engine.createConversation(
+      LiteLmConversationConfig(
+        systemInstruction: _buildSystemPrompt(languageCode),
+        tools: [_loadSkillTool],
+        automaticToolCalling: false,
+        samplerConfig: const LiteLmSamplerConfig(
+          temperature: 0.4,
+          topK: 40,
+          topP: 0.95,
+        ),
+      ),
+    );
   }
 
   /// Sends [message] to the active conversation and returns its filtered reply.
@@ -134,6 +156,7 @@ class AssistantChatService {
     _conversation = null;
     _engine = null;
     _loadedModelPath = null;
+    _loadedLanguageCode = null;
 
     if (conversation != null) {
       await conversation.dispose();
@@ -187,16 +210,17 @@ class AssistantChatService {
     return knowledgeService.loadSkill(skillName);
   }
 
-  String _buildSystemPrompt() {
+  String _buildSystemPrompt(String languageCode) {
+    final replyInstruction = assistantReplyInstruction(languageCode);
     final knowledgeService = _knowledgeService;
     if (knowledgeService == null) {
-      return 'Você é o assistente do Arrmate. Responda em Português.';
+      return 'Você é o assistente do Arrmate. $replyInstruction';
     }
 
     final skillDescriptions = knowledgeService.getSkillDescriptions();
 
     return 'Você é o assistente virtual do Arrmate, um app mobile para gerenciar '
-        'servidores Radarr, Sonarr e qBittorrent. Responda em Português.\n\n'
+        'servidores Radarr, Sonarr e qBittorrent. $replyInstruction\n\n'
         'REGRAS DE COMPORTAMENTO:\n'
         '- Aja como um assistente integrado ao app. Fale como parte do Arrmate.\n'
         '- NUNCA mencione skills, tool-calling, ferramentas internas, load_skill, '

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/api/jellyfin_service.dart';
 import '../../domain/models/models.dart';
+import '../../presentation/l10n/error_messages.dart';
 import '../../presentation/providers/instances_provider.dart';
 import '../../presentation/providers/jellyfin_session_state_provider.dart';
 import '../../presentation/screens/movies/providers/movie_metadata_provider.dart';
@@ -14,6 +15,7 @@ import '../../presentation/screens/series/providers/episode_providers.dart';
 import '../../presentation/screens/series/providers/series_provider.dart';
 import '../constants/app_constants.dart';
 import '../extensions/context_extensions.dart';
+import '../l10n/app_locale.dart';
 import '../network/api_error.dart';
 import '../utils/formatters.dart';
 import 'jellyfin_playback_reporter.dart';
@@ -129,7 +131,7 @@ class PlaybackLaunchService {
         stackTrace,
       );
       if (context.mounted) {
-        context.showErrorSnackBar('Could not load the movie file');
+        context.showErrorSnackBar(context.l10n.playbackLoadMovieFileFailed);
       }
       return;
     }
@@ -146,7 +148,7 @@ class PlaybackLaunchService {
         '[$_logPrefix] Movie "${movie.title}" has no file path to play',
       );
       if (context.mounted) {
-        context.showErrorSnackBar('No playable file found for this movie');
+        context.showErrorSnackBar(context.l10n.playbackNoMovieFile);
       }
       return;
     }
@@ -191,7 +193,7 @@ class PlaybackLaunchService {
         'play',
       );
       if (context.mounted) {
-        context.showErrorSnackBar('No playable file found for this episode');
+        context.showErrorSnackBar(context.l10n.playbackNoEpisodeFile);
       }
       return;
     }
@@ -203,7 +205,7 @@ class PlaybackLaunchService {
       context,
       ref,
       filePath: filePath,
-      title: _episodeTitle(episode),
+      title: _episodeTitle(episode, context.l10n),
       seriesTvdbId: series?.tvdbId,
       episodeTvdbId: episode.tvdbId,
       seasonNumber: episode.seasonNumber,
@@ -274,8 +276,10 @@ class PlaybackLaunchService {
     String? seriesName,
     required bool isEpisode,
   }) async {
+    // Captured before the first await, while [context] is still mounted.
+    final l10n = context.l10n;
     if (!_ensureJellyfinConfigured(context, ref)) {
-      return const PlaybackLaunchFailure('No Jellyfin server is configured');
+      return PlaybackLaunchFailure(l10n.playbackNoJellyfin);
     }
 
     final instance = ref.read(currentJellyfinInstanceProvider)!;
@@ -288,7 +292,7 @@ class PlaybackLaunchService {
         : filePath;
 
     var dialogDismissed = false;
-    var statusMessage = 'Searching the Jellyfin library…';
+    var statusMessage = l10n.playbackSearchingLibrary;
     void Function(String message)? updateStatus;
 
     unawaited(
@@ -347,7 +351,7 @@ class PlaybackLaunchService {
         );
         closeDialog();
         if (context.mounted) {
-          context.showErrorSnackBar('Could not find this media in Jellyfin');
+          context.showErrorSnackBar(l10n.playbackNotFound);
         }
         return const PlaybackTargetNotFound();
       }
@@ -357,6 +361,7 @@ class PlaybackLaunchService {
         jellyfin,
         session: session,
         title: displayTitle,
+        l10n: l10n,
       );
 
       closeDialog();
@@ -388,7 +393,9 @@ class PlaybackLaunchService {
       );
       closeDialog();
       if (context.mounted) {
-        context.showErrorSnackBar('Could not start playback: $error');
+        context.showErrorSnackBar(
+          l10n.playbackStartFailed(describeError(error, l10n)),
+        );
       }
       return PlaybackLaunchFailure(error.toString());
     }
@@ -404,8 +411,10 @@ class PlaybackLaunchService {
     required JellyfinItem item,
     String? title,
   }) async {
+    // Captured before the first await, while [context] is still mounted.
+    final l10n = context.l10n;
     if (!_ensureJellyfinConfigured(context, ref)) {
-      return const PlaybackLaunchFailure('No Jellyfin server is configured');
+      return PlaybackLaunchFailure(l10n.playbackNoJellyfin);
     }
 
     final instance = ref.read(currentJellyfinInstanceProvider)!;
@@ -422,6 +431,7 @@ class PlaybackLaunchService {
         jellyfin,
         session: session,
         title: displayTitle,
+        l10n: l10n,
       );
       if (context.mounted) {
         final closed = context.push<void>('/player', extra: request);
@@ -442,7 +452,9 @@ class PlaybackLaunchService {
         stackTrace,
       );
       if (context.mounted) {
-        context.showErrorSnackBar('Could not start playback: $error');
+        context.showErrorSnackBar(
+          l10n.playbackStartFailed(describeError(error, l10n)),
+        );
       }
       return PlaybackLaunchFailure(error.toString());
     }
@@ -462,15 +474,14 @@ class PlaybackLaunchService {
     if (context != null && context.mounted) {
       final router = GoRouter.of(context);
       final messenger = ScaffoldMessenger.of(context);
+      final l10n = context.l10n;
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'Your Jellyfin session has expired. Sign in again.',
-          ),
+          content: Text(l10n.playbackSessionExpired),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
-            label: 'Sign in',
+            label: l10n.playbackSignIn,
             onPressed: () => router.push('/settings/instance/${instance.id}'),
           ),
         ),
@@ -487,7 +498,7 @@ class PlaybackLaunchService {
     if (instance != null) return true;
     _warnNoJellyfin();
     if (context.mounted) {
-      context.showErrorSnackBar('No Jellyfin server is configured');
+      context.showErrorSnackBar(context.l10n.playbackNoJellyfin);
     }
     return false;
   }
@@ -501,6 +512,7 @@ class PlaybackLaunchService {
     JellyfinService jellyfin, {
     required JellyfinPlaybackSession session,
     required String title,
+    required AppLocalizations l10n,
   }) {
     return PlaybackRequest(
       title: title,
@@ -509,13 +521,16 @@ class PlaybackLaunchService {
       resumePosition: session.playbackPosition,
       audioTracks: [
         for (final stream in session.audioStreams)
-          AudioTrackOption(index: stream.index, label: _trackLabel(stream)),
+          AudioTrackOption(
+            index: stream.index,
+            label: _trackLabel(stream, l10n),
+          ),
       ],
       subtitleTracks: [
         for (final stream in session.subtitleStreams)
           SubtitleTrackOption(
             index: stream.index,
-            label: _trackLabel(stream),
+            label: _trackLabel(stream, l10n),
             isExternal: stream.isExternal,
             deliveryPath: stream.deliveryUrl,
           ),
@@ -538,14 +553,14 @@ class PlaybackLaunchService {
   }
 
   /// Formats the player title of an episode (`S01E02 · Title`).
-  String _episodeTitle(Episode episode) {
-    return '${formatEpisodeNumber(episode.seasonNumber, episode.episodeNumber, short: true)} · ${episode.title ?? 'TBA'}';
+  String _episodeTitle(Episode episode, AppLocalizations l10n) {
+    return '${formatEpisodeNumber(episode.seasonNumber, episode.episodeNumber, short: true)} · ${episode.title ?? l10n.labelTba}';
   }
 
   /// Builds a readable track label, preferring the server-composed display
   /// title and falling back to language/codec so a track is never shown
   /// without a name.
-  String _trackLabel(JellyfinMediaStream stream) {
+  String _trackLabel(JellyfinMediaStream stream, AppLocalizations l10n) {
     final displayTitle = stream.displayTitle?.trim();
     if (displayTitle != null && displayTitle.isNotEmpty) {
       return displayTitle;
@@ -557,7 +572,7 @@ class PlaybackLaunchService {
       stream.codec?.trim(),
     ].nonNulls.where((part) => part.isNotEmpty).toList();
     if (parts.isNotEmpty) return parts.join(' · ');
-    return 'Track ${stream.index}';
+    return l10n.playbackTrackLabel(stream.index);
   }
 
   void _warnNoJellyfin() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/extensions/context_extensions.dart';
 import '../../domain/models/models.dart';
 import '../providers/instances_provider.dart';
 
@@ -23,7 +24,7 @@ class InstanceSelector extends ConsumerWidget {
 
     return PopupMenuButton<String>(
       initialValue: selectedInstance?.id,
-      tooltip: 'Select ${type.label} instance',
+      tooltip: context.l10n.widgetsSelectInstance(type.label),
       icon: const Icon(Icons.dns_outlined),
       onSelected: (id) async {
         await ref.read(instancesProvider.notifier).selectInstance(type, id);

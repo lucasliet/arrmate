@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/core/services/jellyfin_connect_setup_service.dart';
 import 'package:arrmate/data/api/jellyfin_service.dart';
@@ -120,6 +123,7 @@ void main() {
     jellyfinServiceFactory: jellyfinServiceFactory,
     instancesSource: instancesSource,
     instanceUpdater: instanceUpdater,
+    localizations: () => appLocalizationsFor(const Locale('en')),
   );
 
   /// Stubs [api] so a fresh connector can be created, capturing the payload.

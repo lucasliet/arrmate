@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/logger_service.dart';
 import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../domain/models/models.dart';
@@ -47,6 +48,7 @@ class _NotificationSettingsScreenState
     final settings = ref.watch(settingsProvider);
     final notifications = settings.notifications;
     final ntfyService = ref.watch(ntfyServiceProvider);
+    final l10n = context.l10n;
 
     return PopScope(
       canPop: true,
@@ -56,7 +58,7 @@ class _NotificationSettingsScreenState
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Notification Settings')),
+        appBar: AppBar(title: Text(l10n.settingsNotificationSettings)),
         body: ListView(
           children: [
             // Info card about in-app notifications
@@ -64,19 +66,19 @@ class _NotificationSettingsScreenState
             if (notifications.ntfyTopic == null) ...[
               ListTile(
                 leading: const Icon(Icons.notifications_none),
-                title: const Text('Setup Notifications'),
-                subtitle: const Text('Tap to generate your unique topic'),
+                title: Text(l10n.notificationSettingsSetupTitle),
+                subtitle: Text(l10n.notificationSettingsSetupSubtitle),
                 trailing: const Icon(Icons.add_circle_outline),
                 onTap: () =>
                     ref.read(settingsProvider.notifier).generateNtfyTopic(),
               ),
             ] else ...[
               SwitchListTile(
-                title: const Text('Enable Notifications'),
+                title: Text(l10n.notificationSettingsEnable),
                 subtitle: Text(
                   ntfyService.isConnected
-                      ? 'Connected to ntfy.sh'
-                      : 'Disconnected',
+                      ? l10n.notificationSettingsConnected
+                      : l10n.notificationSettingsDisconnected,
                 ),
                 secondary: Icon(
                   ntfyService.isConnected ? Icons.cloud_done : Icons.cloud_off,
@@ -96,18 +98,18 @@ class _NotificationSettingsScreenState
                 },
               ),
               ListTile(
-                title: const Text('Your Topic'),
+                title: Text(l10n.notificationSettingsYourTopic),
                 subtitle: Text(notifications.ntfyTopic!),
                 trailing: IconButton(
                   icon: const Icon(Icons.copy),
-                  tooltip: 'Copy topic',
+                  tooltip: l10n.notificationSettingsCopyTopic,
                   onPressed: () {
                     Clipboard.setData(
                       ClipboardData(text: notifications.ntfyTopic!),
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Topic copied to clipboard'),
+                      SnackBar(
+                        content: Text(l10n.notificationSettingsTopicCopied),
                       ),
                     );
                   },
@@ -116,89 +118,89 @@ class _NotificationSettingsScreenState
               _buildSetupInstructions(notifications),
               if (notifications.enabled) ...[
                 const Divider(),
-                _buildSectionHeader('Downloads'),
+                _buildSectionHeader(l10n.notificationSettingsDownloads),
                 _buildNotificationToggle(
                   notifications,
-                  'Notify on Grab',
-                  'When a release is sent to download client',
+                  l10n.notificationSettingsGrab,
+                  l10n.notificationSettingsGrabSubtitle,
                   notifications.notifyOnGrab,
                   (v) => notifications.copyWith(notifyOnGrab: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'Notify on Import',
-                  'When a file is successfully imported',
+                  l10n.notificationSettingsImport,
+                  l10n.notificationSettingsImportSubtitle,
                   notifications.notifyOnImport,
                   (v) => notifications.copyWith(notifyOnImport: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'Notify on Failure',
-                  'When a download fails to import',
+                  l10n.notificationSettingsFailure,
+                  l10n.notificationSettingsFailureSubtitle,
                   notifications.notifyOnDownloadFailed,
                   (v) => notifications.copyWith(notifyOnDownloadFailed: v),
                 ),
 
                 const Divider(),
-                _buildSectionHeader('Media Updates'),
+                _buildSectionHeader(l10n.notificationSettingsMediaUpdates),
                 _buildNotificationToggle(
                   notifications,
-                  'Movie/Series Added',
-                  'When a movie or series is added',
+                  l10n.notificationSettingsMediaAdded,
+                  l10n.notificationSettingsMediaAddedSubtitle,
                   notifications.notifyOnMediaAdded,
                   (v) => notifications.copyWith(notifyOnMediaAdded: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'Movie/Series Deleted',
-                  'When a movie or series is deleted',
+                  l10n.notificationSettingsMediaDeleted,
+                  l10n.notificationSettingsMediaDeletedSubtitle,
                   notifications.notifyOnMediaDeleted,
                   (v) => notifications.copyWith(notifyOnMediaDeleted: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'File Deleted',
-                  'When a media file is deleted',
+                  l10n.notificationSettingsFileDeleted,
+                  l10n.notificationSettingsFileDeletedSubtitle,
                   notifications.notifyOnFileDelete,
                   (v) => notifications.copyWith(notifyOnFileDelete: v),
                 ),
 
                 const Divider(),
-                _buildSectionHeader('System'),
+                _buildSectionHeader(l10n.settingsSystem),
                 _buildNotificationToggle(
                   notifications,
-                  '*arr Instance Update',
-                  'When Radarr/Sonarr server is updated',
+                  l10n.notificationSettingsArrUpdate,
+                  l10n.notificationSettingsArrUpdateSubtitle,
                   notifications.notifyOnUpgrade,
                   (v) => notifications.copyWith(notifyOnUpgrade: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'Manual Interaction',
-                  'When manual intervention is required',
+                  l10n.notificationSettingsManualInteraction,
+                  l10n.notificationSettingsManualInteractionSubtitle,
                   notifications.notifyOnManualRequired,
                   (v) => notifications.copyWith(notifyOnManualRequired: v),
                 ),
                 _buildNotificationToggle(
                   notifications,
-                  'Health Issues',
-                  'When system health issues are detected',
+                  l10n.notificationSettingsHealthIssues,
+                  l10n.notificationSettingsHealthIssuesSubtitle,
                   notifications.notifyOnHealthIssue,
                   (v) => notifications.copyWith(notifyOnHealthIssue: v),
                 ),
                 if (notifications.notifyOnHealthIssue) ...[
                   _buildNotificationToggle(
                     notifications,
-                    'Include Warnings',
-                    'Also notify on health warnings',
+                    l10n.notificationSettingsIncludeWarnings,
+                    l10n.notificationSettingsIncludeWarningsSubtitle,
                     notifications.includeHealthWarnings,
                     (v) => notifications.copyWith(includeHealthWarnings: v),
                     indent: true,
                   ),
                   _buildNotificationToggle(
                     notifications,
-                    'Health Restored',
-                    'When a health issue is resolved',
+                    l10n.notificationSettingsHealthRestored,
+                    l10n.notificationSettingsHealthRestoredSubtitle,
                     notifications.notifyOnHealthRestored,
                     (v) => notifications.copyWith(notifyOnHealthRestored: v),
                     indent: true,
@@ -228,15 +230,14 @@ class _NotificationSettingsScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'In-App Notifications',
+                    context.l10n.notificationSettingsInAppTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Notifications are received in real-time while the app is open. '
-                    'When you close the app, new notifications will be fetched the next time you open it.',
+                    context.l10n.notificationSettingsInAppBody,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -306,9 +307,9 @@ class _NotificationSettingsScreenState
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Setup in Radarr/Sonarr',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  context.l10n.notificationSettingsSetupInArr,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -317,16 +318,16 @@ class _NotificationSettingsScreenState
               width: double.infinity,
               child: FilledButton.icon(
                 icon: const Icon(Icons.auto_fix_high),
-                label: const Text('Auto-configure *arr instances'),
+                label: Text(context.l10n.notificationSettingsAutoConfigure),
                 onPressed: () => _handleAutoConfigure(),
               ),
             ),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 12),
-            const Text(
-              'OR MANUAL SETUP',
-              style: TextStyle(
+            Text(
+              context.l10n.notificationSettingsManualSetup,
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.1,
@@ -334,16 +335,22 @@ class _NotificationSettingsScreenState
               ),
             ),
             const SizedBox(height: 8),
-            const Text('1. Go to Settings > Connect'),
-            const Text('2. Add new connection > ntfy'),
-            const Text('3. Configure:'),
+            Text(context.l10n.notificationSettingsManualStep1),
+            Text(context.l10n.notificationSettingsManualStep2),
+            Text(context.l10n.notificationSettingsManualStep3),
             const SizedBox(height: 8),
-            _buildConfigRow('Server URL', 'https://ntfy.sh'),
-            _buildConfigRow('Topic', settings.ntfyTopic ?? ''),
+            _buildConfigRow(
+              context.l10n.notificationSettingsServerUrl,
+              'https://ntfy.sh',
+            ),
+            _buildConfigRow(
+              context.l10n.notificationSettingsTopic,
+              settings.ntfyTopic ?? '',
+            ),
             const SizedBox(height: 8),
             TextButton.icon(
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('ntfy documentation'),
+              label: Text(context.l10n.notificationSettingsNtfyDocs),
               onPressed: () =>
                   launchUrl(Uri.parse('https://docs.ntfy.sh/integrations/')),
             ),
@@ -392,12 +399,11 @@ class _NotificationSettingsScreenState
               instance.type == InstanceType.sonarr,
         )
         .toList();
+    final l10n = context.l10n;
     if (instances.isEmpty) {
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No Radarr or Sonarr instances configured'),
-          ),
+          SnackBar(content: Text(l10n.settingsNoRadarrSonarrInstances)),
         );
       }
       return;
@@ -412,9 +418,9 @@ class _NotificationSettingsScreenState
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Auto-configuring notifications...'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(l10n.notificationSettingsAutoConfiguring),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -436,7 +442,11 @@ class _NotificationSettingsScreenState
         e,
         st,
       );
-      results.add(NotificationSetupResult.failure('Unexpected error: $e'));
+      results.add(
+        NotificationSetupResult.failure(
+          l10n.notificationSettingsUnexpectedError('$e'),
+        ),
+      );
     } finally {
       if (!silent && mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -450,7 +460,7 @@ class _NotificationSettingsScreenState
         context: context,
         useRootNavigator: true,
         builder: (context) => AlertDialog(
-          title: const Text('Setup Results'),
+          title: Text(l10n.notificationSettingsSetupResults),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: results
@@ -472,7 +482,7 @@ class _NotificationSettingsScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              child: const Text('Close'),
+              child: Text(l10n.commonClose),
             ),
           ],
         ),
@@ -482,7 +492,10 @@ class _NotificationSettingsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '$successCount/${instances.length} instances configured.',
+            l10n.notificationSettingsConfiguredCount(
+              successCount,
+              instances.length,
+            ),
           ),
           backgroundColor: successCount == instances.length
               ? Colors.green

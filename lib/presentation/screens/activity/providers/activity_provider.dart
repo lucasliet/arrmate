@@ -220,6 +220,8 @@ class QueueNotifier extends AutoDisposeAsyncNotifier<List<QueueItem>> {
           instanceId: instance.id,
           instanceType: instance.type,
           instanceLabel: instance.label,
+          // English fallback for logs and tests; the Queue tab shows the
+          // translated `queueLoadFailed` copy instead.
           message: 'Queue data could not be loaded.',
         ),
       );

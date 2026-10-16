@@ -5,6 +5,7 @@ import 'package:arrmate/presentation/screens/series/providers/series_provider.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets(
@@ -39,6 +40,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: EpisodeRouteScreen(
               seriesId: 9,
               seasonNumber: 3,
@@ -79,6 +83,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: EpisodeRouteScreen(
               seriesId: 9,
               seasonNumber: 3,

@@ -26,6 +26,8 @@ import 'providers/movie_metadata_provider.dart';
 import 'providers/movies_provider.dart';
 import 'widgets/movie_metadata_section.dart';
 import 'widgets/movie_poster.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Displays detailed information about a specific movie, including options to manage it.
 class MovieDetailsScreen extends ConsumerWidget {
@@ -43,14 +45,16 @@ class MovieDetailsScreen extends ConsumerWidget {
           body: movieState.when(
             data: (movie) => _buildContent(context, ref, movie),
             error: (error, stack) => Scaffold(
-              appBar: AppBar(title: const Text('Error')),
+              appBar: AppBar(title: Text(context.l10n.labelError)),
               body: ErrorDisplay(
-                message: error.toString(),
+                message: describeError(error, context.l10n),
                 onRetry: () => ref.refresh(movieDetailsProvider(movieId)),
               ),
             ),
-            loading: () => const Scaffold(
-              body: LoadingIndicator(message: 'Loading details...'),
+            loading: () => Scaffold(
+              body: LoadingIndicator(
+                message: context.l10n.moviesLoadingDetails,
+              ),
             ),
           ),
         );
@@ -136,27 +140,35 @@ class MovieDetailsScreen extends ConsumerWidget {
                 ref.watch(currentJellyfinInstanceProvider) != null)
               IconButton(
                 icon: const Icon(Icons.play_circle_outline),
-                tooltip: 'Watch in Jellyfin',
+                tooltip: context.l10n.commonWatchInJellyfin,
                 onPressed: () => ref
                     .read(playbackLaunchServiceProvider)
                     .playMovie(context, ref, movie: movie),
               ),
             IconButton(
               icon: const Icon(Icons.manage_search),
-              tooltip: 'Refresh & Scan',
+              tooltip: context.l10n.moviesRefreshAndScan,
               onPressed: () async {
                 try {
                   await ref.read(movieControllerProvider(movieId)).rescan();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Refresh & Scan triggered')),
+                      SnackBar(
+                        content: Text(
+                          context.l10n.moviesRefreshAndScanTriggered,
+                        ),
+                      ),
                     );
                   }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text(
+                          context.l10n.commonErrorWithDetails(
+                            describeError(e, context.l10n),
+                          ),
+                        ),
                         backgroundColor: theme.colorScheme.error,
                       ),
                     );
@@ -166,7 +178,7 @@ class MovieDetailsScreen extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.travel_explore),
-              tooltip: 'Automatic Search',
+              tooltip: context.l10n.commonAutomaticSearch,
               onPressed: () async {
                 try {
                   await ref
@@ -174,14 +186,18 @@ class MovieDetailsScreen extends ConsumerWidget {
                       .automaticSearch();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Search started')),
+                      SnackBar(content: Text(context.l10n.commonSearchStarted)),
                     );
                   }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text(
+                          context.l10n.commonErrorWithDetails(
+                            describeError(e, context.l10n),
+                          ),
+                        ),
                         backgroundColor: theme.colorScheme.error,
                       ),
                     );
@@ -191,7 +207,7 @@ class MovieDetailsScreen extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.troubleshoot),
-              tooltip: 'Interactive Search',
+              tooltip: context.l10n.commonInteractiveSearch,
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
@@ -209,7 +225,9 @@ class MovieDetailsScreen extends ConsumerWidget {
               icon: Icon(
                 movie.monitored ? Icons.bookmark : Icons.bookmark_border,
               ),
-              tooltip: movie.monitored ? 'Unmonitor' : 'Monitor',
+              tooltip: movie.monitored
+                  ? context.l10n.commonUnmonitor
+                  : context.l10n.commonMonitor,
               onPressed: () async {
                 try {
                   await ref
@@ -219,7 +237,9 @@ class MovieDetailsScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          movie.monitored ? 'Unmonitored' : 'Monitored',
+                          movie.monitored
+                              ? context.l10n.commonUnmonitored
+                              : context.l10n.commonMonitored,
                         ),
                       ),
                     );
@@ -228,7 +248,11 @@ class MovieDetailsScreen extends ConsumerWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text(
+                          context.l10n.commonErrorWithDetails(
+                            describeError(e, context.l10n),
+                          ),
+                        ),
                         backgroundColor: theme.colorScheme.error,
                       ),
                     );
@@ -253,44 +277,50 @@ class MovieDetailsScreen extends ConsumerWidget {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit),
-                      SizedBox(width: 8),
-                      Text('Edit'),
+                      const Icon(Icons.edit),
+                      const SizedBox(width: 8),
+                      Text(context.l10n.commonEdit),
                     ],
                   ),
                 ),
                 PopupMenuItem(
                   value: 'deleteFiles',
                   enabled: movie.hasFile == true,
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.delete_sweep),
-                      SizedBox(width: 8),
-                      Text('Delete files'),
+                      const Icon(Icons.delete_sweep),
+                      const SizedBox(width: 8),
+                      Text(context.l10n.commonDeleteFiles),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.red)),
+                      const Icon(Icons.delete, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.commonDelete,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'purge',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_forever, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Purge', style: TextStyle(color: Colors.red)),
+                      const Icon(Icons.delete_forever, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.commonPurge,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -313,7 +343,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                         aspectRatio: 2 / 3,
                         child: Semantics(
                           button: true,
-                          label: 'View ${movie.title} poster',
+                          label: context.l10n.moviesViewPoster(movie.title),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(radiusMd),
                             child: Material(
@@ -371,7 +401,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 if (movie.overview != null) ...[
                   Text(
-                    'Overview',
+                    context.l10n.moviesOverview,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -406,16 +436,16 @@ class MovieDetailsScreen extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Delete Movie'),
+            title: Text(context.l10n.moviesDeleteMovieTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Are you sure you want to delete "${movie.title}"?'),
+                Text(context.l10n.moviesDeleteMovieConfirm(movie.title)),
                 const SizedBox(height: 12),
                 CheckboxListTile(
                   key: const Key('deleteMovieAlsoDeleteFiles'),
-                  title: const Text('Also delete files from disk'),
+                  title: Text(context.l10n.moviesAlsoDeleteFiles),
                   contentPadding: EdgeInsets.zero,
                   value: deleteFiles,
                   onChanged: (val) =>
@@ -424,7 +454,7 @@ class MovieDetailsScreen extends ConsumerWidget {
                 ),
                 CheckboxListTile(
                   key: const Key('deleteMovieAddImportExclusion'),
-                  title: const Text('Prevent this movie from being re-added'),
+                  title: Text(context.l10n.moviesPreventReAdd),
                   contentPadding: EdgeInsets.zero,
                   value: addExclusion,
                   onChanged: (val) =>
@@ -436,14 +466,14 @@ class MovieDetailsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: FilledButton.styleFrom(
                   backgroundColor: theme.colorScheme.error,
                 ),
-                child: const Text('Delete'),
+                child: Text(context.l10n.commonDelete),
               ),
             ],
           );
@@ -462,7 +492,9 @@ class MovieDetailsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              deleteFiles ? 'Movie and files deleted' : 'Movie deleted',
+              deleteFiles
+                  ? context.l10n.moviesDeletedWithFiles
+                  : context.l10n.moviesDeleted,
             ),
           ),
         );
@@ -471,7 +503,9 @@ class MovieDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete: $e'),
+            content: Text(
+              context.l10n.moviesDeleteFailed(describeError(e, context.l10n)),
+            ),
             backgroundColor: theme.colorScheme.error,
           ),
         );
@@ -485,26 +519,24 @@ class MovieDetailsScreen extends ConsumerWidget {
     Movie movie,
   ) async {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete files'),
-        content: Text(
-          'Delete all files for "${movie.title}"? '
-          'This removes the movie file from disk; the movie stays in Radarr.',
-        ),
+        title: Text(context.l10n.commonDeleteFiles),
+        content: Text(context.l10n.moviesDeleteFilesConfirm(movie.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -534,8 +566,8 @@ class MovieDetailsScreen extends ConsumerWidget {
         SnackBar(
           content: Text(
             count == 0
-                ? 'No files to delete'
-                : 'Deleted $count file${count == 1 ? '' : 's'}',
+                ? l10n.moviesNoFilesToDelete
+                : l10n.moviesDeletedFilesCount(count),
           ),
         ),
       );
@@ -543,7 +575,7 @@ class MovieDetailsScreen extends ConsumerWidget {
       navigator.pop();
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Failed to delete files: $e'),
+          content: Text(l10n.moviesDeleteFilesFailed(describeError(e, l10n))),
           backgroundColor: theme.colorScheme.error,
         ),
       );
@@ -562,24 +594,19 @@ class MovieDetailsScreen extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Purge movie'),
-        content: Text(
-          'This will permanently remove "${movie.title}" from Radarr, '
-          'delete its media files, and delete all source torrents '
-          '(plus cross-seed duplicates) from qBittorrent. '
-          'Frees disk space used by hardlinked data.',
-        ),
+        title: Text(context.l10n.moviesPurgeTitle),
+        content: Text(context.l10n.moviesPurgeConfirm(movie.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
             ),
-            child: const Text('Purge'),
+            child: Text(context.l10n.commonPurge),
           ),
         ],
       ),
@@ -590,6 +617,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     if (!context.mounted) return;
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final purgeService = ref.read(purgeServiceProvider);
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
 
@@ -616,7 +644,7 @@ class MovieDetailsScreen extends ConsumerWidget {
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Failed to preview: $e'),
+          content: Text(l10n.moviesPurgePreviewFailed(describeError(e, l10n))),
           backgroundColor: theme.colorScheme.error,
         ),
       );
@@ -649,14 +677,18 @@ class MovieDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         context.pop();
         messenger.showSnackBar(
-          SnackBar(content: Text(result.formatSummary(label: 'Movie purged.'))),
+          SnackBar(
+            content: Text(
+              result.formatSummary(label: l10n.moviesPurged, l10n: l10n),
+            ),
+          ),
         );
       }
     } catch (e) {
       navigator.pop();
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Failed to purge: $e'),
+          content: Text(l10n.moviesPurgeFailed(describeError(e, l10n))),
           backgroundColor: theme.colorScheme.error,
         ),
       );
@@ -665,20 +697,21 @@ class MovieDetailsScreen extends ConsumerWidget {
 
   Widget _buildStatusChip(BuildContext context, Movie movie) {
     Color color;
-    String label = movie.status.label;
+    final l10n = context.l10n;
+    String label = movie.status.localizedLabel(l10n);
 
     if (movie.isDownloaded) {
       color = Colors.green;
-      label = 'Downloaded';
+      label = l10n.labelDownloaded;
     } else if (!movie.monitored) {
       color = Colors.grey;
-      label = 'Unmonitored';
+      label = l10n.commonUnmonitored;
     } else if (movie.isAvailable) {
       color = Colors.red;
-      label = 'Missing';
+      label = l10n.labelMissing;
     } else {
       color = Colors.blue;
-      label = movie.status.label;
+      label = movie.status.localizedLabel(l10n);
     }
 
     return Container(
@@ -785,7 +818,7 @@ class MovieDetailsScreen extends ConsumerWidget {
           ActionChip(
             key: const Key('openMovieTrailer'),
             avatar: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('Trailer'),
+            label: Text(context.l10n.moviesTrailer),
             onPressed: () => _openExternalUri(context, trailerUri),
           ),
         for (final link in links)
@@ -812,9 +845,15 @@ class MovieDetailsScreen extends ConsumerWidget {
       }
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unable to open link: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.moviesOpenLinkFailed(
+              describeError(error, context.l10n),
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -830,13 +869,14 @@ class MovieDetailsScreen extends ConsumerWidget {
       orElse: () => movie.qualityProfileId.toString(),
     );
 
+    final l10n = context.l10n;
     final items = [
-      if (movie.studio != null) _InfoItem('Studio', movie.studio!),
-      _InfoItem('Status', movie.status.label),
-      _InfoItem('Quality Profile', qualityProfileLabel),
+      if (movie.studio != null) _InfoItem(l10n.moviesInfoStudio, movie.studio!),
+      _InfoItem(l10n.commonStatus, movie.status.localizedLabel(l10n)),
+      _InfoItem(l10n.commonQualityProfile, qualityProfileLabel),
       if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0)
-        _InfoItem('Size', formatBytes(movie.sizeOnDisk!)),
-      if (movie.path != null) _InfoItem('Path', movie.path!),
+        _InfoItem(l10n.commonSize, formatBytes(movie.sizeOnDisk!)),
+      if (movie.path != null) _InfoItem(l10n.moviesInfoPath, movie.path!),
     ];
 
     return LayoutBuilder(

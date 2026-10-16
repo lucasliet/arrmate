@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
 import '../../../widgets/common_widgets.dart';
 import '../providers/torrent_file_providers.dart';
@@ -35,11 +36,10 @@ class TorrentTrackersSheet extends ConsumerWidget {
                 child: trackersAsync.when(
                   data: (trackers) {
                     if (trackers.isEmpty) {
-                      return const EmptyState(
+                      return EmptyState(
                         icon: Icons.podcasts_outlined,
-                        title: 'No trackers',
-                        subtitle:
-                            'Announce URLs appear here once qBittorrent has them',
+                        title: context.l10n.torrentNoTrackers,
+                        subtitle: context.l10n.torrentNoTrackersSubtitle,
                       );
                     }
                     final sorted = List<TorrentTracker>.from(trackers)
@@ -53,10 +53,11 @@ class TorrentTrackersSheet extends ConsumerWidget {
                           TorrentTrackerItem(tracker: sorted[index]),
                     );
                   },
-                  loading: () =>
-                      const LoadingIndicator(message: 'Loading trackers...'),
+                  loading: () => LoadingIndicator(
+                    message: context.l10n.torrentLoadingTrackers,
+                  ),
                   error: (error, stack) => ErrorDisplay(
-                    message: 'Failed to load trackers',
+                    message: context.l10n.torrentLoadTrackersFailed,
                     onRetry: () =>
                         ref.invalidate(torrentTrackersProvider(torrent.hash)),
                   ),
@@ -98,7 +99,7 @@ class TorrentTrackersSheet extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Trackers',
+                      context.l10n.torrentTrackers,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

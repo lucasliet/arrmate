@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/settings_provider.dart';
 import 'package:arrmate/presentation/router/app_router.dart';
@@ -131,6 +132,57 @@ void main() {
       expect(state.homeTab, AppTab.movies);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('home_tab'), isNull);
+    });
+
+    group('language', () {
+      test('defaults to the system language', () {
+        expect(container.read(settingsProvider).language, AppLanguage.system);
+      });
+
+      test('starts from the language read before startup', () {
+        container = ProviderContainer(
+          overrides: [
+            initialLanguageProvider.overrideWithValue(AppLanguage.es),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        expect(container.read(settingsProvider).language, AppLanguage.es);
+      });
+
+      test('persists the chosen language', () async {
+        await container
+            .read(settingsProvider.notifier)
+            .setLanguage(AppLanguage.ptBR);
+
+        expect(container.read(settingsProvider).language, AppLanguage.ptBR);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(appLocalePreferenceKey), 'ptBR');
+      });
+
+      test('loads the persisted language', () async {
+        SharedPreferences.setMockInitialValues({appLocalePreferenceKey: 'es'});
+        container = ProviderContainer();
+        addTearDown(container.dispose);
+        container.read(settingsProvider);
+        await Future.delayed(Duration.zero);
+
+        expect(container.read(settingsProvider).language, AppLanguage.es);
+      });
+
+      test('is cleared by a settings reset', () async {
+        SharedPreferences.setMockInitialValues({appLocalePreferenceKey: 'es'});
+        container = ProviderContainer();
+        addTearDown(container.dispose);
+        container.read(settingsProvider);
+        await Future.delayed(Duration.zero);
+
+        await container.read(settingsProvider.notifier).resetSettings();
+
+        expect(container.read(settingsProvider).language, AppLanguage.system);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(appLocalePreferenceKey), isNull);
+      });
     });
   });
 }

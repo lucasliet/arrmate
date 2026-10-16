@@ -11,6 +11,8 @@ import '../../core/services/assistant_knowledge_service.dart';
 import '../../core/services/assistant_model_service.dart';
 import '../../core/services/assistant_online_chat_service.dart';
 import '../../core/services/logger_service.dart';
+import '../l10n/provider_messages.dart';
+import 'locale_provider.dart';
 
 /// Conversation message roles supported by the assistant.
 enum AssistantMessageRole { user, assistant }
@@ -67,6 +69,8 @@ class AssistantState {
     this.downloadProgress = 0,
     this.isImporting = false,
     this.error,
+    this.errorKind,
+    this.errorDetail,
   });
 
   /// Available downloadable models.
@@ -106,8 +110,18 @@ class AssistantState {
   /// Whether an import is in progress.
   final bool isImporting;
 
-  /// Last error message, if any.
+  /// Last error message in English, if any.
+  ///
+  /// The screen shows [errorKind] translated through
+  /// `AssistantStateL10n.localizedError`; this text is the fallback for a
+  /// state that carries no kind.
   final String? error;
+
+  /// What [error] reports, translated when rendered.
+  final AssistantErrorKind? errorKind;
+
+  /// The error or availability [errorKind] was raised for.
+  final Object? errorDetail;
 
   /// Returns whether a model is ready to answer.
   bool get hasModel {
@@ -147,6 +161,8 @@ class AssistantState {
     double? downloadProgress,
     bool? isImporting,
     String? error,
+    AssistantErrorKind? errorKind,
+    Object? errorDetail,
     bool clearSelectedModelId = false,
     bool clearSelectedModelPath = false,
     bool clearError = false,
@@ -170,6 +186,25 @@ class AssistantState {
       downloadProgress: downloadProgress ?? this.downloadProgress,
       isImporting: isImporting ?? this.isImporting,
       error: clearError ? null : error ?? this.error,
+      errorKind: clearError
+          ? null
+          : error != null
+          ? errorKind
+          : errorKind ?? this.errorKind,
+      errorDetail: clearError
+          ? null
+          : error != null
+          ? errorDetail
+          : errorDetail ?? this.errorDetail,
+    );
+  }
+
+  /// Returns a copy reporting [kind] as the error, with [detail] as context.
+  AssistantState withError(AssistantErrorKind kind, [Object? detail]) {
+    return copyWith(
+      error: kind.english(detail),
+      errorKind: kind,
+      errorDetail: detail,
     );
   }
 }
@@ -250,10 +285,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to initialize assistant', e, st);
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to initialize assistant resources.',
-      );
+      state = state
+          .copyWith(isLoading: false)
+          .withError(AssistantErrorKind.initFailed);
     }
   }
 
@@ -312,10 +346,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to refresh models', e, st);
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to refresh installed models.',
-      );
+      state = state
+          .copyWith(isLoading: false)
+          .withError(AssistantErrorKind.refreshModelsFailed);
     }
   }
 
@@ -341,10 +374,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to import model', e, st);
-      state = state.copyWith(
-        isImporting: false,
-        error: 'Failed to import model.',
-      );
+      state = state
+          .copyWith(isImporting: false)
+          .withError(AssistantErrorKind.importFailed);
     }
   }
 
@@ -378,11 +410,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Download failed', e, st);
-      state = state.copyWith(
-        isDownloading: false,
-        downloadProgress: 0,
-        error: 'Failed to download model: $e',
-      );
+      state = state
+          .copyWith(isDownloading: false, downloadProgress: 0)
+          .withError(AssistantErrorKind.downloadFailed, e);
     }
   }
 
@@ -397,7 +427,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       (candidate) => candidate.id == modelId,
     );
     if (model == null) {
-      state = state.copyWith(error: 'Model not found.');
+      state = state.withError(AssistantErrorKind.modelNotFound);
       return;
     }
 
@@ -415,7 +445,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to enable online mode', e, st);
       if (!_isLatestSelection(generation)) return;
-      state = state.copyWith(error: 'Failed to enable online model.');
+      state = state.withError(AssistantErrorKind.enableOnlineFailed);
     }
   }
 
@@ -432,10 +462,9 @@ class AssistantNotifier extends Notifier<AssistantState> {
       logger.info(
         '[AssistantNotifier] Apple Intelligence unavailable: ${availability.name}',
       );
-      state = state.copyWith(
-        appleIntelligenceAvailability: availability,
-        error: availability.unavailableReason,
-      );
+      state = state
+          .copyWith(appleIntelligenceAvailability: availability)
+          .withError(AssistantErrorKind.appleUnavailable, availability);
       return;
     }
 
@@ -458,7 +487,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
 
     if (!state.hasModel) {
-      state = state.copyWith(error: 'Select a model before chatting.');
+      state = state.withError(AssistantErrorKind.selectModelFirst);
       return;
     }
 
@@ -477,17 +506,19 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
     try {
       final currentMessages = state.messages;
+      final languageCode = _replyLanguageCode;
       final result = switch (state.mode) {
         AssistantModelMode.online => _AssistantSendResult(
-          content: await _sendOnlineMessage(currentMessages),
+          content: await _sendOnlineMessage(currentMessages, languageCode),
         ),
         AssistantModelMode.local => _AssistantSendResult(
-          content: await _chatService.sendMessage(trimmed),
+          content: await _sendLocalMessage(trimmed, languageCode),
         ),
         AssistantModelMode.appleIntelligence => _AssistantSendResult(
           content: await _appleIntelligenceService.sendMessage(
             currentMessages.map(_toAppleIntelligenceTurn).toList(),
             _knowledgeService,
+            languageCode: languageCode,
           ),
         ),
       };
@@ -503,23 +534,42 @@ class AssistantNotifier extends Notifier<AssistantState> {
         isGenerating: false,
       );
     } on AssistantAppleIntelligenceException catch (e) {
-      state = state.copyWith(isGenerating: false, error: e.message);
+      state = state
+          .copyWith(isGenerating: false)
+          .withError(AssistantErrorKind.appleFailed, e);
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to generate response', e, st);
-      state = state.copyWith(
-        isGenerating: false,
-        error: 'Failed to generate a response.',
-      );
+      state = state
+          .copyWith(isGenerating: false)
+          .withError(AssistantErrorKind.generateFailed);
     }
   }
 
-  Future<String> _sendOnlineMessage(List<AssistantMessage> messages) async {
+  /// The interface language code the assistant must reply in.
+  String get _replyLanguageCode => ref.read(currentLocaleProvider).languageCode;
+
+  Future<String> _sendOnlineMessage(
+    List<AssistantMessage> messages,
+    String languageCode,
+  ) async {
     final result = await _onlineChatService.sendMessage(
       messages.map(_toOnlineMessage).toList(growable: false),
       _knowledgeService,
+      languageCode: languageCode,
     );
 
     return result.content;
+  }
+
+  /// Sends [message] to the on-device model, first switching its
+  /// conversation to [languageCode] when the interface language changed
+  /// since the model was loaded.
+  Future<String> _sendLocalMessage(String message, String languageCode) async {
+    final modelPath = state.selectedModelPath;
+    if (modelPath != null) {
+      await _chatService.loadModel(modelPath, languageCode: languageCode);
+    }
+    return _chatService.sendMessage(message);
   }
 
   AssistantOnlineChatMessage _toOnlineMessage(AssistantMessage message) {
@@ -566,7 +616,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       );
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to delete model', e, st);
-      state = state.copyWith(error: 'Failed to delete model.');
+      state = state.withError(AssistantErrorKind.deleteFailed);
     }
   }
 
@@ -577,13 +627,14 @@ class AssistantNotifier extends Notifier<AssistantState> {
         model,
       );
       if (!toolCalling) {
-        state = state.copyWith(
-          error: 'This model does not support tool-calling. Use a Gemma model.',
-        );
+        state = state.withError(AssistantErrorKind.noToolCalling);
         return false;
       }
       _chatService.setKnowledgeService(_knowledgeService);
-      await _chatService.loadModel(model.path);
+      await _chatService.loadModel(
+        model.path,
+        languageCode: _replyLanguageCode,
+      );
       if (!_isLatestSelection(generation)) return false;
       await _modelService.setSelectedModelId(model.id);
       await _modelService.setSelectedModeName(AssistantModelMode.local.name);
@@ -597,7 +648,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
     } catch (e, st) {
       logger.error('[AssistantNotifier] Failed to select model', e, st);
       if (!_isLatestSelection(generation)) return false;
-      state = state.copyWith(error: 'Failed to load the selected model.');
+      state = state.withError(AssistantErrorKind.loadModelFailed);
       return false;
     }
   }

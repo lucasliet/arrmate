@@ -14,6 +14,8 @@ import '../../widgets/notification_icon_button.dart';
 import 'providers/calendar_provider.dart';
 import 'widgets/calendar_filter_bar.dart';
 import 'widgets/calendar_item.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Displays a timeline of upcoming releases (movies and episodes).
 class CalendarScreen extends ConsumerWidget {
@@ -40,7 +42,10 @@ class CalendarScreen extends ConsumerWidget {
         final isWide = ContentLayout(constraints.maxWidth).hasWideSections;
         return Scaffold(
           appBar: AppBar(
-            title: Text('Calendar', key: tourKeys.calendarTitleKey),
+            title: Text(
+              context.l10n.labelTabCalendar,
+              key: tourKeys.calendarTitleKey,
+            ),
             toolbarHeight: isWide ? 88 : null,
             titleSpacing: isWide ? 32 : null,
             actions: const [NotificationIconButton()],
@@ -74,12 +79,12 @@ class CalendarScreen extends ConsumerWidget {
                     instances.isNotEmpty,
                   ),
                   error: (error, stack) => ErrorDisplay(
-                    message: error.toString(),
+                    message: describeError(error, context.l10n),
                     onRetry: () =>
                         ref.read(calendarProvider.notifier).refresh(),
                   ),
                   loading: () =>
-                      const LoadingIndicator(message: 'Loading calendar...'),
+                      LoadingIndicator(message: context.l10n.calendarLoading),
                 ),
               ),
             ],
@@ -153,11 +158,11 @@ class CalendarScreen extends ConsumerWidget {
                   child: EmptyState(
                     icon: Icons.calendar_today,
                     title: filters.isActive
-                        ? 'No matching events'
-                        : 'No upcoming events',
+                        ? context.l10n.calendarNoMatchingEvents
+                        : context.l10n.calendarNoUpcomingEvents,
                     subtitle: filters.isActive
-                        ? 'Adjust the calendar filters to see more events.'
-                        : 'Check back later or add content to your libraries.',
+                        ? context.l10n.calendarNoMatchingEventsHint
+                        : context.l10n.calendarNoUpcomingEventsHint,
                   ),
                 )
               else if (isWide)
@@ -194,7 +199,7 @@ class CalendarScreen extends ConsumerWidget {
                             onPressed: () =>
                                 ref.read(calendarProvider.notifier).loadMore(),
                             icon: const Icon(Icons.expand_more),
-                            label: const Text('Load more'),
+                            label: Text(context.l10n.calendarLoadMore),
                           ),
                   ),
                 ),
@@ -223,9 +228,9 @@ class CalendarScreen extends ConsumerWidget {
 
     String label;
     if (date == today) {
-      label = 'Today';
+      label = context.l10n.calendarToday;
     } else if (date == today.add(const Duration(days: 1))) {
-      label = 'Tomorrow';
+      label = context.l10n.calendarTomorrow;
     } else {
       label = DateFormat('EEEE, MMMM d').format(date);
     }
@@ -271,21 +276,27 @@ class _CalendarFailureBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Some instances could not be loaded',
+                  context.l10n.widgetsSomeInstancesFailed,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: colorScheme.onErrorContainer,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              TextButton(onPressed: onRetry, child: const Text('Retry')),
+              TextButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.commonRetry),
+              ),
             ],
           ),
           ...failures.map(
             (failure) => Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                '${failure.instanceLabel} (${failure.instanceType.label}): ${failure.message}',
+                // Every calendar failure carries the same fixed English
+                // message, so the translated equivalent is shown instead.
+                '${failure.instanceLabel} (${failure.instanceType.label}): '
+                '${context.l10n.calendarDataLoadFailed}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colorScheme.onErrorContainer,
                 ),

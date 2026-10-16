@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../l10n/app_locale.dart';
+
 /// Extensions for [DateTime] providing formatting and utility checks.
 extension DateTimeExtensions on DateTime {
   /// Returns the ISO-8601 string representation.
@@ -79,5 +81,28 @@ extension DateTimeExtensions on DateTime {
     }
 
     return '${(difference.inDays / 365).floor()}y ago';
+  }
+
+  /// Returns a relative date string in the language of [l10n].
+  ///
+  /// Same thresholds as [relativeDate] ("Just now", "5m ago", "Yesterday",
+  /// "3w ago", ...), with translated wording.
+  String relativeDateL10n(AppLocalizations l10n) {
+    final difference = DateTime.now().difference(this);
+    final days = difference.inDays;
+
+    if (days == 0) {
+      if (difference.inHours == 0) {
+        if (difference.inMinutes == 0) return l10n.formatJustNow;
+        return l10n.formatMinutesAgo(difference.inMinutes);
+      }
+      return l10n.formatHoursAgo(difference.inHours);
+    }
+
+    if (days == 1) return l10n.formatYesterday;
+    if (days < 7) return l10n.formatDaysAgo(days);
+    if (days < 30) return l10n.formatWeeksAgo((days / 7).floor());
+    if (days < 365) return l10n.formatMonthsAgo((days / 30).floor());
+    return l10n.formatYearsAgo((days / 365).floor());
   }
 }

@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/services/jellyfin_connect_setup_service.dart';
 import '../../../core/services/logger_service.dart';
 import '../../../core/services/remote_notification_setup_service.dart';
 import '../../../data/api/api.dart';
 import '../../../domain/models/models.dart';
+import '../../l10n/labels.dart';
 import '../../providers/instances_provider.dart';
 import '../../providers/jellyfin_session_state_provider.dart';
 import '../../tour/app_tour_keys.dart';
@@ -155,8 +157,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
         setState(() {
           _testSuccess = true;
-          _testMessage =
-              'Connection successful!\nAuth: $authLabel\nTorrents: ${torrents.length}';
+          _testMessage = context.l10n.instanceTestSuccessQbittorrent(
+            authLabel,
+            torrents.length,
+          );
         });
       } else {
         final validatedInstance = await ref
@@ -166,8 +170,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
         setState(() {
           _testSuccess = true;
-          _testMessage =
-              'Connection successful!\nVersion: ${validatedInstance.version}\nInstance: ${validatedInstance.name}\nTags: ${validatedInstance.tags.length} available';
+          _testMessage = context.l10n.instanceTestSuccessArr(
+            '${validatedInstance.version}',
+            '${validatedInstance.name}',
+            validatedInstance.tags.length,
+          );
         });
       }
     } catch (e) {
@@ -175,7 +182,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       if (!mounted || operationGeneration != _operationGeneration) return;
       setState(() {
         _testSuccess = false;
-        _testMessage = 'Error: ${_describeError(e)}';
+        _testMessage = context.l10n.commonErrorWithDetails(_describeError(e));
       });
     } finally {
       if (mounted && operationGeneration == _operationGeneration) {
@@ -188,21 +195,21 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
   /// Turns a connection failure into a message fit for the screen.
   ///
-  /// Typed API errors already carry one; a raw [DioException] (whose text
-  /// dumps request internals such as browser CORS notes) is reduced to what
-  /// the user can act on.
+  /// Typed API errors already carry one (translated by [describeError]); a
+  /// raw [DioException] (whose text dumps request internals such as browser
+  /// CORS notes) is reduced to what the user can act on.
   String _describeError(Object error) {
-    if (error is ApiError) return error.message;
+    final l10n = context.l10n;
+    if (error is ApiError) return describeError(error, l10n);
     if (error is DioException) {
       return switch (error.type) {
         DioExceptionType.connectionTimeout ||
         DioExceptionType.sendTimeout ||
-        DioExceptionType.receiveTimeout =>
-          'The server took too long to answer. Try again or enable Slow '
-              'Instance Mode.',
-        DioExceptionType.badResponse =>
-          'The server answered with HTTP ${error.response?.statusCode}.',
-        _ => 'Server unreachable. Check the URL and your network.',
+        DioExceptionType.receiveTimeout => l10n.instanceErrorTimeout,
+        DioExceptionType.badResponse => l10n.instanceErrorHttpStatus(
+          '${error.response?.statusCode}',
+        ),
+        _ => l10n.instanceErrorUnreachable,
       };
     }
     if (error is StateError) return error.message;
@@ -212,9 +219,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   /// Returns a short human-readable label describing the active qBittorrent
   /// auth mode, used in the test-connection feedback message.
   String _authModeLabel(Instance instance) {
-    if (instance.apiKey.isEmpty) return 'Custom Header';
-    if (instance.apiKey.contains(':')) return 'Username & Password';
-    return 'API Key';
+    if (instance.apiKey.isEmpty) return context.l10n.instanceAuthCustomHeader;
+    if (instance.apiKey.contains(':')) {
+      return context.l10n.instanceAuthUsernamePassword;
+    }
+    return context.l10n.instanceAuthApiKey;
   }
 
   /// Flags the edited Jellyfin instance when [error] reports that its stored
@@ -271,7 +280,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       _markSessionExpiredIfRejected(e);
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
-          _testMessage = 'Validation failed: ${_describeError(e)}';
+          _testMessage = context.l10n.instanceValidationFailed(
+            _describeError(e),
+          );
           _testSuccess = false;
         });
       }
@@ -310,6 +321,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     final operationGeneration = ++_operationGeneration;
     setState(() => _isDeleting = true);
 
+    final l10n = context.l10n;
     try {
       final notifier = ref.read(instancesProvider.notifier);
       final existing = notifier.getInstanceById(instanceId);
@@ -329,8 +341,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
           SnackBar(
             duration: const Duration(seconds: 8),
             content: Text(
-              'Instance removed, but some cleanup failed:\n'
-              '${cleanupFailures.join('\n')}',
+              l10n.instanceRemovedCleanupFailed(cleanupFailures.join('\n')),
             ),
           ),
         );
@@ -344,7 +355,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       if (mounted && operationGeneration == _operationGeneration) {
         setState(() {
           _testSuccess = false;
-          _testMessage = 'Delete failed: ${_describeError(error)}';
+          _testMessage = l10n.instanceDeleteFailed(_describeError(error));
         });
       }
     } finally {
@@ -357,19 +368,16 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
   /// Helper text of the API Key field for Jellyfin, naming the signed-in
   /// user when a session is stored.
   String get _jellyfinApiKeyHelperText {
+    final l10n = context.l10n;
     if (_sessionExpired) {
-      return 'Session expired — add Basic Auth below to sign in again, or '
-          'enter an API key';
+      return l10n.instanceJellyfinHelperSessionExpired;
     }
     final session = _existingSession;
     if (session != null) {
-      final user = session.userName ?? 'a Jellyfin user';
-      return 'Signed in as $user. Leave empty to keep the session, enter an '
-          'API key to switch, or add Basic Auth below to sign in again.';
+      final user = session.userName ?? l10n.instanceJellyfinFallbackUser;
+      return l10n.instanceJellyfinHelperSignedIn(user);
     }
-    return 'API key (Jellyfin dashboard → Advanced → API Keys). Leave '
-        'empty if using "Add Basic Auth" below to sign in with a username '
-        'and password.';
+    return l10n.instanceJellyfinHelperDefault;
   }
 
   bool get _isBusy =>
@@ -399,9 +407,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       if (!mounted || operationGeneration != _operationGeneration) return;
       if (results.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No Radarr or Sonarr instances configured'),
-          ),
+          SnackBar(content: Text(context.l10n.settingsNoRadarrSonarrInstances)),
         );
         return;
       }
@@ -414,7 +420,9 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
       );
       if (!mounted || operationGeneration != _operationGeneration) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Setup failed: ${_describeError(e)}')),
+        SnackBar(
+          content: Text(context.l10n.instanceSetupFailed(_describeError(e))),
+        ),
       );
     } finally {
       if (mounted && operationGeneration == _operationGeneration) {
@@ -429,7 +437,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Library Auto-Update Setup'),
+        title: Text(context.l10n.instanceLibraryAutoUpdateSetupTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: results
@@ -449,7 +457,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               .toList(),
         ),
         actions: [
-          TextButton(onPressed: () => context.pop(), child: const Text('OK')),
+          TextButton(
+            onPressed: () => context.pop(),
+            child: Text(context.l10n.commonOk),
+          ),
         ],
       ),
     );
@@ -477,7 +488,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Instance' : 'Add Instance'),
+        title: Text(
+          isEditing
+              ? context.l10n.instanceEditTitle
+              : context.l10n.settingsAddInstance,
+        ),
         actions: [
           if (isEditing && _initialized)
             IconButton(
@@ -506,18 +521,18 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 const Icon(Icons.error_outline, size: 48),
                 const SizedBox(height: 16),
                 Text(
-                  'Instance not found',
+                  context.l10n.instanceNotFoundTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'The requested instance no longer exists or could not be loaded.',
+                Text(
+                  context.l10n.instanceNotFoundMessage,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () => context.canPop() ? context.pop() : null,
-                  child: const Text('Go back'),
+                  child: Text(context.l10n.instanceGoBack),
                 ),
               ],
             ),
@@ -570,36 +585,37 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
             TextFormField(
               key: tourKeys.instanceNameFieldKey,
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. Home Server',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceNameLabel,
+                hintText: context.l10n.instanceNameHint,
+                border: const OutlineInputBorder(),
               ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Required' : null,
+              validator: (value) => value == null || value.isEmpty
+                  ? context.l10n.instanceRequired
+                  : null,
             ),
             const SizedBox(height: 16),
 
             TextFormField(
               key: tourKeys.instanceUrlFieldKey,
               controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: 'URL',
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceUrlLabel,
                 hintText: 'http://192.168.1.10:7878',
-                border: OutlineInputBorder(),
-                helperText: 'Include http:// or https:// and port',
+                border: const OutlineInputBorder(),
+                helperText: context.l10n.instanceUrlHelper,
               ),
               keyboardType: TextInputType.url,
               validator: (value) {
                 final url = value?.trim() ?? '';
                 if (url.isEmpty) {
-                  return 'Required';
+                  return context.l10n.instanceRequired;
                 }
                 final uri = Uri.tryParse(url);
                 if (uri == null ||
                     uri.host.isEmpty ||
                     (!uri.isScheme('http') && !uri.isScheme('https'))) {
-                  return 'Must be a valid HTTP or HTTPS URL';
+                  return context.l10n.instanceUrlInvalid;
                 }
                 return null;
               },
@@ -608,11 +624,11 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
 
             TextFormField(
               controller: _alternativeUrlController,
-              decoration: const InputDecoration(
-                labelText: 'Alternative URL',
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceAlternativeUrl,
                 hintText: 'https://media.example.com',
-                border: OutlineInputBorder(),
-                helperText: 'Optional URL used outside your local network',
+                border: const OutlineInputBorder(),
+                helperText: context.l10n.instanceAlternativeUrlHelper,
               ),
               keyboardType: TextInputType.url,
               validator: (value) {
@@ -624,10 +640,10 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                 if (uri == null ||
                     uri.host.isEmpty ||
                     (!uri.isScheme('http') && !uri.isScheme('https'))) {
-                  return 'Must be a valid HTTP or HTTPS URL';
+                  return context.l10n.instanceUrlInvalid;
                 }
                 if (alternativeUrl == _urlController.text.trim()) {
-                  return 'Must differ from the primary URL';
+                  return context.l10n.instanceAlternativeUrlSameAsPrimary;
                 }
                 return null;
               },
@@ -650,9 +666,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Your Jellyfin session has expired. Add Basic Auth in '
-                        'Advanced Settings with your username and password to '
-                        'sign in again.',
+                        context.l10n.instanceJellyfinSessionExpiredBanner,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onErrorContainer,
                         ),
@@ -669,17 +683,18 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               controller: _apiKeyController,
               obscureText: _obscureApiKey,
               decoration: InputDecoration(
-                labelText: 'API Key',
+                labelText: context.l10n.instanceApiKeyLabel,
                 border: const OutlineInputBorder(),
                 helperText: _type == InstanceType.qbittorrent
-                    ? 'Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using '
-                          '"Add Basic Auth" below for older versions.'
+                    ? context.l10n.instanceQbittorrentApiKeyHelper
                     : _type == InstanceType.jellyfin
                     ? _jellyfinApiKeyHelperText
                     : null,
                 helperMaxLines: 4,
                 suffixIcon: IconButton(
-                  tooltip: _obscureApiKey ? 'Show API key' : 'Hide API key',
+                  tooltip: _obscureApiKey
+                      ? context.l10n.instanceShowApiKey
+                      : context.l10n.instanceHideApiKey,
                   icon: Icon(
                     _obscureApiKey
                         ? Icons.visibility_outlined
@@ -699,26 +714,23 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       !_sessionExpired;
                   if (isEmpty && !_hasAuthorizationHeader && !hasSession) {
                     return _sessionExpired
-                        ? 'Add Basic Auth below to sign in again, '
-                              'or enter an API key'
-                        : 'Provide an API key or add Basic Auth below';
+                        ? context.l10n.instanceApiKeySessionExpiredValidation
+                        : context.l10n.instanceApiKeyOrBasicAuthRequired;
                   }
                   return null;
                 }
-                return isEmpty ? 'Required' : null;
+                return isEmpty ? context.l10n.instanceRequired : null;
               },
             ),
             const SizedBox(height: 16),
 
             ExpansionTile(
-              title: const Text('Advanced Settings'),
-              subtitle: const Text('Custom Headers & Authentication'),
+              title: Text(context.l10n.instanceAdvancedSettings),
+              subtitle: Text(context.l10n.instanceAdvancedSettingsSubtitle),
               children: [
                 SwitchListTile(
-                  title: const Text('Slow Instance Mode'),
-                  subtitle: const Text(
-                    'Increase timeouts for slower connections',
-                  ),
+                  title: Text(context.l10n.instanceSlowMode),
+                  subtitle: Text(context.l10n.instanceSlowModeSubtitle),
                   value: _slowMode,
                   onChanged: (value) => setState(() => _slowMode = value),
                 ),
@@ -751,12 +763,12 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       TextButton.icon(
                         onPressed: _addHeaderDialog,
                         icon: const Icon(Icons.add),
-                        label: const Text('Add Header'),
+                        label: Text(context.l10n.instanceAddHeader),
                       ),
                       TextButton.icon(
                         onPressed: _addBasicAuthDialog,
                         icon: const Icon(Icons.lock),
-                        label: const Text('Add Basic Auth'),
+                        label: Text(context.l10n.instanceAddBasicAuth),
                       ),
                     ],
                   ),
@@ -775,7 +787,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.wifi),
-              label: const Text('Test Connection'),
+              label: Text(context.l10n.instanceTestConnection),
             ),
             if (_testMessage != null) ...[
               const SizedBox(height: 8),
@@ -799,7 +811,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.sync),
-                label: const Text('Set Up Library Auto-Update'),
+                label: Text(context.l10n.instanceSetUpLibraryAutoUpdate),
               ),
             ],
 
@@ -814,7 +826,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save Instance'),
+                  : Text(context.l10n.instanceSave),
             ),
           ],
         ),
@@ -829,25 +841,29 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Header'),
+        title: Text(context.l10n.instanceAddHeader),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Header Name'),
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceHeaderName,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: valueCtrl,
-              decoration: const InputDecoration(labelText: 'Header Value'),
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceHeaderValue,
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -860,7 +876,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               }
               Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: Text(context.l10n.commonAdd),
           ),
         ],
       ),
@@ -874,20 +890,24 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Basic Authentication'),
+        title: Text(context.l10n.instanceBasicAuthTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Credentials will be encoded to Base64.'),
+            Text(context.l10n.instanceBasicAuthBase64Note),
             const SizedBox(height: 8),
             TextField(
               controller: userCtrl,
-              decoration: const InputDecoration(labelText: 'Username'),
+              decoration: InputDecoration(
+                labelText: context.l10n.instanceUsername,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: passCtrl,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(
+                labelText: context.l10n.instancePassword,
+              ),
               obscureText: true,
             ),
           ],
@@ -895,7 +915,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -913,7 +933,7 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
               }
               Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: Text(context.l10n.commonAdd),
           ),
         ],
       ),
@@ -924,25 +944,26 @@ class _InstanceEditScreenState extends ConsumerState<InstanceEditScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Instance?'),
+        title: Text(context.l10n.instanceDeleteTitle),
         content: Text(
           _type == InstanceType.jellyfin
-              ? 'Arrmate will also remove its Jellyfin connection from '
-                    'Radarr/Sonarr, revoke the Arrmate API key it created and '
-                    'sign out of Jellyfin. This action cannot be undone.'
-              : 'This action cannot be undone.',
+              ? context.l10n.instanceDeleteJellyfinWarning
+              : context.l10n.instanceDeleteWarning,
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () async {
               context.pop();
               await _delete();
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              context.l10n.commonDelete,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

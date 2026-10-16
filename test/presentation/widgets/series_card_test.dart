@@ -3,6 +3,7 @@ import 'package:arrmate/presentation/screens/series/widgets/series_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   final series = Series(
@@ -25,6 +26,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: SizedBox(
               width: 120,
@@ -52,6 +56,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: SizedBox(
               width: 120,

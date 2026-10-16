@@ -5,6 +5,8 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
 
 import '../providers/torrent_file_providers.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 class TorrentFileItem extends ConsumerWidget {
   final String torrentHash;
@@ -126,7 +128,7 @@ class TorrentFileItem extends ConsumerWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                file.priority.label,
+                                file.priority.localizedLabel(context.l10n),
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   fontSize: 10,
                                   color: _getPriorityColor(
@@ -208,7 +210,7 @@ class _PrioritySelectionSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Text(
-              'Set Priority',
+              context.l10n.torrentSetPriority,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -229,7 +231,7 @@ class _PrioritySelectionSheet extends StatelessWidget {
                     : null,
               ),
               title: Text(
-                priority.label,
+                priority.localizedLabel(context.l10n),
                 style: TextStyle(
                   fontWeight: priority == currentPriority
                       ? FontWeight.bold

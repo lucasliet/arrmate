@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
+import '../../../l10n/labels.dart';
 
 import '../providers/torrent_file_providers.dart';
 import '../widgets/torrent_file_item.dart';
@@ -33,7 +35,9 @@ class TorrentFilesSheet extends ConsumerWidget {
                 child: filesAsync.when(
                   data: (files) {
                     if (files.isEmpty) {
-                      return const Center(child: Text('No files found'));
+                      return Center(
+                        child: Text(context.l10n.torrentNoFilesFound),
+                      );
                     }
                     return ListView.separated(
                       controller: scrollController,
@@ -57,7 +61,9 @@ class TorrentFilesSheet extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        'Failed to load files: $error',
+                        context.l10n.torrentLoadFilesFailed(
+                          describeError(error, context.l10n),
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red),
                       ),
@@ -105,7 +111,7 @@ class TorrentFilesSheet extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Files',
+                      context.l10n.torrentFiles,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

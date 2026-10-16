@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import '../../core/l10n/app_locale.dart';
 import '../../core/services/logger_service.dart';
 import '../providers/onboarding_provider.dart';
 import '../router/app_router.dart';
 import 'app_tour_keys.dart';
 import 'tour_mockup_provider.dart';
+import '../l10n/core_labels.dart';
 
 /// Shows the tour overlay over [targets], reporting the user walking to the
 /// end through [onFinish] and the Skip button through [onSkip].
@@ -46,6 +48,10 @@ class AppTourService {
 
   bool _cancelled = false;
 
+  /// Translations captured when the tour starts, so every coach mark of a run
+  /// uses the interface language active at that moment.
+  AppLocalizations _l10n = appLocalizationsFor(const Locale('en'));
+
   AppTourService(
     this._ref,
     this._keys, {
@@ -59,12 +65,14 @@ class AppTourService {
   void startFull() {
     logger.info('[AppTourService] Starting full tour');
     _cancelled = false;
+    _l10n = readAppLocalizations(_ref);
     _ref.read(tourActiveProvider.notifier).start();
     _runInstanceSegment();
   }
 
   Future<void> _runInstanceSegment() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/settings');
     await _waitForKey(_keys.settingsInstancesHeaderKey);
 
@@ -73,19 +81,15 @@ class AppTourService {
         _target(
           key: _keys.settingsInstancesHeaderKey,
           identify: 'settings_instances',
-          title: 'Instances',
-          body:
-              'Your Radarr, Sonarr, and qBittorrent servers live here. '
-              'Let\'s add your first one.',
+          title: l10n.tourInstancesTitle,
+          body: l10n.tourInstancesBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.settingsAddInstanceKey,
           identify: 'settings_add_instance',
-          title: 'Add Instance',
-          body:
-              'Tap here to create a new server connection. The next steps '
-              'walk through the form.',
+          title: l10n.tourAddInstanceTitle,
+          body: l10n.tourAddInstanceBody,
           align: ContentAlign.top,
         ),
       ],
@@ -95,6 +99,7 @@ class AppTourService {
 
   Future<void> _runInstanceFormSegment() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/settings/instance/new');
     await _waitForKey(_keys.instanceTypeSelectorKey);
 
@@ -103,53 +108,43 @@ class AppTourService {
         _target(
           key: _keys.instanceTypeSelectorKey,
           identify: 'instance_type',
-          title: 'Choose the server type',
-          body:
-              'Pick Radarr (movies), Sonarr (series), or qBittorrent '
-              '(downloads). Each needs its own connection.',
+          title: l10n.tourInstanceTypeTitle,
+          body: l10n.tourInstanceTypeBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.instanceNameFieldKey,
           identify: 'instance_name',
-          title: 'Name',
-          body:
-              'A friendly label so you can tell your servers apart '
-              '(e.g. "Home Server").',
+          title: l10n.tourInstanceNameTitle,
+          body: l10n.tourInstanceNameBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.instanceUrlFieldKey,
           identify: 'instance_url',
-          title: 'URL',
-          body:
-              'Your server address including http(s):// and port, '
-              'e.g. http://192.168.1.10:7878.',
+          title: l10n.tourInstanceUrlTitle,
+          body: l10n.tourInstanceUrlBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.instanceApiKeyFieldKey,
           identify: 'instance_api_key',
-          title: 'API Key',
-          body:
-              'Radarr/Sonarr require an API key from Settings → General. '
-              'qBittorrent uses a Bearer token (v5.2.0+) or Basic Auth.',
+          title: l10n.tourInstanceApiKeyTitle,
+          body: l10n.tourInstanceApiKeyBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.instanceTestConnectionKey,
           identify: 'instance_test',
-          title: 'Test Connection',
-          body: 'Verifies the URL and credentials before saving.',
+          title: l10n.tourTestConnectionTitle,
+          body: l10n.tourTestConnectionBody,
           align: ContentAlign.top,
         ),
         _target(
           key: _keys.instanceSaveKey,
           identify: 'instance_save',
-          title: 'Save Instance',
-          body:
-              'When everything checks out, save to finish setup. You can '
-              'add the other servers any time from Settings.',
+          title: l10n.tourSaveInstanceTitle,
+          body: l10n.tourSaveInstanceBody,
           align: ContentAlign.top,
         ),
       ],
@@ -159,6 +154,7 @@ class AppTourService {
 
   Future<void> _runDiscoverySegment() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/movies');
     await _waitForKey(_keys.moviesSearchKey);
 
@@ -167,24 +163,22 @@ class AppTourService {
         _target(
           key: _keys.moviesLibraryKey,
           identify: 'movies_library',
-          title: 'Your movie library',
-          body:
-              'Every movie Radarr manages shows up here with its monitoring '
-              'and download status.',
+          title: l10n.tourMoviesLibraryTitle,
+          body: l10n.tourMoviesLibraryBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.moviesSearchKey,
           identify: 'movies_search',
-          title: 'Search',
-          body: 'Find movies in your library by title.',
+          title: l10n.commonSearch,
+          body: l10n.tourMoviesSearchBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.moviesSortKey,
           identify: 'movies_sort',
-          title: 'Sort & Filter',
-          body: 'Reorder and filter your library to browse faster.',
+          title: l10n.tourMoviesSortTitle,
+          body: l10n.tourMoviesSortBody,
           align: ContentAlign.bottom,
         ),
       ],
@@ -194,6 +188,7 @@ class AppTourService {
 
   Future<void> _runSeriesSegment() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/series');
     await _waitForKey(_keys.seriesLibraryKey);
 
@@ -202,10 +197,8 @@ class AppTourService {
         _target(
           key: _keys.seriesLibraryKey,
           identify: 'series_library',
-          title: 'Your series library',
-          body:
-              'Your Sonarr series live here, with season counts and how much '
-              'of each show is already downloaded.',
+          title: l10n.tourSeriesLibraryTitle,
+          body: l10n.tourSeriesLibraryBody,
           align: ContentAlign.bottom,
         ),
       ],
@@ -215,6 +208,7 @@ class AppTourService {
 
   Future<void> _runCalendarStep() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/calendar');
     await _waitForKey(_keys.calendarTitleKey);
 
@@ -223,17 +217,15 @@ class AppTourService {
         _target(
           key: _keys.calendarTitleKey,
           identify: 'calendar',
-          title: 'Calendar',
-          body: 'Track upcoming movie releases and series episodes.',
+          title: l10n.labelTabCalendar,
+          body: l10n.tourCalendarBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.calendarListKey,
           identify: 'calendar_events',
-          title: 'Upcoming releases',
-          body:
-              'Each card shows what airs or releases next, grouped by day and '
-              'colour-coded by release type.',
+          title: l10n.tourCalendarEventsTitle,
+          body: l10n.tourCalendarEventsBody,
           align: ContentAlign.bottom,
         ),
       ],
@@ -243,6 +235,7 @@ class AppTourService {
 
   Future<void> _runActivityStep() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _navigateTo('/activity');
     await _waitForKey(_keys.activityTabBarKey);
 
@@ -251,19 +244,15 @@ class AppTourService {
         _target(
           key: _keys.activityTabBarKey,
           identify: 'activity_tabs',
-          title: 'Activity',
-          body:
-              'Monitor your download queue, history, and qBittorrent '
-              'torrents here.',
+          title: l10n.labelTabActivity,
+          body: l10n.tourActivityBody,
           align: ContentAlign.bottom,
         ),
         _target(
           key: _keys.activityQueueKey,
           identify: 'activity_queue',
-          title: 'Download queue',
-          body:
-              'Active downloads report progress, size left, and estimated '
-              'completion. Tap one for details and actions.',
+          title: l10n.tourActivityQueueTitle,
+          body: l10n.tourActivityQueueBody,
           align: ContentAlign.bottom,
         ),
       ],
@@ -273,6 +262,7 @@ class AppTourService {
 
   Future<void> _runTorrentsStep() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _selectTorrentsTab();
     await _waitForKey(_keys.activityTorrentKey);
 
@@ -281,10 +271,8 @@ class AppTourService {
         _target(
           key: _keys.activityTorrentKey,
           identify: 'activity_torrents',
-          title: 'Torrents',
-          body:
-              'Torrents from qBittorrent report live speed, ratio, and peers, '
-              'with pause, resume, and import actions.',
+          title: l10n.tourTorrentsTitle,
+          body: l10n.tourTorrentsBody,
           align: ContentAlign.bottom,
         ),
       ],
@@ -294,6 +282,7 @@ class AppTourService {
 
   Future<void> _runNavigationStep() async {
     if (_cancelled) return;
+    final l10n = _l10n;
     await _waitForKey(_keys.navBarKey);
 
     _present(
@@ -301,10 +290,8 @@ class AppTourService {
         _target(
           key: _keys.navBarKey,
           identify: 'nav_bar',
-          title: 'Navigation',
-          body:
-              'Switch between Movies, Series, Calendar, Activity, and '
-              'Settings anytime.',
+          title: l10n.tourNavigationTitle,
+          body: l10n.tourNavigationBody,
           align: _keys.navBarKey.currentWidget is NavigationRail
               ? ContentAlign.right
               : ContentAlign.top,
@@ -404,7 +391,7 @@ class AppTourService {
       imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
       paddingFocus: 10,
       hideSkip: false,
-      textSkip: 'Skip',
+      textSkip: _l10n.tourSkip,
       alignSkip: Alignment.bottomRight,
       onFinish: onFinish,
       onSkip: () {

@@ -6,6 +6,8 @@ import '../../../../domain/models/models.dart';
 import '../../../adaptive/content_layout.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import 'movie_poster.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// A card widget displaying a movie poster and status, utilized in grid view.
 class MovieCard extends ConsumerWidget {
@@ -87,7 +89,7 @@ class MovieCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        movie.yearLabel,
+                        movie.localizedYearLabel(context.l10n),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: isLargePoster ? 12 : 10,

@@ -4,6 +4,7 @@ import 'package:arrmate/presentation/screens/settings/system_overview_screen.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets(
@@ -51,7 +52,12 @@ void main() {
               (ref) async => [overview],
             ),
           ],
-          child: const MaterialApp(home: SystemOverviewScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: SystemOverviewScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -82,7 +88,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,
-        child: const MaterialApp(home: SystemOverviewScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: SystemOverviewScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

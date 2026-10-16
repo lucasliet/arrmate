@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/extensions/context_extensions.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/advanced_providers.dart';
 
@@ -13,11 +14,11 @@ class HealthScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Health'),
+        title: Text(context.l10n.healthTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.health_and_safety),
-            tooltip: 'Run health check',
+            tooltip: context.l10n.healthRunCheck,
             onPressed: healthAsync.isLoading
                 ? null
                 : () {
@@ -34,19 +35,19 @@ class HealthScreen extends ConsumerWidget {
               skipLoadingOnRefresh: true,
               data: (overview) {
                 if (overview.configuredSourceCount == 0) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.dns_outlined, size: 64),
-                        SizedBox(height: 16),
+                        const Icon(Icons.dns_outlined, size: 64),
+                        const SizedBox(height: 16),
                         Text(
-                          'No Arr instances configured',
-                          style: TextStyle(fontSize: 18),
+                          context.l10n.settingsNoArrInstancesConfigured,
+                          style: const TextStyle(fontSize: 18),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          'Add a Radarr or Sonarr instance to view server health.',
+                          context.l10n.healthNoInstancesSubtitle,
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -56,23 +57,23 @@ class HealthScreen extends ConsumerWidget {
 
                 if (overview.serverChecks.isEmpty &&
                     overview.connectionFailures.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.check_circle_outline,
                           size: 64,
                           color: Colors.green,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
-                          'No server issues found',
-                          style: TextStyle(fontSize: 18),
+                          context.l10n.healthNoIssuesTitle,
+                          style: const TextStyle(fontSize: 18),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          'Connected servers reported no health warnings.',
+                          context.l10n.healthNoIssuesSubtitle,
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -83,12 +84,14 @@ class HealthScreen extends ConsumerWidget {
                 return ListView(
                   children: [
                     if (overview.connectionFailures.isNotEmpty) ...[
-                      const _SectionHeader(title: 'Connection issues'),
+                      _SectionHeader(
+                        title: context.l10n.healthConnectionIssues,
+                      ),
                       for (final failure in overview.connectionFailures)
                         _ConnectionFailureTile(failure: failure),
                     ],
                     if (overview.serverChecks.isNotEmpty) ...[
-                      const _SectionHeader(title: 'Server warnings'),
+                      _SectionHeader(title: context.l10n.healthServerWarnings),
                       for (final check in overview.serverChecks)
                         _ServerHealthCheckTile(check: check),
                     ],
@@ -106,12 +109,12 @@ class HealthScreen extends ConsumerWidget {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Failed to load health status'),
+                    Text(context.l10n.healthLoadFailed),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => ref.invalidate(healthProvider),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: Text(context.l10n.commonRetry),
                     ),
                   ],
                 ),
@@ -154,13 +157,13 @@ class _ConnectionFailureTile extends StatelessWidget {
       ),
       title: Text(
         isLoadFailure
-            ? '${failure.service} connection failed'
-            : '${failure.service} check could not start',
+            ? context.l10n.healthConnectionFailed(failure.service)
+            : context.l10n.healthCheckCouldNotStart(failure.service),
       ),
       subtitle: Text(
         isLoadFailure
-            ? 'Could not load server health. Check the connection and try again.'
-            : 'The latest available server status is shown below.',
+            ? context.l10n.healthLoadFailureSubtitle
+            : context.l10n.healthRunFailureSubtitle,
       ),
     );
   }
@@ -188,7 +191,7 @@ class _ServerHealthCheckTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Wiki: ${check.wikiUrl}',
+                context.l10n.healthWiki(check.wikiUrl),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontSize: 12,

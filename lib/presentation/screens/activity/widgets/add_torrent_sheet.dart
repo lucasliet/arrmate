@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
+import '../../../l10n/labels.dart';
 import '../providers/qbittorrent_provider.dart';
 import 'category_autocomplete_field.dart';
 import 'tags_autocomplete_field.dart';
@@ -47,7 +48,11 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
         });
       }
     } catch (e) {
-      if (mounted) context.showErrorSnackBar('Failed to pick file: $e');
+      if (mounted) {
+        context.showErrorSnackBar(
+          context.l10n.torrentPickFileFailed(describeError(e, context.l10n)),
+        );
+      }
     }
   }
 
@@ -56,9 +61,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
 
     // Check if at least one source provided
     if (_selectedFilePath == null && _urlsController.text.trim().isEmpty) {
-      context.showErrorSnackBar(
-        'Please provide URLs or select a .torrent file',
-      );
+      context.showErrorSnackBar(context.l10n.torrentAddSourceRequired);
       return;
     }
 
@@ -89,12 +92,15 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
       }
 
       if (mounted) {
+        final l10n = context.l10n;
         Navigator.pop(context);
-        context.showSnackBar('Torrent added successfully');
+        context.showSnackBar(l10n.torrentAdded);
       }
     } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar('Failed to add torrent: ${e.toString()}');
+        context.showErrorSnackBar(
+          context.l10n.torrentAddFailed(describeError(e, context.l10n)),
+        );
         setState(() => _isSubmitting = false);
       }
     }
@@ -113,7 +119,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
         return Column(
           children: [
             AppBar(
-              title: const Text('Add Torrent'),
+              title: Text(context.l10n.torrentAddTorrent),
               automaticallyImplyLeading: false,
               actions: [
                 IconButton(
@@ -133,7 +139,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Source',
+                        context.l10n.torrentAddSource,
                         style: context.textTheme.titleMedium?.copyWith(
                           color: context.colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -157,7 +163,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Center(child: Text('OR')),
+                        Center(child: Text(context.l10n.torrentAddOr)),
                         const SizedBox(height: 16),
                       ] else ...[
                         OutlinedButton.icon(
@@ -165,7 +171,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                               ? _pickTorrentFile
                               : null, // Disable if text has content
                           icon: const Icon(Icons.file_upload),
-                          label: const Text('Select .torrent File'),
+                          label: Text(context.l10n.torrentSelectFile),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.all(16),
                           ),
@@ -178,11 +184,10 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                         TextFormField(
                           controller: _urlsController,
                           maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Magnet Link or URLs',
-                            hintText:
-                                'Paste magnet links or HTTP URLs here\nOne per line',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.torrentUrlsLabel,
+                            hintText: context.l10n.torrentUrlsHint,
+                            border: const OutlineInputBorder(),
                             alignLabelWithHint: true,
                           ),
                           onChanged: (_) =>
@@ -191,7 +196,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
 
                       const SizedBox(height: 24),
                       Text(
-                        'Options',
+                        context.l10n.torrentAddOptions,
                         style: context.textTheme.titleMedium?.copyWith(
                           color: context.colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -201,10 +206,10 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
 
                       TextFormField(
                         controller: _savePathController,
-                        decoration: const InputDecoration(
-                          labelText: 'Save Path (Optional)',
-                          prefixIcon: Icon(Icons.folder_open),
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.torrentSavePathOptional,
+                          prefixIcon: const Icon(Icons.folder_open),
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -235,7 +240,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                       const SizedBox(height: 12),
 
                       SwitchListTile(
-                        title: const Text('Start Paused'),
+                        title: Text(context.l10n.torrentStartPaused),
                         value: _startPaused,
                         onChanged: (val) => setState(() => _startPaused = val),
                         contentPadding: EdgeInsets.zero,
@@ -253,7 +258,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Add Torrent'),
+                            : Text(context.l10n.torrentAddTorrent),
                       ),
                     ],
                   ),

@@ -3,6 +3,7 @@ import 'package:arrmate/presentation/screens/calendar/providers/calendar_provide
 import 'package:arrmate/presentation/screens/calendar/widgets/calendar_filter_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/localized_app.dart';
 
 void main() {
   testWidgets('should expose and dispatch every calendar filter', (
@@ -18,6 +19,9 @@ void main() {
     bool? hideSpecials;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Scaffold(
           body: CalendarFilterBar(
             instances: [_instance()],
@@ -66,6 +70,9 @@ void main() {
     var reset = false;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
         home: Scaffold(
           body: CalendarFilterBar(
             instances: [_instance()],

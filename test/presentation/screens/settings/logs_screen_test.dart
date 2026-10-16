@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -142,6 +143,11 @@ Widget _app(LogPage logPage) {
       arrLogLoaderProvider.overrideWithValue(({int page = 1}) async => logPage),
       appLogsProvider.overrideWith((ref) => Stream.value(const [])),
     ],
-    child: const MaterialApp(home: LogsScreen()),
+    child: const MaterialApp(
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      locale: testLocale,
+      home: LogsScreen(),
+    ),
   );
 }

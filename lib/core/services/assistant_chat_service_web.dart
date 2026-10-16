@@ -6,9 +6,10 @@ class AssistantChatService {
   void setKnowledgeService(AssistantKnowledgeService service) {}
 
   /// Rejects loading a native local model in a browser.
-  Future<void> loadModel(String modelPath) => Future.error(
-    UnsupportedError('The on-device assistant is unavailable on web.'),
-  );
+  Future<void> loadModel(String modelPath, {String languageCode = 'pt'}) =>
+      Future.error(
+        UnsupportedError('The on-device assistant is unavailable on web.'),
+      );
 
   /// Rejects local inference in a browser.
   Future<String> sendMessage(String message) => Future.error(

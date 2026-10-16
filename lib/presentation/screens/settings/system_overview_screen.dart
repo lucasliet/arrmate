@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../../core/l10n/app_locale.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/instance_storage_provider.dart';
@@ -18,10 +20,10 @@ class SystemOverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Overview'),
+        title: Text(context.l10n.systemOverviewTitle),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.l10n.commonRefresh,
             onPressed: () => _refresh(ref),
             icon: const Icon(Icons.refresh),
           ),
@@ -30,10 +32,10 @@ class SystemOverviewScreen extends ConsumerWidget {
       body: overviews.when(
         data: (items) {
           if (items.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.dns_outlined,
-              title: 'No Arr instances configured',
-              subtitle: 'Add a Radarr or Sonarr instance to view system data.',
+              title: context.l10n.settingsNoArrInstancesConfigured,
+              subtitle: context.l10n.systemOverviewEmptySubtitle,
             );
           }
 
@@ -50,9 +52,9 @@ class SystemOverviewScreen extends ConsumerWidget {
           );
         },
         loading: () =>
-            const LoadingIndicator(message: 'Loading system overview...'),
+            LoadingIndicator(message: context.l10n.systemOverviewLoading),
         error: (_, _) => ErrorDisplay(
-          message: 'Failed to load the system overview.',
+          message: context.l10n.systemOverviewLoadFailed,
           onRetry: () => _refresh(ref),
         ),
       ),
@@ -103,7 +105,10 @@ class _InstanceOverviewCard extends StatelessWidget {
             const SizedBox(height: paddingMd),
             Divider(color: theme.colorScheme.outlineVariant),
             const SizedBox(height: paddingSm),
-            Text('Disk Space', style: theme.textTheme.titleSmall),
+            Text(
+              context.l10n.systemOverviewDiskSpace,
+              style: theme.textTheme.titleSmall,
+            ),
             const SizedBox(height: paddingSm),
             _DiskSpaceSection(diskSpaces: overview.diskSpaces),
             if (overview.hasFailures) ...[
@@ -181,35 +186,29 @@ class _LibrarySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final librarySize = _MetricData(
+      icon: Icons.folder_outlined,
+      text: l10n.systemOverviewLibrarySize(formatBytes(statistics.sizeOnDisk)),
+    );
     final metrics = instanceType == InstanceType.radarr
         ? [
             _MetricData(
               icon: Icons.movie_outlined,
-              value: '${statistics.movieCount}',
-              label: statistics.movieCount == 1 ? 'Movie' : 'Movies',
+              text: l10n.systemOverviewMovieCount(statistics.movieCount),
             ),
-            _MetricData(
-              icon: Icons.folder_outlined,
-              value: formatBytes(statistics.sizeOnDisk),
-              label: 'Library',
-            ),
+            librarySize,
           ]
         : [
             _MetricData(
               icon: Icons.tv_outlined,
-              value: '${statistics.seriesCount}',
-              label: 'Series',
+              text: l10n.systemOverviewSeriesCount(statistics.seriesCount),
             ),
             _MetricData(
               icon: Icons.video_library_outlined,
-              value: '${statistics.episodeCount}',
-              label: statistics.episodeCount == 1 ? 'Episode' : 'Episodes',
+              text: l10n.systemOverviewEpisodeCount(statistics.episodeCount),
             ),
-            _MetricData(
-              icon: Icons.folder_outlined,
-              value: formatBytes(statistics.sizeOnDisk),
-              label: 'Library',
-            ),
+            librarySize,
           ];
 
     return Wrap(
@@ -224,14 +223,11 @@ class _LibrarySummary extends StatelessWidget {
 
 class _MetricData {
   final IconData icon;
-  final String value;
-  final String label;
 
-  const _MetricData({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
+  /// Translated metric text, value and label combined (e.g. "2 Movies").
+  final String text;
+
+  const _MetricData({required this.icon, required this.text});
 }
 
 class _Metric extends StatelessWidget {
@@ -258,10 +254,7 @@ class _Metric extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: paddingSm),
-          Text(
-            '${data.value} ${data.label}',
-            style: theme.textTheme.labelLarge,
-          ),
+          Text(data.text, style: theme.textTheme.labelLarge),
         ],
       ),
     );
@@ -280,7 +273,7 @@ class _DiskSpaceSection extends StatelessWidget {
     }
     if (diskSpaces!.isEmpty) {
       return Text(
-        'No storage locations reported.',
+        context.l10n.systemOverviewNoStorage,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -308,6 +301,7 @@ class _DiskSpaceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final usedPercent = (diskSpace.usedFraction * 100).round();
 
     return Column(
@@ -345,13 +339,18 @@ class _DiskSpaceRow extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Used ${formatBytes(diskSpace.usedSpace)} ($usedPercent%)',
+                l10n.systemOverviewUsed(
+                  formatBytes(diskSpace.usedSpace),
+                  usedPercent,
+                ),
                 style: theme.textTheme.bodySmall,
               ),
             ),
             Text(
-              '${formatBytes(diskSpace.freeSpace)} free of '
-              '${formatBytes(diskSpace.totalSpace)}',
+              l10n.systemOverviewFreeOf(
+                formatBytes(diskSpace.freeSpace),
+                formatBytes(diskSpace.totalSpace),
+              ),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -385,7 +384,9 @@ class _FailureContainer extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              failures.map((failure) => failure.message).join('\n'),
+              failures
+                  .map((failure) => _failureMessage(failure, context.l10n))
+                  .join('\n'),
               style: TextStyle(color: colorScheme.onErrorContainer),
             ),
           ),
@@ -393,4 +394,24 @@ class _FailureContainer extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Translates the default English message of [failure] for its section.
+///
+/// The provider reports a fixed English message per section, unless the
+/// server rejected the credentials; server-provided messages are returned
+/// untouched.
+String _failureMessage(InstanceOverviewFailure failure, AppLocalizations l10n) {
+  return switch ((failure.section, failure.message)) {
+    (InstanceOverviewSection.status, 'Version information is unavailable.') =>
+      l10n.systemOverviewVersionUnavailable,
+    (
+      InstanceOverviewSection.diskSpace,
+      'Disk space information is unavailable.',
+    ) =>
+      l10n.systemOverviewDiskSpaceUnavailable,
+    (InstanceOverviewSection.library, 'Library statistics are unavailable.') =>
+      l10n.systemOverviewLibraryUnavailable,
+    _ => failure.message,
+  };
 }

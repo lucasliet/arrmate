@@ -13,6 +13,8 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_lookup_provider.dart';
 import 'providers/series_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// A modal sheet for searching and adding new series to Sonarr.
 class SeriesAddSheet extends ConsumerStatefulWidget {
@@ -110,11 +112,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
         _qualityProfileId == null ||
         _rootFolderPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select a series, quality profile, and root folder',
-          ),
-        ),
+        SnackBar(content: Text(context.l10n.seriesAddMissingSelection)),
       );
       return;
     }
@@ -156,10 +154,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
         final container = ProviderScope.containerOf(context);
+        final successMessage = context.l10n.seriesAddedSuccessfully;
         _closeSheet();
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Series added successfully')),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
         // Reload the library on the next frame, after the pop and the
         // snackbar have been scheduled.
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -170,7 +167,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding series: $e'),
+            content: Text(
+              context.l10n.seriesAddFailed(describeError(e, context.l10n)),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -201,11 +200,11 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: const Text('Add Series'),
+            title: Text(context.l10n.seriesAddSeriesTitle),
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
-                tooltip: 'Close',
+                tooltip: context.l10n.commonClose,
                 icon: const Icon(Icons.close),
                 onPressed: _closeSheet,
               ),
@@ -217,8 +216,8 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
             child: TextField(
               controller: _searchController,
               autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'Search',
+              decoration: InputDecoration(
+                labelText: context.l10n.commonSearch,
                 hintText: 'Breaking Bad, tvdb:81189, imdb:tt0903747',
                 isDense: true,
               ),
@@ -241,15 +240,15 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     DropdownButtonFormField<DiscoverySortOption>(
                       initialValue: _sort,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Sort',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonSort,
                         isDense: true,
                       ),
                       items: DiscoverySortOption.values
                           .map(
                             (option) => DropdownMenuItem(
                               value: option,
-                              child: Text(option.label),
+                              child: Text(option.localizedLabel(context.l10n)),
                             ),
                           )
                           .toList(),
@@ -259,7 +258,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     );
                 final hideExistingFilter = FilterChip(
                   selected: _hideExisting,
-                  label: const Text('Hide already added'),
+                  label: Text(context.l10n.seriesHideAlreadyAdded),
                   onSelected: (value) {
                     setState(() => _hideExisting = value);
                   },
@@ -298,12 +297,10 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   hideExisting: _hideExisting,
                 );
                 if (results.isEmpty && _searchController.text.isNotEmpty) {
-                  return const Center(child: Text('No results found'));
+                  return Center(child: Text(context.l10n.seriesNoResultsFound));
                 }
                 if (results.isEmpty) {
-                  return const Center(
-                    child: Text('Search by title, provider ID, or URL'),
-                  );
+                  return Center(child: Text(context.l10n.seriesSearchByHint));
                 }
                 return ListView.builder(
                   controller: scrollController,
@@ -321,8 +318,8 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                           : const Icon(Icons.tv),
                       title: Text(series.title),
                       subtitle: Text(
-                        '${series.yearLabel} · '
-                        '${series.ratings?.value.toStringAsFixed(1) ?? 'No rating'}',
+                        '${series.localizedYearLabel(context.l10n)} · '
+                        '${series.ratings?.value.toStringAsFixed(1) ?? context.l10n.seriesNoRating}',
                       ),
                       trailing: series.exists
                           ? const Icon(Icons.check_circle, color: Colors.green)
@@ -339,7 +336,13 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                 );
               },
               loading: () => const Center(child: LoadingIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+              error: (err, stack) => Center(
+                child: Text(
+                  context.l10n.commonErrorWithDetails(
+                    describeError(err, context.l10n),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -353,7 +356,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: const Text('Series Preview'),
+            title: Text(context.l10n.seriesPreview),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => setState(() => _selectedSeries = null),
@@ -380,7 +383,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   ),
                 const SizedBox(height: 16),
                 Text(
-                  '${series.title} (${series.yearLabel})',
+                  '${series.title} (${series.localizedYearLabel(context.l10n)})',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -394,12 +397,12 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text(series.overview ?? 'No overview available.'),
+                Text(series.overview ?? context.l10n.seriesNoOverview),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => setState(() => _isConfiguring = true),
                   icon: const Icon(Icons.tune),
-                  label: const Text('Configure Addition'),
+                  label: Text(context.l10n.seriesConfigureAddition),
                 ),
               ],
             ),
@@ -436,7 +439,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
       (scrollController) => Column(
         children: [
           AppBar(
-            title: Text(_selectedSeries?.title ?? 'Add Series'),
+            title: Text(
+              _selectedSeries?.title ?? context.l10n.seriesAddSeriesTitle,
+            ),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => setState(() => _isConfiguring = false),
@@ -450,9 +455,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text(
-                        'Add',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    : Text(
+                        context.l10n.commonAdd,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
               ),
             ],
@@ -465,7 +470,9 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 DropdownButtonFormField<SeriesMonitorType>(
-                  decoration: const InputDecoration(labelText: 'Monitor'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.commonMonitor,
+                  ),
                   initialValue: _monitor,
                   items: SeriesMonitorType.values
                       .where(
@@ -476,7 +483,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                       .map(
                         (monitor) => DropdownMenuItem(
                           value: monitor,
-                          child: Text(monitor.label),
+                          child: Text(monitor.localizedLabel(context.l10n)),
                         ),
                       )
                       .toList(),
@@ -486,7 +493,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text('Monitor New Seasons'),
+                  title: Text(context.l10n.seriesMonitorNewSeasons),
                   value: _monitorNewItems == SeriesMonitorNewItems.all,
                   onChanged: (value) {
                     setState(
@@ -498,19 +505,21 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SeriesType>(
-                  decoration: const InputDecoration(labelText: 'Series Type'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.seriesSeriesType,
+                  ),
                   initialValue: _seriesType,
                   items: SeriesType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
-                      child: Text(type.label),
+                      child: Text(type.localizedLabel(context.l10n)),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _seriesType = val!),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text('Season Folder'),
+                  title: Text(context.l10n.seriesSeasonFolder),
                   value: _seasonFolder,
                   onChanged: (val) => setState(() => _seasonFolder = val),
                 ),
@@ -533,8 +542,8 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                       });
                     }
                     return DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
-                        labelText: 'Quality Profile',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonQualityProfile,
                       ),
                       initialValue: effectiveProfileId,
                       items: profiles
@@ -550,7 +559,11 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) => Text('Error loading profiles: $e'),
+                  error: (e, _) => Text(
+                    context.l10n.seriesLoadProfilesError(
+                      describeError(e, context.l10n),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 rootFolders.when(
@@ -570,8 +583,8 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                       });
                     }
                     return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Root Folder',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonRootFolder,
                       ),
                       initialValue: effectiveRootFolder,
                       items: rootFolderList.map((f) {
@@ -580,7 +593,10 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                         return DropdownMenuItem(
                           value: f.path,
                           child: Text(
-                            '${f.path} (${freeSpaceGb.toStringAsFixed(1)} GB Free)',
+                            context.l10n.seriesRootFolderFreeSpace(
+                              f.path,
+                              freeSpaceGb.toStringAsFixed(1),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -588,11 +604,18 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) => Text('Error loading folders: $e'),
+                  error: (e, _) => Text(
+                    context.l10n.seriesLoadFoldersError(
+                      describeError(e, context.l10n),
+                    ),
+                  ),
                 ),
                 if (tags.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text('Tags', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    context.l10n.commonTags,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   TagList(
                     tags: tags,
                     selectedTagIds: _selectedTagIds,

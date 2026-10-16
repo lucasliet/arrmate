@@ -4,10 +4,14 @@ import '../../data/api/jellyfin_service.dart';
 import '../../data/api/radarr_api.dart';
 import '../../data/api/sonarr_api.dart';
 import '../../domain/models/models.dart';
+import '../../presentation/l10n/error_messages.dart';
 import '../../presentation/providers/instances_provider.dart';
+import '../../presentation/providers/locale_provider.dart';
+import '../l10n/app_locale.dart';
 import '../network/api_error.dart';
 import 'logger_service.dart';
 import 'remote_notification_setup_service.dart' show NotificationSetupResult;
+import '../../presentation/l10n/core_labels.dart';
 
 /// Provider for the [JellyfinConnectSetupService].
 final jellyfinConnectSetupServiceProvider = Provider(
@@ -39,13 +43,15 @@ class JellyfinConnectSetupService {
   final JellyfinService Function(Instance instance) _jellyfinServiceFactory;
   final Future<void> Function(Instance instance) _instanceUpdater;
   final Future<String> Function() _installationIdSource;
+  final AppLocalizations Function() _localizations;
 
   /// Creates the service.
   ///
   /// [radarrApiFactory], [sonarrApiFactory], [jellyfinServiceFactory],
-  /// [instancesSource], [instanceUpdater] and [installationIdSource] are
-  /// injection points for tests; production uses the real API clients,
-  /// [instancesProvider] and [JellyfinService.installationId].
+  /// [instancesSource], [instanceUpdater], [installationIdSource] and
+  /// [localizations] are injection points for tests; production uses the
+  /// real API clients, [instancesProvider], [JellyfinService.installationId]
+  /// and [appLocalizationsProvider].
   JellyfinConnectSetupService(
     Ref ref, {
     RadarrApi Function(Instance instance)? radarrApiFactory,
@@ -54,7 +60,9 @@ class JellyfinConnectSetupService {
     List<Instance> Function()? instancesSource,
     Future<void> Function(Instance instance)? instanceUpdater,
     Future<String> Function()? installationIdSource,
-  }) : _installationIdSource =
+    AppLocalizations Function()? localizations,
+  }) : _localizations = localizations ?? (() => readAppLocalizations(ref)),
+       _installationIdSource =
            installationIdSource ?? JellyfinService.installationId,
        _radarrApiFactory = radarrApiFactory ?? _defaultRadarrApi,
        _sonarrApiFactory = sonarrApiFactory ?? _defaultSonarrApi,
@@ -92,7 +100,7 @@ class JellyfinConnectSetupService {
       );
       return [
         NotificationSetupResult.failure(
-          'No Jellyfin connection configured in Arrmate.',
+          _localizations().jellyfinSetupNoConnection,
         ),
       ];
     }
@@ -178,9 +186,12 @@ class JellyfinConnectSetupService {
           e,
           st,
         );
+        final l10n = _localizations();
         failures.add(
-          'Could not remove the Jellyfin connection from '
-          '${_describe(arrInstance)}: $e',
+          l10n.jellyfinSetupRemoveConnectorFailed(
+            _describe(arrInstance),
+            describeError(e, l10n),
+          ),
         );
       }
     }
@@ -194,7 +205,8 @@ class JellyfinConnectSetupService {
         }
       } catch (e, st) {
         logger.error('[$_logPrefix] Failed to revoke the Arrmate key', e, st);
-        failures.add('Could not revoke the Arrmate API key in Jellyfin: $e');
+        final l10n = _localizations();
+        failures.add(l10n.jellyfinSetupRevokeKeyFailed(describeError(e, l10n)));
       }
     }
     if (_holdsSessionToken(jellyfinInstance)) {
@@ -209,7 +221,8 @@ class JellyfinConnectSetupService {
         );
       } catch (e, st) {
         logger.error('[$_logPrefix] Failed to sign out of Jellyfin', e, st);
-        failures.add('Could not sign out of Jellyfin: $e');
+        final l10n = _localizations();
+        failures.add(l10n.jellyfinSetupSignOutFailed(describeError(e, l10n)));
       }
     }
     return failures;
@@ -281,11 +294,12 @@ class JellyfinConnectSetupService {
     required Instance jellyfinInstance,
     _ApiKeyResolution? resolvedServerApiKey,
   }) async {
+    final l10n = _localizations();
     try {
       if (arrInstance.type != InstanceType.radarr &&
           arrInstance.type != InstanceType.sonarr) {
         return NotificationSetupResult.failure(
-          '${_describe(arrInstance)} is not a Radarr or Sonarr instance.',
+          l10n.jellyfinSetupNotArrInstance(_describe(arrInstance)),
         );
       }
 
@@ -337,7 +351,7 @@ class JellyfinConnectSetupService {
           '[$_logPrefix] Created "$connectorName" on ${_describe(arrInstance)}.',
         );
         return NotificationSetupResult.success(
-          '${_describe(arrInstance)} configured successfully.',
+          l10n.notificationSetupConfigured(_describe(arrInstance)),
         );
       }
 
@@ -360,7 +374,7 @@ class JellyfinConnectSetupService {
         '[$_logPrefix] Updated "$connectorName" on ${_describe(arrInstance)}.',
       );
       return NotificationSetupResult.success(
-        '${_describe(arrInstance)} updated successfully.',
+        l10n.notificationSetupUpdated(_describe(arrInstance)),
       );
     } catch (e, st) {
       logger.error(
@@ -369,7 +383,10 @@ class JellyfinConnectSetupService {
         st,
       );
       return NotificationSetupResult.failure(
-        'Failed to configure ${_describe(arrInstance)}: $e',
+        l10n.notificationSetupFailed(
+          _describe(arrInstance),
+          describeError(e, l10n),
+        ),
       );
     }
   }
@@ -400,10 +417,7 @@ class JellyfinConnectSetupService {
       return _ApiKeyResolution(apiKey: minted.key);
     }
     return _ApiKeyResolution(
-      failure:
-          'Jellyfin API key required for automatic library updates: set an '
-          'API key in the field, or sign in with an administrator account '
-          '(Add Basic Auth)',
+      failure: _localizations().jellyfinSetupApiKeyRequired,
     );
   }
 

@@ -17,6 +17,7 @@ class _UnavailableGoogleOAuthService implements GoogleOAuthService {
   Future<GoogleAccount> signIn() {
     throw const GoogleOAuthException(
       'Google sign-in is not available on the web.',
+      failure: GoogleOAuthFailure.unsupportedPlatform,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:arrmate/presentation/screens/activity/widgets/queue_options_shee
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/localized_app.dart';
 
 void main() {
   group('QueueListItem', () {
@@ -16,6 +17,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(body: QueueListItem(item: item)),
           ),
         ),
@@ -37,6 +41,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
             home: Scaffold(body: QueueListItem(item: item)),
           ),
         ),
@@ -65,6 +72,9 @@ void main() {
       final item = _queueItem();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: Scaffold(
             body: Builder(
               builder: (context) {

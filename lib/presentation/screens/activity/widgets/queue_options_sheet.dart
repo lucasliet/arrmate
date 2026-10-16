@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../domain/models/models.dart';
+import '../../../l10n/labels.dart';
 
 const _allQueueValues = '';
 
@@ -48,6 +50,7 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.78,
@@ -76,11 +79,11 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Queue options',
+                      l10n.queueOptions,
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
-                  TextButton(onPressed: _reset, child: const Text('Reset')),
+                  TextButton(onPressed: _reset, child: Text(l10n.commonReset)),
                 ],
               ),
             ),
@@ -89,35 +92,37 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [
-                  _SectionTitle(label: 'Filter'),
+                  _SectionTitle(label: l10n.queueFilterSection),
                   const SizedBox(height: 8),
-                  _buildInstanceField(),
+                  _buildInstanceField(l10n),
                   const SizedBox(height: 12),
                   _buildTextFilter(
-                    label: 'Protocol',
+                    keyName: 'Protocol',
+                    label: l10n.commonProtocol,
+                    anyLabel: l10n.queueAnyProtocol,
                     value: _protocol,
                     values: _protocols,
                     onChanged: (value) => setState(() => _protocol = value),
                   ),
                   const SizedBox(height: 12),
                   _buildTextFilter(
-                    label: 'Client',
+                    keyName: 'Client',
+                    label: l10n.commonClient,
+                    anyLabel: l10n.queueAnyClient,
                     value: _downloadClient,
                     values: _downloadClients,
                     onChanged: (value) =>
                         setState(() => _downloadClient = value),
                   ),
                   SwitchListTile(
-                    title: const Text('Problems only'),
-                    subtitle: const Text(
-                      'Show tasks that need attention or manual import',
-                    ),
+                    title: Text(l10n.queueProblemsOnly),
+                    subtitle: Text(l10n.queueProblemsOnlySubtitle),
                     value: _issuesOnly,
                     onChanged: (value) => setState(() => _issuesOnly = value),
                     contentPadding: EdgeInsets.zero,
                   ),
                   const Divider(height: 32),
-                  _SectionTitle(label: 'Sort by'),
+                  _SectionTitle(label: l10n.commonSortBy),
                   RadioGroup<QueueSortField>(
                     groupValue: _sortField,
                     onChanged: (value) {
@@ -125,15 +130,15 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                         setState(() => _sortField = value);
                       }
                     },
-                    child: const Column(
+                    child: Column(
                       children: [
                         RadioListTile<QueueSortField>(
-                          title: Text('Title'),
+                          title: Text(l10n.labelSortTitle),
                           value: QueueSortField.title,
                           contentPadding: EdgeInsets.zero,
                         ),
                         RadioListTile<QueueSortField>(
-                          title: Text('Added'),
+                          title: Text(l10n.labelSortAdded),
                           value: QueueSortField.added,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -141,7 +146,7 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                     ),
                   ),
                   const Divider(height: 32),
-                  _SectionTitle(label: 'Direction'),
+                  _SectionTitle(label: l10n.queueDirection),
                   RadioGroup<bool>(
                     groupValue: _ascending,
                     onChanged: (value) {
@@ -149,15 +154,15 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                         setState(() => _ascending = value);
                       }
                     },
-                    child: const Column(
+                    child: Column(
                       children: [
                         RadioListTile<bool>(
-                          title: Text('Ascending'),
+                          title: Text(l10n.queueAscending),
                           value: true,
                           contentPadding: EdgeInsets.zero,
                         ),
                         RadioListTile<bool>(
-                          title: Text('Descending'),
+                          title: Text(l10n.queueDescending),
                           value: false,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -174,7 +179,7 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: _apply,
-                  child: const Text('Apply'),
+                  child: Text(l10n.commonApply),
                 ),
               ),
             ),
@@ -184,7 +189,7 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
     );
   }
 
-  Widget _buildInstanceField() {
+  Widget _buildInstanceField(AppLocalizations l10n) {
     final availableIds = widget.items
         .map((item) => item.instanceId)
         .whereType<String>()
@@ -200,14 +205,14 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
     return DropdownButtonFormField<String>(
       key: ValueKey('queue-instance-$selected'),
       initialValue: selected,
-      decoration: const InputDecoration(
-        labelText: 'Instance',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: l10n.queueInstance,
+        border: const OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: _allQueueValues,
-          child: Text('Any instance'),
+          child: Text(l10n.queueAnyInstance),
         ),
         ...availableIds.map(
           (id) => DropdownMenuItem(value: id, child: Text(_instanceLabel(id))),
@@ -220,7 +225,9 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
   }
 
   Widget _buildTextFilter({
+    required String keyName,
     required String label,
+    required String anyLabel,
     required String? value,
     required List<String> values,
     required ValueChanged<String?> onChanged,
@@ -228,17 +235,14 @@ class _QueueOptionsSheetState extends State<QueueOptionsSheet> {
     final selected = values.contains(value) ? value : _allQueueValues;
 
     return DropdownButtonFormField<String>(
-      key: ValueKey('queue-$label-$selected'),
+      key: ValueKey('queue-$keyName-$selected'),
       initialValue: selected,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
       items: [
-        DropdownMenuItem(
-          value: _allQueueValues,
-          child: Text('Any ${label.toLowerCase()}'),
-        ),
+        DropdownMenuItem(value: _allQueueValues, child: Text(anyLabel)),
         ...values.map(
           (option) => DropdownMenuItem(value: option, child: Text(option)),
         ),

@@ -7,6 +7,8 @@ import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_provider.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 
 /// Screen for editing an existing series' configuration (monitor status, profile, path).
 class SeriesEditScreen extends ConsumerStatefulWidget {
@@ -59,20 +61,18 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Move Files?'),
-            content: const Text(
-              'You changed the root folder. Do you want to move existing files to the new location?',
-            ),
+            title: Text(context.l10n.seriesMoveFilesTitle),
+            content: Text(context.l10n.seriesMoveFilesContent),
             actions: [
               TextButton(
                 onPressed: () =>
                     Navigator.pop(context, false), // No, just update DB
-                child: const Text('No'),
+                child: Text(context.l10n.commonNo),
               ),
               TextButton(
                 onPressed: () =>
                     Navigator.pop(context, true), // Yes, move files
-                child: const Text('Yes, Move Files'),
+                child: Text(context.l10n.seriesYesMoveFiles),
               ),
             ],
           ),
@@ -91,7 +91,9 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating series: $e'),
+            content: Text(
+              context.l10n.seriesUpdateFailed(describeError(e, context.l10n)),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -150,7 +152,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Series'),
+        title: Text(context.l10n.seriesEditSeries),
         actions: [
           if (_isSaving)
             const Center(
@@ -164,14 +166,20 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
             )
           else
-            TextButton(onPressed: _save, child: const Text('Save')),
+            TextButton(onPressed: _save, child: Text(context.l10n.commonSave)),
         ],
       ),
       body: FutureBuilder<(List<QualityProfile>, List<RootFolder>)>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                context.l10n.commonErrorWithDetails(
+                  describeError(snapshot.error!, context.l10n),
+                ),
+              ),
+            );
           }
 
           if (!snapshot.hasData) {
@@ -185,18 +193,16 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               SwitchListTile(
-                title: const Text('Monitored'),
-                subtitle: const Text('Monitor episodes for this series'),
+                title: Text(context.l10n.commonMonitored),
+                subtitle: Text(context.l10n.seriesMonitoredSubtitle),
                 value: _monitored,
                 onChanged: (value) => setState(() => _monitored = value),
               ),
               const Divider(),
 
               SwitchListTile(
-                title: const Text('Monitor New Seasons'),
-                subtitle: const Text(
-                  'Automatically monitor seasons added in the future',
-                ),
+                title: Text(context.l10n.seriesMonitorNewSeasons),
+                subtitle: Text(context.l10n.seriesMonitorNewSeasonsSubtitle),
                 value: _monitorNewItems == SeriesMonitorNewItems.all,
                 onChanged: (value) {
                   setState(
@@ -209,16 +215,16 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               const Divider(),
 
               SwitchListTile(
-                title: const Text('Season Folders'),
-                subtitle: const Text('Use Season folders (e.g. Season 01/...)'),
+                title: Text(context.l10n.seriesSeasonFolders),
+                subtitle: Text(context.l10n.seriesSeasonFoldersSubtitle),
                 value: _seasonFolder,
                 onChanged: (value) => setState(() => _seasonFolder = value),
               ),
               const Divider(),
 
               ListTile(
-                title: const Text('Series Type'),
-                subtitle: Text(_seriesType.label),
+                title: Text(context.l10n.seriesSeriesType),
+                subtitle: Text(_seriesType.localizedLabel(context.l10n)),
                 trailing: DropdownButtonHideUnderline(
                   child: DropdownButton<SeriesType>(
                     value: _seriesType,
@@ -230,7 +236,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
                     items: SeriesType.values.map((SeriesType type) {
                       return DropdownMenuItem<SeriesType>(
                         value: type,
-                        child: Text(type.label),
+                        child: Text(type.localizedLabel(context.l10n)),
                       );
                     }).toList(),
                   ),
@@ -239,7 +245,7 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               const Divider(),
 
               ListTile(
-                title: const Text('Quality Profile'),
+                title: Text(context.l10n.commonQualityProfile),
                 subtitle: Text(
                   profiles
                       .firstWhere(
@@ -268,14 +274,16 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               const Divider(),
 
               ListTile(
-                title: const Text('Root Folder'),
-                subtitle: Text(_rootFolderPath ?? 'Select Path'),
+                title: Text(context.l10n.commonRootFolder),
+                subtitle: Text(
+                  _rootFolderPath ?? context.l10n.seriesSelectPath,
+                ),
                 trailing: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: rootFolders.any((f) => f.path == _rootFolderPath)
                         ? _rootFolderPath
                         : null, // Handle case where current path isn't in available root folders
-                    hint: const Text('Select'),
+                    hint: Text(context.l10n.seriesSelect),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         setState(() => _rootFolderPath = newValue);
@@ -292,7 +300,10 @@ class _SeriesEditScreenState extends ConsumerState<SeriesEditScreen> {
               ),
               if (tags.isNotEmpty) ...[
                 const Divider(),
-                Text('Tags', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  context.l10n.commonTags,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 TagList(
                   tags: tags,
                   selectedTagIds: _selectedTagIds,

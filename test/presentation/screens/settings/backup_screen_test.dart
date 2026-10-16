@@ -1,4 +1,5 @@
 import 'package:arrmate/core/services/backup_service.dart';
+import 'package:arrmate/presentation/l10n/provider_messages.dart';
 import 'package:arrmate/presentation/providers/backup_provider.dart';
 import 'package:arrmate/presentation/screens/settings/backup_screen.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../helpers/localized_app.dart';
 
 class FakeBackupNotifier extends BackupNotifier {
   BackupState fakeState;
@@ -106,6 +108,46 @@ void main() {
 
     // Then
     expect(notifier.signInCalled, isTrue);
+  });
+
+  testWidgets('translates a stored error when the language changes', (
+    tester,
+  ) async {
+    // Given
+    final state = const BackupState(
+      isConfigured: true,
+    ).withError(BackupMessageKind.sessionExpired);
+    final locale = ValueNotifier(const Locale('en'));
+    addTearDown(locale.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          backupProvider.overrideWith(() => FakeBackupNotifier(state)),
+        ],
+        child: ValueListenableBuilder<Locale>(
+          valueListenable: locale,
+          builder: (context, value, _) => MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: value,
+            home: const BackupScreen(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Google session expired. Sign in again.'), findsOneWidget);
+
+    // When
+    locale.value = const Locale('es');
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(
+      find.text('La sesión de Google ha caducado. Vuelve a iniciar sesión.'),
+      findsOneWidget,
+    );
+    expect(find.text('Google session expired. Sign in again.'), findsNothing);
   });
 
   testWidgets('shouldShowSignInError_whenSignedOut', (tester) async {
@@ -464,7 +506,12 @@ Future<void> _pumpScreen(
         ),
         ...overrides,
       ],
-      child: const MaterialApp(home: BackupScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        home: BackupScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

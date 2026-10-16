@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../helpers/localized_app.dart';
 
 class _MockSeriesRepository extends Mock implements SeriesRepository {}
 
@@ -40,6 +41,9 @@ void main() {
           instanceTagsProvider.overrideWith((ref, _) => liveTags.future),
         ],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: SeriesEditScreen(
             series: TourMockData.series().first.copyWith(
               qualityProfileId: 1,
@@ -102,6 +106,9 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           home: SeriesEditScreen(
             series: TourMockData.series().first.copyWith(
               qualityProfileId: 1,

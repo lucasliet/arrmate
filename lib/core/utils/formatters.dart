@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../l10n/app_locale.dart';
+
 /// Formats a byte size into a human-readable string (e.g., "1.5 MB").
 ///
 /// [bytes] is the size in bytes to be formatted.
@@ -50,6 +52,29 @@ String formatEpisodeNumber(int season, int episode, {bool short = false}) {
 String formatSeasonNumber(int season) {
   if (season == 0) return 'Specials';
   return 'Season $season';
+}
+
+/// Formats a season and episode number in the language of [l10n].
+///
+/// [short] keeps the language-neutral "S01E05" form; otherwise returns the
+/// translated "Season 1, Episode 5".
+String formatEpisodeNumberL10n(
+  int season,
+  int episode,
+  AppLocalizations l10n, {
+  bool short = false,
+}) {
+  if (short) return formatEpisodeNumber(season, episode, short: true);
+  return l10n.formatSeasonEpisode(season, episode);
+}
+
+/// Formats a season number in the language of [l10n].
+///
+/// Returns the translated "Specials" if [season] is 0, otherwise the
+/// translated "Season X".
+String formatSeasonNumberL10n(int season, AppLocalizations l10n) {
+  if (season == 0) return l10n.labelSpecials;
+  return l10n.formatSeason(season);
 }
 
 /// Formats a double value as a percentage string without decimal places (e.g., "85%").

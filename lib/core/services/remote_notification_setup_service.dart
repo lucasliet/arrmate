@@ -4,7 +4,9 @@ import '../../domain/models/models.dart';
 import '../../domain/models/settings/notification_settings.dart';
 import '../../data/api/radarr_api.dart';
 import '../../data/api/sonarr_api.dart';
+import '../../presentation/l10n/error_messages.dart';
 import '../../presentation/providers/settings_provider.dart';
+import '../../presentation/l10n/core_labels.dart';
 
 final remoteNotificationServiceProvider = Provider(
   (ref) => RemoteNotificationService(ref),
@@ -32,14 +34,13 @@ class RemoteNotificationService {
     Instance instance, {
     NotificationSettings? settings,
   }) async {
+    final l10n = readAppLocalizations(_ref);
     try {
       final effectiveSettings =
           settings ?? _ref.read(settingsProvider).notifications;
       final topic = effectiveSettings.ntfyTopic;
       if (topic == null) {
-        return NotificationSetupResult.failure(
-          'No Ntfy topic configured in Arrmate.',
-        );
+        return NotificationSetupResult.failure(l10n.notificationSetupNoTopic);
       }
 
       logger.info(
@@ -106,7 +107,7 @@ class RemoteNotificationService {
           NotificationResource.fromJson(json),
         );
         return NotificationSetupResult.success(
-          '${instance.name} configured successfully.',
+          l10n.notificationSetupConfigured(instance.name ?? instance.id),
         );
       } else {
         // Update existing (maybe topic or triggers changed)
@@ -145,7 +146,7 @@ class RemoteNotificationService {
           NotificationResource.fromJson(json),
         );
         return NotificationSetupResult.success(
-          '${instance.name} updated successfully.',
+          l10n.notificationSetupUpdated(instance.name ?? instance.id),
         );
       }
     } catch (e, st) {
@@ -155,7 +156,10 @@ class RemoteNotificationService {
         st,
       );
       return NotificationSetupResult.failure(
-        'Failed to configure ${instance.name}: $e',
+        l10n.notificationSetupFailed(
+          instance.name ?? instance.id,
+          describeError(e, l10n),
+        ),
       );
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/context_extensions.dart';
 
 /// Key identifying the banner that introduces the guided tour mockups.
 const Key tourMockupBannerKey = ValueKey('tour-mockup-banner');
@@ -37,8 +38,7 @@ class TourMockupBanner extends StatelessWidget {
           const SizedBox(width: paddingSm),
           Expanded(
             child: Text(
-              'Sample content shown during the tour. It disappears once the '
-              'tour ends.',
+              context.l10n.tourMockupBanner,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: colorScheme.onPrimaryContainer,
               ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/extensions/context_extensions.dart';
+import '../../l10n/labels.dart';
 import '../../providers/advanced_providers.dart';
 
 /// Lists available quality profiles from connected instances.
@@ -12,12 +14,12 @@ class QualityProfilesScreen extends ConsumerWidget {
     final seriesProfilesAsync = ref.watch(seriesQualityProfilesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quality Profiles')),
+      appBar: AppBar(title: Text(context.l10n.qualityProfilesTitle)),
       body: ListView(
         children: [
-          _buildSectionHeader(context, 'Radarr Profiles'),
+          _buildSectionHeader(context, context.l10n.qualityProfilesRadarr),
           movieProfilesAsync.when(
-            data: (profiles) => _buildProfilesList(profiles),
+            data: (profiles) => _buildProfilesList(context, profiles),
             loading: () => const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
@@ -26,15 +28,17 @@ class QualityProfilesScreen extends ConsumerWidget {
             ),
             error: (err, _) => ListTile(
               title: Text(
-                'Error: $err',
+                context.l10n.commonErrorWithDetails(
+                  describeError(err, context.l10n),
+                ),
                 style: const TextStyle(color: Colors.red),
               ),
             ),
           ),
           const Divider(),
-          _buildSectionHeader(context, 'Sonarr Profiles'),
+          _buildSectionHeader(context, context.l10n.qualityProfilesSonarr),
           seriesProfilesAsync.when(
-            data: (profiles) => _buildProfilesList(profiles),
+            data: (profiles) => _buildProfilesList(context, profiles),
             loading: () => const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
@@ -43,7 +47,9 @@ class QualityProfilesScreen extends ConsumerWidget {
             ),
             error: (err, _) => ListTile(
               title: Text(
-                'Error: $err',
+                context.l10n.commonErrorWithDetails(
+                  describeError(err, context.l10n),
+                ),
                 style: const TextStyle(color: Colors.red),
               ),
             ),
@@ -67,11 +73,9 @@ class QualityProfilesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfilesList(List profiles) {
+  Widget _buildProfilesList(BuildContext context, List profiles) {
     if (profiles.isEmpty) {
-      return const ListTile(
-        title: Text('No profiles found or instance not connected'),
-      );
+      return ListTile(title: Text(context.l10n.qualityProfilesEmpty));
     }
 
     return Column(
@@ -81,7 +85,7 @@ class QualityProfilesScreen extends ConsumerWidget {
               leading: const Icon(Icons.high_quality),
               title: Text(p.name),
               trailing: Text(
-                'ID: ${p.id}',
+                context.l10n.qualityProfilesId('${p.id}'),
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),

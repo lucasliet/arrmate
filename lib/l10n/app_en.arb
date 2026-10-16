@@ -1,0 +1,2958 @@
+{
+  "@@locale": "en",
+  "activityTabHistory": "History",
+  "activityTabQueue": "Queue",
+  "activityTabTorrents": "Torrents",
+  "activityTabWatching": "Watching",
+  "appInitErrorTitle": "Initialization Error",
+  "appInitNotificationServicesFailed": "Failed to initialize notification services. Some features may not work correctly.",
+  "appTitle": "Arrmate",
+  "appleIntelligenceAssetsUnavailable": "The Apple Intelligence model is not ready yet. Try again later.",
+  "appleIntelligenceBusy": "Apple Intelligence is busy. Try again in a moment.",
+  "appleIntelligenceContextTooLong": "The question is too long for Apple Intelligence. Try a shorter one.",
+  "appleIntelligenceDeclined": "Apple Intelligence declined to answer. Try rephrasing the question.",
+  "appleIntelligenceDeviceNotEligible": "This device does not support Apple Intelligence.",
+  "appleIntelligenceGenerationFailed": "Apple Intelligence failed to generate a response.",
+  "appleIntelligenceModelNotReady": "The Apple Intelligence model is still downloading. Try again later.",
+  "appleIntelligenceNotEnabled": "Turn on Apple Intelligence in the system settings.",
+  "appleIntelligenceUnavailable": "Apple Intelligence is unavailable on this device.",
+  "appleIntelligenceUnsupportedLanguage": "Apple Intelligence does not support this language on this device.",
+  "appleIntelligenceUnsupportedOs": "Apple Intelligence requires iOS 26 or macOS 26.",
+  "assistantCloud": "Cloud",
+  "assistantDeleteModelContent": "Remove \"{model}\" from your device?",
+  "@assistantDeleteModelContent": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantDeleteModelTitle": "Delete Model",
+  "assistantDownloadModel": "Download Model",
+  "assistantDownloadingModel": "Downloading Model",
+  "assistantEmptyPrompt": "Ask about the app",
+  "assistantInputHint": "Ask about Arrmate...",
+  "assistantInstalled": "Installed",
+  "assistantLinkNotOpened": "The link could not be opened",
+  "assistantLocalModels": "Local Models",
+  "assistantNoLocalModel": "No local model selected",
+  "assistantOnDeviceModel": "On-device model",
+  "assistantOnlineModel": "Online model",
+  "assistantOnlyHttpsLinks": "Only HTTPS links are supported",
+  "assistantOpenLinkFailed": "Unable to open link: {error}",
+  "@assistantOpenLinkFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantSelectModelFirst": "Select a model first",
+  "assistantStartingDownload": "Starting download...",
+  "assistantSwitchModel": "Switch Model",
+  "assistantTitle": "Assistant",
+  "assistantUseCloud": "Use Cloud",
+  "assistantUseCloudOrLocal": "Use Cloud or import/download a local model",
+  "backupAppVersion": "App version: {version}",
+  "@backupAppVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "backupAutomaticNote": "Automatic backups run about 30 seconds after you change instances or settings, while signed in. Some settings (like the home tab) apply fully after restarting the app.",
+  "backupCreated": "Created: {time}",
+  "@backupCreated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDriveDescription": "Your settings, preferences and configured instances (including their API keys) are stored in the app's private folder on your Google Drive, invisible to other apps.",
+  "backupDriveTitle": "Google Drive backup",
+  "backupDriveUnavailableMessage": "This build was compiled without Google credentials. Ask the developer to build with the Google OAuth configuration, or run locally with the --dart-define flags. Use the local file backup below instead.",
+  "backupDriveUnavailableTitle": "Google Drive backup not available",
+  "backupExportToFile": "Export backup to file",
+  "backupExportToFileSubtitle": "Save a .json copy on this device",
+  "backupExported": "Backup exported to {fileName}",
+  "@backupExported": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "backupFoundMessage": "Saved {time}. Restore it to bring its settings and instances to this device. Automatic backups stay paused until you restore or back up manually.",
+  "@backupFoundMessage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupFoundTitle": "Backup found in your Google Drive",
+  "backupInstanceCount": "Instances: {count}",
+  "@backupInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLastBackup": "Last backup: {time}",
+  "@backupLastBackup": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupNever": "never",
+  "backupNow": "Back up now",
+  "backupPlatform": "Platform: {platform}",
+  "@backupPlatform": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreBackupMenu": "Restore backup…",
+  "backupRestoreConfirmTitle": "Restore backup?",
+  "backupRestoreFailed": "Restore failed",
+  "backupRestoreFromFile": "Restore from file…",
+  "backupRestoreReplaceWarning": "This replaces the settings and instances currently on this device.",
+  "backupRestored": "Backup restored",
+  "backupSignInWithGoogle": "Sign in with Google",
+  "backupSignOut": "Sign out",
+  "backupTitle": "Backup & Restore",
+  "calendarAnyInstance": "Any instance",
+  "calendarDataLoadFailed": "Calendar data could not be loaded.",
+  "calendarFilterByInstance": "Filter by instance",
+  "calendarFilterByMediaType": "Filter by media type",
+  "calendarHideSpecials": "Hide specials",
+  "calendarInstanceAny": "Instance: Any",
+  "calendarInstanceNamed": "Instance: {name}",
+  "@calendarInstanceNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarLoadMore": "Load more",
+  "calendarLoading": "Loading calendar...",
+  "calendarNoMatchingEvents": "No matching events",
+  "calendarNoMatchingEventsHint": "Adjust the calendar filters to see more events.",
+  "calendarNoUpcomingEvents": "No upcoming events",
+  "calendarNoUpcomingEventsHint": "Check back later or add content to your libraries.",
+  "calendarOpenItemFailed": "Unable to open item: {error}",
+  "@calendarOpenItemFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarPremieres": "Premieres",
+  "calendarToday": "Today",
+  "calendarTomorrow": "Tomorrow",
+  "commonAdd": "Add",
+  "commonApply": "Apply",
+  "commonAutomaticSearch": "Automatic Search",
+  "commonCancel": "Cancel",
+  "commonClear": "Clear",
+  "commonClearFilters": "Clear filters",
+  "commonClient": "Client",
+  "commonClose": "Close",
+  "commonConfirm": "Confirm",
+  "commonContinue": "Continue",
+  "commonDelete": "Delete",
+  "commonDeleteFiles": "Delete files",
+  "commonDismiss": "Dismiss",
+  "commonEdit": "Edit",
+  "commonErrorWithDetails": "Error: {error}",
+  "@commonErrorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "commonFilter": "Filter",
+  "commonImport": "Import",
+  "commonIndexer": "Indexer",
+  "commonInteractiveSearch": "Interactive Search",
+  "commonLanguage": "Language",
+  "commonLoading": "Loading...",
+  "commonMonitor": "Monitor",
+  "commonMonitored": "Monitored",
+  "commonMovies": "Movies",
+  "commonNo": "No",
+  "commonOk": "OK",
+  "commonOpenExternally": "Open externally",
+  "commonOpenInLibrary": "Open in library",
+  "commonProtocol": "Protocol",
+  "commonPurge": "Purge",
+  "commonQuality": "Quality",
+  "commonQualityProfile": "Quality Profile",
+  "commonRefresh": "Refresh",
+  "commonReset": "Reset",
+  "commonRestore": "Restore",
+  "commonRetry": "Retry",
+  "commonRootFolder": "Root Folder",
+  "commonSave": "Save",
+  "commonSearch": "Search",
+  "commonSearchStarted": "Search started",
+  "commonSelectAll": "Select all",
+  "commonSeries": "Series",
+  "commonSize": "Size",
+  "commonSort": "Sort",
+  "commonSortBy": "Sort by",
+  "commonStatus": "Status",
+  "commonTags": "Tags",
+  "commonUnknown": "Unknown",
+  "commonUnmonitor": "Unmonitor",
+  "commonUnmonitored": "Unmonitored",
+  "commonWatchInJellyfin": "Watch in Jellyfin",
+  "commonYes": "Yes",
+  "coreGoogleSignInAccountLoadFailed": "Google sign-in failed: the account could not be loaded (status {status}).",
+  "@coreGoogleSignInAccountLoadFailed": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "coreGoogleSignInBrowserFailed": "The sign-in browser could not be opened. Please try again.",
+  "coreGoogleSignInCancelled": "Google sign-in was cancelled before it finished.",
+  "coreGoogleSignInConsentDenied": "Google sign-in was cancelled: consent was denied.",
+  "coreGoogleSignInIncompleteToken": "Google sign-in failed: the token response was incomplete.",
+  "coreGoogleSignInNetworkError": "Google sign-in failed: network or server error (status {status}).",
+  "@coreGoogleSignInNetworkError": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "coreGoogleSignInNoCode": "Google sign-in failed: no authorization code was returned.",
+  "coreGoogleSignInNoEmail": "Google sign-in failed: the account has no e-mail.",
+  "coreGoogleSignInProviderError": "Google sign-in failed: {reason}",
+  "@coreGoogleSignInProviderError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "coreGoogleSignInRedirectUnverified": "Google sign-in failed: the redirect could not be verified.",
+  "coreGoogleSignInServerStatus": "Google sign-in failed: the server returned status {status}.",
+  "@coreGoogleSignInServerStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "coreGoogleSignInStatusUnavailable": "unavailable",
+  "coreGoogleSignInTimedOut": "Google sign-in timed out. Please try again.",
+  "coreGoogleSignInUnavailableOnWeb": "Google sign-in is not available on the web.",
+  "corePurgeNotificationTitle": "Purged torrent",
+  "corePurgeNotificationTitleSeason": "Purged torrent (season {season})",
+  "@corePurgeNotificationTitleSeason": {
+    "placeholders": {
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "corePurgeSummaryMediaFiles": "Media files: {count}",
+  "@corePurgeSummaryMediaFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "corePurgeSummaryQbittorrentSkipped": "qBittorrent skipped — configure a qBittorrent instance.",
+  "corePurgeSummaryQueueItems": "Queue items: {count}",
+  "@corePurgeSummaryQueueItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "corePurgeSummaryTorrents": "Torrents: {count}",
+  "@corePurgeSummaryTorrents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "corePurgeSummaryTorrentsWithCrossSeed": "Torrents: {count} (+{crossSeed} cross-seed)",
+  "@corePurgeSummaryTorrentsWithCrossSeed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "crossSeed": {
+        "type": "int"
+      }
+    }
+  },
+  "coreUpdateArchiveMissingFiles": "The update archive is missing required application files.",
+  "coreUpdateArchiveTooLarge": "The update archive exceeds its extraction limits.",
+  "coreUpdateArchiveUnsafeLink": "The update archive contains an unsafe symbolic link.",
+  "coreUpdateArchiveUnsafePath": "The update archive contains an unsafe path.",
+  "coreUpdateArchiveWritesThroughLink": "The update archive writes through a symbolic link.",
+  "coreUpdateCheckFailed": "Could not check for updates. Please try again.",
+  "coreUpdateInstallerNotStarted": "The update installer could not start. The app has not been changed.",
+  "coreUpdateLinuxRequiresAppImage": "Automatic Linux updates require the AppImage. Download and run the AppImage release first.",
+  "coreUpdateMacBundleRequired": "Run the installed Arrmate.app bundle to update it.",
+  "coreUpdateNotAppImage": "The update is not an x64 AppImage.",
+  "coreUpdateOtaFailed": "Update failed: {status}",
+  "@coreUpdateOtaFailed": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "coreUpdatePrepareFailed": "Could not prepare the update package ({tool}).",
+  "@coreUpdatePrepareFailed": {
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "coreUpdateReadOnlyFolder": "The application folder is read-only. Move Arrmate to a folder writable by your user and try again.",
+  "coreUpdateUnverifiedPackage": "The release does not contain a verified package for this platform.",
+  "coreUpdateVerificationFailed": "The update failed its size or SHA-256 verification.",
+  "coreUpdateVersionMismatch": "The downloaded application version does not match the release.",
+  "coreUpdateWindowsIncomplete": "Run Arrmate from the complete Windows release directory to update it.",
+  "diagnosticsCheckFailed": "Failed · {error}",
+  "@diagnosticsCheckFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsCheckOk": "OK · {ms}ms",
+  "@diagnosticsCheckOk": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "diagnosticsCheckOkWithVersion": "OK · {ms}ms · v{version}",
+  "@diagnosticsCheckOkWithVersion": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsChecking": "Checking configured endpoints...",
+  "diagnosticsEndpointActive": "Active endpoint",
+  "diagnosticsEndpointAlternative": "Alternative endpoint",
+  "diagnosticsEndpointAlternativeActive": "Alternative endpoint · Active",
+  "diagnosticsEndpointConnectivity": "Endpoint connectivity",
+  "diagnosticsEndpointPrimary": "Primary endpoint",
+  "diagnosticsEndpointPrimaryActive": "Primary endpoint · Active",
+  "diagnosticsEndpointsAvailable": "Endpoints available",
+  "diagnosticsEndpointsUnavailable": "Endpoints unavailable",
+  "diagnosticsExportFailed": "Failed to export report: {error}",
+  "@diagnosticsExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsExportReport": "Export report",
+  "diagnosticsGenerated": "Generated {date}",
+  "@diagnosticsGenerated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsInterfaces": "Interfaces: {interfaces}",
+  "@diagnosticsInterfaces": {
+    "placeholders": {
+      "interfaces": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsNetworkAvailable": "Network available",
+  "diagnosticsNoInstances": "No Radarr, Sonarr, or qBittorrent instances are configured.",
+  "diagnosticsNoNetworkInterface": "No network interface",
+  "diagnosticsNoRecentRequests": "No recent requests recorded.",
+  "diagnosticsPurposeBody": "Tests every configured endpoint for reachability and latency, shows recent request traces, and exports a sanitized report. Health shows alerts reported by Radarr and Sonarr.",
+  "diagnosticsPurposeTitle": "Connection troubleshooting",
+  "diagnosticsRecentRequests": "Recent request traces",
+  "diagnosticsRefreshing": "Refreshing endpoint checks...",
+  "diagnosticsRunAgain": "Run connection checks again",
+  "diagnosticsRunFailed": "Failed to run connection diagnostics: {error}",
+  "@diagnosticsRunFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "diagnosticsSomeEndpointsUnavailable": "Some endpoints unavailable",
+  "diagnosticsTitle": "Connection Diagnostics",
+  "diagnosticsUnknownError": "unknown error",
+  "diagnosticsUnknownStatus": "unknown",
+  "discoveryConfigureAddition": "Configure Addition",
+  "discoveryHideAlreadyAdded": "Hide already added",
+  "discoveryLoadFoldersFailed": "Error loading folders: {error}",
+  "@discoveryLoadFoldersFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoveryLoadProfilesFailed": "Error loading profiles: {error}",
+  "@discoveryLoadProfilesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoveryNoOverview": "No overview available.",
+  "discoveryNoRating": "No rating",
+  "discoveryNoResultsFound": "No results found",
+  "discoveryRootFolderFreeSpace": "{path} ({free} GB Free)",
+  "@discoveryRootFolderFreeSpace": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "free": {
+        "type": "String"
+      }
+    }
+  },
+  "discoveryRuntimeMinutes": "{minutes} min",
+  "@discoveryRuntimeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverySearchPrompt": "Search by title, provider ID, or URL",
+  "errorConnectionFailed": "Connection failed. Please check your network.",
+  "errorInvalidUrl": "Invalid URL: {url}",
+  "@errorInvalidUrl": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNotFound": "Resource not found.",
+  "errorRequestCancelled": "Request cancelled",
+  "errorRequestTimedOut": "Request timed out. Please try again.",
+  "errorServer": "Server error. Please try again later.",
+  "errorUnauthorized": "Unauthorized. Please check your API key.",
+  "errorUnknown": "An unknown error occurred.",
+  "errorValidationFailed": "Validation failed.",
+  "formatDaysAgo": "{count}d ago",
+  "@formatDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatHoursAgo": "{count}h ago",
+  "@formatHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatJustNow": "Just now",
+  "formatLastOnline": "Last online {time}",
+  "@formatLastOnline": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "formatMinutesAgo": "{count}m ago",
+  "@formatMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatMonthsAgo": "{count}mo ago",
+  "@formatMonthsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatSeason": "Season {number}",
+  "@formatSeason": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "formatSeasonEpisode": "Season {season}, Episode {episode}",
+  "@formatSeasonEpisode": {
+    "placeholders": {
+      "season": {
+        "type": "int"
+      },
+      "episode": {
+        "type": "int"
+      }
+    }
+  },
+  "formatTitleWithSeason": "{title} (Season {season})",
+  "@formatTitleWithSeason": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "formatWeeksAgo": "{count}w ago",
+  "@formatWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatYearsAgo": "{count}y ago",
+  "@formatYearsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formatYesterday": "Yesterday",
+  "healthCheckCouldNotStart": "{service} check could not start",
+  "@healthCheckCouldNotStart": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "healthConnectionFailed": "{service} connection failed",
+  "@healthConnectionFailed": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "healthConnectionIssues": "Connection issues",
+  "healthLoadFailed": "Failed to load health status",
+  "healthLoadFailureSubtitle": "Could not load server health. Check the connection and try again.",
+  "healthNoInstancesSubtitle": "Add a Radarr or Sonarr instance to view server health.",
+  "healthNoIssuesSubtitle": "Connected servers reported no health warnings.",
+  "healthNoIssuesTitle": "No server issues found",
+  "healthRunCheck": "Run health check",
+  "healthRunFailureSubtitle": "The latest available server status is shown below.",
+  "healthServerWarnings": "Server warnings",
+  "healthTitle": "System Health",
+  "healthWiki": "Wiki: {url}",
+  "@healthWiki": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "historyAllEvents": "All events",
+  "historyAllInstances": "All instances",
+  "historyDetailDate": "Date",
+  "historyDetailScore": "Score",
+  "historyEmpty": "No history events",
+  "historyLoadFailed": "History data could not be loaded.",
+  "historyLoadMore": "Load More",
+  "instanceAddBasicAuth": "Add Basic Auth",
+  "instanceAddHeader": "Add Header",
+  "instanceAdvancedSettings": "Advanced Settings",
+  "instanceAdvancedSettingsSubtitle": "Custom Headers & Authentication",
+  "instanceAlternativeUrl": "Alternative URL",
+  "instanceAlternativeUrlHelper": "Optional URL used outside your local network",
+  "instanceAlternativeUrlSameAsPrimary": "Must differ from the primary URL",
+  "instanceApiKeyLabel": "API Key",
+  "instanceApiKeyOrBasicAuthRequired": "Provide an API key or add Basic Auth below",
+  "instanceApiKeySessionExpiredValidation": "Add Basic Auth below to sign in again, or enter an API key",
+  "instanceAuthApiKey": "API Key",
+  "instanceAuthCustomHeader": "Custom Header",
+  "instanceAuthUsernamePassword": "Username & Password",
+  "instanceBasicAuthBase64Note": "Credentials will be encoded to Base64.",
+  "instanceBasicAuthTitle": "Basic Authentication",
+  "instanceDeleteFailed": "Delete failed: {error}",
+  "@instanceDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "instanceDeleteJellyfinWarning": "Arrmate will also remove its Jellyfin connection from Radarr/Sonarr, revoke the Arrmate API key it created and sign out of Jellyfin. This action cannot be undone.",
+  "instanceDeleteTitle": "Delete Instance?",
+  "instanceDeleteWarning": "This action cannot be undone.",
+  "instanceEditTitle": "Edit Instance",
+  "instanceErrorHttpStatus": "The server answered with HTTP {status}.",
+  "@instanceErrorHttpStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "instanceErrorTimeout": "The server took too long to answer. Try again or enable Slow Instance Mode.",
+  "instanceErrorUnreachable": "Server unreachable. Check the URL and your network.",
+  "instanceGoBack": "Go back",
+  "instanceHeaderName": "Header Name",
+  "instanceHeaderValue": "Header Value",
+  "instanceHideApiKey": "Hide API key",
+  "instanceJellyfinFallbackUser": "a Jellyfin user",
+  "instanceJellyfinHelperDefault": "API key (Jellyfin dashboard → Advanced → API Keys). Leave empty if using \"Add Basic Auth\" below to sign in with a username and password.",
+  "instanceJellyfinHelperSessionExpired": "Session expired — add Basic Auth below to sign in again, or enter an API key",
+  "instanceJellyfinHelperSignedIn": "Signed in as {user}. Leave empty to keep the session, enter an API key to switch, or add Basic Auth below to sign in again.",
+  "@instanceJellyfinHelperSignedIn": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "instanceJellyfinSessionExpiredBanner": "Your Jellyfin session has expired. Add Basic Auth in Advanced Settings with your username and password to sign in again.",
+  "instanceLibraryAutoUpdateSetupTitle": "Library Auto-Update Setup",
+  "instanceNameHint": "e.g. Home Server",
+  "instanceNameLabel": "Name",
+  "instanceNotFoundMessage": "The requested instance no longer exists or could not be loaded.",
+  "instanceNotFoundTitle": "Instance not found",
+  "instancePassword": "Password",
+  "instanceQbittorrentApiKeyHelper": "Bearer token (qBittorrent ≥ v5.2.0). Leave empty if using \"Add Basic Auth\" below for older versions.",
+  "instanceRemovedCleanupFailed": "Instance removed, but some cleanup failed:\n{failures}",
+  "@instanceRemovedCleanupFailed": {
+    "placeholders": {
+      "failures": {
+        "type": "String"
+      }
+    }
+  },
+  "instanceRequired": "Required",
+  "instanceSave": "Save Instance",
+  "instanceSetUpLibraryAutoUpdate": "Set Up Library Auto-Update",
+  "instanceSetupFailed": "Setup failed: {error}",
+  "@instanceSetupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "instanceShowApiKey": "Show API key",
+  "instanceSlowMode": "Slow Instance Mode",
+  "instanceSlowModeSubtitle": "Increase timeouts for slower connections",
+  "instanceTestConnection": "Test Connection",
+  "instanceTestSuccessArr": "Connection successful!\nVersion: {version}\nInstance: {name}\nTags: {count} available",
+  "@instanceTestSuccessArr": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instanceTestSuccessQbittorrent": "Connection successful!\nAuth: {auth}\nTorrents: {count}",
+  "@instanceTestSuccessQbittorrent": {
+    "placeholders": {
+      "auth": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instanceUrlHelper": "Include http:// or https:// and port",
+  "instanceUrlInvalid": "Must be a valid HTTP or HTTPS URL",
+  "instanceUrlLabel": "URL",
+  "instanceUsername": "Username",
+  "instanceValidationFailed": "Validation failed: {error}",
+  "@instanceValidationFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "jellyfinSetupApiKeyRequired": "Jellyfin API key required for automatic library updates: set an API key in the field, or sign in with an administrator account (Add Basic Auth)",
+  "jellyfinSetupNoConnection": "No Jellyfin connection configured in Arrmate.",
+  "jellyfinSetupNotArrInstance": "{name} is not a Radarr or Sonarr instance.",
+  "@jellyfinSetupNotArrInstance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jellyfinSetupRemoveConnectorFailed": "Could not remove the Jellyfin connection from {name}: {error}",
+  "@jellyfinSetupRemoveConnectorFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "jellyfinSetupRevokeKeyFailed": "Could not revoke the Arrmate API key in Jellyfin: {error}",
+  "@jellyfinSetupRevokeKeyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "jellyfinSetupSignOutFailed": "Could not sign out of Jellyfin: {error}",
+  "@jellyfinSetupSignOutFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "labelAll": "All",
+  "labelAppearanceDark": "Dark",
+  "labelAppearanceLight": "Light",
+  "labelAppearanceSystem": "System",
+  "labelCalendarAllMedia": "All media",
+  "labelCalendarUnknownMovie": "Unknown Movie",
+  "labelCalendarUnknownSeries": "Unknown Series",
+  "labelColorAmber": "Amber",
+  "labelColorBlue": "Blue",
+  "labelColorGreen": "Green",
+  "labelColorIndigo": "Indigo",
+  "labelColorOrange": "Orange",
+  "labelColorPink": "Pink",
+  "labelColorPurple": "Purple",
+  "labelColorRed": "Red",
+  "labelColorTeal": "Teal",
+  "labelDangling": "Dangling",
+  "labelDeleted": "Deleted",
+  "labelDigitalRelease": "Digital Release",
+  "labelDiscoverySortLatest": "Latest",
+  "labelDiscoverySortRelevant": "Relevant",
+  "labelDownloaded": "Downloaded",
+  "labelDownloading": "Downloading",
+  "labelEpisode": "Episode",
+  "labelError": "Error",
+  "labelFailed": "Failed",
+  "labelFilePriorityDoNotDownload": "Do Not Download",
+  "labelFilePriorityHigh": "High Priority",
+  "labelFilePriorityLow": "Low Priority",
+  "labelFilePriorityMaximal": "Maximal Priority",
+  "labelFilePriorityNormal": "Normal Priority",
+  "labelFilterAllMovies": "All Movies",
+  "labelFilterAllSeries": "All Series",
+  "labelGrabbed": "Grabbed",
+  "labelHistoryDeletedGeneric": "File was deleted.",
+  "labelHistoryDeletedManual": "File was deleted manually or by a client through the API.",
+  "labelHistoryDeletedMissingFromDisk": "File was not found on disk so it was unlinked from the database.",
+  "labelHistoryDeletedUpgrade": "File was deleted to import an upgrade.",
+  "labelHistoryDownloadFailedDescription": "Download failed.",
+  "labelHistoryDownloadIgnoredDescription": "Download ignored.",
+  "labelHistoryEpisodeGrabbed": "Episode grabbed from {indexer} and sent to {client}.",
+  "@labelHistoryEpisodeGrabbed": {
+    "placeholders": {
+      "indexer": {
+        "type": "String"
+      },
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryEpisodeImported": "Episode downloaded successfully and imported from {client}.",
+  "@labelHistoryEpisodeImported": {
+    "placeholders": {
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryEpisodeRenamed": "Episode file was renamed.",
+  "labelHistoryFallbackClient": "download client",
+  "labelHistoryFallbackIndexer": "indexer",
+  "labelHistoryIgnored": "Ignored",
+  "labelHistoryImported": "Imported",
+  "labelHistoryMovieGrabbed": "Movie grabbed from {indexer} and sent to {client}.",
+  "@labelHistoryMovieGrabbed": {
+    "placeholders": {
+      "indexer": {
+        "type": "String"
+      },
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryMovieImported": "Movie downloaded successfully and imported from {client}.",
+  "@labelHistoryMovieImported": {
+    "placeholders": {
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "labelHistoryMovieRenamed": "Movie file was renamed.",
+  "labelHistoryRenamed": "Renamed",
+  "labelHistoryTitleDeleted": "File Deleted",
+  "labelHistoryTitleFailed": "Download Failed",
+  "labelHistoryTitleGrabbed": "Release Grabbed",
+  "labelHistoryTitleIgnored": "Download Ignored",
+  "labelHistoryTitleImported": "Folder Imported",
+  "labelHistoryTitleRenamed": "File Renamed",
+  "labelHistoryTitleUnknown": "Unknown Event",
+  "labelHistoryUnknownEventDescription": "Unknown event.",
+  "labelInCinemas": "In Cinemas",
+  "labelMissing": "Missing",
+  "labelMovieMonitorMovieAndCollection": "Movie + Collection",
+  "labelMovieMonitorMovieOnly": "Movie",
+  "labelMovieStateUnreleased": "Unreleased",
+  "labelMovieStateUnwanted": "Unwanted",
+  "labelMovieStateWaiting": "Waiting",
+  "labelMovieStatusAnnounced": "Announced",
+  "labelMovieStatusReleased": "Released",
+  "labelMovieStatusTba": "Unannounced",
+  "labelNone": "None",
+  "labelPaused": "Paused",
+  "labelPhysicalRelease": "Physical Release",
+  "labelQueueCompleted": "Completed",
+  "labelQueuePending": "Pending",
+  "labelQueueWarning": "Warning",
+  "labelQueued": "Queued",
+  "labelSeeding": "Seeding",
+  "labelSeriesMonitorAll": "All Episodes",
+  "labelSeriesMonitorExisting": "Existing Episodes",
+  "labelSeriesMonitorFirstSeason": "First Season",
+  "labelSeriesMonitorFuture": "Future Episodes",
+  "labelSeriesMonitorLastSeason": "Last Season",
+  "labelSeriesMonitorMissing": "Missing Episodes",
+  "labelSeriesMonitorPilot": "Pilot Episode",
+  "labelSeriesMonitorRecent": "Recent Episodes",
+  "labelSeriesMonitorSpecials": "Monitor Specials",
+  "labelSeriesStatusContinuing": "Continuing",
+  "labelSeriesStatusEnded": "Ended",
+  "labelSeriesStatusUpcoming": "Upcoming",
+  "labelSeriesTypeAnime": "Anime",
+  "labelSeriesTypeDaily": "Daily",
+  "labelSeriesTypeStandard": "Standard",
+  "labelSeriesUnmonitorSpecials": "Unmonitor Specials",
+  "labelSortAdded": "Added",
+  "labelSortNextAiring": "Next Airing",
+  "labelSortPreviousAiring": "Previous Airing",
+  "labelSortRating": "Rating",
+  "labelSortRuntime": "Runtime",
+  "labelSortTitle": "Title",
+  "labelSortYear": "Year",
+  "labelSpecials": "Specials",
+  "labelTabActivity": "Activity",
+  "labelTabCalendar": "Calendar",
+  "labelTabSettings": "Settings",
+  "labelTba": "TBA",
+  "labelTorrentChecking": "Checking",
+  "labelTorrentLinkExternal": "Not in library",
+  "labelTorrentLinkExternalDescription": "This torrent was downloaded outside the media library.",
+  "labelTorrentLinkFileMissing": "File removed",
+  "labelTorrentLinkFileMissingDescription": "The catalog item still exists, but its media file was deleted.",
+  "labelTorrentLinkLinked": "In library",
+  "labelTorrentLinkLinkedDescription": "This torrent backs an item that is still in the media library.",
+  "labelTorrentLinkOrphan": "Orphan",
+  "labelTorrentLinkOrphanDescription": "Radarr/Sonarr downloaded this torrent, but the catalog item is gone. Only the torrent is left.",
+  "labelTorrentLinkUnknownDescription": "The library relation could not be determined.",
+  "labelTorrentMissingFiles": "Missing Files",
+  "labelTorrentPausedDl": "Paused (DL)",
+  "labelTorrentPausedUp": "Paused (UP)",
+  "labelTorrentQueuedDl": "Queued (DL)",
+  "labelTorrentQueuedUp": "Queued (UP)",
+  "labelTorrentSortActivity": "Activity",
+  "labelTorrentSortAddedDate": "Added date",
+  "labelTorrentSortDownloadSpeed": "Download speed",
+  "labelTorrentSortName": "Name",
+  "labelTorrentSortProgress": "Progress",
+  "labelTorrentSortRatio": "Ratio",
+  "labelTorrentSortSeedTime": "Seed time",
+  "labelTorrentStalledDl": "Stalled (DL)",
+  "labelTorrentStalledUp": "Stalled (UP)",
+  "labelTrackerDisabled": "Disabled",
+  "labelTrackerNotContacted": "Not contacted",
+  "labelTrackerNotWorking": "Not working",
+  "labelTrackerUpdating": "Updating",
+  "labelTrackerWorking": "Working",
+  "labelUnnamedFile": "an unnamed file",
+  "labelViewModeGrid": "Grid",
+  "labelViewModeList": "List",
+  "labelWanted": "Wanted",
+  "languagePromptSubtitle": "You can change it later in Settings.",
+  "languagePromptTitle": "Choose your language",
+  "languageSystemDefault": "System default",
+  "logsAllCopied": "All logs copied to clipboard",
+  "logsAppLogsCleared": "App logs cleared",
+  "logsClearAppLogs": "Clear App Logs",
+  "logsCopyAllVisible": "Copy all visible logs",
+  "logsDetailException": "Exception/Error:",
+  "logsDetailLevel": "Level",
+  "logsDetailLogger": "Logger",
+  "logsDetailMessage": "Message:",
+  "logsDetailTime": "Time",
+  "logsDetailTitle": "Log Detail",
+  "logsLevelDebug": "Debug",
+  "logsLevelInfo": "Info",
+  "logsLevelWarn": "Warn",
+  "logsLogCopied": "Log copied",
+  "logsNoAppLogsMatchingFilter": "No app logs found matching filter",
+  "logsNoLogsMatchingFilter": "No logs found matching filter",
+  "logsSource": "Log source",
+  "logsTabApp": "App Logs",
+  "logsTabArr": "ARR Logs",
+  "logsTitle": "System Logs",
+  "manualImportEmptySubtitle": "There are no files available for manual import.",
+  "manualImportEmptyTitle": "No Importable Files",
+  "manualImportFailed": "Failed to import: {error}",
+  "@manualImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "manualImportIssueCount": "{count, plural, other{{count} with issues}}",
+  "@manualImportIssueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "manualImportLoadFailed": "Failed to load importable files",
+  "manualImportLoading": "Loading importable files...",
+  "manualImportNoFilesSelected": "No files selected",
+  "manualImportSelectedCount": "{count, plural, other{{count} file(s) selected}}",
+  "@manualImportSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "manualImportSuccess": "{count, plural, other{{count} file(s) imported successfully}}",
+  "@manualImportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "manualImportTitle": "Manual Import",
+  "manualImportValidCount": "{count, plural, other{{count} valid}}",
+  "@manualImportValidCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moviesAddFailed": "Error adding movie: {error}",
+  "@moviesAddFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesAddMissingSelection": "Please select a movie, quality profile, and root folder",
+  "moviesAddMovieButton": "Add movie",
+  "moviesAddMovieTitle": "Add Movie",
+  "moviesAddedSuccessfully": "Movie added successfully",
+  "moviesAllFolders": "All folders",
+  "moviesAlsoDeleteFiles": "Also delete files from disk",
+  "moviesDeleteFailed": "Failed to delete: {error}",
+  "@moviesDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesDeleteFileConfirm": "Are you sure you want to delete this file? This action cannot be undone.",
+  "moviesDeleteFileTitle": "Delete File",
+  "moviesDeleteFilesConfirm": "Delete all files for \"{title}\"? This removes the movie file from disk; the movie stays in Radarr.",
+  "@moviesDeleteFilesConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesDeleteFilesFailed": "Failed to delete files: {error}",
+  "@moviesDeleteFilesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesDeleteMovieConfirm": "Are you sure you want to delete \"{title}\"?",
+  "@moviesDeleteMovieConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesDeleteMovieTitle": "Delete Movie",
+  "moviesDeleted": "Movie deleted",
+  "moviesDeletedFilesCount": "{count, plural, =1{Deleted 1 file} other{Deleted {count} files}}",
+  "@moviesDeletedFilesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moviesDeletedWithFiles": "Movie and files deleted",
+  "moviesEditTitle": "Edit Movie",
+  "moviesEmptyFilteredSubtitle": "Try clearing or adjusting your search query or filters.",
+  "moviesEmptySubtitle": "Add movies to your Radarr library to see them here.",
+  "moviesEmptyTitle": "No movies found",
+  "moviesFileDeleted": "File deleted",
+  "moviesFilesSection": "Files",
+  "moviesHistorySection": "History",
+  "moviesInfoPath": "Path",
+  "moviesInfoStudio": "Studio",
+  "moviesLoadFilesFailed": "Failed to load files",
+  "moviesLoadHistoryFailed": "Failed to load history",
+  "moviesLoading": "Loading movies...",
+  "moviesLoadingDetails": "Loading details...",
+  "moviesMinimumAvailability": "Minimum Availability",
+  "moviesMoveFilesConfirm": "Do you want to move the files to \"{path}\"?",
+  "@moviesMoveFilesConfirm": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesMoveFilesTitle": "Move Files?",
+  "moviesNoFilesToDelete": "No files to delete",
+  "moviesNoHistoryEvents": "No history events",
+  "moviesNoMediaFiles": "No media files",
+  "moviesOpenLinkFailed": "Unable to open link: {error}",
+  "@moviesOpenLinkFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesOverview": "Overview",
+  "moviesPreventReAdd": "Prevent this movie from being re-added",
+  "moviesPreviewTitle": "Movie Preview",
+  "moviesPurgeConfirm": "This will permanently remove \"{title}\" from Radarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.",
+  "@moviesPurgeConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesPurgeFailed": "Failed to purge: {error}",
+  "@moviesPurgeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesPurgePreviewFailed": "Failed to preview: {error}",
+  "@moviesPurgePreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesPurgeTitle": "Purge movie",
+  "moviesPurged": "Movie purged.",
+  "moviesRefreshAndScan": "Refresh & Scan",
+  "moviesRefreshAndScanTriggered": "Refresh & Scan triggered",
+  "moviesRootFolderHelper": "Changing this will move files if confirmed",
+  "moviesSearchHint": "Search movies...",
+  "moviesSelectedCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@moviesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moviesSortAndFilter": "Sort & Filter",
+  "moviesSwitchToGrid": "Switch to Grid",
+  "moviesSwitchToList": "Switch to List",
+  "moviesTrailer": "Trailer",
+  "moviesUpdateFailed": "Error updating movie: {error}",
+  "@moviesUpdateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moviesUpdated": "Movie updated",
+  "moviesViewPoster": "View {title} poster",
+  "@moviesViewPoster": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSettingsArrUpdate": "*arr Instance Update",
+  "notificationSettingsArrUpdateSubtitle": "When Radarr/Sonarr server is updated",
+  "notificationSettingsAutoConfigure": "Auto-configure *arr instances",
+  "notificationSettingsAutoConfiguring": "Auto-configuring notifications...",
+  "notificationSettingsConfiguredCount": "{success}/{total} instances configured.",
+  "@notificationSettingsConfiguredCount": {
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationSettingsConnected": "Connected to ntfy.sh",
+  "notificationSettingsCopyTopic": "Copy topic",
+  "notificationSettingsDisconnected": "Disconnected",
+  "notificationSettingsDownloads": "Downloads",
+  "notificationSettingsEnable": "Enable Notifications",
+  "notificationSettingsFailure": "Notify on Failure",
+  "notificationSettingsFailureSubtitle": "When a download fails to import",
+  "notificationSettingsFileDeleted": "File Deleted",
+  "notificationSettingsFileDeletedSubtitle": "When a media file is deleted",
+  "notificationSettingsGrab": "Notify on Grab",
+  "notificationSettingsGrabSubtitle": "When a release is sent to download client",
+  "notificationSettingsHealthIssues": "Health Issues",
+  "notificationSettingsHealthIssuesSubtitle": "When system health issues are detected",
+  "notificationSettingsHealthRestored": "Health Restored",
+  "notificationSettingsHealthRestoredSubtitle": "When a health issue is resolved",
+  "notificationSettingsImport": "Notify on Import",
+  "notificationSettingsImportSubtitle": "When a file is successfully imported",
+  "notificationSettingsInAppBody": "Notifications are received in real-time while the app is open. When you close the app, new notifications will be fetched the next time you open it.",
+  "notificationSettingsInAppTitle": "In-App Notifications",
+  "notificationSettingsIncludeWarnings": "Include Warnings",
+  "notificationSettingsIncludeWarningsSubtitle": "Also notify on health warnings",
+  "notificationSettingsManualInteraction": "Manual Interaction",
+  "notificationSettingsManualInteractionSubtitle": "When manual intervention is required",
+  "notificationSettingsManualSetup": "OR MANUAL SETUP",
+  "notificationSettingsManualStep1": "1. Go to Settings > Connect",
+  "notificationSettingsManualStep2": "2. Add new connection > ntfy",
+  "notificationSettingsManualStep3": "3. Configure:",
+  "notificationSettingsMediaAdded": "Movie/Series Added",
+  "notificationSettingsMediaAddedSubtitle": "When a movie or series is added",
+  "notificationSettingsMediaDeleted": "Movie/Series Deleted",
+  "notificationSettingsMediaDeletedSubtitle": "When a movie or series is deleted",
+  "notificationSettingsMediaUpdates": "Media Updates",
+  "notificationSettingsNtfyDocs": "ntfy documentation",
+  "notificationSettingsServerUrl": "Server URL",
+  "notificationSettingsSetupInArr": "Setup in Radarr/Sonarr",
+  "notificationSettingsSetupResults": "Setup Results",
+  "notificationSettingsSetupSubtitle": "Tap to generate your unique topic",
+  "notificationSettingsSetupTitle": "Setup Notifications",
+  "notificationSettingsTopic": "Topic",
+  "notificationSettingsTopicCopied": "Topic copied to clipboard",
+  "notificationSettingsUnexpectedError": "Unexpected error: {error}",
+  "@notificationSettingsUnexpectedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSettingsYourTopic": "Your Topic",
+  "notificationSetupConfigured": "{name} configured successfully.",
+  "@notificationSetupConfigured": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSetupFailed": "Failed to configure {name}: {error}",
+  "@notificationSetupFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSetupNoTopic": "No Ntfy topic configured in Arrmate.",
+  "notificationSetupUpdated": "{name} updated successfully.",
+  "@notificationSetupUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsAllCleared": "All notifications cleared",
+  "notificationsAllMarkedRead": "All notifications marked as read",
+  "notificationsClearAll": "Clear all",
+  "notificationsClearAllConfirm": "This will remove all notifications. This action cannot be undone.",
+  "notificationsClearAllTitle": "Clear all notifications?",
+  "notificationsDismissed": "Notification dismissed",
+  "notificationsEmptySubtitle": "When you receive notifications from Radarr or Sonarr, they will appear here.",
+  "notificationsEmptyTitle": "No notifications",
+  "notificationsMarkAllRead": "Mark all as read",
+  "notificationsNewBadge": "NEW",
+  "notificationsTitle": "Notifications",
+  "playbackLoadMovieFileFailed": "Could not load the movie file",
+  "playbackNoEpisodeFile": "No playable file found for this episode",
+  "playbackNoJellyfin": "No Jellyfin server is configured",
+  "playbackNoMovieFile": "No playable file found for this movie",
+  "playbackNotFound": "Could not find this media in Jellyfin",
+  "playbackSearchingLibrary": "Searching the Jellyfin library…",
+  "playbackSessionExpired": "Your Jellyfin session has expired. Sign in again.",
+  "playbackSignIn": "Sign in",
+  "playbackStartFailed": "Could not start playback: {error}",
+  "@playbackStartFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "playbackTrackLabel": "Track {index}",
+  "@playbackTrackLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "playerAudio": "Audio",
+  "playerBack": "Back",
+  "playerExternalOpenFailed": "Could not open an external player",
+  "playerExternalUnavailable": "Opening this media in an external player is not available for the current server configuration.",
+  "playerNoMediaRequested": "No media was requested for playback.",
+  "playerQualityDataSaver": "Data saver",
+  "playerQualityOriginal": "Original",
+  "playerQualityTooltip": "Quality: {quality}",
+  "@playerQualityTooltip": {
+    "placeholders": {
+      "quality": {
+        "type": "String"
+      }
+    }
+  },
+  "playerStartFailed": "Could not start playback. Check your connection and try again.",
+  "playerSubtitleExternal": "External",
+  "playerSubtitlesDisabled": "Disabled",
+  "playerTitle": "Player",
+  "playerUnexpectedFailure": "Playback failed unexpectedly.",
+  "playerUnsupportedOnWeb": "In-app playback is not supported on the web yet",
+  "providerAssistantDeleteFailed": "Failed to delete model.",
+  "providerAssistantDownloadFailed": "Failed to download model: {error}",
+  "@providerAssistantDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerAssistantEnableOnlineFailed": "Failed to enable online model.",
+  "providerAssistantGenerateFailed": "Failed to generate a response.",
+  "providerAssistantImportFailed": "Failed to import model.",
+  "providerAssistantInitFailed": "Failed to initialize assistant resources.",
+  "providerAssistantLoadModelFailed": "Failed to load the selected model.",
+  "providerAssistantModelNotFound": "Model not found.",
+  "providerAssistantNoToolCalling": "This model does not support tool-calling. Use a Gemma model.",
+  "providerAssistantRefreshModelsFailed": "Failed to refresh installed models.",
+  "providerAssistantSelectModelFirst": "Select a model before chatting.",
+  "providerBackupCompleted": "Backup completed.",
+  "providerBackupCorrupt": "The backup file is corrupted or from an unsupported version.",
+  "providerBackupExportFailed": "Backup export failed: {error}",
+  "@providerBackupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerBackupExported": "Backup exported to file.",
+  "providerBackupFailed": "Backup failed: {error}",
+  "@providerBackupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerBackupLoadFailed": "Could not load the backup: {error}",
+  "@providerBackupLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerBackupNotFound": "No backup found in your Google Drive.",
+  "providerBackupReadFileFailed": "Could not read the backup file: {error}",
+  "@providerBackupReadFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerBackupRestoreFailed": "Restore failed: {error}",
+  "@providerBackupRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerBackupRestored": "Restored {settingsCount} settings and {instanceCount} instances.",
+  "@providerBackupRestored": {
+    "placeholders": {
+      "settingsCount": {
+        "type": "int"
+      },
+      "instanceCount": {
+        "type": "int"
+      }
+    }
+  },
+  "providerBackupSessionExpired": "Google session expired. Sign in again.",
+  "providerBackupSignInFailed": "Sign-in failed. Check your connection and try again.",
+  "providerBackupSignedOut": "Sign in to Google first.",
+  "providerBackupUnknownError": "unknown error",
+  "providerInstanceTypeMismatch": "Expected {expected}, but connected to {actual}",
+  "@providerInstanceTypeMismatch": {
+    "placeholders": {
+      "expected": {
+        "type": "String"
+      },
+      "actual": {
+        "type": "String"
+      }
+    }
+  },
+  "purgeCrossSeedFoundContent": "A torrent with the same release name was found. Delete it too?",
+  "purgeCrossSeedFoundTitle": "Cross-seed torrent found",
+  "purgeDeleteAll": "Delete all",
+  "purgeDeleteAnyway": "Delete anyway",
+  "purgeDeleteTorrent": "Delete torrent",
+  "purgeHash": "Hash",
+  "purgeKeepSeeding": "Keep seeding",
+  "purgeKeepTorrent": "Keep torrent",
+  "purgeNoTags": "No tags",
+  "purgeSavePath": "Save path",
+  "purgeSeededFor": "Seeded {duration}",
+  "@purgeSeededFor": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "purgeTitleRemovedEitherWay": "The title will still be removed from the library and its files deleted either way.",
+  "purgeTorrentBelowMinimum": "This torrent seeded for less than the minimum of {days, plural, =1{1 day} other{{days} days}}:",
+  "@purgeTorrentBelowMinimum": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "purgeTorrentStillSeeding": "Torrent still seeding",
+  "purgeTorrentsBelowMinimum": "The following {count, plural, =1{1 torrent} other{{count} torrents}} seeded for less than the minimum of {days, plural, =1{1 day} other{{days} days}}:",
+  "@purgeTorrentsBelowMinimum": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "purgeTorrentsStillSeeding": "Torrents still seeding",
+  "qualityProfilesEmpty": "No profiles found or instance not connected",
+  "qualityProfilesId": "ID: {id}",
+  "@qualityProfilesId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "qualityProfilesRadarr": "Radarr Profiles",
+  "qualityProfilesSonarr": "Sonarr Profiles",
+  "qualityProfilesTitle": "Quality Profiles",
+  "queueAddToBlocklist": "Add to Blocklist",
+  "queueAddToBlocklistSubtitle": "Prevent this release from being grabbed again",
+  "queueAnyClient": "Any client",
+  "queueAnyInstance": "Any instance",
+  "queueAnyProtocol": "Any protocol",
+  "queueAscending": "Ascending",
+  "queueCustomFormatScore": "Custom Format Score",
+  "queueCustomFormats": "Custom Formats",
+  "queueDescending": "Descending",
+  "queueDetailPath": "Path",
+  "queueDirection": "Direction",
+  "queueEmptySubtitle": "No active downloads at the moment.",
+  "queueEmptyTitle": "Queue is empty",
+  "queueEtaDays": "{count}d",
+  "@queueEtaDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueEtaDone": "Done",
+  "queueEtaHours": "{count}h",
+  "@queueEtaHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueEtaLessThanMinute": "<1m",
+  "queueEtaMinutes": "{count}m",
+  "@queueEtaMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFilterSection": "Filter",
+  "queueGroupedTasks": "Grouped Tasks",
+  "queueInformation": "Information",
+  "queueInstance": "Instance",
+  "queueItemRemoved": "Item removed from queue",
+  "queueLoadFailed": "Queue data could not be loaded.",
+  "queueLoading": "Loading queue...",
+  "queueManualImportDescription": "This download requires manual intervention. Select which files to import.",
+  "queueManualImportRequired": "Manual Import Required",
+  "queueNoMatchSubtitle": "Adjust or reset the queue filters.",
+  "queueNoMatchTitle": "No matching tasks",
+  "queueOpenDetails": "Open Details",
+  "queueOpenMovie": "Open Movie",
+  "queueOpenSeries": "Open Series",
+  "queueOptions": "Queue options",
+  "queueProblemCount": "{count, plural, =1{(1 problem)} other{({count} problems)}}",
+  "@queueProblemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueProblemsOnly": "Problems only",
+  "queueProblemsOnlySubtitle": "Show tasks that need attention or manual import",
+  "queueRemovalOptions": "Removal Options",
+  "queueRemoveFromClient": "Remove from Download Client",
+  "queueRemoveFromClientSubtitle": "Delete the download from the client",
+  "queueRemoveFromQueue": "Remove from Queue",
+  "queueSearchReplacement": "Search for Replacement",
+  "queueSearchReplacementSubtitle": "Automatically search for another release",
+  "queueSizeLeft": "{size} left",
+  "@queueSizeLeft": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "queueTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@queueTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueTimeRemainingDaysHours": "{days}d {hours}h remaining",
+  "@queueTimeRemainingDaysHours": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "queueTimeRemainingHoursMinutes": "{hours}h {minutes}m remaining",
+  "@queueTimeRemainingHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "queueTimeRemainingLessThanMinute": "Less than a minute",
+  "queueTimeRemainingMinutes": "{minutes}m remaining",
+  "@queueTimeRemainingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "queueUnableToImport": "Unable to Import Automatically",
+  "queueUnknownError": "Unknown error",
+  "releasesAge": "Age",
+  "releasesAgeDays": "{days, plural, other{{days} days}}",
+  "@releasesAgeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "releasesAgeShort": "{days}d",
+  "@releasesAgeShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "releasesApproval": "Approval",
+  "releasesApproved": "Approved",
+  "releasesClearSearch": "Clear search",
+  "releasesCustomFormat": "Custom format",
+  "releasesCustomFormatScore": "Custom format score",
+  "releasesCustomFormats": "Custom formats",
+  "releasesDetailsTitle": "Release details",
+  "releasesDownload": "Download",
+  "releasesDownloadRelease": "Download release",
+  "releasesDownloadTitle": "Download Release",
+  "releasesEpisodeOrMovie": "Episode or movie",
+  "releasesEpisodes": "Episodes",
+  "releasesExcludeFreeleech": "Exclude freeleech",
+  "releasesFilterTooltip": "Filter releases",
+  "releasesFiltersSubtitle": "Combine any number of filters",
+  "releasesFiltersTitle": "Release filters",
+  "releasesFreeleech": "Freeleech",
+  "releasesFreeleechOnly": "Freeleech only",
+  "releasesGrabConfirm": "Are you sure you want to grab \"{title}\"?",
+  "@releasesGrabConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "releasesGrabError": "Error grabbing release: {error}",
+  "@releasesGrabError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "releasesGrabSuccess": "Release grabbed successfully",
+  "releasesIndexerFlags": "Indexer flags",
+  "releasesLanguages": "Languages",
+  "releasesMappedEpisodes": "Mapped episodes",
+  "releasesNoMatch": "No releases match the current filters",
+  "releasesNoneFound": "No releases found",
+  "releasesOriginalLanguageOnly": "Original language only",
+  "releasesQualityWeight": "Quality weight",
+  "releasesRejected": "Rejected",
+  "releasesRejectedTooltip": "Rejected release",
+  "releasesRejectionReasons": "Rejection reasons",
+  "releasesReleaseRejected": "Release rejected",
+  "releasesReleaseType": "Release type",
+  "releasesReleaseWeight": "Release weight",
+  "releasesRememberFilters": "Remember filters",
+  "releasesRememberFiltersSubtitle": "Keep this configuration for future searches",
+  "releasesRequestedEpisode": "Requested episode",
+  "releasesResultCount": "{count, plural, other{{count} results}}",
+  "@releasesResultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "releasesResultCountHidden": "{count, plural, other{{count} results}} · {hidden} hidden",
+  "@releasesResultCountHidden": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "hidden": {
+        "type": "int"
+      }
+    }
+  },
+  "releasesSearchHint": "Search releases",
+  "releasesSeasonPack": "Season pack",
+  "releasesSeasonPacks": "Season packs",
+  "releasesSeeders": "Seeders",
+  "releasesSeedsPeers": "Seeds / peers",
+  "releasesSendingTooltip": "Sending release to the download client",
+  "seriesAddFailed": "Error adding series: {error}",
+  "@seriesAddFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesAddMissingSelection": "Please select a series, quality profile, and root folder",
+  "seriesAddSeries": "Add series",
+  "seriesAddSeriesTitle": "Add Series",
+  "seriesAddedSuccessfully": "Series added successfully",
+  "seriesAirDate": "Air Date",
+  "seriesAllFolders": "All folders",
+  "seriesAllSeasonsMonitored": "All seasons monitored",
+  "seriesAllSeasonsUnmonitored": "All seasons unmonitored",
+  "seriesAlsoDeleteFiles": "Also delete files from disk",
+  "seriesAndFilesDeleted": "Series and files deleted",
+  "seriesConfigureAddition": "Configure Addition",
+  "seriesDeleteFailed": "Failed to delete: {error}",
+  "@seriesDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesDeleteFile": "Delete File",
+  "seriesDeleteFileConfirm": "Are you sure you want to delete this file? This action cannot be undone.",
+  "seriesDeleteFilesConfirm": "Delete all files for \"{title}\"? This removes every episode file from disk; the series stays in Sonarr.",
+  "@seriesDeleteFilesConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesDeleteFilesFailed": "Failed to delete files: {error}",
+  "@seriesDeleteFilesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesDeleteFilesForSeasons": "{count, plural, =1{Delete files for 1 season} other{Delete files for {count} seasons}}",
+  "@seriesDeleteFilesForSeasons": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesDeleteSeasonFiles": "Delete season files",
+  "seriesDeleteSeasonFilesConfirm": "Delete all files for \"{title} - Season {season}\"? This removes every episode file in this season from disk.",
+  "@seriesDeleteSeasonFilesConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesDeleteSeasonsFilesContent": "This deletes the episode files of the selected seasons from disk. The series stays in Sonarr.",
+  "seriesDeleteSeries": "Delete Series",
+  "seriesDeleteSeriesConfirm": "Are you sure you want to delete \"{title}\"?",
+  "@seriesDeleteSeriesConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesDeleted": "Series deleted",
+  "seriesDeletedFilesCount": "{count, plural, =1{Deleted 1 file} other{Deleted {count} files}}",
+  "@seriesDeletedFilesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesEditSeries": "Edit Series",
+  "seriesEmptySubtitle": "Add series to your Sonarr library to see them here.",
+  "seriesEpisodeActions": "Episode actions",
+  "seriesEpisodeCount": "{count, plural, other{{count} Episodes}}",
+  "@seriesEpisodeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesEpisodeLoadFailed": "Failed to load the episode: {error}",
+  "@seriesEpisodeLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesEpisodeLoading": "Loading episode...",
+  "seriesEpisodeMonitored": "Episode monitored",
+  "seriesEpisodeUnmonitored": "Episode unmonitored",
+  "seriesFile": "File",
+  "seriesFileDeleted": "File deleted",
+  "seriesHideAlreadyAdded": "Hide already added",
+  "seriesHistory": "History",
+  "seriesLoadEpisodesFailed": "Failed to load episodes: {error}",
+  "@seriesLoadEpisodesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesLoadFileInfoFailed": "Failed to load file info",
+  "seriesLoadFoldersError": "Error loading folders: {error}",
+  "@seriesLoadFoldersError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesLoadHistoryFailed": "Failed to load history",
+  "seriesLoadProfilesError": "Error loading profiles: {error}",
+  "@seriesLoadProfilesError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesLoadingDetails": "Loading details...",
+  "seriesLoadingSeries": "Loading series...",
+  "seriesMonitorEpisode": "Monitor episode",
+  "seriesMonitorNewSeasons": "Monitor New Seasons",
+  "seriesMonitorNewSeasonsSubtitle": "Automatically monitor seasons added in the future",
+  "seriesMonitoredSubtitle": "Monitor episodes for this series",
+  "seriesMoveFilesContent": "You changed the root folder. Do you want to move existing files to the new location?",
+  "seriesMoveFilesTitle": "Move Files?",
+  "seriesNetwork": "Network",
+  "seriesNoEpisodesFound": "No episodes found",
+  "seriesNoFileAvailable": "No file available",
+  "seriesNoFilesToDelete": "No files to delete",
+  "seriesNoHistoryEvents": "No history events",
+  "seriesNoOverview": "No overview available.",
+  "seriesNoRating": "No rating",
+  "seriesNoResultsFound": "No results found",
+  "seriesNoResultsSubtitle": "Try clearing or adjusting your search query or filters.",
+  "seriesNoSeriesFound": "No series found",
+  "seriesNoSonarrInstance": "No Sonarr instance configured",
+  "seriesOverview": "Overview",
+  "seriesPath": "Path",
+  "seriesPreventReAdd": "Prevent this series from being re-added",
+  "seriesPreview": "Series Preview",
+  "seriesPreviewCrossSeedsFailed": "Failed to preview cross-seeds: {error}",
+  "@seriesPreviewCrossSeedsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesPreviewFailed": "Failed to preview: {error}",
+  "@seriesPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesPurgeFailed": "Failed to purge: {error}",
+  "@seriesPurgeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesPurgeSeason": "Purge season",
+  "seriesPurgeSeasonConfirm": "Delete all files for \"{title} - Season {season}\" and remove their source torrents from qBittorrent? The series stays in Sonarr.",
+  "@seriesPurgeSeasonConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesPurgeSeasonsContent": "This deletes the episode files of the selected seasons and their source torrents from qBittorrent. The series stays in Sonarr.",
+  "seriesPurgeSeasonsTitle": "{count, plural, =1{Purge 1 season} other{Purge {count} seasons}}",
+  "@seriesPurgeSeasonsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesPurgeSeries": "Purge series",
+  "seriesPurgeSeriesConfirm": "This will permanently remove \"{title}\" and all its episodes from Sonarr, delete its media files, and delete all source torrents (plus cross-seed duplicates) from qBittorrent. Frees disk space used by hardlinked data.",
+  "@seriesPurgeSeriesConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesPurged": "Series purged.",
+  "seriesPurgedSeasonsSummary": "Purged {seasons, plural, =1{1 season} other{{seasons} seasons}}: {files, plural, =1{1 file} other{{files} files}}, {torrents, plural, =1{1 torrent} other{{torrents} torrents}}.",
+  "@seriesPurgedSeasonsSummary": {
+    "placeholders": {
+      "seasons": {
+        "type": "int"
+      },
+      "files": {
+        "type": "int"
+      },
+      "torrents": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesPurgedSummary": "Purged: {files, plural, =1{1 file} other{{files} files}}, {torrents, plural, =1{1 torrent} other{{torrents} torrents}}.",
+  "@seriesPurgedSummary": {
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "torrents": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesRefreshAndScan": "Refresh & Scan",
+  "seriesRefreshScanTriggered": "Refresh & Scan triggered",
+  "seriesRootFolderFreeSpace": "{path} ({free} GB Free)",
+  "@seriesRootFolderFreeSpace": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "free": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesRootFolderHeader": "ROOT FOLDER",
+  "seriesRuntimeMinutes": "{minutes}m",
+  "@seriesRuntimeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesSearchByHint": "Search by title, provider ID, or URL",
+  "seriesSearchFailed": "Failed to search: {error}",
+  "@seriesSearchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesSearchHint": "Search series...",
+  "seriesSearchStartedFor": "Search started for {name}",
+  "@seriesSearchStartedFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesSearchStartedForSeasons": "{count, plural, =1{Search started for 1 season} other{Search started for {count} seasons}}",
+  "@seriesSearchStartedForSeasons": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesSearchingFor": "Searching for {name}...",
+  "@seriesSearchingFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesSeasonActions": "Season actions",
+  "seriesSeasonCount": "{count, plural, other{{count} Seasons}}",
+  "@seriesSeasonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesSeasonFolder": "Season Folder",
+  "seriesSeasonFolders": "Season Folders",
+  "seriesSeasonFoldersSubtitle": "Use Season folders (e.g. Season 01/...)",
+  "seriesSeasonLoadFailed": "Failed to load the season: {error}",
+  "@seriesSeasonLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesSeasonLoading": "Loading season...",
+  "seriesSeasonTitle": "Season",
+  "seriesSeasons": "Seasons",
+  "seriesSelect": "Select",
+  "seriesSelectPath": "Select Path",
+  "seriesSelectedCount": "{count, plural, other{{count} selected}}",
+  "@seriesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesSeriesType": "Series Type",
+  "seriesSortAndFilter": "Sort & Filter",
+  "seriesSwitchToGrid": "Switch to Grid",
+  "seriesSwitchToList": "Switch to List",
+  "seriesTitleWithSeason": "{title} - Season {season}",
+  "@seriesTitleWithSeason": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesUnableToOpenLink": "Unable to open link: {error}",
+  "@seriesUnableToOpenLink": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesUnmonitorEpisode": "Unmonitor episode",
+  "seriesUnmonitoredSeasons": "{count, plural, =1{Unmonitored 1 season} other{Unmonitored {count} seasons}}",
+  "@seriesUnmonitoredSeasons": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesUpdateEpisodeFailed": "Failed to update episode: {error}",
+  "@seriesUpdateEpisodeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesUpdateFailed": "Error updating series: {error}",
+  "@seriesUpdateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesViewPoster": "View {title} poster",
+  "@seriesViewPoster": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesWatch": "Watch",
+  "seriesYesMoveFiles": "Yes, Move Files",
+  "settingsAbout": "About",
+  "settingsAddInstance": "Add Instance",
+  "settingsAppUpToDate": "App is up to date",
+  "settingsAppearance": "Appearance",
+  "settingsAssistant": "Assistant",
+  "settingsAssistantSubtitle": "Ask how the app works",
+  "settingsBackupLocalFileSubtitle": "Import or export a local file",
+  "settingsColorScheme": "Color Scheme",
+  "settingsCouldNotCheckUpdates": "Could not check for updates",
+  "settingsGettingStarted": "Getting Started",
+  "settingsGettingStartedSubtitle": "Replay the setup tour",
+  "settingsHomeTab": "Home Tab",
+  "settingsInstanceTagCount": "{count, plural, =1{1 tag} other{{count} tags}}",
+  "@settingsInstanceTagCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsInstances": "Instances",
+  "settingsLanguage": "Language",
+  "settingsNoArrInstancesConfigured": "No Arr instances configured",
+  "settingsNoInstances": "No instances configured",
+  "settingsNoRadarrSonarrInstances": "No Radarr or Sonarr instances configured",
+  "settingsNotificationCenter": "Notification Center",
+  "settingsNotificationSettings": "Notification Settings",
+  "settingsNotifications": "Notifications",
+  "settingsNotificationsEnabledSubtitle": "Enabled · ntfy.sh integration",
+  "settingsNotificationsSetupSubtitle": "Setup notifications",
+  "settingsSelectColor": "Select Color",
+  "settingsSelectHomeTab": "Select Home Tab",
+  "settingsSelectLanguage": "Select Language",
+  "settingsSelectMode": "Select Mode",
+  "settingsSessionExpiredSignIn": "Session expired · tap to sign in",
+  "settingsSourceCode": "Source Code",
+  "settingsSystem": "System",
+  "settingsSystemManagementSubtitle": "Diagnostics, status, logs, and app maintenance",
+  "settingsThemeMode": "Theme Mode",
+  "settingsUnreadNotifications": "{count, plural, =1{1 unread notification} other{{count} unread notifications}}",
+  "@settingsUnreadNotifications": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsVersion": "Version",
+  "settingsVersionViaAltStore": "{version} • updates via AltStore",
+  "@settingsVersionViaAltStore": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsViewAllNotifications": "View all notifications",
+  "sharedAddImportExclusion": "Add to import exclusion list",
+  "sharedAddImportExclusionSubtitle": "Prevent the item from being added again by an import list.",
+  "sharedAscending": "Ascending",
+  "sharedBatchDeleteFilesFailed": "Failed to delete files: {error}",
+  "@sharedBatchDeleteFilesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchDeleteMovieFilesContent": "This deletes the media files of the selected movies from disk. They stay in Radarr.",
+  "sharedBatchDeleteMovieFilesTitle": "{count, plural, =1{Delete files for 1 movie} other{Delete files for {count} movies}}",
+  "@sharedBatchDeleteMovieFilesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeleteMoviesKeepFiles": "This removes the selected movies from Radarr. Files stay on disk.",
+  "sharedBatchDeleteMoviesPartial": "Deleted {deleted} of {total, plural, =1{1 movie} other{{total} movies}} before error: {error}",
+  "@sharedBatchDeleteMoviesPartial": {
+    "placeholders": {
+      "deleted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchDeleteMoviesTitle": "{count, plural, =1{Delete 1 movie} other{Delete {count} movies}}",
+  "@sharedBatchDeleteMoviesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeleteMoviesWithFiles": "This removes the selected movies from Radarr and deletes their files from disk.",
+  "sharedBatchDeleteSeriesFilesContent": "This deletes the media files of the selected series from disk. They stay in Sonarr.",
+  "sharedBatchDeleteSeriesFilesTitle": "{count, plural, =1{Delete files for 1 series} other{Delete files for {count} series}}",
+  "@sharedBatchDeleteSeriesFilesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeleteSeriesKeepFiles": "This removes the selected series from Sonarr. Files stay on disk.",
+  "sharedBatchDeleteSeriesPartial": "Deleted {deleted} of {total} series before error: {error}",
+  "@sharedBatchDeleteSeriesPartial": {
+    "placeholders": {
+      "deleted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchDeleteSeriesTitle": "{count, plural, =1{Delete 1 series} other{Delete {count} series}}",
+  "@sharedBatchDeleteSeriesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeleteSeriesWithFiles": "This removes the selected series from Sonarr and deletes their files from disk.",
+  "sharedBatchDeletedFiles": "{count, plural, =1{Deleted 1 file} other{Deleted {count} files}}",
+  "@sharedBatchDeletedFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeletedMovies": "{count, plural, =1{Deleted 1 movie} other{Deleted {count} movies}}",
+  "@sharedBatchDeletedMovies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeletedMoviesAndFiles": "{count, plural, =1{Deleted 1 movie and files} other{Deleted {count} movies and files}}",
+  "@sharedBatchDeletedMoviesAndFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeletedSeries": "{count, plural, =1{Deleted 1 series} other{Deleted {count} series}}",
+  "@sharedBatchDeletedSeries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchDeletedSeriesAndFiles": "{count, plural, =1{Deleted 1 series and files} other{Deleted {count} series and files}}",
+  "@sharedBatchDeletedSeriesAndFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchMonitoredMovies": "{count, plural, =1{Monitored 1 movie} other{Monitored {count} movies}}",
+  "@sharedBatchMonitoredMovies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchMonitoredSeries": "{count, plural, =1{Monitored 1 series} other{Monitored {count} series}}",
+  "@sharedBatchMonitoredSeries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchPreviewCrossSeedsFailed": "Failed to preview cross-seeds: {error}",
+  "@sharedBatchPreviewCrossSeedsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchPreviewFailed": "Failed to preview: {error}",
+  "@sharedBatchPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchPurgeFailed": "Failed to purge: {error}",
+  "@sharedBatchPurgeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchPurgeMoviesContent": "This permanently removes the selected movies from Radarr, deletes their files, and deletes all source torrents from qBittorrent.",
+  "sharedBatchPurgeMoviesTitle": "{count, plural, =1{Purge 1 movie} other{Purge {count} movies}}",
+  "@sharedBatchPurgeMoviesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchPurgeSeriesContent": "This permanently removes the selected series from Sonarr, deletes their files, and deletes all source torrents from qBittorrent.",
+  "sharedBatchPurgeSeriesTitle": "{count, plural, =1{Purge 1 series} other{Purge {count} series}}",
+  "@sharedBatchPurgeSeriesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchPurgedMovies": "{count, plural, =1{Purged 1 movie.} other{Purged {count} movies.}}",
+  "@sharedBatchPurgedMovies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchPurgedSeries": "{count, plural, =1{Purged 1 series.} other{Purged {count} series.}}",
+  "@sharedBatchPurgedSeries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchUnmonitoredMovies": "{count, plural, =1{Unmonitored 1 movie} other{Unmonitored {count} movies}}",
+  "@sharedBatchUnmonitoredMovies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchUnmonitoredSeries": "{count, plural, =1{Unmonitored 1 series} other{Unmonitored {count} series}}",
+  "@sharedBatchUnmonitoredSeries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedBatchUpdateMoviesPartial": "Updated {updated} of {total, plural, =1{1 movie} other{{total} movies}} before error: {error}",
+  "@sharedBatchUpdateMoviesPartial": {
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedBatchUpdateSeriesPartial": "Updated {updated} of {total} series before error: {error}",
+  "@sharedBatchUpdateSeriesPartial": {
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedDescending": "Descending",
+  "sharedFailedToLoadTorrents": "Failed to load torrents",
+  "sharedNoRadarrInstance": "No Radarr instance configured",
+  "sharedNoTorrentsInClient": "No torrents in the download client",
+  "sharedSelectedCount": "{count, plural, other{{count} selected}}",
+  "@sharedSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrents": "Torrents",
+  "sharedTorrentsDeleteContent": "This removes the selected torrents from qBittorrent and deletes their files from disk.",
+  "sharedTorrentsDeleteFailed": "Failed to delete torrents: {error}",
+  "@sharedTorrentsDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedTorrentsDeleteTitle": "{count, plural, =1{Delete 1 torrent} other{Delete {count} torrents}}",
+  "@sharedTorrentsDeleteTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsDeleted": "{count, plural, =1{Deleted 1 torrent and files} other{Deleted {count} torrents and files}}",
+  "@sharedTorrentsDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsDeletedKept": "{count, plural, =1{Deleted 1 torrent and files (kept {kept} still seeding)} other{Deleted {count} torrents and files (kept {kept} still seeding)}}",
+  "@sharedTorrentsDeletedKept": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "kept": {
+        "type": "int"
+      }
+    }
+  },
+  "sharedTorrentsKeepSeedingAll": "Keep seeding leaves them and their files untouched.",
+  "sharedTorrentsKeepSeedingSome": "The other selected torrents and their files are deleted either way.",
+  "sharedTorrentsNoQbittorrent": "No qBittorrent instance configured",
+  "sharedTorrentsNoneDeleted": "No torrents deleted",
+  "sharedTorrentsNoneDeletedKept": "No torrents deleted (kept {kept} still seeding)",
+  "@sharedTorrentsNoneDeletedKept": {
+    "placeholders": {
+      "kept": {
+        "type": "int"
+      }
+    }
+  },
+  "systemAppMaintenance": "App Maintenance",
+  "systemClearImageCache": "Clear image cache",
+  "systemClearImageCacheSubtitle": "Free up cached poster and image storage",
+  "systemDaysHelper": "0 disables the warning",
+  "systemDaysInvalid": "Enter a valid number (0 or more)",
+  "systemDaysLabel": "Days",
+  "systemDiagnosticsSubtitle": "Test endpoints, latency, request traces, and export a report",
+  "systemHealth": "Health",
+  "systemHealthSubtitle": "Server-reported Radarr and Sonarr alerts",
+  "systemImageCacheCleared": "Image cache cleared",
+  "systemLogs": "Logs",
+  "systemLogsSubtitle": "System event logs",
+  "systemManagementTitle": "System Management",
+  "systemMinimumSeedingDays": "Minimum seeding days",
+  "systemMinimumSeedingDaysDescription": "Torrents that seeded for less than this are flagged for confirmation before deletion. Set to 0 to disable.",
+  "systemOverviewDiskSpace": "Disk Space",
+  "systemOverviewDiskSpaceUnavailable": "Disk space information is unavailable.",
+  "systemOverviewEmptySubtitle": "Add a Radarr or Sonarr instance to view system data.",
+  "systemOverviewEpisodeCount": "{count, plural, =1{1 Episode} other{{count} Episodes}}",
+  "@systemOverviewEpisodeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "systemOverviewFreeOf": "{free} free of {total}",
+  "@systemOverviewFreeOf": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "systemOverviewLibrarySize": "{size} Library",
+  "@systemOverviewLibrarySize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "systemOverviewLibraryUnavailable": "Library statistics are unavailable.",
+  "systemOverviewLoadFailed": "Failed to load the system overview.",
+  "systemOverviewLoading": "Loading system overview...",
+  "systemOverviewMovieCount": "{count, plural, =1{1 Movie} other{{count} Movies}}",
+  "@systemOverviewMovieCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "systemOverviewNoStorage": "No storage locations reported.",
+  "systemOverviewSeriesCount": "{count} Series",
+  "@systemOverviewSeriesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "systemOverviewSubtitle": "Storage, versions, and library sizes",
+  "systemOverviewTitle": "System Overview",
+  "systemOverviewUsed": "Used {size} ({percent}%)",
+  "@systemOverviewUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "systemOverviewVersionUnavailable": "Version information is unavailable.",
+  "systemQualityProfilesSubtitle": "Available profiles from instances",
+  "systemResetConfirmBody": "This restores appearance, language, view mode, and notification preferences to their defaults. Configured instances are preserved.",
+  "systemResetConfirmTitle": "Reset app settings?",
+  "systemResetSettings": "Reset app settings",
+  "systemResetSettingsSubtitle": "Restore appearance, language, view, and notification defaults",
+  "systemSeedingDaysShort": "{count}d",
+  "@systemSeedingDaysShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "systemSeedingWarningDisabled": "Seeding warning disabled",
+  "systemSeedingWarningEnabled": "Warn before deleting torrents that seeded for less than {count, plural, =1{1 day} other{{count} days}}.",
+  "@systemSeedingWarningEnabled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "systemServer": "Server",
+  "systemSettingsReset": "App settings reset to defaults",
+  "systemTorrentProtection": "Torrent Protection",
+  "systemVersionHistorySubtitle": "Changelog for every published release",
+  "torrentAddFailed": "Failed to add torrent: {error}",
+  "@torrentAddFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentAddOptions": "Options",
+  "torrentAddOr": "OR",
+  "torrentAddSource": "Source",
+  "torrentAddSourceRequired": "Please provide URLs or select a .torrent file",
+  "torrentAddTorrent": "Add Torrent",
+  "torrentAdded": "Torrent added successfully",
+  "torrentAlsoDeleteFiles": "Also delete files on disk",
+  "torrentCategoriesLoadFailed": "Could not load categories. Using free text mode.",
+  "torrentCategoryOptional": "Category (Optional)",
+  "torrentChangeSaveLocation": "Change Save Location",
+  "torrentChangeSaveLocationWarning": "This will move all downloaded data to the new location.",
+  "torrentClearSearch": "Clear search",
+  "torrentConnectedCount": "{count, plural, other{{count} connected}}",
+  "@torrentConnectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentCrossSeedBadge": "Cross-seed",
+  "torrentCrossSeedExplanation": "Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.",
+  "torrentDeleteWithFiles": "Delete with files",
+  "torrentEmptySubtitle": "Add a new torrent to start downloading",
+  "torrentEmptyTitle": "No Torrents",
+  "torrentEnterValidPath": "Please enter a valid path",
+  "torrentEta": "ETA: {eta}",
+  "@torrentEta": {
+    "placeholders": {
+      "eta": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentFiles": "Files",
+  "torrentFilterLibraryLink": "Library link",
+  "torrentFilterTooltip": "Filter torrents",
+  "torrentFiltersSubtitle": "Combine any number of filters",
+  "torrentFiltersTitle": "Torrent filters",
+  "torrentImportFailed": "Failed to import: {error}",
+  "@torrentImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentImportFilesImported": "{count, plural, other{{count} file(s) imported successfully}}",
+  "@torrentImportFilesImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentImportFilesSelected": "{count, plural, other{{count} file(s) selected for import}}",
+  "@torrentImportFilesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentImportLoadMoviesFailed": "Failed to load movies",
+  "torrentImportLoadSeriesFailed": "Failed to load series",
+  "torrentImportLoadingMovies": "Loading movies...",
+  "torrentImportLoadingSeries": "Loading series...",
+  "torrentImportNoFilesSelected": "No files selected",
+  "torrentImportNoFilesSubtitle": "No importable files found in {path}",
+  "@torrentImportNoFilesSubtitle": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentImportNoFilesTitle": "No Files Found",
+  "torrentImportNoMoviesSubtitle": "No monitored movies match your search.",
+  "torrentImportNoMoviesTitle": "No Movies Found",
+  "torrentImportNoSeriesSubtitle": "No monitored series match your search.",
+  "torrentImportNoSeriesTitle": "No Series Found",
+  "torrentImportSearchHint": "Search...",
+  "torrentImportSelectFilesHint": "Select files to import. Tap on a file to configure its mapping.",
+  "torrentImportSelectTarget": "Select Target",
+  "torrentImportToLibrary": "Import to Media Library",
+  "torrentImportToMovie": "Import to Movie",
+  "torrentImportToSeries": "Import to Series",
+  "torrentInfoAddedOn": "Added On",
+  "torrentInfoCategory": "Category",
+  "torrentInfoHash": "Hash",
+  "torrentInfoInstance": "Instance",
+  "torrentInfoMedia": "Media",
+  "torrentInfoSavePath": "Save Path",
+  "torrentLibraryLinksLoadFailed": "Library links could not be loaded.",
+  "torrentLoadFailed": "Failed to load torrents",
+  "torrentLoadFilesFailed": "Failed to load files: {error}",
+  "@torrentLoadFilesFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentLoadPeersFailed": "Failed to load peers",
+  "torrentLoadTrackersFailed": "Failed to load trackers",
+  "torrentLoading": "Loading torrents...",
+  "torrentLoadingFiles": "Loading files...",
+  "torrentLoadingPeers": "Loading peers...",
+  "torrentLoadingTrackers": "Loading trackers...",
+  "torrentLocationMoved": "Location moved successfully. Data is being moved.",
+  "torrentMove": "Move",
+  "torrentMoveFailed": "Failed to move: {error}",
+  "@torrentMoveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentNewLocation": "New Location",
+  "torrentNoFilesFound": "No files found",
+  "torrentNoFilterMatches": "No torrents match the current filters",
+  "torrentNoPeers": "No peers connected",
+  "torrentNoPeersSubtitle": "Peers will appear when the torrent is active",
+  "torrentNoTrackers": "No trackers",
+  "torrentNoTrackersSubtitle": "Announce URLs appear here once qBittorrent has them",
+  "torrentPause": "Pause",
+  "torrentPeerCount": "{count, plural, other{{count} peers}}",
+  "@torrentPeerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentPeers": "Peers",
+  "torrentPercentCompleted": "{percent} completed",
+  "@torrentPercentCompleted": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentPercentDone": "{percent} done",
+  "@torrentPercentDone": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentPickFileFailed": "Failed to pick file: {error}",
+  "@torrentPickFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentRecheck": "Recheck",
+  "torrentRememberFilters": "Remember filters",
+  "torrentRememberFiltersSubtitle": "Keep this configuration for future sessions",
+  "torrentRemove": "Remove",
+  "torrentRemoveConfirm": "Are you sure you want to remove \"{name}\"?",
+  "@torrentRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentRemoveFailed": "Failed to remove torrent: {error}",
+  "@torrentRemoveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "torrentRemoveTitle": "Remove Torrent?",
+  "torrentRemoveTorrent": "Remove Torrent",
+  "torrentResultCount": "{count, plural, other{{count} torrents}}",
+  "@torrentResultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentResultCountWithHidden": "{count, plural, other{{count} torrents · {hidden} hidden}}",
+  "@torrentResultCountWithHidden": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "hidden": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentResume": "Resume",
+  "torrentSavePathOptional": "Save Path (Optional)",
+  "torrentSearchHint": "Search torrents",
+  "torrentSectionActions": "Actions",
+  "torrentSectionInformation": "Information",
+  "torrentSectionMediaLibrary": "Media Library",
+  "torrentSectionProgress": "Progress",
+  "torrentSelectFile": "Select .torrent File",
+  "torrentSelectionClear": "Clear selection",
+  "torrentSetPriority": "Set Priority",
+  "torrentSortAscending": "Ascending",
+  "torrentSortDescending": "Descending",
+  "torrentStartPaused": "Start Paused",
+  "torrentStatDlSpeed": "DL Speed",
+  "torrentStatDownloaded": "Downloaded",
+  "torrentStatLeechers": "Leechers",
+  "torrentStatRatio": "Ratio",
+  "torrentStatSeedTime": "Seed Time",
+  "torrentStatSeeds": "Seeds",
+  "torrentStatTotalSize": "Total Size",
+  "torrentStatUlSpeed": "UL Speed",
+  "torrentStatUploaded": "Uploaded",
+  "torrentTagsCommaSeparated": "Comma separated",
+  "torrentTagsLoadFailed": "Could not load tags. Using free text mode.",
+  "torrentTagsOptional": "Tags (Optional)",
+  "torrentTagsSearchHint": "Type to search or add custom tags",
+  "torrentTrackerDownloads": "{count, plural, =1{1 download} other{{count} downloads}}",
+  "@torrentTrackerDownloads": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentTrackerLeechers": "{count, plural, =1{1 leecher} other{{count} leechers}}",
+  "@torrentTrackerLeechers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentTrackerPeers": "{count, plural, =1{1 peer} other{{count} peers}}",
+  "@torrentTrackerPeers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentTrackerSeeds": "{count, plural, =1{1 seed} other{{count} seeds}}",
+  "@torrentTrackerSeeds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentTrackerTier": "Tier {tier}",
+  "@torrentTrackerTier": {
+    "placeholders": {
+      "tier": {
+        "type": "int"
+      }
+    }
+  },
+  "torrentTrackers": "Trackers",
+  "torrentUrlsHint": "Paste magnet links or HTTP URLs here\nOne per line",
+  "torrentUrlsLabel": "Magnet Link or URLs",
+  "tourActivityBody": "Monitor your download queue, history, and qBittorrent torrents here.",
+  "tourActivityQueueBody": "Active downloads report progress, size left, and estimated completion. Tap one for details and actions.",
+  "tourActivityQueueTitle": "Download queue",
+  "tourAddInstanceBody": "Tap here to create a new server connection. The next steps walk through the form.",
+  "tourAddInstanceTitle": "Add Instance",
+  "tourCalendarBody": "Track upcoming movie releases and series episodes.",
+  "tourCalendarEventsBody": "Each card shows what airs or releases next, grouped by day and colour-coded by release type.",
+  "tourCalendarEventsTitle": "Upcoming releases",
+  "tourInstanceApiKeyBody": "Radarr/Sonarr require an API key from Settings → General. qBittorrent uses a Bearer token (v5.2.0+) or Basic Auth.",
+  "tourInstanceApiKeyTitle": "API Key",
+  "tourInstanceNameBody": "A friendly label so you can tell your servers apart (e.g. \"Home Server\").",
+  "tourInstanceNameTitle": "Name",
+  "tourInstanceTypeBody": "Pick Radarr (movies), Sonarr (series), or qBittorrent (downloads). Each needs its own connection.",
+  "tourInstanceTypeTitle": "Choose the server type",
+  "tourInstanceUrlBody": "Your server address including http(s):// and port, e.g. http://192.168.1.10:7878.",
+  "tourInstanceUrlTitle": "URL",
+  "tourInstancesBody": "Your Radarr, Sonarr, and qBittorrent servers live here. Let's add your first one.",
+  "tourInstancesTitle": "Instances",
+  "tourMockupBanner": "Sample content shown during the tour. It disappears once the tour ends.",
+  "tourMoviesLibraryBody": "Every movie Radarr manages shows up here with its monitoring and download status.",
+  "tourMoviesLibraryTitle": "Your movie library",
+  "tourMoviesSearchBody": "Find movies in your library by title.",
+  "tourMoviesSortBody": "Reorder and filter your library to browse faster.",
+  "tourMoviesSortTitle": "Sort & Filter",
+  "tourNavigationBody": "Switch between Movies, Series, Calendar, Activity, and Settings anytime.",
+  "tourNavigationTitle": "Navigation",
+  "tourSaveInstanceBody": "When everything checks out, save to finish setup. You can add the other servers any time from Settings.",
+  "tourSaveInstanceTitle": "Save Instance",
+  "tourSeriesLibraryBody": "Your Sonarr series live here, with season counts and how much of each show is already downloaded.",
+  "tourSeriesLibraryTitle": "Your series library",
+  "tourSkip": "Skip",
+  "tourTestConnectionBody": "Verifies the URL and credentials before saving.",
+  "tourTestConnectionTitle": "Test Connection",
+  "tourTorrentsBody": "Torrents from qBittorrent report live speed, ratio, and peers, with pause, resume, and import actions.",
+  "tourTorrentsTitle": "Torrents",
+  "updateAndRestart": "Update and restart",
+  "updateAvailableTitle": "New Version Available",
+  "updateChangelog": "Changelog:",
+  "updateDownloadingTitle": "Downloading Update",
+  "updateInstallingTitle": "Installing...",
+  "updateLater": "Later",
+  "updateNow": "Update Now",
+  "updatePreparing": "Preparing the update...",
+  "updateRestartNotice": "The app will close and restart to finish the update.",
+  "updateUnexpectedError": "An unexpected error occurred.",
+  "updateVersion": "Version: {version}",
+  "@updateVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "versionHistoryEmptySubtitle": "Release history could not be loaded.",
+  "versionHistoryEmptyTitle": "No releases available",
+  "versionHistoryInstalled": "Installed",
+  "versionHistoryLoadFailed": "Failed to load version history: {error}",
+  "@versionHistoryLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "versionHistoryLoading": "Loading version history...",
+  "versionHistoryTitle": "Version History",
+  "watchingContinueWatching": "Continue Watching",
+  "watchingEmptySubtitle": "Media you pause in Jellyfin and the next episodes of series you follow will appear here.",
+  "watchingEmptyTitle": "Nothing in progress",
+  "watchingLoading": "Loading continue watching...",
+  "watchingNextEpisode": "Next episode",
+  "watchingNextEpisodeRuntime": "Next episode · {runtime}",
+  "@watchingNextEpisodeRuntime": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "watchingNextUp": "Next Up",
+  "whatsNewNoNotes": "This release does not include release notes.",
+  "whatsNewTitle": "What's New in v{version}",
+  "@whatsNewTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNewViewAllVersions": "View All Versions",
+  "widgetsClosePoster": "Close poster",
+  "widgetsCustomFormatScore": "Score: {score}",
+  "@widgetsCustomFormatScore": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsDeleteFile": "Delete File",
+  "widgetsEventAdditionalData": "Additional Data",
+  "widgetsEventDate": "Date",
+  "widgetsEventDetailsTitle": "Event Details",
+  "widgetsEventSourceTitle": "Source Title",
+  "widgetsEventType": "Event Type",
+  "widgetsExtraFileMetadata": "Metadata",
+  "widgetsExtraFileOther": "Other",
+  "widgetsExtraFileSubtitle": "Subtitle",
+  "widgetsFileAudioBitrate": "Audio Bitrate",
+  "widgetsFileAudioChannels": "Audio Channels",
+  "widgetsFileAudioCodec": "Audio Codec",
+  "widgetsFileAudioLanguages": "Audio Languages",
+  "widgetsFileAudioStreams": "Audio Streams",
+  "widgetsFileBitDepth": "Bit Depth",
+  "widgetsFileCustomFormats": "Custom Formats",
+  "widgetsFileDateAdded": "Date Added",
+  "widgetsFileDetailsTitle": "File Details",
+  "widgetsFileDuration": "Duration",
+  "widgetsFileDynamicRange": "Dynamic Range",
+  "widgetsFileFrameRate": "Frame Rate",
+  "widgetsFileGeneral": "General",
+  "widgetsFileHdrType": "HDR Type",
+  "widgetsFileMediaInfo": "Media Info",
+  "widgetsFilePath": "Path",
+  "widgetsFileResolution": "Resolution",
+  "widgetsFileRevision": "Revision",
+  "widgetsFileScanType": "Scan Type",
+  "widgetsFileSource": "Source",
+  "widgetsFileSubtitles": "Subtitles",
+  "widgetsFileVideoBitrate": "Video Bitrate",
+  "widgetsFileVideoCodec": "Video Codec",
+  "widgetsNoPreviousOnline": "No previous online connection recorded",
+  "widgetsNoTagsAvailable": "No tags available",
+  "widgetsNotifications": "Notifications",
+  "widgetsOffline": "Offline",
+  "widgetsOfflineCacheCaveat": "{lastOnline} · Cached images may be up to {days, plural, other{{days} days}} old",
+  "@widgetsOfflineCacheCaveat": {
+    "placeholders": {
+      "lastOnline": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPlay": "Play",
+  "widgetsQueueDownloadFailed": "Download failed",
+  "widgetsQueueDownloadPaused": "Download paused",
+  "widgetsQueueDownloadPending": "Download pending",
+  "widgetsQueueDownloadWarning": "Download warning",
+  "widgetsQueueStatusUnknown": "Status unknown",
+  "widgetsSelectInstance": "Select {type} instance",
+  "@widgetsSelectInstance": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsSelectTags": "Select Tags",
+  "widgetsSomeInstancesFailed": "Some instances could not be loaded",
+  "widgetsSortBy": "Sort By",
+  "widgetsSortOrder": "Order",
+  "widgetsTagButtonWithCount": "{label} ({count})",
+  "@widgetsTagButtonWithCount": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsUnknownFile": "Unknown File"
+}

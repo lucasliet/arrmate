@@ -38,6 +38,19 @@ void main() {
       expect(request.maximumResponseTokens, greaterThan(0));
     });
 
+    test('asks for a reply in the interface language', () async {
+      final models = _FakeModels(['Use the menu.']);
+      final service = AssistantAppleIntelligenceService(models: models);
+
+      await service.sendMessage(
+        conversation,
+        _TestKnowledgeService(),
+        languageCode: 'es',
+      );
+
+      expect(models.requests.single.instructions, contains('Español'));
+    });
+
     test('sends only the question when there is no history', () async {
       final models = _FakeModels(['Ok']);
       final service = AssistantAppleIntelligenceService(models: models);

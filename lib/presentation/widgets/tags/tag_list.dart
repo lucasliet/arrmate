@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/extensions/context_extensions.dart';
 import '../../../domain/models/models.dart';
 
 /// A list widget for displaying and selecting tags.
@@ -18,10 +19,10 @@ class TagList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (tags.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('No tags available'),
+          padding: const EdgeInsets.all(16),
+          child: Text(context.l10n.widgetsNoTagsAvailable),
         ),
       );
     }

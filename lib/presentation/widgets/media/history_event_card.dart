@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arrmate/core/constants/app_constants.dart';
+import 'package:arrmate/core/extensions/context_extensions.dart';
+import 'package:arrmate/presentation/l10n/labels.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -47,7 +49,7 @@ class HistoryEventCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      event.sourceTitle ?? 'Unknown',
+                      event.sourceTitle ?? context.l10n.commonUnknown,
                       style: theme.textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -114,32 +116,13 @@ class HistoryEventCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        _getEventTypeLabel(),
+        event.eventType.localizedLabel(context.l10n).toUpperCase(),
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
         ),
       ),
     );
-  }
-
-  String _getEventTypeLabel() {
-    switch (event.eventType) {
-      case HistoryEventType.grabbed:
-        return 'GRABBED';
-      case HistoryEventType.imported:
-        return 'IMPORTED';
-      case HistoryEventType.failed:
-        return 'FAILED';
-      case HistoryEventType.deleted:
-        return 'DELETED';
-      case HistoryEventType.renamed:
-        return 'RENAMED';
-      case HistoryEventType.ignored:
-        return 'IGNORED';
-      case HistoryEventType.unknown:
-        return 'UNKNOWN';
-    }
   }
 
   String _buildSubtitle() {

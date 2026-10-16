@@ -14,6 +14,7 @@ import '../../domain/models/models.dart';
 import 'data_providers.dart';
 import 'jellyfin_session_state_provider.dart';
 import 'settings_provider.dart';
+import '../l10n/core_labels.dart';
 
 /// Provider for resolving the reachable URL of configured instances.
 final instanceConnectionResolverProvider = Provider<InstanceConnectionResolver>(
@@ -313,7 +314,9 @@ class InstancesNotifier extends Notifier<InstancesState> {
       final actualAppName = status.appName.trim().toLowerCase();
       if (actualAppName != expectedAppName) {
         throw StateError(
-          'Expected ${instance.type.label}, but connected to ${status.appName}',
+          readAppLocalizations(
+            ref,
+          ).providerInstanceTypeMismatch(instance.type.label, status.appName),
         );
       }
 

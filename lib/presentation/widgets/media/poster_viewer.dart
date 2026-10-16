@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/extensions/context_extensions.dart';
+
 /// Displays a media poster in an interactive full-screen dialog.
 class PosterViewer extends StatelessWidget {
   /// Title shown in the dialog app bar.
@@ -22,7 +24,7 @@ class PosterViewer extends StatelessWidget {
           title: Text(title),
           leading: IconButton(
             key: const Key('closePosterViewer'),
-            tooltip: 'Close poster',
+            tooltip: context.l10n.widgetsClosePoster,
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close),
           ),

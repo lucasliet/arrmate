@@ -5,6 +5,8 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../../widgets/queue_status_indicator.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// A list tile widget for displaying movie details in a list view.
 class MovieListTile extends StatelessWidget {
@@ -108,7 +110,7 @@ class MovieListTile extends StatelessWidget {
 
   Widget _buildSubtitle(BuildContext context) {
     final theme = Theme.of(context);
-    final year = movie.yearLabel;
+    final year = movie.localizedYearLabel(context.l10n);
     final runtime = movie.runtime > 0 ? formatRuntime(movie.runtime) : null;
 
     return Row(
@@ -148,7 +150,7 @@ class MovieListTile extends StatelessWidget {
       return Row(
         children: [
           Text(
-            movie.stateLabel,
+            movie.localizedStateLabel(context.l10n),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -172,7 +174,7 @@ class MovieListTile extends StatelessWidget {
     }
 
     return Text(
-      movie.status.label,
+      movie.status.localizedLabel(context.l10n),
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),

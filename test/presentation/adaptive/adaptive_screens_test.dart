@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../helpers/localized_app.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -44,6 +45,9 @@ void main() {
               ).overrideWith((ref) => TourMockData.series().first),
             ],
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               home: Align(
                 alignment: Alignment.topLeft,
                 child: ValueListenableBuilder<double>(
@@ -109,6 +113,9 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
               theme: AppTheme.light(AppColorScheme.blue),
               home: Align(
                 alignment: Alignment.topLeft,
@@ -197,6 +204,9 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
           theme: AppTheme.light(AppColorScheme.blue),
           home: Align(
             alignment: Alignment.topLeft,
@@ -265,7 +275,14 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(899, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ActivityScreen())),
+      const ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: ActivityScreen(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('History'));

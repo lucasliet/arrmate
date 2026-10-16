@@ -11,6 +11,7 @@ Este documento contém os padrões de design e componentes UI do Arrmate para ga
 - [Widgets Comuns](#widgets-comuns)
 - [Formatação](#formatação)
 - [Context Extensions](#context-extensions)
+- [Localização](#localização)
 - [Imagens](#imagens)
 - [Ícones e Status](#ícones-e-status)
 - [Estado de Sistema & Diagnóstico](#estado-de-sistema--diagnóstico)
@@ -571,6 +572,21 @@ context.showBottomSheet(
   MediaFileDetailsSheet(file: file),
 )
 ```
+
+---
+
+## Localização
+
+**Arquivos**: `lib/l10n/*.arb`, `lib/core/l10n/app_locale.dart`, `lib/presentation/l10n/`
+
+- Nunca escreva texto visível em literal: use `context.l10n.<chave>` e adicione a chave nos ARBs de en, pt_BR e es.
+- Labels de enums/modelos do domínio: use as extensões `localizedLabel(context.l10n)` de `lib/presentation/l10n/`.
+- Nomes de idioma em seletores usam `AppLanguage.nativeName` (cada idioma escrito nele mesmo).
+- **Seletor de idioma em Settings:** `AlertDialog` com `ListTile` + `Icons.check` na opção atual, igual aos demais seletores da seção Appearance.
+- **Prompt de primeiro boot:** `Dialog.fullscreen` não-dispensável (`PopScope(canPop: false)`), ícone do app, `RadioListTile` por idioma dentro de um `Card` e `FilledButton` "Continue"; o próprio prompt pré-visualiza o idioma selecionado.
+- Mantenha as traduções com tamanho próximo do inglês em chips, badges e botões.
+- Toda feature nova nasce localizada: nenhum texto fixo no código e nenhum idioma único; as chaves entram juntas em `app_en.arb`, `app_pt_BR.arb`, `app_es.arb` e `app_pt.arb` (veja "Keeping new features localized" no `AGENTS.md`).
+- **Referência:** `lib/presentation/widgets/language_picker_dialog.dart`.
 
 ---
 

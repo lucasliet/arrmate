@@ -5,6 +5,8 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../../widgets/queue_status_indicator.dart';
+import '../../../../core/extensions/context_extensions.dart';
+import '../../../l10n/labels.dart';
 
 /// A list tile widget for displaying series details in a list view.
 class SeriesListTile extends StatelessWidget {
@@ -108,7 +110,7 @@ class SeriesListTile extends StatelessWidget {
 
   Widget _buildSubtitle(BuildContext context) {
     final theme = Theme.of(context);
-    final year = series.yearLabel;
+    final year = series.localizedYearLabel(context.l10n);
     final runtime = series.runtime > 0 ? formatRuntime(series.runtime) : null;
 
     return Row(
@@ -146,7 +148,7 @@ class SeriesListTile extends StatelessWidget {
     return Row(
       children: [
         Text(
-          '${series.seasonCount} Seasons',
+          context.l10n.seriesSeasonCount(series.seasonCount),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -213,7 +215,7 @@ class SeriesListTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        series.status.label,
+        series.status.localizedLabel(context.l10n),
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),

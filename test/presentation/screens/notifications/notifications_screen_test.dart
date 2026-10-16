@@ -6,6 +6,7 @@ import 'package:arrmate/domain/models/notification/app_notification.dart';
 import 'package:arrmate/presentation/providers/notifications_provider.dart';
 import 'package:arrmate/presentation/screens/notifications/notifications_screen.dart';
 import 'package:arrmate/presentation/screens/notifications/widgets/notification_card.dart';
+import '../../../helpers/localized_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,12 @@ void main() {
           notificationsProvider.overrideWith((ref) => notifications),
           unreadNotificationCountProvider.overrideWith((ref) => unreadCount),
         ],
-        child: const MaterialApp(home: NotificationsScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: NotificationsScreen(),
+        ),
       );
     }
 
