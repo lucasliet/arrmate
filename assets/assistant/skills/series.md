@@ -342,8 +342,8 @@ Use esta opção quando quiser remover completamente uma temporada específica, 
 4. Um **diálogo de confirmação** aparece explicando que a operação remove episódios/arquivos da temporada e torrents fonte no qBittorrent.
 5. Tocar **"Purge"** para confirmar.
 6. Se algum torrent tiver semeado menos que os "Minimum seeding days", aparece o diálogo **"Torrents still seeding"** com as opções "Cancel", "Keep seeding" e "Delete all".
-7. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata.
-8. Se algum torrent da temporada for um **pack de várias temporadas** (ex.: série completa ou S01-S03), aparece o diálogo **"Multi-season pack found"** para cada um, com os detalhes do torrent e as opções **Keep torrent**/**Delete torrent**. Apagar o pack remove também o download das outras temporadas; os não aprovados continuam no qBittorrent.
+7. Se algum torrent da temporada for um **pack de várias temporadas** (ex.: série completa ou S01-S03), aparece o diálogo **"Multi-season pack found"** para cada um, com os detalhes do torrent e as opções **Keep torrent**/**Delete torrent**. Apagar o pack remove também o download das outras temporadas; os não aprovados continuam no qBittorrent.
+8. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata. Cópias cross-seed de um pack que você manteve não são perguntadas e também ficam, porque costumam compartilhar os mesmos dados em disco.
 9. **Indicador de progresso** (spinner) aparece durante a execução completa.
 10. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
 

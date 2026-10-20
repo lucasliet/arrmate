@@ -111,6 +111,24 @@ class PurgePreview extends Equatable {
     this.sharedPackCandidates = const [],
   });
 
+  /// The [crossSeedCandidates] still worth asking about once the user decided
+  /// on the [sharedPackCandidates].
+  ///
+  /// A cross-seed copy of a pack the user kept is left out: it usually shares
+  /// the pack's data on disk, so deleting it with its files would remove the
+  /// very seasons the user chose to keep. [PurgeService.purgeSeason] keeps such
+  /// copies regardless, so asking about them would only mislead.
+  List<Torrent> crossSeedCandidatesFor(Set<String> approvedSharedPackHashes) {
+    final keptPackNames = _keptPackNames(
+      sharedPackCandidates,
+      approvedSharedPackHashes,
+    );
+    return [
+      for (final t in crossSeedCandidates)
+        if (!keptPackNames.contains(normalizeTorrentName(t.name))) t,
+    ];
+  }
+
   @override
   List<Object?> get props => [
     torrentsToDelete,
@@ -191,6 +209,19 @@ class PurgeResult extends Equatable {
     }
     return lines.join('\n');
   }
+}
+
+/// Normalized names of the [sharedPacks] whose hash is not in
+/// [approvedSharedPackHashes], i.e. the multi-season packs a purge keeps.
+Set<String> _keptPackNames(
+  Iterable<Torrent> sharedPacks,
+  Set<String> approvedSharedPackHashes,
+) {
+  return {
+    for (final t in sharedPacks)
+      if (!approvedSharedPackHashes.contains(t.hash.toLowerCase()))
+        normalizeTorrentName(t.name),
+  };
 }
 
 /// English translations, used when no [AppLocalizations] is supplied.
@@ -742,8 +773,9 @@ class PurgeService {
   /// same for the source torrents listed in [sharedPackHashes]. When [action]
   /// is [SeedingAction.keepBelowThreshold], torrents whose seeding time is
   /// below [minimumSeedingSeconds] are kept in qBittorrent (they keep
-  /// seeding); only the eligible ones are deleted. All deletes use `deleteFiles: true` so
-  /// hardlinked inodes are reclaimed.
+  /// seeding); only the eligible ones are deleted. Cross-seed copies of a
+  /// shared pack that stays are kept even when approved. All deletes use
+  /// `deleteFiles: true` so hardlinked inodes are reclaimed.
   Future<_TorrentPurgeOutcome> _deleteTorrents(
     List<Torrent> source,
     List<Torrent> crossSeed, {
@@ -795,8 +827,21 @@ class PurgeService {
         _emitTorrentPurgedNotification(t, context, isCrossSeed: false);
       }
     }
+    // Copies of a kept multi-season pack usually share its data on disk:
+    // deleting them with their files would remove the seasons being kept.
+    final keptPackNames = _keptPackNames(
+      source.where((t) => sharedPackHashes.contains(t.hash.toLowerCase())),
+      approvedSharedPackHashes,
+    );
     for (final t in crossSeed) {
       final h = t.hash.toLowerCase();
+      if (keptPackNames.contains(normalizeTorrentName(t.name))) {
+        logger.info(
+          '[PurgeService] Keeping cross-seed of kept multi-season pack '
+          '${t.name}',
+        );
+        continue;
+      }
       if (!approvedCrossSeedHashes.contains(h)) {
         logger.info('[PurgeService] Keeping unapproved cross-seed ${t.name}');
         continue;

@@ -331,14 +331,17 @@ class SeasonDetailsScreen extends ConsumerWidget {
           scopeEpisodeIds: scopeEpisodeIds,
         );
         if (!context.mounted) return;
-        approvedCrossSeedHashes = await resolveCrossSeedApprovals(
-          context: context,
-          crossSeedCandidates: preview.crossSeedCandidates,
-        );
-        if (!context.mounted) return;
+        // Packs first: copies of a pack the user keeps are not asked about.
         approvedSharedPackHashes = await resolveSharedPackApprovals(
           context: context,
           sharedPackCandidates: preview.sharedPackCandidates,
+        );
+        if (!context.mounted) return;
+        approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: preview.crossSeedCandidatesFor(
+            approvedSharedPackHashes,
+          ),
         );
       }
     } catch (e) {

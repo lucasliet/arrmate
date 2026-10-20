@@ -1253,17 +1253,19 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         ),
       );
       if (!mounted) return;
-      approvedCrossSeedHashes = await resolveCrossSeedApprovals(
-        context: context,
-        crossSeedCandidates: [
-          for (final preview in previews) ...preview.crossSeedCandidates,
-        ],
-      );
-      if (!mounted) return;
+      // Packs first: copies of a pack the user keeps are not asked about.
       approvedSharedPackHashes = await resolveSharedPackApprovals(
         context: context,
         sharedPackCandidates: [
           for (final preview in previews) ...preview.sharedPackCandidates,
+        ],
+      );
+      if (!mounted) return;
+      approvedCrossSeedHashes = await resolveCrossSeedApprovals(
+        context: context,
+        crossSeedCandidates: [
+          for (final preview in previews)
+            ...preview.crossSeedCandidatesFor(approvedSharedPackHashes),
         ],
       );
     } catch (e) {

@@ -1633,6 +1633,58 @@ void main() {
       });
 
       test(
+        'purgeSeason keeps the approved cross-seed of a refused pack',
+        () async {
+          final result = await service().purgeSeason(
+            42,
+            1,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+            approvedCrossSeedHashes: {'fullxseed'},
+          );
+
+          // Neither the pack nor its copy, which usually shares its data.
+          expect(result.torrentHashesDeleted, ['s01pack']);
+          expect(result.crossSeedDuplicatesDeleted, isEmpty);
+          verify(
+            () => qb.deleteTorrents(['s01pack'], deleteFiles: true),
+          ).called(1);
+        },
+      );
+
+      test('purgeSeason deletes the cross-seed once both it and its pack are '
+          'approved', () async {
+        final result = await service().purgeSeason(
+          42,
+          1,
+          [1, 2],
+          scopeEpisodeIds: [1, 2],
+          approvedSharedPackHashes: {'fullpack'},
+          approvedCrossSeedHashes: {'fullxseed'},
+        );
+
+        expect(result.torrentHashesDeleted, ['s01pack', 'fullpack']);
+        expect(result.crossSeedDuplicatesDeleted, ['fullxseed']);
+      });
+
+      test(
+        'crossSeedCandidatesFor drops copies of the packs the user keeps',
+        () async {
+          final preview = await service().previewSeason(
+            42,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+          );
+
+          expect(preview.crossSeedCandidatesFor(const {}), isEmpty);
+          expect(
+            preview.crossSeedCandidatesFor({'fullpack'}).map((t) => t.hash),
+            ['FULLXSEED'],
+          );
+        },
+      );
+
+      test(
         'purgeSeason still honors the seeding threshold for approved packs',
         () async {
           when(() => qb.getTorrents()).thenAnswer(
