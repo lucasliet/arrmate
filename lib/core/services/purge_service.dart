@@ -8,6 +8,7 @@ import '../../core/l10n/app_locale.dart';
 import '../../core/services/in_app_notification_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/utils/cross_seed_matcher.dart';
+import '../../core/utils/media_downloads.dart';
 import '../../data/api/qbittorrent_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
@@ -234,7 +235,7 @@ class PurgeService {
 
     logger.info('[PurgeService] Purging movie $movieId');
 
-    final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
+    final downloads = await collectMovieDownloads(repository, movieId);
     final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
@@ -243,14 +244,14 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
     logger.info(
       '[PurgeService] Movie $movieId deleted (files: $mediaFilesDeleted)',
     );
 
     final torrentOutcome = await _purgeTorrents(
-      hashes,
+      downloads.hashes,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'movie', id: movieId, seasonNumber: null),
     );
@@ -277,7 +278,7 @@ class PurgeService {
 
     logger.info('[PurgeService] Purging series $seriesId');
 
-    final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
     final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
@@ -286,14 +287,14 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
     logger.info(
       '[PurgeService] Series $seriesId deleted (files: $mediaFilesDeleted)',
     );
 
     final torrentOutcome = await _purgeTorrents(
-      hashes,
+      downloads.hashes,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'series', id: seriesId, seasonNumber: null),
     );
@@ -321,8 +322,8 @@ class PurgeService {
     if (repository == null) {
       throw StateError('Movie repository not available');
     }
-    final (hashes, _) = await _collectMovieHashes(repository, movieId);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectMovieDownloads(repository, movieId);
+    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
   }
 
   /// Previews the torrents a series purge would delete, without mutating.
@@ -334,8 +335,8 @@ class PurgeService {
     if (repository == null) {
       throw StateError('Series repository not available');
     }
-    final (hashes, _) = await _collectSeriesHashes(repository, seriesId);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
+    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
   }
 
   /// Previews the torrents a season purge would delete, without mutating.
@@ -348,8 +349,12 @@ class PurgeService {
     if (repository == null) {
       throw StateError('Series repository not available');
     }
-    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectSeasonDownloads(
+      repository,
+      seriesId,
+      episodeIds,
+    );
+    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
   }
 
   /// Purges a season: deletes its episode files and source torrents. The
@@ -375,7 +380,11 @@ class PurgeService {
       '(${episodeIds.length} episode(s))',
     );
 
-    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
+    final downloads = await collectSeasonDownloads(
+      repository,
+      seriesId,
+      episodeIds,
+    );
 
     final mediaFilesDeleted = await _deleteSeriesFiles(
       repository,
@@ -383,7 +392,7 @@ class PurgeService {
       seasonNumber: seasonNumber,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -499,7 +508,7 @@ class PurgeService {
       throw StateError('Movie repository not available');
     }
 
-    final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
+    final downloads = await collectMovieDownloads(repository, movieId);
     final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
@@ -508,10 +517,10 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -544,7 +553,7 @@ class PurgeService {
       throw StateError('Series repository not available');
     }
 
-    final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
     final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
@@ -553,10 +562,10 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -577,96 +586,6 @@ class PurgeService {
   }
 
   // ---- helpers -----------------------------------------------------------
-
-  /// Collects source torrent hashes + queue ids for [movieId].
-  ///
-  /// Hashes come from history (grabbed + imported) and the active queue.
-  /// The queue is paginated via [_collectQueue] so items beyond the first
-  /// page (Radarr/Sonarr default `pageSize: 20`) are still swept up.
-  Future<(Set<String>, List<int>)> _collectMovieHashes(
-    MovieRepository repository,
-    int movieId,
-  ) async {
-    final hashes = <String>{};
-    final history = await repository.getMovieHistory(movieId);
-    for (final event in history) {
-      if (event.eventType == HistoryEventType.grabbed ||
-          event.eventType == HistoryEventType.imported) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    final (queueIds, queueHashes) = await _collectQueue(
-      ({required int page, required int pageSize}) =>
-          repository.getQueue(page: page, pageSize: pageSize),
-      (q) => q.movieId == movieId,
-    );
-    hashes.addAll(queueHashes);
-
-    logger.info(
-      '[PurgeService] Movie $movieId: ${hashes.length} hash(es), '
-      '${queueIds.length} queue item(s)',
-    );
-    return (hashes, queueIds);
-  }
-
-  Future<(Set<String>, List<int>)> _collectSeriesHashes(
-    SeriesRepository repository,
-    int seriesId,
-  ) async {
-    final hashes = <String>{};
-    final history = await repository.getSeriesHistory(seriesId);
-    for (final event in history) {
-      if (event.eventType == HistoryEventType.grabbed ||
-          event.eventType == HistoryEventType.imported) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    final (queueIds, queueHashes) = await _collectQueue(
-      ({required int page, required int pageSize}) =>
-          repository.getQueue(page: page, pageSize: pageSize),
-      (q) => q.seriesId == seriesId,
-    );
-    hashes.addAll(queueHashes);
-
-    logger.info(
-      '[PurgeService] Series $seriesId: ${hashes.length} hash(es), '
-      '${queueIds.length} queue item(s)',
-    );
-    return (hashes, queueIds);
-  }
-
-  /// Collects source torrent hashes for a season of [seriesId], restricted to
-  /// the given [episodeIds]. Hashes come only from history (grabbed + imported)
-  /// events whose `episodeId` is in [episodeIds]. Queue items are not removed
-  /// for season purges.
-  Future<Set<String>> _collectSeasonHashes(
-    SeriesRepository repository,
-    int seriesId,
-    List<int> episodeIds,
-  ) async {
-    final episodeSet = episodeIds.toSet();
-    final hashes = <String>{};
-    final history = await repository.getSeriesHistory(seriesId);
-    for (final event in history) {
-      if ((event.eventType == HistoryEventType.grabbed ||
-              event.eventType == HistoryEventType.imported) &&
-          event.episodeId != null &&
-          episodeSet.contains(event.episodeId)) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    logger.info(
-      '[PurgeService] Series $seriesId season: ${hashes.length} hash(es) '
-      'from ${episodeIds.length} episode(s)',
-    );
-    return hashes;
-  }
 
   /// Builds a [PurgePreview] from the resolved [sourceHashes], partitioning
   /// torrents by the seeding threshold.
@@ -694,37 +613,6 @@ class PurgeService {
       belowThreshold: below,
       qbittorrentSkipped: false,
     );
-  }
-
-  /// Pages through the activity queue accumulating ids + download hashes for
-  /// items matching [matches].
-  ///
-  /// Radarr/Sonarr do not support server-side filtering by movie/series id,
-  /// so we walk all pages and apply [matches] locally. Stops when a page is
-  /// short (last page) or when we have consumed `totalRecords`. A [maxPages]
-  /// cap guards against runaway loops on misbehaving APIs.
-  Future<(List<int> queueIds, Set<String> hashes)> _collectQueue(
-    Future<QueueItems> Function({required int page, required int pageSize})
-    getQueue,
-    bool Function(QueueItem) matches,
-  ) async {
-    const pageSize = 100;
-    const maxPages = 50;
-    final queueIds = <int>[];
-    final hashes = <String>{};
-    for (var page = 1; page <= maxPages; page++) {
-      final q = await getQueue(page: page, pageSize: pageSize);
-      for (final item in q.records.where(matches)) {
-        queueIds.add(item.id);
-        final id = item.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-      // Last page reached when fewer than `pageSize` items are returned, or
-      // when we've already consumed every record reported by the server.
-      if (q.records.length < pageSize) break;
-      if (q.records.length >= q.totalRecords) break;
-    }
-    return (queueIds, hashes);
   }
 
   /// Removes queue items, tolerating already-gone items.
