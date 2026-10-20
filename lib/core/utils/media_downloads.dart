@@ -34,6 +34,19 @@ class MediaDownloads extends Equatable {
   /// Lowercased infohashes of every download found for the item.
   Set<String> get hashes => episodesByHash.keys.toSet();
 
+  /// Hashes whose download also covers an episode outside [scopeEpisodeIds].
+  ///
+  /// Used by season purges to spot packs spanning other seasons: deleting one
+  /// of those with its files would take the other seasons' copies with it.
+  Set<String> hashesBeyond(Iterable<int> scopeEpisodeIds) {
+    final scope = scopeEpisodeIds.toSet();
+    return {
+      for (final entry in episodesByHash.entries)
+        if (entry.value.any((episodeId) => !scope.contains(episodeId)))
+          entry.key,
+    };
+  }
+
   @override
   List<Object?> get props => [episodesByHash, queueIds];
 }

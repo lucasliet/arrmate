@@ -87,6 +87,14 @@ class PurgePreview extends Equatable {
   /// Cross-seed torrents requiring explicit user approval before deletion.
   final List<Torrent> crossSeedCandidates;
 
+  /// Source torrents of a season purge whose download also covers episodes
+  /// outside the purged seasons (e.g. a complete-series pack).
+  ///
+  /// Deleting one with its files removes the other seasons' copies too, so
+  /// each one requires explicit user approval. Always empty for movie and
+  /// series purges.
+  final List<Torrent> sharedPackCandidates;
+
   /// Subset of [torrentsToDelete] whose seeding time is below the configured
   /// threshold. Empty when no warning is needed.
   final List<Torrent> belowThreshold;
@@ -100,12 +108,14 @@ class PurgePreview extends Equatable {
     required this.crossSeedCandidates,
     required this.belowThreshold,
     required this.qbittorrentSkipped,
+    this.sharedPackCandidates = const [],
   });
 
   @override
   List<Object?> get props => [
     torrentsToDelete,
     crossSeedCandidates,
+    sharedPackCandidates,
     belowThreshold,
     qbittorrentSkipped,
   ];
@@ -340,10 +350,16 @@ class PurgeService {
   }
 
   /// Previews the torrents a season purge would delete, without mutating.
+  ///
+  /// [scopeEpisodeIds] lists every episode of the seasons purged in this
+  /// operation, with or without a file; a source torrent covering an episode
+  /// outside it lands in [PurgePreview.sharedPackCandidates]. It defaults to
+  /// [episodeIds], which flags any pack reaching beyond them.
   Future<PurgePreview> previewSeason(
     int seriesId,
     List<int> episodeIds, {
     int minimumSeedingSeconds = 0,
+    Iterable<int>? scopeEpisodeIds,
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
@@ -354,14 +370,20 @@ class PurgeService {
       seriesId,
       episodeIds,
     );
-    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
+    return _buildPreview(
+      downloads.hashes,
+      minimumSeedingSeconds,
+      sharedPackHashes: downloads.hashesBeyond(scopeEpisodeIds ?? episodeIds),
+    );
   }
 
   /// Purges a season: deletes its episode files and source torrents. The
   /// series stays in the catalog (`catalogDeleted: 0`).
   ///
   /// [episodeIds] restricts hash collection to the given episodes. [action]
-  /// controls whether below-threshold torrents are kept.
+  /// controls whether below-threshold torrents are kept. A source torrent that
+  /// also covers episodes outside [scopeEpisodeIds] (see [previewSeason]) is
+  /// only deleted when its hash is in [approvedSharedPackHashes].
   Future<PurgeResult> purgeSeason(
     int seriesId,
     int seasonNumber,
@@ -369,6 +391,8 @@ class PurgeService {
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
     Set<String> approvedCrossSeedHashes = const {},
+    Iterable<int>? scopeEpisodeIds,
+    Set<String> approvedSharedPackHashes = const {},
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
@@ -397,6 +421,8 @@ class PurgeService {
       resolved.source,
       resolved.crossSeed,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
+      sharedPackHashes: downloads.hashesBeyond(scopeEpisodeIds ?? episodeIds),
+      approvedSharedPackHashes: approvedSharedPackHashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
       context: (type: 'season', id: seriesId, seasonNumber: seasonNumber),
@@ -589,10 +615,14 @@ class PurgeService {
 
   /// Builds a [PurgePreview] from the resolved [sourceHashes], partitioning
   /// torrents by the seeding threshold.
+  ///
+  /// Source torrents whose hash is in [sharedPackHashes] are reported as
+  /// [PurgePreview.sharedPackCandidates].
   Future<PurgePreview> _buildPreview(
     Set<String> sourceHashes,
-    int minimumSeedingSeconds,
-  ) async {
+    int minimumSeedingSeconds, {
+    Set<String> sharedPackHashes = const {},
+  }) async {
     final service = _qbittorrentServiceFactory();
     if (service == null) {
       return const PurgePreview(
@@ -610,6 +640,10 @@ class PurgeService {
     return PurgePreview(
       torrentsToDelete: all,
       crossSeedCandidates: resolved.crossSeed,
+      sharedPackCandidates: [
+        for (final t in resolved.source)
+          if (sharedPackHashes.contains(t.hash.toLowerCase())) t,
+      ],
       belowThreshold: below,
       qbittorrentSkipped: false,
     );
@@ -704,15 +738,18 @@ class PurgeService {
   /// Deletes the resolved torrents in qBittorrent, honoring [action].
   ///
   /// [approvedCrossSeedHashes] restricts cross-seed deletions to torrents that
-  /// the user explicitly approved. When [action] is
-  /// [SeedingAction.keepBelowThreshold], torrents whose seeding time is below
-  /// [minimumSeedingSeconds] are kept in qBittorrent (they keep seeding); only
-  /// the eligible ones are deleted. All deletes use `deleteFiles: true` so
+  /// the user explicitly approved, and [approvedSharedPackHashes] does the
+  /// same for the source torrents listed in [sharedPackHashes]. When [action]
+  /// is [SeedingAction.keepBelowThreshold], torrents whose seeding time is
+  /// below [minimumSeedingSeconds] are kept in qBittorrent (they keep
+  /// seeding); only the eligible ones are deleted. All deletes use `deleteFiles: true` so
   /// hardlinked inodes are reclaimed.
   Future<_TorrentPurgeOutcome> _deleteTorrents(
     List<Torrent> source,
     List<Torrent> crossSeed, {
     Set<String> approvedCrossSeedHashes = const {},
+    Set<String> sharedPackHashes = const {},
+    Set<String> approvedSharedPackHashes = const {},
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
     PurgeContext? context,
@@ -738,6 +775,14 @@ class PurgeService {
         isBelowSeedingThreshold(t, minimumSeedingSeconds);
 
     for (final t in source) {
+      final h = t.hash.toLowerCase();
+      if (sharedPackHashes.contains(h) &&
+          !approvedSharedPackHashes.contains(h)) {
+        logger.info(
+          '[PurgeService] Keeping unapproved multi-season pack ${t.name}',
+        );
+        continue;
+      }
       if (isBelowThreshold(t)) {
         logger.info(
           '[PurgeService] Keeping source torrent ${t.name} '
@@ -745,7 +790,6 @@ class PurgeService {
         );
         continue;
       }
-      final h = t.hash.toLowerCase();
       if (hashesToDelete.add(h)) {
         sourceDeleted.add(h);
         _emitTorrentPurgedNotification(t, context, isCrossSeed: false);

@@ -1411,6 +1411,8 @@
       }
     }
   },
+  "purgeSharedPackFoundContent": "This torrent also holds episodes from seasons you are not purging. Deleting it removes those downloads too. Delete it anyway?",
+  "purgeSharedPackFoundTitle": "Multi-season pack found",
   "purgeTitleRemovedEitherWay": "The title will still be removed from the library and its files deleted either way.",
   "purgeTorrentBelowMinimum": "This torrent seeded for less than the minimum of {days, plural, =1{1 day} other{{days} days}}:",
   "@purgeTorrentBelowMinimum": {

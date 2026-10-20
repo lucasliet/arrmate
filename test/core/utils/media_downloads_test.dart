@@ -22,6 +22,24 @@ void main() {
     });
   });
 
+  group('MediaDownloads.hashesBeyond', () {
+    test('should return the hashes covering an episode outside the scope', () {
+      // Given
+      const downloads = MediaDownloads(
+        episodesByHash: {
+          'season': {1, 2},
+          'complete': {1, 2, 11},
+          'movie': {},
+        },
+      );
+
+      // Then
+      expect(downloads.hashesBeyond([1, 2]), {'complete'});
+      expect(downloads.hashesBeyond([1, 2, 11]), isEmpty);
+      expect(downloads.hashesBeyond(const []), {'season', 'complete'});
+    });
+  });
+
   group('collectMovieDownloads', () {
     test('should merge history and queue hashes in lowercase', () async {
       // Given

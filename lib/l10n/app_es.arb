@@ -666,6 +666,8 @@
   "purgeNoTags": "Sin etiquetas",
   "purgeSavePath": "Ruta de guardado",
   "purgeSeededFor": "Sembrado durante {duration}",
+  "purgeSharedPackFoundContent": "Este torrent también contiene episodios de temporadas que no estás purgando. Eliminarlo también elimina esas descargas. ¿Eliminarlo de todos modos?",
+  "purgeSharedPackFoundTitle": "Pack de varias temporadas",
   "purgeTitleRemovedEitherWay": "En cualquier caso, el título se quitará de la biblioteca y sus archivos se eliminarán.",
   "purgeTorrentBelowMinimum": "Este torrent sembró menos del mínimo de {days, plural, =1{1 día} other{{days} días}}:",
   "purgeTorrentStillSeeding": "Torrent aún sembrando",

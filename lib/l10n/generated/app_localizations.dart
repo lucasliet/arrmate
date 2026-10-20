@@ -4097,6 +4097,18 @@ abstract class AppLocalizations {
   /// **'Seeded {duration}'**
   String purgeSeededFor(String duration);
 
+  /// No description provided for @purgeSharedPackFoundContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This torrent also holds episodes from seasons you are not purging. Deleting it removes those downloads too. Delete it anyway?'**
+  String get purgeSharedPackFoundContent;
+
+  /// No description provided for @purgeSharedPackFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-season pack found'**
+  String get purgeSharedPackFoundTitle;
+
   /// No description provided for @purgeTitleRemovedEitherWay.
   ///
   /// In en, this message translates to:

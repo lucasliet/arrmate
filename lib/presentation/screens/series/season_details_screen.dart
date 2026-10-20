@@ -280,8 +280,15 @@ class SeasonDetailsScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     List<int> episodeIds;
+    // Every episode of the season, with or without a file: a pack reaching
+    // beyond them also holds other seasons and needs its own approval.
+    List<int> scopeEpisodeIds;
     try {
       final episodes = await repository.getEpisodes(series.id);
+      scopeEpisodeIds = episodes
+          .where((e) => e.seasonNumber == season.seasonNumber)
+          .map((e) => e.id)
+          .toList();
       episodeIds = episodes
           .where(
             (e) =>
@@ -304,6 +311,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
     if (!context.mounted) return;
     SeedingAction? action;
     var approvedCrossSeedHashes = <String>{};
+    var approvedSharedPackHashes = <String>{};
     try {
       action = await resolveSeedingAction(
         context: context,
@@ -312,6 +320,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
           series.id,
           episodeIds,
           minimumSeedingSeconds: seconds,
+          scopeEpisodeIds: scopeEpisodeIds,
         ),
       );
       if (action != null && action != SeedingAction.cancel && context.mounted) {
@@ -319,11 +328,17 @@ class SeasonDetailsScreen extends ConsumerWidget {
           series.id,
           episodeIds,
           minimumSeedingSeconds: minimumSeedingDays * 86400,
+          scopeEpisodeIds: scopeEpisodeIds,
         );
         if (!context.mounted) return;
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
           context: context,
           crossSeedCandidates: preview.crossSeedCandidates,
+        );
+        if (!context.mounted) return;
+        approvedSharedPackHashes = await resolveSharedPackApprovals(
+          context: context,
+          sharedPackCandidates: preview.sharedPackCandidates,
         );
       }
     } catch (e) {
@@ -356,6 +371,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
         action: action,
         minimumSeedingSeconds: minimumSeedingDays * 86400,
         approvedCrossSeedHashes: approvedCrossSeedHashes,
+        scopeEpisodeIds: scopeEpisodeIds,
+        approvedSharedPackHashes: approvedSharedPackHashes,
       );
       if (context.mounted) navigator.pop();
       ref.read(notificationActionsProvider.notifier).refresh();

@@ -1160,8 +1160,17 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     }
 
     final Map<int, List<int>> episodeIdsBySeason = {};
+    // Every episode of the selected seasons, with or without a file: a pack
+    // covered by the selection as a whole is deleted without asking, one
+    // reaching other seasons needs its own approval.
+    final scopeEpisodeIds = <int>{};
     try {
       final episodes = await repository.getEpisodes(series.id);
+      scopeEpisodeIds.addAll(
+        episodes
+            .where((e) => _selectedSeasons.contains(e.seasonNumber))
+            .map((e) => e.id),
+      );
       for (final seasonNumber in _selectedSeasons) {
         episodeIdsBySeason[seasonNumber] = episodes
             .where(
@@ -1197,6 +1206,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
                 series.id,
                 episodeIdsBySeason[sn] ?? const [],
                 minimumSeedingSeconds: seconds,
+                scopeEpisodeIds: scopeEpisodeIds,
               ),
             ),
           );
@@ -1230,6 +1240,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     if (!mounted) return;
 
     final Set<String> approvedCrossSeedHashes;
+    final Set<String> approvedSharedPackHashes;
     try {
       final previews = await Future.wait(
         _selectedSeasons.map(
@@ -1237,6 +1248,7 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
             series.id,
             episodeIdsBySeason[sn] ?? const [],
             minimumSeedingSeconds: minimumSeedingDays * 86400,
+            scopeEpisodeIds: scopeEpisodeIds,
           ),
         ),
       );
@@ -1245,6 +1257,13 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         context: context,
         crossSeedCandidates: [
           for (final preview in previews) ...preview.crossSeedCandidates,
+        ],
+      );
+      if (!mounted) return;
+      approvedSharedPackHashes = await resolveSharedPackApprovals(
+        context: context,
+        sharedPackCandidates: [
+          for (final preview in previews) ...preview.sharedPackCandidates,
         ],
       );
     } catch (e) {
@@ -1272,6 +1291,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           action: action,
           minimumSeedingSeconds: minimumSeedingDays * 86400,
           approvedCrossSeedHashes: approvedCrossSeedHashes,
+          scopeEpisodeIds: scopeEpisodeIds,
+          approvedSharedPackHashes: approvedSharedPackHashes,
         );
         filesDeleted += result.mediaFilesDeleted;
         hashesDeleted.addAll(result.torrentHashesDeleted);
