@@ -186,6 +186,11 @@ class PurgeResult extends Equatable {
     qbittorrentSkipped,
   ];
 
+  /// Number of torrents removed from qBittorrent, source torrents and
+  /// approved cross-seed duplicates together.
+  int get torrentsDeleted =>
+      torrentHashesDeleted.length + crossSeedDuplicatesDeleted.length;
+
   /// Formats this result into a multi-line snackbar summary.
   ///
   /// [label] is the first line announcing the operation (e.g.

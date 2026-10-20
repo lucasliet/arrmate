@@ -1668,6 +1668,25 @@ void main() {
       });
 
       test(
+        'purgeSeason reports source and cross-seed torrents in torrentsDeleted',
+        () async {
+          final result = await service().purgeSeason(
+            42,
+            1,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+            approvedSharedPackHashes: {'fullpack'},
+            approvedCrossSeedHashes: {'fullxseed'},
+          );
+
+          // The snackbar used to count only the two source torrents.
+          expect(result.torrentHashesDeleted, hasLength(2));
+          expect(result.crossSeedDuplicatesDeleted, hasLength(1));
+          expect(result.torrentsDeleted, 3);
+        },
+      );
+
+      test(
         'crossSeedCandidatesFor drops copies of the packs the user keeps',
         () async {
           final preview = await service().previewSeason(
