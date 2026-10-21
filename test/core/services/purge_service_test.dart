@@ -1500,5 +1500,219 @@ void main() {
         },
       );
     });
+    group('multi-season packs', () {
+      late MockSeriesRepository seriesRepo;
+      late MockQBittorrentService qb;
+
+      /// Season 1 holds episodes 1 and 2, season 2 holds episode 11. One pack
+      /// covers season 1 only, the other covers the whole series and has a
+      /// cross-seed copy.
+      setUp(() {
+        seriesRepo = MockSeriesRepository();
+        qb = MockQBittorrentService();
+        when(() => seriesRepo.getSeriesHistory(42)).thenAnswer(
+          (_) async => [
+            for (final episodeId in [1, 2])
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: 0,
+                seriesId: 42,
+                downloadId: 'S01PACK',
+                episodeId: episodeId,
+              ),
+            for (final episodeId in [1, 2, 11])
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: 0,
+                seriesId: 42,
+                downloadId: 'FULLPACK',
+                episodeId: episodeId,
+              ),
+          ],
+        );
+        when(
+          () => seriesRepo.deleteSeriesFiles(
+            42,
+            seasonNumber: any(named: 'seasonNumber'),
+          ),
+        ).thenAnswer((_) async => 2);
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(hash: 'S01PACK', name: 'Show.S01.1080p'),
+            _torrent(hash: 'FULLPACK', name: 'Show.Complete.1080p'),
+            _torrent(hash: 'FULLXSEED', name: 'show.complete.1080p'),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+      });
+
+      PurgeService service() => _service(
+        movieRepo: MockMovieRepository(),
+        seriesRepo: seriesRepo,
+        qb: qb,
+      );
+
+      test('previewSeason lists the pack spanning other seasons', () async {
+        final preview = await service().previewSeason(
+          42,
+          [1, 2],
+          scopeEpisodeIds: [1, 2],
+        );
+
+        expect(preview.sharedPackCandidates.map((t) => t.hash), ['FULLPACK']);
+        expect(preview.crossSeedCandidates.map((t) => t.hash), ['FULLXSEED']);
+        expect(
+          preview.torrentsToDelete.map((t) => t.hash),
+          containsAll(['S01PACK', 'FULLPACK', 'FULLXSEED']),
+        );
+        verifyNever(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        );
+      });
+
+      test('previewSeason flags nothing when the scope covers every season the '
+          'pack spans', () async {
+        final preview = await service().previewSeason(
+          42,
+          [1, 2],
+          scopeEpisodeIds: [1, 2, 11],
+        );
+
+        expect(preview.sharedPackCandidates, isEmpty);
+      });
+
+      test('previewSeason defaults the scope to the purged episodes', () async {
+        final preview = await service().previewSeason(42, [1, 2]);
+
+        expect(preview.sharedPackCandidates.map((t) => t.hash), ['FULLPACK']);
+      });
+
+      test('purgeSeason keeps an unapproved multi-season pack', () async {
+        final result = await service().purgeSeason(
+          42,
+          1,
+          [1, 2],
+          scopeEpisodeIds: [1, 2],
+        );
+
+        expect(result.torrentHashesDeleted, ['s01pack']);
+        expect(result.crossSeedDuplicatesDeleted, isEmpty);
+        verify(
+          () => qb.deleteTorrents(['s01pack'], deleteFiles: true),
+        ).called(1);
+      });
+
+      test('purgeSeason deletes an approved multi-season pack', () async {
+        final result = await service().purgeSeason(
+          42,
+          1,
+          [1, 2],
+          scopeEpisodeIds: [1, 2],
+          approvedSharedPackHashes: {'fullpack'},
+        );
+
+        expect(result.torrentHashesDeleted, ['s01pack', 'fullpack']);
+        // The cross-seed copy still needs its own approval.
+        expect(result.crossSeedDuplicatesDeleted, isEmpty);
+      });
+
+      test('purgeSeason deletes the pack without approval when every season it '
+          'spans is purged', () async {
+        final result = await service().purgeSeason(
+          42,
+          1,
+          [1, 2],
+          scopeEpisodeIds: [1, 2, 11],
+        );
+
+        expect(result.torrentHashesDeleted, ['s01pack', 'fullpack']);
+      });
+
+      test(
+        'purgeSeason keeps the approved cross-seed of a refused pack',
+        () async {
+          final result = await service().purgeSeason(
+            42,
+            1,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+            approvedCrossSeedHashes: {'fullxseed'},
+          );
+
+          // Neither the pack nor its copy, which usually shares its data.
+          expect(result.torrentHashesDeleted, ['s01pack']);
+          expect(result.crossSeedDuplicatesDeleted, isEmpty);
+          verify(
+            () => qb.deleteTorrents(['s01pack'], deleteFiles: true),
+          ).called(1);
+        },
+      );
+
+      test('purgeSeason deletes the cross-seed once both it and its pack are '
+          'approved', () async {
+        final result = await service().purgeSeason(
+          42,
+          1,
+          [1, 2],
+          scopeEpisodeIds: [1, 2],
+          approvedSharedPackHashes: {'fullpack'},
+          approvedCrossSeedHashes: {'fullxseed'},
+        );
+
+        expect(result.torrentHashesDeleted, ['s01pack', 'fullpack']);
+        expect(result.crossSeedDuplicatesDeleted, ['fullxseed']);
+      });
+
+      test(
+        'crossSeedCandidatesFor drops copies of the packs the user keeps',
+        () async {
+          final preview = await service().previewSeason(
+            42,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+          );
+
+          expect(preview.crossSeedCandidatesFor(const {}), isEmpty);
+          expect(
+            preview.crossSeedCandidatesFor({'fullpack'}).map((t) => t.hash),
+            ['FULLXSEED'],
+          );
+        },
+      );
+
+      test(
+        'purgeSeason still honors the seeding threshold for approved packs',
+        () async {
+          when(() => qb.getTorrents()).thenAnswer(
+            (_) async => [
+              _torrent(hash: 'S01PACK', name: 'Show.S01.1080p'),
+              _torrent(hash: 'FULLPACK', name: 'Show.Complete.1080p'),
+            ],
+          );
+
+          final result = await service().purgeSeason(
+            42,
+            1,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+            approvedSharedPackHashes: {'fullpack'},
+            action: SeedingAction.keepBelowThreshold,
+            minimumSeedingSeconds: 3600,
+          );
+
+          expect(result.torrentHashesDeleted, isEmpty);
+          verifyNever(
+            () => qb.deleteTorrents(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+            ),
+          );
+        },
+      );
+    });
   });
 }

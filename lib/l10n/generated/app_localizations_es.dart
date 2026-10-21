@@ -2402,6 +2402,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get purgeSharedPackFoundContent =>
+      'Este torrent también contiene episodios de temporadas que no estás purgando. Eliminarlo también elimina esas descargas. ¿Eliminarlo de todos modos?';
+
+  @override
+  String get purgeSharedPackFoundTitle => 'Pack de varias temporadas';
+
+  @override
   String get purgeTitleRemovedEitherWay =>
       'En cualquier caso, el título se quitará de la biblioteca y sus archivos se eliminarán.';
 

@@ -2395,6 +2395,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get purgeSharedPackFoundContent =>
+      'Este torrent também contém episódios de temporadas que você não está expurgando. Excluí-lo remove esses downloads também. Excluir mesmo assim?';
+
+  @override
+  String get purgeSharedPackFoundTitle => 'Pack de várias temporadas';
+
+  @override
   String get purgeTitleRemovedEitherWay =>
       'De qualquer forma, o título será removido da biblioteca e seus arquivos serão excluídos.';
 
@@ -7278,6 +7285,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String purgeSeededFor(String duration) {
     return 'Semeado por $duration';
   }
+
+  @override
+  String get purgeSharedPackFoundContent =>
+      'Este torrent também contém episódios de temporadas que você não está expurgando. Excluí-lo remove esses downloads também. Excluir mesmo assim?';
+
+  @override
+  String get purgeSharedPackFoundTitle => 'Pack de várias temporadas';
 
   @override
   String get purgeTitleRemovedEitherWay =>

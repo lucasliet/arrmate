@@ -129,7 +129,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 
 **3. Torrents:**
 - Só aparece quando há uma instância qBittorrent configurada.
-- Lista os torrents do cliente que sustentam a série, resolvidos pelo histórico da própria série (eventos **Grabbed** e **Imported**) casado com os infohashes do qBittorrent — season packs incluídos.
+- Lista os torrents do cliente que sustentam a série, resolvidos pelo histórico da própria série (eventos **Grabbed** e **Imported**) e pela fila do Sonarr, casados com os infohashes do qBittorrent — season packs incluídos. É a mesma resolução usada pelo Purge, então a lista mostra exatamente o que um Purge da série apagaria.
 - Inclui as cópias **cross-seed** do mesmo release (mesmo nome, infohash diferente), marcadas com o badge "Cross-seed".
 - Tocar em um card abre a ficha de detalhes do torrent (pausar, retomar, rechecar, arquivos, peers). O botão "Open in library" não aparece — você já está na tela da série.
 - Se nada for encontrado: "No torrents in the download client".
@@ -342,12 +342,14 @@ Use esta opção quando quiser remover completamente uma temporada específica, 
 4. Um **diálogo de confirmação** aparece explicando que a operação remove episódios/arquivos da temporada e torrents fonte no qBittorrent.
 5. Tocar **"Purge"** para confirmar.
 6. Se algum torrent tiver semeado menos que os "Minimum seeding days", aparece o diálogo **"Torrents still seeding"** com as opções "Cancel", "Keep seeding" e "Delete all".
-7. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata.
-8. **Indicador de progresso** (spinner) aparece durante a execução completa.
-9. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
+7. Se algum torrent da temporada for um **pack de várias temporadas** (ex.: série completa ou S01-S03), aparece o diálogo **"Multi-season pack found"** para cada um, com os detalhes do torrent e as opções **Keep torrent**/**Delete torrent**. Apagar o pack remove também o download das outras temporadas; os não aprovados continuam no qBittorrent.
+8. Se houver candidatos cross-seed, o app abre uma sequência de diálogos para aprovação individual (**Delete**/**Keep**) de cada duplicata. Cópias cross-seed de um pack que você manteve não são perguntadas e também ficam, porque costumam compartilhar os mesmos dados em disco.
+9. **Indicador de progresso** (spinner) aparece durante a execução completa.
+10. Snackbar confirma o purge com resumo da quantidade de arquivos e torrents removidos.
 
 **Observações:**
 - A operação atua apenas na temporada selecionada; o restante da série permanece no Sonarr.
+- No purge de várias temporadas selecionadas de uma vez (seleção por toque longo na lista de temporadas), um pack que cobre só temporadas selecionadas é apagado sem perguntar; a pergunta só aparece quando o pack também contém temporadas fora da seleção.
 - A central de notificações recebe registros locais do tipo purge para cada torrent removido.
 - Se não houver instância qBittorrent configurada, somente o lado Sonarr é afetado e um aviso é exibido.
 

@@ -42,18 +42,47 @@ Future<SeedingAction?> resolveSeedingAction({
 Future<Set<String>> resolveCrossSeedApprovals({
   required BuildContext context,
   required List<Torrent> crossSeedCandidates,
+}) {
+  return _resolveTorrentApprovals(
+    context: context,
+    candidates: crossSeedCandidates,
+    confirm: (torrent) =>
+        showCrossSeedConfirmationDialog(context: context, torrent: torrent),
+  );
+}
+
+/// Requests deletion approval for every torrent of a season purge that also
+/// holds episodes from seasons outside the purge (see
+/// `PurgePreview.sharedPackCandidates`).
+///
+/// Returns the normalized hashes of torrents explicitly approved for deletion.
+Future<Set<String>> resolveSharedPackApprovals({
+  required BuildContext context,
+  required List<Torrent> sharedPackCandidates,
+}) {
+  return _resolveTorrentApprovals(
+    context: context,
+    candidates: sharedPackCandidates,
+    confirm: (torrent) =>
+        showSharedPackConfirmationDialog(context: context, torrent: torrent),
+  );
+}
+
+/// Asks [confirm] once per distinct hash in [candidates] and collects the
+/// lowercased hashes the user approved.
+Future<Set<String>> _resolveTorrentApprovals({
+  required BuildContext context,
+  required List<Torrent> candidates,
+  required Future<bool?> Function(Torrent torrent) confirm,
 }) async {
   final approvedHashes = <String>{};
   final seenHashes = <String>{};
 
-  for (final torrent in crossSeedCandidates) {
+  for (final torrent in candidates) {
     final hash = torrent.hash.toLowerCase();
     if (!seenHashes.add(hash) || !context.mounted) continue;
 
-    final shouldDelete = await showCrossSeedConfirmationDialog(
-      context: context,
-      torrent: torrent,
-    );
+    final shouldDelete = await confirm(torrent);
     if (shouldDelete == true) approvedHashes.add(hash);
   }
 
@@ -67,18 +96,50 @@ Future<bool?> showCrossSeedConfirmationDialog({
   required BuildContext context,
   required Torrent torrent,
 }) {
+  return _showTorrentDeletionDialog(
+    context: context,
+    torrent: torrent,
+    title: context.l10n.purgeCrossSeedFoundTitle,
+    content: context.l10n.purgeCrossSeedFoundContent,
+  );
+}
+
+/// Shows the details of a pack spanning seasons outside a season purge before
+/// deletion.
+///
+/// Returns `true` only when the user explicitly confirms deletion.
+Future<bool?> showSharedPackConfirmationDialog({
+  required BuildContext context,
+  required Torrent torrent,
+}) {
+  return _showTorrentDeletionDialog(
+    context: context,
+    torrent: torrent,
+    title: context.l10n.purgeSharedPackFoundTitle,
+    content: context.l10n.purgeSharedPackFoundContent,
+  );
+}
+
+/// Asks whether [torrent] should be deleted, explaining why with [title] and
+/// [content] above the torrent details.
+Future<bool?> _showTorrentDeletionDialog({
+  required BuildContext context,
+  required Torrent torrent,
+  required String title,
+  required String content,
+}) {
   return showDialog<bool>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);
       return AlertDialog(
-        title: Text(context.l10n.purgeCrossSeedFoundTitle),
+        title: Text(title),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(context.l10n.purgeCrossSeedFoundContent),
+              Text(content),
               const SizedBox(height: 16),
               CrossSeedTorrentDetails(torrent: torrent),
             ],

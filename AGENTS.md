@@ -72,15 +72,20 @@ and **qBittorrent** (for downloads).
     maintenance (version history, image cache clearing, settings reset).
   - **Purge**: Removes a movie/series (or season) from the catalog together
     with its media files and source torrents — including cross-seed duplicates
-    approved one by one. Queue items and torrents are only touched after the
-    catalog deletion succeeds.
+    approved one by one. A season purge also asks, one by one, before deleting
+    a pack that holds episodes from seasons outside the purge (a pack fully
+    covered by the selected seasons is deleted without asking). Queue items
+    and torrents are only touched after the catalog deletion succeeds.
   - **Manual Import**: Match and import files manually from the queue.
   - **Movie & Series Files**: View detailed file metadata (quality, size,
     codecs) and extra files for both movies and series.
   - **Media Torrents**: Movie, series and episode details screens list the
     download-client torrents backing the item — cross-seed duplicates included —
     and open the torrent details sheet for each. The reverse of the
-    "Open in library" shortcut offered from the torrent side.
+    "Open in library" shortcut offered from the torrent side. The list and the
+    purge resolve an item's torrents through the same code
+    (`lib/core/utils/media_downloads.dart`: grabbed/imported history plus the
+    activity queue), so the screen shows exactly what a purge would delete.
   - **Media History**: View movie-specific and series-specific historical
     events.
   - **Metadata Management**: Delete individual media files with confirmation

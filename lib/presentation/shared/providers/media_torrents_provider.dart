@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/logger_service.dart';
 import '../../../core/utils/cross_seed_matcher.dart';
+import '../../../core/utils/media_downloads.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -65,9 +66,9 @@ class MediaTorrents extends Equatable {
 /// Resolves the qBittorrent torrents backing the Radarr movie [movieId].
 ///
 /// Reverse of the torrent link index: instead of sweeping the global history
-/// for every torrent in the client, it asks Radarr for the history of this one
-/// movie (`GET /history/movie`, unpaged) and matches the resulting `downloadId`
-/// values against the client's torrent list.
+/// for every torrent in the client, it collects the downloads of this one movie
+/// with [collectMovieDownloads] — the same resolution the purge uses — and
+/// matches them against the client's torrent list.
 final movieTorrentsProvider = FutureProvider.autoDispose
     .family<MediaTorrents, int>((ref, movieId) async {
       final service = ref.watch(qbittorrentServiceProvider);
@@ -77,8 +78,8 @@ final movieTorrentsProvider = FutureProvider.autoDispose
       final instance = ref.watch(currentRadarrInstanceProvider);
       if (repository == null || instance == null) return MediaTorrents.empty;
 
-      final history = await repository.getMovieHistory(movieId);
-      final hashes = _grabbedHashes(history);
+      final downloads = await collectMovieDownloads(repository, movieId);
+      final hashes = downloads.hashes;
       if (hashes.isEmpty) {
         logger.info('[MediaTorrents] Movie $movieId has no download history');
         return MediaTorrents.empty;
@@ -129,9 +130,10 @@ final movieTorrentsProvider = FutureProvider.autoDispose
 
 /// Resolves the qBittorrent torrents backing the Sonarr series [seriesId].
 ///
-/// Every torrent carries the episode ids it was grabbed for, so the episode
-/// details sheet can narrow the list down to one episode while a season pack
-/// still shows up under each of its episodes.
+/// Downloads come from [collectSeriesDownloads], the same resolution the purge
+/// uses. Every torrent carries the episode ids it was grabbed for, so the
+/// episode details sheet can narrow the list down to one episode while a season
+/// pack still shows up under each of its episodes.
 final seriesTorrentsProvider = FutureProvider.autoDispose
     .family<MediaTorrents, int>((ref, seriesId) async {
       final service = ref.watch(qbittorrentServiceProvider);
@@ -141,8 +143,8 @@ final seriesTorrentsProvider = FutureProvider.autoDispose
       final instance = ref.watch(currentSonarrInstanceProvider);
       if (repository == null || instance == null) return MediaTorrents.empty;
 
-      final history = await repository.getSeriesHistory(seriesId);
-      final episodesByHash = _episodesByHash(history);
+      final downloads = await collectSeriesDownloads(repository, seriesId);
+      final episodesByHash = downloads.episodesByHash;
       if (episodesByHash.isEmpty) {
         logger.info('[MediaTorrents] Series $seriesId has no download history');
         return MediaTorrents.empty;
@@ -218,43 +220,3 @@ final seriesTorrentsProvider = FutureProvider.autoDispose
 
       return MediaTorrents(torrents: torrents);
     });
-
-/// Collects the lowercased infohashes Radarr/Sonarr recorded for a media item.
-///
-/// Only `grabbed` and `imported` events carry a download the client may still
-/// hold, matching what the purge service resolves for the same item. The queue
-/// is deliberately not scanned: the `grabbed` event exists from the moment the
-/// release is handed to the client, so in-flight downloads are already covered.
-Set<String> _grabbedHashes(List<HistoryEvent> history) {
-  final hashes = <String>{};
-  for (final event in history) {
-    if (event.eventType != HistoryEventType.grabbed &&
-        event.eventType != HistoryEventType.imported) {
-      continue;
-    }
-    final downloadId = event.downloadId;
-    if (downloadId == null || downloadId.isEmpty) continue;
-    hashes.add(downloadId.toLowerCase());
-  }
-  return hashes;
-}
-
-/// Groups the episode ids of a series history by lowercased infohash.
-Map<String, Set<int>> _episodesByHash(List<HistoryEvent> history) {
-  final episodesByHash = <String, Set<int>>{};
-  for (final event in history) {
-    if (event.eventType != HistoryEventType.grabbed &&
-        event.eventType != HistoryEventType.imported) {
-      continue;
-    }
-    final downloadId = event.downloadId;
-    if (downloadId == null || downloadId.isEmpty) continue;
-    final episodes = episodesByHash.putIfAbsent(
-      downloadId.toLowerCase(),
-      () => <int>{},
-    );
-    final episodeId = event.episodeId;
-    if (episodeId != null) episodes.add(episodeId);
-  }
-  return episodesByHash;
-}

@@ -8,6 +8,7 @@ import '../../core/l10n/app_locale.dart';
 import '../../core/services/in_app_notification_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/utils/cross_seed_matcher.dart';
+import '../../core/utils/media_downloads.dart';
 import '../../data/api/qbittorrent_service.dart';
 import '../../domain/models/models.dart';
 import '../../domain/repositories/repositories.dart';
@@ -86,6 +87,14 @@ class PurgePreview extends Equatable {
   /// Cross-seed torrents requiring explicit user approval before deletion.
   final List<Torrent> crossSeedCandidates;
 
+  /// Source torrents of a season purge whose download also covers episodes
+  /// outside the purged seasons (e.g. a complete-series pack).
+  ///
+  /// Deleting one with its files removes the other seasons' copies too, so
+  /// each one requires explicit user approval. Always empty for movie and
+  /// series purges.
+  final List<Torrent> sharedPackCandidates;
+
   /// Subset of [torrentsToDelete] whose seeding time is below the configured
   /// threshold. Empty when no warning is needed.
   final List<Torrent> belowThreshold;
@@ -99,12 +108,32 @@ class PurgePreview extends Equatable {
     required this.crossSeedCandidates,
     required this.belowThreshold,
     required this.qbittorrentSkipped,
+    this.sharedPackCandidates = const [],
   });
+
+  /// The [crossSeedCandidates] still worth asking about once the user decided
+  /// on the [sharedPackCandidates].
+  ///
+  /// A cross-seed copy of a pack the user kept is left out: it usually shares
+  /// the pack's data on disk, so deleting it with its files would remove the
+  /// very seasons the user chose to keep. [PurgeService.purgeSeason] keeps such
+  /// copies regardless, so asking about them would only mislead.
+  List<Torrent> crossSeedCandidatesFor(Set<String> approvedSharedPackHashes) {
+    final keptPackNames = _keptPackNames(
+      sharedPackCandidates,
+      approvedSharedPackHashes,
+    );
+    return [
+      for (final t in crossSeedCandidates)
+        if (!keptPackNames.contains(normalizeTorrentName(t.name))) t,
+    ];
+  }
 
   @override
   List<Object?> get props => [
     torrentsToDelete,
     crossSeedCandidates,
+    sharedPackCandidates,
     belowThreshold,
     qbittorrentSkipped,
   ];
@@ -182,6 +211,19 @@ class PurgeResult extends Equatable {
   }
 }
 
+/// Normalized names of the [sharedPacks] whose hash is not in
+/// [approvedSharedPackHashes], i.e. the multi-season packs a purge keeps.
+Set<String> _keptPackNames(
+  Iterable<Torrent> sharedPacks,
+  Set<String> approvedSharedPackHashes,
+) {
+  return {
+    for (final t in sharedPacks)
+      if (!approvedSharedPackHashes.contains(t.hash.toLowerCase()))
+        normalizeTorrentName(t.name),
+  };
+}
+
 /// English translations, used when no [AppLocalizations] is supplied.
 AppLocalizations _englishLocalizations() =>
     appLocalizationsFor(const Locale('en'));
@@ -234,7 +276,7 @@ class PurgeService {
 
     logger.info('[PurgeService] Purging movie $movieId');
 
-    final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
+    final downloads = await collectMovieDownloads(repository, movieId);
     final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
@@ -243,14 +285,14 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
     logger.info(
       '[PurgeService] Movie $movieId deleted (files: $mediaFilesDeleted)',
     );
 
     final torrentOutcome = await _purgeTorrents(
-      hashes,
+      downloads.hashes,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'movie', id: movieId, seasonNumber: null),
     );
@@ -277,7 +319,7 @@ class PurgeService {
 
     logger.info('[PurgeService] Purging series $seriesId');
 
-    final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
     final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
@@ -286,14 +328,14 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
     logger.info(
       '[PurgeService] Series $seriesId deleted (files: $mediaFilesDeleted)',
     );
 
     final torrentOutcome = await _purgeTorrents(
-      hashes,
+      downloads.hashes,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
       context: (type: 'series', id: seriesId, seasonNumber: null),
     );
@@ -321,8 +363,8 @@ class PurgeService {
     if (repository == null) {
       throw StateError('Movie repository not available');
     }
-    final (hashes, _) = await _collectMovieHashes(repository, movieId);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectMovieDownloads(repository, movieId);
+    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
   }
 
   /// Previews the torrents a series purge would delete, without mutating.
@@ -334,29 +376,45 @@ class PurgeService {
     if (repository == null) {
       throw StateError('Series repository not available');
     }
-    final (hashes, _) = await _collectSeriesHashes(repository, seriesId);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
+    return _buildPreview(downloads.hashes, minimumSeedingSeconds);
   }
 
   /// Previews the torrents a season purge would delete, without mutating.
+  ///
+  /// [scopeEpisodeIds] lists every episode of the seasons purged in this
+  /// operation, with or without a file; a source torrent covering an episode
+  /// outside it lands in [PurgePreview.sharedPackCandidates]. It defaults to
+  /// [episodeIds], which flags any pack reaching beyond them.
   Future<PurgePreview> previewSeason(
     int seriesId,
     List<int> episodeIds, {
     int minimumSeedingSeconds = 0,
+    Iterable<int>? scopeEpisodeIds,
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
       throw StateError('Series repository not available');
     }
-    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
-    return _buildPreview(hashes, minimumSeedingSeconds);
+    final downloads = await collectSeasonDownloads(
+      repository,
+      seriesId,
+      episodeIds,
+    );
+    return _buildPreview(
+      downloads.hashes,
+      minimumSeedingSeconds,
+      sharedPackHashes: downloads.hashesBeyond(scopeEpisodeIds ?? episodeIds),
+    );
   }
 
   /// Purges a season: deletes its episode files and source torrents. The
   /// series stays in the catalog (`catalogDeleted: 0`).
   ///
   /// [episodeIds] restricts hash collection to the given episodes. [action]
-  /// controls whether below-threshold torrents are kept.
+  /// controls whether below-threshold torrents are kept. A source torrent that
+  /// also covers episodes outside [scopeEpisodeIds] (see [previewSeason]) is
+  /// only deleted when its hash is in [approvedSharedPackHashes].
   Future<PurgeResult> purgeSeason(
     int seriesId,
     int seasonNumber,
@@ -364,6 +422,8 @@ class PurgeService {
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
     Set<String> approvedCrossSeedHashes = const {},
+    Iterable<int>? scopeEpisodeIds,
+    Set<String> approvedSharedPackHashes = const {},
   }) async {
     final repository = _seriesRepositoryFactory();
     if (repository == null) {
@@ -375,7 +435,11 @@ class PurgeService {
       '(${episodeIds.length} episode(s))',
     );
 
-    final hashes = await _collectSeasonHashes(repository, seriesId, episodeIds);
+    final downloads = await collectSeasonDownloads(
+      repository,
+      seriesId,
+      episodeIds,
+    );
 
     final mediaFilesDeleted = await _deleteSeriesFiles(
       repository,
@@ -383,11 +447,13 @@ class PurgeService {
       seasonNumber: seasonNumber,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
       approvedCrossSeedHashes: approvedCrossSeedHashes,
+      sharedPackHashes: downloads.hashesBeyond(scopeEpisodeIds ?? episodeIds),
+      approvedSharedPackHashes: approvedSharedPackHashes,
       action: action,
       minimumSeedingSeconds: minimumSeedingSeconds,
       context: (type: 'season', id: seriesId, seasonNumber: seasonNumber),
@@ -499,7 +565,7 @@ class PurgeService {
       throw StateError('Movie repository not available');
     }
 
-    final (hashes, queueIds) = await _collectMovieHashes(repository, movieId);
+    final downloads = await collectMovieDownloads(repository, movieId);
     final mediaFilesDeleted = await _countMovieFiles(repository, movieId);
     await repository.deleteMovie(
       movieId,
@@ -508,10 +574,10 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -544,7 +610,7 @@ class PurgeService {
       throw StateError('Series repository not available');
     }
 
-    final (hashes, queueIds) = await _collectSeriesHashes(repository, seriesId);
+    final downloads = await collectSeriesDownloads(repository, seriesId);
     final mediaFilesDeleted = await _countSeriesFiles(repository, seriesId);
     await repository.deleteSeries(
       seriesId,
@@ -553,10 +619,10 @@ class PurgeService {
     );
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
-      queueIds,
+      downloads.queueIds,
     );
 
-    final resolved = await _resolveTorrents(hashes);
+    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -578,102 +644,16 @@ class PurgeService {
 
   // ---- helpers -----------------------------------------------------------
 
-  /// Collects source torrent hashes + queue ids for [movieId].
-  ///
-  /// Hashes come from history (grabbed + imported) and the active queue.
-  /// The queue is paginated via [_collectQueue] so items beyond the first
-  /// page (Radarr/Sonarr default `pageSize: 20`) are still swept up.
-  Future<(Set<String>, List<int>)> _collectMovieHashes(
-    MovieRepository repository,
-    int movieId,
-  ) async {
-    final hashes = <String>{};
-    final history = await repository.getMovieHistory(movieId);
-    for (final event in history) {
-      if (event.eventType == HistoryEventType.grabbed ||
-          event.eventType == HistoryEventType.imported) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    final (queueIds, queueHashes) = await _collectQueue(
-      ({required int page, required int pageSize}) =>
-          repository.getQueue(page: page, pageSize: pageSize),
-      (q) => q.movieId == movieId,
-    );
-    hashes.addAll(queueHashes);
-
-    logger.info(
-      '[PurgeService] Movie $movieId: ${hashes.length} hash(es), '
-      '${queueIds.length} queue item(s)',
-    );
-    return (hashes, queueIds);
-  }
-
-  Future<(Set<String>, List<int>)> _collectSeriesHashes(
-    SeriesRepository repository,
-    int seriesId,
-  ) async {
-    final hashes = <String>{};
-    final history = await repository.getSeriesHistory(seriesId);
-    for (final event in history) {
-      if (event.eventType == HistoryEventType.grabbed ||
-          event.eventType == HistoryEventType.imported) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    final (queueIds, queueHashes) = await _collectQueue(
-      ({required int page, required int pageSize}) =>
-          repository.getQueue(page: page, pageSize: pageSize),
-      (q) => q.seriesId == seriesId,
-    );
-    hashes.addAll(queueHashes);
-
-    logger.info(
-      '[PurgeService] Series $seriesId: ${hashes.length} hash(es), '
-      '${queueIds.length} queue item(s)',
-    );
-    return (hashes, queueIds);
-  }
-
-  /// Collects source torrent hashes for a season of [seriesId], restricted to
-  /// the given [episodeIds]. Hashes come only from history (grabbed + imported)
-  /// events whose `episodeId` is in [episodeIds]. Queue items are not removed
-  /// for season purges.
-  Future<Set<String>> _collectSeasonHashes(
-    SeriesRepository repository,
-    int seriesId,
-    List<int> episodeIds,
-  ) async {
-    final episodeSet = episodeIds.toSet();
-    final hashes = <String>{};
-    final history = await repository.getSeriesHistory(seriesId);
-    for (final event in history) {
-      if ((event.eventType == HistoryEventType.grabbed ||
-              event.eventType == HistoryEventType.imported) &&
-          event.episodeId != null &&
-          episodeSet.contains(event.episodeId)) {
-        final id = event.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-    }
-
-    logger.info(
-      '[PurgeService] Series $seriesId season: ${hashes.length} hash(es) '
-      'from ${episodeIds.length} episode(s)',
-    );
-    return hashes;
-  }
-
   /// Builds a [PurgePreview] from the resolved [sourceHashes], partitioning
   /// torrents by the seeding threshold.
+  ///
+  /// Source torrents whose hash is in [sharedPackHashes] are reported as
+  /// [PurgePreview.sharedPackCandidates].
   Future<PurgePreview> _buildPreview(
     Set<String> sourceHashes,
-    int minimumSeedingSeconds,
-  ) async {
+    int minimumSeedingSeconds, {
+    Set<String> sharedPackHashes = const {},
+  }) async {
     final service = _qbittorrentServiceFactory();
     if (service == null) {
       return const PurgePreview(
@@ -691,40 +671,13 @@ class PurgeService {
     return PurgePreview(
       torrentsToDelete: all,
       crossSeedCandidates: resolved.crossSeed,
+      sharedPackCandidates: [
+        for (final t in resolved.source)
+          if (sharedPackHashes.contains(t.hash.toLowerCase())) t,
+      ],
       belowThreshold: below,
       qbittorrentSkipped: false,
     );
-  }
-
-  /// Pages through the activity queue accumulating ids + download hashes for
-  /// items matching [matches].
-  ///
-  /// Radarr/Sonarr do not support server-side filtering by movie/series id,
-  /// so we walk all pages and apply [matches] locally. Stops when a page is
-  /// short (last page) or when we have consumed `totalRecords`. A [maxPages]
-  /// cap guards against runaway loops on misbehaving APIs.
-  Future<(List<int> queueIds, Set<String> hashes)> _collectQueue(
-    Future<QueueItems> Function({required int page, required int pageSize})
-    getQueue,
-    bool Function(QueueItem) matches,
-  ) async {
-    const pageSize = 100;
-    const maxPages = 50;
-    final queueIds = <int>[];
-    final hashes = <String>{};
-    for (var page = 1; page <= maxPages; page++) {
-      final q = await getQueue(page: page, pageSize: pageSize);
-      for (final item in q.records.where(matches)) {
-        queueIds.add(item.id);
-        final id = item.downloadId;
-        if (id != null && id.isNotEmpty) hashes.add(id.toLowerCase());
-      }
-      // Last page reached when fewer than `pageSize` items are returned, or
-      // when we've already consumed every record reported by the server.
-      if (q.records.length < pageSize) break;
-      if (q.records.length >= q.totalRecords) break;
-    }
-    return (queueIds, hashes);
   }
 
   /// Removes queue items, tolerating already-gone items.
@@ -816,15 +769,19 @@ class PurgeService {
   /// Deletes the resolved torrents in qBittorrent, honoring [action].
   ///
   /// [approvedCrossSeedHashes] restricts cross-seed deletions to torrents that
-  /// the user explicitly approved. When [action] is
-  /// [SeedingAction.keepBelowThreshold], torrents whose seeding time is below
-  /// [minimumSeedingSeconds] are kept in qBittorrent (they keep seeding); only
-  /// the eligible ones are deleted. All deletes use `deleteFiles: true` so
-  /// hardlinked inodes are reclaimed.
+  /// the user explicitly approved, and [approvedSharedPackHashes] does the
+  /// same for the source torrents listed in [sharedPackHashes]. When [action]
+  /// is [SeedingAction.keepBelowThreshold], torrents whose seeding time is
+  /// below [minimumSeedingSeconds] are kept in qBittorrent (they keep
+  /// seeding); only the eligible ones are deleted. Cross-seed copies of a
+  /// shared pack that stays are kept even when approved. All deletes use
+  /// `deleteFiles: true` so hardlinked inodes are reclaimed.
   Future<_TorrentPurgeOutcome> _deleteTorrents(
     List<Torrent> source,
     List<Torrent> crossSeed, {
     Set<String> approvedCrossSeedHashes = const {},
+    Set<String> sharedPackHashes = const {},
+    Set<String> approvedSharedPackHashes = const {},
     SeedingAction action = SeedingAction.deleteAll,
     int minimumSeedingSeconds = 0,
     PurgeContext? context,
@@ -850,6 +807,14 @@ class PurgeService {
         isBelowSeedingThreshold(t, minimumSeedingSeconds);
 
     for (final t in source) {
+      final h = t.hash.toLowerCase();
+      if (sharedPackHashes.contains(h) &&
+          !approvedSharedPackHashes.contains(h)) {
+        logger.info(
+          '[PurgeService] Keeping unapproved multi-season pack ${t.name}',
+        );
+        continue;
+      }
       if (isBelowThreshold(t)) {
         logger.info(
           '[PurgeService] Keeping source torrent ${t.name} '
@@ -857,14 +822,26 @@ class PurgeService {
         );
         continue;
       }
-      final h = t.hash.toLowerCase();
       if (hashesToDelete.add(h)) {
         sourceDeleted.add(h);
         _emitTorrentPurgedNotification(t, context, isCrossSeed: false);
       }
     }
+    // Copies of a kept multi-season pack usually share its data on disk:
+    // deleting them with their files would remove the seasons being kept.
+    final keptPackNames = _keptPackNames(
+      source.where((t) => sharedPackHashes.contains(t.hash.toLowerCase())),
+      approvedSharedPackHashes,
+    );
     for (final t in crossSeed) {
       final h = t.hash.toLowerCase();
+      if (keptPackNames.contains(normalizeTorrentName(t.name))) {
+        logger.info(
+          '[PurgeService] Keeping cross-seed of kept multi-season pack '
+          '${t.name}',
+        );
+        continue;
+      }
       if (!approvedCrossSeedHashes.contains(h)) {
         logger.info('[PurgeService] Keeping unapproved cross-seed ${t.name}');
         continue;

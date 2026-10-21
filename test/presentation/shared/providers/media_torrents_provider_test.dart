@@ -149,6 +149,61 @@ void main() {
         verifyNever(service.getTorrents);
       },
     );
+
+    test(
+      'should list a download only the queue knows, as the purge would',
+      () async {
+        // Given a torrent picked up from the category, never grabbed
+        final repository = MockMovieRepository();
+        when(
+          () => repository.getMovieHistory(7),
+        ).thenAnswer((_) async => const []);
+        final service = MockQBittorrentService();
+        when(service.getTorrents).thenAnswer(
+          (_) async => [_torrent(hash: 'aabb', name: 'Arrival.2016.1080p')],
+        );
+        final container = _container(
+          qbittorrent: service,
+          movieRepository: repository,
+          movie: _movie(id: 7, title: 'Arrival', hasFile: false),
+          queue: [
+            _queueItem(id: 1, movieId: 7, downloadId: 'AABB'),
+            _queueItem(id: 2, movieId: 8, downloadId: 'CCDD'),
+          ],
+        );
+
+        // When
+        final result = await container.read(movieTorrentsProvider(7).future);
+
+        // Then only the movie's own queue entry is resolved
+        expect(result.torrents.map((t) => t.torrent.hash), ['aabb']);
+        expect(result.torrents.single.link.movieId, 7);
+      },
+    );
+
+    test('should not duplicate a hash found in history and queue', () async {
+      // Given
+      final repository = MockMovieRepository();
+      when(() => repository.getMovieHistory(7)).thenAnswer(
+        (_) async => [_movieEvent(downloadId: 'AABB', eventType: 'grabbed')],
+      );
+      final service = MockQBittorrentService();
+      when(service.getTorrents).thenAnswer(
+        (_) async => [_torrent(hash: 'aabb', name: 'Arrival.2016.1080p')],
+      );
+      final container = _container(
+        qbittorrent: service,
+        movieRepository: repository,
+        movie: _movie(id: 7, title: 'Arrival', hasFile: true),
+        queue: [_queueItem(id: 1, movieId: 7, downloadId: 'aabb')],
+      );
+
+      // When
+      final result = await container.read(movieTorrentsProvider(7).future);
+
+      // Then
+      expect(result.torrents, hasLength(1));
+    });
   });
 
   group('seriesTorrentsProvider', () {
@@ -272,19 +327,72 @@ void main() {
       expect(crossSeed.episodeIds, {42});
       expect(crossSeed.link.episodeId, 42);
     });
+
+    test(
+      'should carry the episode of a download only the queue knows',
+      () async {
+        // Given
+        final repository = MockSeriesRepository();
+        when(
+          () => repository.getSeriesHistory(3),
+        ).thenAnswer((_) async => const []);
+        final service = MockQBittorrentService();
+        when(service.getTorrents).thenAnswer(
+          (_) async => [_torrent(hash: 'aabb', name: 'Severance.S01E05')],
+        );
+        final container = _container(
+          qbittorrent: service,
+          seriesRepository: repository,
+          series: _series(id: 3, title: 'Severance'),
+          queue: [
+            _queueItem(id: 1, seriesId: 3, episodeId: 42, downloadId: 'AABB'),
+          ],
+        );
+
+        // When
+        final result = await container.read(seriesTorrentsProvider(3).future);
+
+        // Then
+        final linked = result.torrents.single;
+        expect(linked.episodeIds, {42});
+        expect(linked.link.episodeId, 42);
+      },
+    );
   });
 }
 
 /// Builds a container wired to the given stubs.
 ///
 /// Passing `null` for [qbittorrent] models an app with no download client.
+/// [queue] is the activity queue both repositories answer with.
 ProviderContainer _container({
   required QBittorrentService? qbittorrent,
-  MovieRepository? movieRepository,
-  SeriesRepository? seriesRepository,
+  MockMovieRepository? movieRepository,
+  MockSeriesRepository? seriesRepository,
   Movie? movie,
   Series? series,
+  List<QueueItem> queue = const [],
 }) {
+  if (movieRepository != null) {
+    when(
+      () => movieRepository.getQueue(
+        page: any(named: 'page'),
+        pageSize: any(named: 'pageSize'),
+        sortKey: any(named: 'sortKey'),
+        sortDirection: any(named: 'sortDirection'),
+      ),
+    ).thenAnswer((_) async => _queuePage(queue));
+  }
+  if (seriesRepository != null) {
+    when(
+      () => seriesRepository.getQueue(
+        page: any(named: 'page'),
+        pageSize: any(named: 'pageSize'),
+        sortKey: any(named: 'sortKey'),
+        sortDirection: any(named: 'sortDirection'),
+      ),
+    ).thenAnswer((_) async => _queuePage(queue));
+  }
   final container = ProviderContainer(
     overrides: [
       qbittorrentServiceProvider.overrideWithValue(qbittorrent),
@@ -367,6 +475,37 @@ HistoryEvent _episodeEvent({
     'episodeId': episodeId,
     'downloadId': downloadId,
     'quality': _quality,
+  });
+}
+
+QueueItems _queuePage(List<QueueItem> records) {
+  return QueueItems(
+    page: 1,
+    pageSize: 100,
+    sortKey: 'timeleft',
+    sortDirection: 'ascending',
+    totalRecords: records.length,
+    records: records,
+  );
+}
+
+QueueItem _queueItem({
+  required int id,
+  required String downloadId,
+  int? movieId,
+  int? seriesId,
+  int? episodeId,
+}) {
+  return QueueItem.fromJson({
+    'id': id,
+    'movieId': ?movieId,
+    'seriesId': ?seriesId,
+    'episodeId': ?episodeId,
+    'title': 'Queued release',
+    'protocol': 'torrent',
+    'sizeleft': 0,
+    'status': 'downloading',
+    'downloadId': downloadId,
   });
 }
 
