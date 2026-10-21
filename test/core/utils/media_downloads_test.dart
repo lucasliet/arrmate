@@ -68,6 +68,7 @@ void main() {
       // Then
       expect(downloads.hashes, {'aabb', 'ccdd'});
       expect(downloads.queueIds, [10, 11, 13]);
+      expect(downloads.queueHashes, {10: 'ccdd', 11: 'aabb'});
       expect(downloads.episodesByHash['aabb'], isEmpty);
     });
 

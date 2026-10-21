@@ -1213,6 +1213,217 @@ void main() {
       },
     );
 
+    group('queued downloads under Keep seeding', () {
+      late MockMovieRepository movieRepo;
+      late MockSeriesRepository seriesRepo;
+      late MockQBittorrentService qb;
+
+      /// A movie 7 and a series 42 whose only download is still in the queue,
+      /// backed by a torrent that seeded for 5 days.
+      setUp(() {
+        movieRepo = MockMovieRepository();
+        seriesRepo = MockSeriesRepository();
+        qb = MockQBittorrentService();
+        when(() => movieRepo.getMovieHistory(7)).thenAnswer((_) async => []);
+        when(() => seriesRepo.getSeriesHistory(42)).thenAnswer((_) async => []);
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 100,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 2,
+            records: [
+              _queueItem(id: 50, movieId: 7, downloadId: 'QUEUEDHASH'),
+              _queueItem(id: 51, movieId: 7),
+            ],
+          ),
+        );
+        when(
+          () => seriesRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 100,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 1,
+            records: [
+              _queueItem(id: 60, seriesId: 42, downloadId: 'QUEUEDHASH'),
+            ],
+          ),
+        );
+        when(() => movieRepo.getMovieFiles(7)).thenAnswer((_) async => []);
+        when(() => seriesRepo.getSeriesFiles(42)).thenAnswer((_) async => []);
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => seriesRepo.deleteSeries(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => movieRepo.deleteQueueItem(
+            any(),
+            removeFromClient: any(named: 'removeFromClient'),
+            blocklist: any(named: 'blocklist'),
+            skipRedownload: any(named: 'skipRedownload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => seriesRepo.deleteQueueItem(
+            any(),
+            removeFromClient: any(named: 'removeFromClient'),
+            blocklist: any(named: 'blocklist'),
+            skipRedownload: any(named: 'skipRedownload'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            _torrent(
+              hash: 'QUEUEDHASH',
+              name: 'Arrival.2016.1080p',
+              seedingTime: 5 * 86400,
+            ),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+      });
+
+      void verifyRemovedFromClient(
+        DeleteQueueItem remove,
+        int id,
+        bool removeFromClient,
+      ) {
+        verify(
+          () => remove(
+            id,
+            removeFromClient: removeFromClient,
+            blocklist: false,
+            skipRedownload: false,
+          ),
+        ).called(1);
+      }
+
+      test('a movie keeps the torrent behind its queue item', () async {
+        final result = await _service(movieRepo: movieRepo, qb: qb)
+            .purgeMovieWithAction(
+              7,
+              action: SeedingAction.keepBelowThreshold,
+              minimumSeedingSeconds: 20 * 86400,
+            );
+
+        // The queue item goes, but Radarr is told to leave the download alone.
+        expect(result.queueItemsRemoved, 2);
+        expect(result.torrentHashesDeleted, isEmpty);
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, false);
+        verifyNever(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        );
+      });
+
+      test('an item without a download id is still removed from the client '
+          'request as before', () async {
+        await _service(movieRepo: movieRepo, qb: qb).purgeMovieWithAction(
+          7,
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 20 * 86400,
+        );
+
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 51, true);
+      });
+
+      test(
+        'a movie under Delete all removes the download with the item',
+        () async {
+          final result = await _service(
+            movieRepo: movieRepo,
+            qb: qb,
+          ).purgeMovieWithAction(7, minimumSeedingSeconds: 20 * 86400);
+
+          expect(result.torrentHashesDeleted, ['queuedhash']);
+          verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, true);
+        },
+      );
+
+      test('a torrent that seeded long enough is not kept', () async {
+        await _service(movieRepo: movieRepo, qb: qb).purgeMovieWithAction(
+          7,
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 3 * 86400,
+        );
+
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, true);
+      });
+
+      test('the batch of movies keeps the torrents behind their queue '
+          'items', () async {
+        final result = await _service(movieRepo: movieRepo, qb: qb).purgeMovies(
+          [7],
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 20 * 86400,
+        );
+
+        expect(result.torrentHashesDeleted, isEmpty);
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, false);
+      });
+
+      test('a series keeps the torrent behind its queue item', () async {
+        final result =
+            await _service(
+              movieRepo: MockMovieRepository(),
+              seriesRepo: seriesRepo,
+              qb: qb,
+            ).purgeSeriesWithAction(
+              42,
+              action: SeedingAction.keepBelowThreshold,
+              minimumSeedingSeconds: 20 * 86400,
+            );
+
+        expect(result.queueItemsRemoved, 1);
+        expect(result.torrentHashesDeleted, isEmpty);
+        verifyRemovedFromClient(seriesRepo.deleteQueueItem, 60, false);
+      });
+
+      test('the batch of series keeps the torrents behind their queue '
+          'items', () async {
+        await _service(
+          movieRepo: MockMovieRepository(),
+          seriesRepo: seriesRepo,
+          qb: qb,
+        ).purgeSeriesList(
+          [42],
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 20 * 86400,
+        );
+
+        verifyRemovedFromClient(seriesRepo.deleteQueueItem, 60, false);
+      });
+    });
+
     test(
       'purgeMovie emits one in-app notification per deleted torrent, including cross-seed dupes',
       () async {

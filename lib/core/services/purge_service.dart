@@ -590,12 +590,19 @@ class PurgeService {
       deleteFiles: true,
       addExclusion: false,
     );
+
+    final resolved = await _resolveTorrents(downloads.hashes);
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
       downloads.queueIds,
+      keepInClient: _hashesKeptBySeedingChoice(
+        resolved.source,
+        downloads.queueHashes.values,
+        action,
+        minimumSeedingSeconds,
+      ),
+      queueHashes: downloads.queueHashes,
     );
-
-    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -635,12 +642,19 @@ class PurgeService {
       deleteFiles: true,
       addExclusion: false,
     );
+
+    final resolved = await _resolveTorrents(downloads.hashes);
     final queueItemsRemoved = await _removeQueueItems(
       repository.deleteQueueItem,
       downloads.queueIds,
+      keepInClient: _hashesKeptBySeedingChoice(
+        resolved.source,
+        downloads.queueHashes.values,
+        action,
+        minimumSeedingSeconds,
+      ),
+      queueHashes: downloads.queueHashes,
     );
-
-    final resolved = await _resolveTorrents(downloads.hashes);
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -698,17 +712,40 @@ class PurgeService {
     );
   }
 
+  /// Lowercased hashes among [queueHashes] whose [source] torrent the seeding
+  /// choice [action] leaves in qBittorrent.
+  Set<String> _hashesKeptBySeedingChoice(
+    List<Torrent> source,
+    Iterable<String> queueHashes,
+    SeedingAction action,
+    int minimumSeedingSeconds,
+  ) {
+    final queued = queueHashes.toSet();
+    return {
+      for (final t in source)
+        if (queued.contains(t.hash.toLowerCase()) &&
+            isKeptBySeedingChoice(t, action, minimumSeedingSeconds))
+          t.hash.toLowerCase(),
+    };
+  }
+
   /// Removes queue items, tolerating already-gone items.
+  ///
+  /// Radarr/Sonarr also delete the download from the client unless the item's
+  /// hash (from [queueHashes]) is in [keepInClient], which keeps a torrent the
+  /// seeding choice asked to leave seeding.
   Future<int> _removeQueueItems(
     DeleteQueueItem deleteQueueItem,
-    List<int> queueIds,
-  ) async {
+    List<int> queueIds, {
+    Set<String> keepInClient = const {},
+    Map<int, String> queueHashes = const {},
+  }) async {
     var removed = 0;
     for (final id in queueIds) {
       try {
         await deleteQueueItem(
           id,
-          removeFromClient: true,
+          removeFromClient: !keepInClient.contains(queueHashes[id]),
           blocklist: false,
           skipRedownload: false,
         );
