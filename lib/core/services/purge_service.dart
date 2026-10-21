@@ -591,17 +591,11 @@ class PurgeService {
       addExclusion: false,
     );
 
-    final resolved = await _resolveTorrents(downloads.hashes);
-    final queueItemsRemoved = await _removeQueueItems(
+    final (:resolved, :queueItemsRemoved) = await _resolveAndRemoveQueue(
       repository.deleteQueueItem,
-      downloads.queueIds,
-      keepInClient: _hashesKeptBySeedingChoice(
-        resolved.source,
-        downloads.queueHashes.values,
-        action,
-        minimumSeedingSeconds,
-      ),
-      queueHashes: downloads.queueHashes,
+      downloads,
+      action,
+      minimumSeedingSeconds,
     );
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
@@ -643,17 +637,11 @@ class PurgeService {
       addExclusion: false,
     );
 
-    final resolved = await _resolveTorrents(downloads.hashes);
-    final queueItemsRemoved = await _removeQueueItems(
+    final (:resolved, :queueItemsRemoved) = await _resolveAndRemoveQueue(
       repository.deleteQueueItem,
-      downloads.queueIds,
-      keepInClient: _hashesKeptBySeedingChoice(
-        resolved.source,
-        downloads.queueHashes.values,
-        action,
-        minimumSeedingSeconds,
-      ),
-      queueHashes: downloads.queueHashes,
+      downloads,
+      action,
+      minimumSeedingSeconds,
     );
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
@@ -710,6 +698,52 @@ class PurgeService {
       belowThreshold: below,
       qbittorrentSkipped: false,
     );
+  }
+
+  /// Resolves the torrents of [downloads], then removes their queue items.
+  ///
+  /// The queue items need the resolved torrents to know which downloads the
+  /// seeding choice [action] keeps. When qBittorrent cannot be read, the queue
+  /// items are still removed, leaving every download in the client when [action]
+  /// asks to keep some, and the error is rethrown.
+  Future<({CrossSeedPartition resolved, int queueItemsRemoved})>
+  _resolveAndRemoveQueue(
+    DeleteQueueItem deleteQueueItem,
+    MediaDownloads downloads,
+    SeedingAction action,
+    int minimumSeedingSeconds,
+  ) async {
+    final CrossSeedPartition resolved;
+    try {
+      resolved = await _resolveTorrents(downloads.hashes);
+    } catch (e, stackTrace) {
+      logger.error(
+        '[PurgeService] Resolving torrents failed; removing queue items only',
+        e,
+        stackTrace,
+      );
+      await _removeQueueItems(
+        deleteQueueItem,
+        downloads.queueIds,
+        keepInClient: action == SeedingAction.deleteAll
+            ? const {}
+            : downloads.queueHashes.values.toSet(),
+        queueHashes: downloads.queueHashes,
+      );
+      rethrow;
+    }
+    final queueItemsRemoved = await _removeQueueItems(
+      deleteQueueItem,
+      downloads.queueIds,
+      keepInClient: _hashesKeptBySeedingChoice(
+        resolved.source,
+        downloads.queueHashes.values,
+        action,
+        minimumSeedingSeconds,
+      ),
+      queueHashes: downloads.queueHashes,
+    );
+    return (resolved: resolved, queueItemsRemoved: queueItemsRemoved);
   }
 
   /// Lowercased hashes among [queueHashes] whose [source] torrent the seeding

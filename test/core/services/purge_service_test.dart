@@ -1408,6 +1408,34 @@ void main() {
         verifyRemovedFromClient(seriesRepo.deleteQueueItem, 60, false);
       });
 
+      test('queue items are removed even when qBittorrent cannot be read, '
+          'leaving the downloads in the client under Keep seeding', () async {
+        when(() => qb.getTorrents()).thenThrow(StateError('qBittorrent down'));
+
+        await expectLater(
+          _service(movieRepo: movieRepo, qb: qb).purgeMovieWithAction(
+            7,
+            action: SeedingAction.keepBelowThreshold,
+            minimumSeedingSeconds: 20 * 86400,
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, false);
+      });
+
+      test('queue items are removed with their downloads under Delete all '
+          'when qBittorrent cannot be read', () async {
+        when(() => qb.getTorrents()).thenThrow(StateError('qBittorrent down'));
+
+        await expectLater(
+          _service(movieRepo: movieRepo, qb: qb).purgeMovieWithAction(7),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyRemovedFromClient(movieRepo.deleteQueueItem, 50, true);
+      });
+
       test('the batch of series keeps the torrents behind their queue '
           'items', () async {
         await _service(
