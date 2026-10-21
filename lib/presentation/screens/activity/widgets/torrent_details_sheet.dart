@@ -283,26 +283,26 @@ class TorrentDetailsSheet extends ConsumerWidget {
                         Expanded(
                           child: torrent.status.isPaused
                               ? FilledButton.icon(
-                                  onPressed: () {
-                                    ref
+                                  onPressed: () => _runTorrentAction(
+                                    context,
+                                    () => ref
                                         .read(
                                           qbittorrentTorrentsProvider.notifier,
                                         )
-                                        .resumeTorrents([torrent.hash]);
-                                    Navigator.pop(context);
-                                  },
+                                        .resumeTorrents([torrent.hash]),
+                                  ),
                                   icon: const Icon(Icons.play_arrow),
                                   label: Text(context.l10n.torrentResume),
                                 )
                               : FilledButton.icon(
-                                  onPressed: () {
-                                    ref
+                                  onPressed: () => _runTorrentAction(
+                                    context,
+                                    () => ref
                                         .read(
                                           qbittorrentTorrentsProvider.notifier,
                                         )
-                                        .pauseTorrents([torrent.hash]);
-                                    Navigator.pop(context);
-                                  },
+                                        .pauseTorrents([torrent.hash]),
+                                  ),
                                   icon: const Icon(Icons.pause),
                                   label: Text(context.l10n.torrentPause),
                                   style: FilledButton.styleFrom(
@@ -313,12 +313,12 @@ class TorrentDetailsSheet extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              ref
+                            onPressed: () => _runTorrentAction(
+                              context,
+                              () => ref
                                   .read(qbittorrentTorrentsProvider.notifier)
-                                  .recheckTorrents([torrent.hash]);
-                              Navigator.pop(context);
-                            },
+                                  .recheckTorrents([torrent.hash]),
+                            ),
                             icon: const Icon(Icons.sync),
                             label: Text(context.l10n.torrentRecheck),
                           ),
@@ -857,5 +857,27 @@ class TorrentDetailsSheet extends ConsumerWidget {
     // qBittorrent returns timestamp in seconds
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     return formatDate(date);
+  }
+}
+
+/// Runs a pause, resume or recheck and closes the sheet once the server took
+/// it.
+///
+/// An action the server refuses keeps the sheet open and says why through
+/// [describeError], instead of closing as if it had worked.
+Future<void> _runTorrentAction(
+  BuildContext context,
+  Future<void> Function() action,
+) async {
+  final navigator = Navigator.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final l10n = context.l10n;
+  try {
+    await action();
+    if (navigator.canPop()) navigator.pop();
+  } catch (e) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.torrentActionFailed(describeError(e, l10n)))),
+    );
   }
 }

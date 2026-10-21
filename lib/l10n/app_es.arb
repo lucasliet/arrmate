@@ -1020,6 +1020,7 @@
   "systemSettingsReset": "Ajustes de la app restablecidos a los valores predeterminados",
   "systemTorrentProtection": "Protección de torrents",
   "systemVersionHistorySubtitle": "Novedades de cada versión publicada",
+  "torrentActionFailed": "Error en la acción del torrent: {error}",
   "torrentAddFailed": "Error al añadir el torrent: {error}",
   "torrentAddOptions": "Opciones",
   "torrentAddOr": "O",

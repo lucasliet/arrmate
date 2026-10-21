@@ -2503,6 +2503,14 @@
   "systemSettingsReset": "App settings reset to defaults",
   "systemTorrentProtection": "Torrent Protection",
   "systemVersionHistorySubtitle": "Changelog for every published release",
+  "torrentActionFailed": "The torrent action failed: {error}",
+  "@torrentActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "torrentAddFailed": "Failed to add torrent: {error}",
   "@torrentAddFailed": {
     "placeholders": {
