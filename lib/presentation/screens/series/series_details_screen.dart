@@ -911,6 +911,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
       }
     } catch (e) {
       navigator.pop();
+      // The series may already be gone from the catalog when the purge fails.
+      ref.invalidate(seriesProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text(l10n.seriesPurgeFailed(describeError(e, l10n))),

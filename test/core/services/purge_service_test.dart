@@ -1674,10 +1674,15 @@ void main() {
             ),
           ).thenThrow(StateError('Radarr catalog deletion failed'));
 
-          await expectLater(
-            _service(movieRepo: movieRepo, qb: qb).purgeMovies([7]),
-            throwsA(isA<StateError>()),
-          );
+          final result = await _service(
+            movieRepo: movieRepo,
+            qb: qb,
+          ).purgeMovies([7]);
+
+          expect(result.failures, hasLength(1));
+          expect(result.failures.single.id, 7);
+          expect(result.failures.single.error, isA<StateError>());
+          expect(result.catalogDeleted, 0);
 
           verifyNever(
             () => movieRepo.deleteQueueItem(
@@ -1742,14 +1747,15 @@ void main() {
             ),
           ).thenThrow(StateError('Sonarr catalog deletion failed'));
 
-          await expectLater(
-            _service(
-              movieRepo: MockMovieRepository(),
-              seriesRepo: seriesRepo,
-              qb: qb,
-            ).purgeSeriesList([42]),
-            throwsA(isA<StateError>()),
-          );
+          final result = await _service(
+            movieRepo: MockMovieRepository(),
+            seriesRepo: seriesRepo,
+            qb: qb,
+          ).purgeSeriesList([42]);
+
+          expect(result.failures, hasLength(1));
+          expect(result.failures.single.id, 42);
+          expect(result.catalogDeleted, 0);
 
           verifyNever(
             () => seriesRepo.deleteQueueItem(
@@ -1770,6 +1776,193 @@ void main() {
         },
       );
     });
+    group('a batch with a failing item', () {
+      late MockMovieRepository movieRepo;
+      late MockSeriesRepository seriesRepo;
+      late MockQBittorrentService qb;
+
+      /// Movies 1, 2 and 3 and series 41, 42 and 43, each with one grabbed
+      /// torrent that qBittorrent holds.
+      setUp(() {
+        movieRepo = MockMovieRepository();
+        seriesRepo = MockSeriesRepository();
+        qb = MockQBittorrentService();
+        for (final id in [1, 2, 3]) {
+          when(() => movieRepo.getMovieHistory(id)).thenAnswer(
+            (_) async => [
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: id,
+                downloadId: 'MOVIEHASH$id',
+              ),
+            ],
+          );
+          when(() => movieRepo.getMovieFiles(id)).thenAnswer((_) async => []);
+        }
+        for (final id in [41, 42, 43]) {
+          when(() => seriesRepo.getSeriesHistory(id)).thenAnswer(
+            (_) async => [
+              _historyEvent(
+                eventType: 'grabbed',
+                movieId: 0,
+                seriesId: id,
+                downloadId: 'SERIESHASH$id',
+              ),
+            ],
+          );
+          when(() => seriesRepo.getSeriesFiles(id)).thenAnswer((_) async => []);
+        }
+        when(
+          () => movieRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 100,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => seriesRepo.getQueue(
+            page: any(named: 'page'),
+            pageSize: any(named: 'pageSize'),
+            sortKey: any(named: 'sortKey'),
+            sortDirection: any(named: 'sortDirection'),
+          ),
+        ).thenAnswer(
+          (_) async => QueueItems(
+            page: 1,
+            pageSize: 100,
+            sortKey: 'timeleft',
+            sortDirection: 'ascending',
+            totalRecords: 0,
+            records: const [],
+          ),
+        );
+        when(
+          () => movieRepo.deleteMovie(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => seriesRepo.deleteSeries(
+            any(),
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => qb.getTorrents()).thenAnswer(
+          (_) async => [
+            for (final id in [1, 2, 3])
+              _torrent(hash: 'MOVIEHASH$id', name: 'Movie.$id.mkv'),
+            for (final id in [41, 42, 43])
+              _torrent(hash: 'SERIESHASH$id', name: 'Series.$id.mkv'),
+          ],
+        );
+        when(
+          () =>
+              qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+        ).thenAnswer((_) async {});
+      });
+
+      test('purgeMovies goes on after a failure and reports it', () async {
+        // Given the catalog refuses the second movie
+        when(
+          () => movieRepo.deleteMovie(
+            2,
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenThrow(StateError('Radarr refused'));
+
+        // When
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovies([1, 2, 3]);
+
+        // Then the other two went through and only the second is reported
+        expect(result.catalogDeleted, 2);
+        expect(result.torrentHashesDeleted, ['moviehash1', 'moviehash3']);
+        expect(result.failures.map((f) => f.id), [2]);
+        verify(
+          () =>
+              movieRepo.deleteMovie(3, deleteFiles: true, addExclusion: false),
+        ).called(1);
+      });
+
+      test('purgeMovies reports a failure that came after the catalog '
+          'deletion', () async {
+        // Given qBittorrent cannot be read for the second movie
+        var reads = 0;
+        when(() => qb.getTorrents()).thenAnswer((_) async {
+          reads++;
+          if (reads == 2) throw StateError('qBittorrent down');
+          return [
+            for (final id in [1, 2, 3])
+              _torrent(hash: 'MOVIEHASH$id', name: 'Movie.$id.mkv'),
+          ];
+        });
+
+        // When
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovies([1, 2, 3]);
+
+        // Then the second movie is gone from the catalog and still reported
+        verify(
+          () =>
+              movieRepo.deleteMovie(2, deleteFiles: true, addExclusion: false),
+        ).called(1);
+        expect(result.failures.map((f) => f.id), [2]);
+        expect(result.catalogDeleted, 2);
+        expect(result.torrentHashesDeleted, ['moviehash1', 'moviehash3']);
+      });
+
+      test('purgeSeriesList goes on after a failure and reports it', () async {
+        // Given the catalog refuses the first series
+        when(
+          () => seriesRepo.deleteSeries(
+            41,
+            deleteFiles: any(named: 'deleteFiles'),
+            addExclusion: any(named: 'addExclusion'),
+          ),
+        ).thenThrow(StateError('Sonarr refused'));
+
+        // When
+        final result = await _service(
+          movieRepo: MockMovieRepository(),
+          seriesRepo: seriesRepo,
+          qb: qb,
+        ).purgeSeriesList([41, 42, 43]);
+
+        // Then
+        expect(result.catalogDeleted, 2);
+        expect(result.torrentHashesDeleted, ['serieshash42', 'serieshash43']);
+        expect(result.failures.map((f) => f.id), [41]);
+      });
+
+      test('a batch without a failure reports none', () async {
+        final result = await _service(
+          movieRepo: movieRepo,
+          qb: qb,
+        ).purgeMovies([1, 2]);
+
+        expect(result.failures, isEmpty);
+        expect(result.catalogDeleted, 2);
+      });
+    });
+
     group('multi-season packs', () {
       late MockSeriesRepository seriesRepo;
       late MockQBittorrentService qb;

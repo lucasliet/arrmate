@@ -5807,6 +5807,12 @@ abstract class AppLocalizations {
   /// **'Failed to purge: {error}'**
   String sharedBatchPurgeFailed(String error);
 
+  /// No description provided for @sharedBatchPurgePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Purged {purged} of {total}. Failed: {error}'**
+  String sharedBatchPurgePartial(int purged, int total, String error);
+
   /// No description provided for @sharedBatchPurgeMoviesContent.
   ///
   /// In en, this message translates to:

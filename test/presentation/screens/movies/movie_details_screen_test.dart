@@ -1,6 +1,9 @@
+import 'package:arrmate/core/services/purge_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 
+import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
+import 'package:arrmate/presentation/screens/movies/providers/movies_provider.dart';
 import 'package:arrmate/presentation/screens/movies/movie_details_screen.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_details_provider.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movie_metadata_provider.dart';
@@ -10,7 +13,22 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../helpers/localized_app.dart';
+
+class MockPurgeService extends Mock implements PurgeService {}
+
+/// A movie list that counts how many times it was built.
+class _CountingMovies extends MoviesNotifier {
+  static int builds = 0;
+
+  @override
+  Future<List<Movie>> build() async {
+    builds++;
+    return [];
+  }
+}
 
 // Mock models
 final mockInstance = Instance(
@@ -262,5 +280,75 @@ void main() {
 
     // Then
     expect(find.byType(PosterViewer), findsOneWidget);
+  });
+
+  testWidgets('MovieDetailsScreen should reload the movie list when a purge '
+      'fails after the catalog entry was deleted', (tester) async {
+    // Given a purge that fails halfway, once the movie is out of Radarr
+    SharedPreferences.setMockInitialValues({});
+    registerFallbackValue(SeedingAction.deleteAll);
+    _CountingMovies.builds = 0;
+    final purgeService = MockPurgeService();
+    when(
+      () => purgeService.previewMovie(
+        any(),
+        minimumSeedingSeconds: any(named: 'minimumSeedingSeconds'),
+      ),
+    ).thenAnswer(
+      (_) async => const PurgePreview(
+        torrentsToDelete: [],
+        crossSeedCandidates: [],
+        belowThreshold: [],
+        qbittorrentSkipped: true,
+      ),
+    );
+    when(
+      () => purgeService.purgeMovieWithAction(
+        any(),
+        action: any(named: 'action'),
+        minimumSeedingSeconds: any(named: 'minimumSeedingSeconds'),
+        approvedCrossSeedHashes: any(named: 'approvedCrossSeedHashes'),
+      ),
+    ).thenThrow(StateError('qBittorrent down'));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentRadarrInstanceProvider.overrideWithValue(mockInstance),
+          movieDetailsProvider(1).overrideWith((ref) => createMockMovie()),
+          movieFilesProvider(1).overrideWith((ref) async => []),
+          movieExtraFilesProvider(1).overrideWith((ref) async => []),
+          movieHistoryProvider(1).overrideWith((ref) async => []),
+          movieQualityProfilesProvider.overrideWith((ref) async => []),
+          moviesProvider.overrideWith(_CountingMovies.new),
+          purgeServiceProvider.overrideWithValue(purgeService),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: Consumer(
+            builder: (context, ref, _) {
+              ref.watch(moviesProvider);
+              return MovieDetailsScreen(movieId: 1);
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_CountingMovies.builds, 1);
+
+    // When the user purges the movie
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Purge'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Purge'));
+    await tester.pumpAndSettle();
+
+    // Then the error is shown and the list is read again
+    expect(find.textContaining('Failed to purge'), findsOneWidget);
+    expect(_CountingMovies.builds, 2);
   });
 }

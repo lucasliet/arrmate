@@ -152,6 +152,21 @@ class PurgePreview extends Equatable {
   ];
 }
 
+/// An item a batch purge could not finish.
+class PurgeFailure extends Equatable {
+  /// Id of the movie or series, as the repository knows it.
+  final int id;
+
+  /// What stopped the purge of the item.
+  final Object error;
+
+  /// Creates the failure of the item [id].
+  const PurgeFailure({required this.id, required this.error});
+
+  @override
+  List<Object?> get props => [id, error];
+}
+
 /// Outcome of a purge operation.
 ///
 /// Purge removes the movie/series from the Radarr/Sonarr catalog, deletes its
@@ -180,6 +195,12 @@ class PurgeResult extends Equatable {
   /// configured in the app.
   final bool qbittorrentSkipped;
 
+  /// Items a batch purge could not finish, in the order they were tried.
+  ///
+  /// Always empty for a single purge, which throws instead. The catalog entry
+  /// of a failed item may already be gone: the failure can come after it.
+  final List<PurgeFailure> failures;
+
   const PurgeResult({
     required this.queueItemsRemoved,
     required this.catalogDeleted,
@@ -187,6 +208,7 @@ class PurgeResult extends Equatable {
     required this.torrentHashesDeleted,
     required this.crossSeedDuplicatesDeleted,
     required this.qbittorrentSkipped,
+    this.failures = const [],
   });
 
   @override
@@ -197,6 +219,7 @@ class PurgeResult extends Equatable {
     torrentHashesDeleted,
     crossSeedDuplicatesDeleted,
     qbittorrentSkipped,
+    failures,
   ];
 
   /// Number of torrents removed from qBittorrent, source torrents and
@@ -489,6 +512,9 @@ class PurgeService {
 
   /// Purges multiple movies, aggregating the results into a single
   /// [PurgeResult].
+  ///
+  /// A movie that fails does not stop the ones after it; it is listed in
+  /// [PurgeResult.failures] and the rest of the result covers the others.
   Future<PurgeResult> purgeMovies(
     List<int> movieIds, {
     SeedingAction action = SeedingAction.deleteAll,
@@ -501,14 +527,22 @@ class PurgeService {
     final torrentHashes = <String>{};
     final crossSeed = <String>{};
     var qbittorrentSkipped = false;
+    final failures = <PurgeFailure>[];
 
     for (final id in movieIds) {
-      final result = await purgeMovieWithAction(
-        id,
-        action: action,
-        minimumSeedingSeconds: minimumSeedingSeconds,
-        approvedCrossSeedHashes: approvedCrossSeedHashes,
-      );
+      final PurgeResult result;
+      try {
+        result = await purgeMovieWithAction(
+          id,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingSeconds,
+          approvedCrossSeedHashes: approvedCrossSeedHashes,
+        );
+      } catch (e, stackTrace) {
+        logger.error('[PurgeService] Purging movie $id failed', e, stackTrace);
+        failures.add(PurgeFailure(id: id, error: e));
+        continue;
+      }
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -524,11 +558,15 @@ class PurgeService {
       torrentHashesDeleted: torrentHashes.toList(),
       crossSeedDuplicatesDeleted: crossSeed.toList(),
       qbittorrentSkipped: qbittorrentSkipped,
+      failures: failures,
     );
   }
 
   /// Purges multiple series, aggregating the results into a single
   /// [PurgeResult].
+  ///
+  /// A series that fails does not stop the ones after it; it is listed in
+  /// [PurgeResult.failures] and the rest of the result covers the others.
   Future<PurgeResult> purgeSeriesList(
     List<int> seriesIds, {
     SeedingAction action = SeedingAction.deleteAll,
@@ -541,14 +579,22 @@ class PurgeService {
     final torrentHashes = <String>{};
     final crossSeed = <String>{};
     var qbittorrentSkipped = false;
+    final failures = <PurgeFailure>[];
 
     for (final id in seriesIds) {
-      final result = await purgeSeriesWithAction(
-        id,
-        action: action,
-        minimumSeedingSeconds: minimumSeedingSeconds,
-        approvedCrossSeedHashes: approvedCrossSeedHashes,
-      );
+      final PurgeResult result;
+      try {
+        result = await purgeSeriesWithAction(
+          id,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingSeconds,
+          approvedCrossSeedHashes: approvedCrossSeedHashes,
+        );
+      } catch (e, stackTrace) {
+        logger.error('[PurgeService] Purging series $id failed', e, stackTrace);
+        failures.add(PurgeFailure(id: id, error: e));
+        continue;
+      }
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -564,6 +610,7 @@ class PurgeService {
       torrentHashesDeleted: torrentHashes.toList(),
       crossSeedDuplicatesDeleted: crossSeed.toList(),
       qbittorrentSkipped: qbittorrentSkipped,
+      failures: failures,
     );
   }
 
