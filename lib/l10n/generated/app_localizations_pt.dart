@@ -2948,6 +2948,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count episódios',
       one: '1 episódio',
+      zero: '0 episódios',
     );
     return '$_temp0';
   }
@@ -3130,18 +3131,21 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$seasons temporadas expurgadas',
       one: '1 temporada expurgada',
+      zero: '0 temporadas expurgadas',
     );
     String _temp1 = intl.Intl.pluralLogic(
       files,
       locale: localeName,
       other: '$files arquivos',
       one: '1 arquivo',
+      zero: '0 arquivos',
     );
     String _temp2 = intl.Intl.pluralLogic(
       torrents,
       locale: localeName,
       other: '$torrents torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return '$_temp0: $_temp1, $_temp2.';
   }
@@ -3153,12 +3157,14 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$files arquivos',
       one: '1 arquivo',
+      zero: '0 arquivos',
     );
     String _temp1 = intl.Intl.pluralLogic(
       torrents,
       locale: localeName,
       other: '$torrents torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return 'Expurgado: $_temp0, $_temp1.';
   }
@@ -7840,6 +7846,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count episódios',
       one: '1 episódio',
+      zero: '0 episódios',
     );
     return '$_temp0';
   }
@@ -8022,18 +8029,21 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$seasons temporadas expurgadas',
       one: '1 temporada expurgada',
+      zero: '0 temporadas expurgadas',
     );
     String _temp1 = intl.Intl.pluralLogic(
       files,
       locale: localeName,
       other: '$files arquivos',
       one: '1 arquivo',
+      zero: '0 arquivos',
     );
     String _temp2 = intl.Intl.pluralLogic(
       torrents,
       locale: localeName,
       other: '$torrents torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return '$_temp0: $_temp1, $_temp2.';
   }
@@ -8045,12 +8055,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$files arquivos',
       one: '1 arquivo',
+      zero: '0 arquivos',
     );
     String _temp1 = intl.Intl.pluralLogic(
       torrents,
       locale: localeName,
       other: '$torrents torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return 'Expurgado: $_temp0, $_temp1.';
   }
