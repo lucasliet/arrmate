@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/data_providers.dart';
+import '../../../shared/providers/media_torrents_provider.dart';
 import 'season_episodes_provider.dart';
 import 'series_provider.dart';
 
@@ -78,6 +79,22 @@ class SeriesMetadataController {
       if (seasonNumber != null) {
         ref.invalidate(seasonEpisodesProvider(seriesId, seasonNumber));
       }
+    }
+  }
+
+  /// Refreshes everything a season purge changes: the files, the series and
+  /// season statistics, the episodes of each of [seasonNumbers], the history
+  /// and the torrents listed for the series.
+  ///
+  /// A purge deletes episode files and torrents behind the providers' backs, so
+  /// without this the screens keep showing the pre-purge state.
+  void refreshAfterPurge(Iterable<int> seasonNumbers) {
+    ref.invalidate(seriesFilesProvider(seriesId));
+    ref.invalidate(seriesDetailsProvider(seriesId));
+    ref.invalidate(seriesHistoryProvider(seriesId));
+    ref.invalidate(seriesTorrentsProvider(seriesId));
+    for (final seasonNumber in seasonNumbers) {
+      ref.invalidate(seasonEpisodesProvider(seriesId, seasonNumber));
     }
   }
 

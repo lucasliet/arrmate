@@ -862,6 +862,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
           context: context,
           crossSeedCandidates: preview.crossSeedCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {
@@ -909,6 +911,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
       }
     } catch (e) {
       navigator.pop();
+      // The series may already be gone from the catalog when the purge fails.
+      ref.invalidate(seriesProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text(l10n.seriesPurgeFailed(describeError(e, l10n))),
@@ -1144,6 +1148,9 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     final purgeService = ref.read(purgeServiceProvider);
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
     final repository = ref.read(seriesRepositoryProvider);
+    final metadataController = ref.read(
+      seriesMetadataControllerProvider(series.id),
+    );
 
     final confirmed = await _confirm(
       title: l10n.seriesPurgeSeasonsTitle(_selectedSeasons.length),
@@ -1259,6 +1266,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         sharedPackCandidates: [
           for (final preview in previews) ...preview.sharedPackCandidates,
         ],
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
       if (!mounted) return;
       approvedCrossSeedHashes = await resolveCrossSeedApprovals(
@@ -1267,6 +1276,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           for (final preview in previews)
             ...preview.crossSeedCandidatesFor(approvedSharedPackHashes),
         ],
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       if (!mounted) return;
@@ -1281,11 +1292,12 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
     }
     if (!mounted) return;
 
+    final purgedSeasons = _selectedSeasons.toList();
     _showLoading(navigator);
     try {
       var filesDeleted = 0;
       final hashesDeleted = <String>{};
-      for (final seasonNumber in _selectedSeasons.toList()) {
+      for (final seasonNumber in purgedSeasons) {
         final result = await purgeService.purgeSeason(
           series.id,
           seasonNumber,
@@ -1297,7 +1309,9 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           approvedSharedPackHashes: approvedSharedPackHashes,
         );
         filesDeleted += result.mediaFilesDeleted;
-        hashesDeleted.addAll(result.torrentHashesDeleted);
+        hashesDeleted
+          ..addAll(result.torrentHashesDeleted)
+          ..addAll(result.crossSeedDuplicatesDeleted);
       }
       if (!mounted) return;
       _hideLoading(navigator);
@@ -1319,6 +1333,9 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.seriesPurgeFailed(describeError(e, l10n)))),
       );
+    } finally {
+      // Even a purge that failed halfway may have deleted files already.
+      metadataController.refreshAfterPurge(purgedSeasons);
     }
     _clearSelection();
   }

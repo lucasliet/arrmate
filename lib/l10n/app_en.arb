@@ -2259,6 +2259,20 @@
       }
     }
   },
+  "sharedBatchPurgePartial": "Purged {purged} of {total}. Failed: {error}",
+  "@sharedBatchPurgePartial": {
+    "placeholders": {
+      "purged": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "sharedBatchPurgeMoviesContent": "This permanently removes the selected movies from Radarr, deletes their files, and deletes all source torrents from qBittorrent.",
   "sharedBatchPurgeMoviesTitle": "{count, plural, =1{Purge 1 movie} other{Purge {count} movies}}",
   "@sharedBatchPurgeMoviesTitle": {
@@ -2503,6 +2517,14 @@
   "systemSettingsReset": "App settings reset to defaults",
   "systemTorrentProtection": "Torrent Protection",
   "systemVersionHistorySubtitle": "Changelog for every published release",
+  "torrentActionFailed": "The torrent action failed: {error}",
+  "@torrentActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "torrentAddFailed": "Failed to add torrent: {error}",
   "@torrentAddFailed": {
     "placeholders": {

@@ -639,6 +639,8 @@ class MovieDetailsScreen extends ConsumerWidget {
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
           context: context,
           crossSeedCandidates: preview.crossSeedCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {
@@ -686,6 +688,8 @@ class MovieDetailsScreen extends ConsumerWidget {
       }
     } catch (e) {
       navigator.pop();
+      // The movie may already be gone from the catalog when the purge fails.
+      ref.invalidate(moviesProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text(l10n.moviesPurgeFailed(describeError(e, l10n))),

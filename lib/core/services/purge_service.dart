@@ -70,6 +70,19 @@ enum SeedingAction {
 bool isBelowSeedingThreshold(Torrent torrent, int minimumSeedingSeconds) =>
     minimumSeedingSeconds > 0 && torrent.seedingTime < minimumSeedingSeconds;
 
+/// Whether the seeding choice [action] leaves [torrent] in qBittorrent.
+///
+/// With [SeedingAction.keepBelowThreshold], whatever has seeded for less than
+/// [minimumSeedingSeconds] stays, approved for deletion or not. The screens use
+/// it to skip asking about torrents the purge is going to keep anyway.
+bool isKeptBySeedingChoice(
+  Torrent torrent,
+  SeedingAction action,
+  int minimumSeedingSeconds,
+) =>
+    action == SeedingAction.keepBelowThreshold &&
+    isBelowSeedingThreshold(torrent, minimumSeedingSeconds);
+
 /// Context of a purge operation, used when emitting per-torrent
 /// notifications so the notification carries the origin (movie/series/season).
 typedef PurgeContext = ({String type, int id, int? seasonNumber});
@@ -139,6 +152,21 @@ class PurgePreview extends Equatable {
   ];
 }
 
+/// An item a batch purge could not finish.
+class PurgeFailure extends Equatable {
+  /// Id of the movie or series, as the repository knows it.
+  final int id;
+
+  /// What stopped the purge of the item.
+  final Object error;
+
+  /// Creates the failure of the item [id].
+  const PurgeFailure({required this.id, required this.error});
+
+  @override
+  List<Object?> get props => [id, error];
+}
+
 /// Outcome of a purge operation.
 ///
 /// Purge removes the movie/series from the Radarr/Sonarr catalog, deletes its
@@ -167,6 +195,12 @@ class PurgeResult extends Equatable {
   /// configured in the app.
   final bool qbittorrentSkipped;
 
+  /// Items a batch purge could not finish, in the order they were tried.
+  ///
+  /// Always empty for a single purge, which throws instead. The catalog entry
+  /// of a failed item may already be gone: the failure can come after it.
+  final List<PurgeFailure> failures;
+
   const PurgeResult({
     required this.queueItemsRemoved,
     required this.catalogDeleted,
@@ -174,6 +208,7 @@ class PurgeResult extends Equatable {
     required this.torrentHashesDeleted,
     required this.crossSeedDuplicatesDeleted,
     required this.qbittorrentSkipped,
+    this.failures = const [],
   });
 
   @override
@@ -184,7 +219,13 @@ class PurgeResult extends Equatable {
     torrentHashesDeleted,
     crossSeedDuplicatesDeleted,
     qbittorrentSkipped,
+    failures,
   ];
+
+  /// Number of torrents removed from qBittorrent, source torrents and
+  /// approved cross-seed duplicates together.
+  int get torrentsDeleted =>
+      torrentHashesDeleted.length + crossSeedDuplicatesDeleted.length;
 
   /// Formats this result into a multi-line snackbar summary.
   ///
@@ -471,6 +512,9 @@ class PurgeService {
 
   /// Purges multiple movies, aggregating the results into a single
   /// [PurgeResult].
+  ///
+  /// A movie that fails does not stop the ones after it; it is listed in
+  /// [PurgeResult.failures] and the rest of the result covers the others.
   Future<PurgeResult> purgeMovies(
     List<int> movieIds, {
     SeedingAction action = SeedingAction.deleteAll,
@@ -483,14 +527,22 @@ class PurgeService {
     final torrentHashes = <String>{};
     final crossSeed = <String>{};
     var qbittorrentSkipped = false;
+    final failures = <PurgeFailure>[];
 
     for (final id in movieIds) {
-      final result = await purgeMovieWithAction(
-        id,
-        action: action,
-        minimumSeedingSeconds: minimumSeedingSeconds,
-        approvedCrossSeedHashes: approvedCrossSeedHashes,
-      );
+      final PurgeResult result;
+      try {
+        result = await purgeMovieWithAction(
+          id,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingSeconds,
+          approvedCrossSeedHashes: approvedCrossSeedHashes,
+        );
+      } catch (e, stackTrace) {
+        logger.error('[PurgeService] Purging movie $id failed', e, stackTrace);
+        failures.add(PurgeFailure(id: id, error: e));
+        continue;
+      }
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -506,11 +558,15 @@ class PurgeService {
       torrentHashesDeleted: torrentHashes.toList(),
       crossSeedDuplicatesDeleted: crossSeed.toList(),
       qbittorrentSkipped: qbittorrentSkipped,
+      failures: failures,
     );
   }
 
   /// Purges multiple series, aggregating the results into a single
   /// [PurgeResult].
+  ///
+  /// A series that fails does not stop the ones after it; it is listed in
+  /// [PurgeResult.failures] and the rest of the result covers the others.
   Future<PurgeResult> purgeSeriesList(
     List<int> seriesIds, {
     SeedingAction action = SeedingAction.deleteAll,
@@ -523,14 +579,22 @@ class PurgeService {
     final torrentHashes = <String>{};
     final crossSeed = <String>{};
     var qbittorrentSkipped = false;
+    final failures = <PurgeFailure>[];
 
     for (final id in seriesIds) {
-      final result = await purgeSeriesWithAction(
-        id,
-        action: action,
-        minimumSeedingSeconds: minimumSeedingSeconds,
-        approvedCrossSeedHashes: approvedCrossSeedHashes,
-      );
+      final PurgeResult result;
+      try {
+        result = await purgeSeriesWithAction(
+          id,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingSeconds,
+          approvedCrossSeedHashes: approvedCrossSeedHashes,
+        );
+      } catch (e, stackTrace) {
+        logger.error('[PurgeService] Purging series $id failed', e, stackTrace);
+        failures.add(PurgeFailure(id: id, error: e));
+        continue;
+      }
       queueItemsRemoved += result.queueItemsRemoved;
       catalogDeleted += result.catalogDeleted;
       mediaFilesDeleted += result.mediaFilesDeleted;
@@ -546,6 +610,7 @@ class PurgeService {
       torrentHashesDeleted: torrentHashes.toList(),
       crossSeedDuplicatesDeleted: crossSeed.toList(),
       qbittorrentSkipped: qbittorrentSkipped,
+      failures: failures,
     );
   }
 
@@ -572,12 +637,13 @@ class PurgeService {
       deleteFiles: true,
       addExclusion: false,
     );
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      downloads.queueIds,
-    );
 
-    final resolved = await _resolveTorrents(downloads.hashes);
+    final (:resolved, :queueItemsRemoved) = await _resolveAndRemoveQueue(
+      repository.deleteQueueItem,
+      downloads,
+      action,
+      minimumSeedingSeconds,
+    );
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -617,12 +683,13 @@ class PurgeService {
       deleteFiles: true,
       addExclusion: false,
     );
-    final queueItemsRemoved = await _removeQueueItems(
-      repository.deleteQueueItem,
-      downloads.queueIds,
-    );
 
-    final resolved = await _resolveTorrents(downloads.hashes);
+    final (:resolved, :queueItemsRemoved) = await _resolveAndRemoveQueue(
+      repository.deleteQueueItem,
+      downloads,
+      action,
+      minimumSeedingSeconds,
+    );
     final torrentOutcome = await _deleteTorrents(
       resolved.source,
       resolved.crossSeed,
@@ -680,17 +747,86 @@ class PurgeService {
     );
   }
 
+  /// Resolves the torrents of [downloads], then removes their queue items.
+  ///
+  /// The queue items need the resolved torrents to know which downloads the
+  /// seeding choice [action] keeps. When qBittorrent cannot be read, the queue
+  /// items are still removed, leaving every download in the client when [action]
+  /// asks to keep some, and the error is rethrown.
+  Future<({CrossSeedPartition resolved, int queueItemsRemoved})>
+  _resolveAndRemoveQueue(
+    DeleteQueueItem deleteQueueItem,
+    MediaDownloads downloads,
+    SeedingAction action,
+    int minimumSeedingSeconds,
+  ) async {
+    final CrossSeedPartition resolved;
+    try {
+      resolved = await _resolveTorrents(downloads.hashes);
+    } catch (e, stackTrace) {
+      logger.error(
+        '[PurgeService] Resolving torrents failed; removing queue items only',
+        e,
+        stackTrace,
+      );
+      await _removeQueueItems(
+        deleteQueueItem,
+        downloads.queueIds,
+        keepInClient: action == SeedingAction.deleteAll
+            ? const {}
+            : downloads.queueHashes.values.toSet(),
+        queueHashes: downloads.queueHashes,
+      );
+      rethrow;
+    }
+    final queueItemsRemoved = await _removeQueueItems(
+      deleteQueueItem,
+      downloads.queueIds,
+      keepInClient: _hashesKeptBySeedingChoice(
+        resolved.source,
+        downloads.queueHashes.values,
+        action,
+        minimumSeedingSeconds,
+      ),
+      queueHashes: downloads.queueHashes,
+    );
+    return (resolved: resolved, queueItemsRemoved: queueItemsRemoved);
+  }
+
+  /// Lowercased hashes among [queueHashes] whose [source] torrent the seeding
+  /// choice [action] leaves in qBittorrent.
+  Set<String> _hashesKeptBySeedingChoice(
+    List<Torrent> source,
+    Iterable<String> queueHashes,
+    SeedingAction action,
+    int minimumSeedingSeconds,
+  ) {
+    final queued = queueHashes.toSet();
+    return {
+      for (final t in source)
+        if (queued.contains(t.hash.toLowerCase()) &&
+            isKeptBySeedingChoice(t, action, minimumSeedingSeconds))
+          t.hash.toLowerCase(),
+    };
+  }
+
   /// Removes queue items, tolerating already-gone items.
+  ///
+  /// Radarr/Sonarr also delete the download from the client unless the item's
+  /// hash (from [queueHashes]) is in [keepInClient], which keeps a torrent the
+  /// seeding choice asked to leave seeding.
   Future<int> _removeQueueItems(
     DeleteQueueItem deleteQueueItem,
-    List<int> queueIds,
-  ) async {
+    List<int> queueIds, {
+    Set<String> keepInClient = const {},
+    Map<int, String> queueHashes = const {},
+  }) async {
     var removed = 0;
     for (final id in queueIds) {
       try {
         await deleteQueueItem(
           id,
-          removeFromClient: true,
+          removeFromClient: !keepInClient.contains(queueHashes[id]),
           blocklist: false,
           skipRedownload: false,
         );
@@ -801,10 +937,11 @@ class PurgeService {
     final sourceDeleted = <String>[];
     final crossSeedDeleted = <String>[];
     final hashesToDelete = <String>{};
+    // Announced only once qBittorrent confirmed the deletion.
+    final deleted = <(Torrent, bool)>[];
 
     bool isBelowThreshold(Torrent t) =>
-        action == SeedingAction.keepBelowThreshold &&
-        isBelowSeedingThreshold(t, minimumSeedingSeconds);
+        isKeptBySeedingChoice(t, action, minimumSeedingSeconds);
 
     for (final t in source) {
       final h = t.hash.toLowerCase();
@@ -824,7 +961,7 @@ class PurgeService {
       }
       if (hashesToDelete.add(h)) {
         sourceDeleted.add(h);
-        _emitTorrentPurgedNotification(t, context, isCrossSeed: false);
+        deleted.add((t, false));
       }
     }
     // Copies of a kept multi-season pack usually share its data on disk:
@@ -855,7 +992,7 @@ class PurgeService {
       }
       if (hashesToDelete.add(h)) {
         crossSeedDeleted.add(h);
-        _emitTorrentPurgedNotification(t, context, isCrossSeed: true);
+        deleted.add((t, true));
       }
     }
 
@@ -869,6 +1006,14 @@ class PurgeService {
     );
 
     await service.deleteTorrents(hashesToDelete.toList(), deleteFiles: true);
+
+    for (final (torrent, isCrossSeed) in deleted) {
+      _emitTorrentPurgedNotification(
+        torrent,
+        context,
+        isCrossSeed: isCrossSeed,
+      );
+    }
 
     return _TorrentPurgeOutcome(
       torrentHashesDeleted: sourceDeleted,

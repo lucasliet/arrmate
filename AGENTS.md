@@ -75,7 +75,12 @@ and **qBittorrent** (for downloads).
     approved one by one. A season purge also asks, one by one, before deleting
     a pack that holds episodes from seasons outside the purge (a pack fully
     covered by the selected seasons is deleted without asking). Queue items
-    and torrents are only touched after the catalog deletion succeeds.
+    and torrents are only touched after the catalog deletion succeeds. With
+    "Keep seeding", the queue item of a torrent that stays is removed without
+    `removeFromClient`, so Radarr/Sonarr do not delete it from the client. A
+    batch purge goes on after an item fails and reports it in
+    `PurgeResult.failures`; the catalog lists reload on any failure, since the
+    entry may already be gone.
   - **Manual Import**: Match and import files manually from the queue.
   - **Movie & Series Files**: View detailed file metadata (quality, size,
     codecs) and extra files for both movies and series.

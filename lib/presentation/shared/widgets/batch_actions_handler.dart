@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/purge_service.dart';
 import '../../../domain/models/models.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../l10n/error_messages.dart';
 import '../../l10n/shared_labels.dart';
 import '../../providers/data_providers.dart';
@@ -210,6 +211,8 @@ class BatchActionsHandler {
             ),
           ),
         ),
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       return BatchActionResult(
@@ -233,19 +236,46 @@ class BatchActionsHandler {
       _ref.invalidate(moviesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
-        message: result.localizedSummary(
+        message: _purgeMessage(
           l10n,
-          label: l10n.sharedBatchPurgedMovies(movieIds.length),
+          result,
+          total: movieIds.length,
+          purgedLabel: l10n.sharedBatchPurgedMovies(movieIds.length),
         ),
         refreshCatalog: true,
       );
     } catch (e) {
+      // Catalog entries may be gone already, so the list must not keep them.
+      _ref.invalidate(moviesProvider);
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: l10n.sharedBatchPurgeFailed(describeError(e, l10n)),
+        refreshCatalog: true,
       );
     }
+  }
+
+  /// The snackbar text of a batch purge of [total] items.
+  ///
+  /// Names what failed when only some items went through, and the cause alone
+  /// when none did. [purgedLabel] opens the summary of a purge with no failure.
+  String _purgeMessage(
+    AppLocalizations l10n,
+    PurgeResult result, {
+    required int total,
+    required String purgedLabel,
+  }) {
+    if (result.failures.isEmpty) {
+      return result.localizedSummary(l10n, label: purgedLabel);
+    }
+    final error = describeError(result.failures.first.error, l10n);
+    final purged = total - result.failures.length;
+    if (purged <= 0) return l10n.sharedBatchPurgeFailed(error);
+    return result.localizedSummary(
+      l10n,
+      label: l10n.sharedBatchPurgePartial(purged, total, error),
+    );
   }
 
   /// Batch-sets the monitored flag of the selected movies. Non-destructive,
@@ -463,6 +493,8 @@ class BatchActionsHandler {
             ),
           ),
         ),
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       return BatchActionResult(
@@ -486,17 +518,22 @@ class BatchActionsHandler {
       _ref.invalidate(seriesProvider);
       _ref.read(notificationActionsProvider.notifier).refresh();
       return BatchActionResult(
-        message: result.localizedSummary(
+        message: _purgeMessage(
           l10n,
-          label: l10n.sharedBatchPurgedSeries(seriesIds.length),
+          result,
+          total: seriesIds.length,
+          purgedLabel: l10n.sharedBatchPurgedSeries(seriesIds.length),
         ),
         refreshCatalog: true,
       );
     } catch (e) {
+      // Catalog entries may be gone already, so the list must not keep them.
+      _ref.invalidate(seriesProvider);
       if (!context.mounted) return null;
       _hideLoading(navigator);
       return BatchActionResult(
         message: l10n.sharedBatchPurgeFailed(describeError(e, l10n)),
+        refreshCatalog: true,
       );
     }
   }
@@ -638,8 +675,10 @@ class BatchActionsHandler {
 
   Future<Set<String>> _resolveCrossSeedApprovals(
     BuildContext context,
-    Future<List<PurgePreview>> Function() previews,
-  ) async {
+    Future<List<PurgePreview>> Function() previews, {
+    required SeedingAction action,
+    required int minimumSeedingSeconds,
+  }) async {
     final candidates = <Torrent>[];
     for (final preview in await previews()) {
       candidates.addAll(preview.crossSeedCandidates);
@@ -648,6 +687,8 @@ class BatchActionsHandler {
     return resolveCrossSeedApprovals(
       context: context,
       crossSeedCandidates: candidates,
+      action: action,
+      minimumSeedingSeconds: minimumSeedingSeconds,
     );
   }
 

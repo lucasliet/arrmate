@@ -5,6 +5,7 @@ import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/l10n/labels.dart';
 import 'package:arrmate/presentation/router/app_router.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -108,6 +109,79 @@ void main() {
         describeError(const UnknownApiError('Request cancelled'), es),
         'Solicitud cancelada',
       );
+    });
+
+    group('raw DioException', () {
+      DioException dio(DioExceptionType type, {int? status}) {
+        final request = RequestOptions(
+          path: 'http://192.168.1.10:8080/api/v2/torrents/delete',
+        );
+        return DioException(
+          requestOptions: request,
+          type: type,
+          response: status == null
+              ? null
+              : Response<dynamic>(requestOptions: request, statusCode: status),
+        );
+      }
+
+      test('translates the failure kind instead of dumping the exception', () {
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 500), en),
+          en.errorServer,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 502), ptBR),
+          ptBR.errorServer,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 401), es),
+          es.errorUnauthorized,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 403), en),
+          en.errorUnauthorized,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 404), en),
+          en.errorNotFound,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse, status: 409), en),
+          en.errorUnknown,
+        );
+        expect(
+          describeError(dio(DioExceptionType.badResponse), en),
+          en.errorUnknown,
+        );
+        expect(
+          describeError(dio(DioExceptionType.receiveTimeout), ptBR),
+          ptBR.errorRequestTimedOut,
+        );
+        expect(
+          describeError(dio(DioExceptionType.connectionError), es),
+          es.errorConnectionFailed,
+        );
+        expect(
+          describeError(dio(DioExceptionType.cancel), en),
+          en.errorRequestCancelled,
+        );
+        expect(
+          describeError(dio(DioExceptionType.unknown), en),
+          en.errorUnknown,
+        );
+      });
+
+      test('never leaks the request URL or the exception dump', () {
+        final message = describeError(
+          dio(DioExceptionType.badResponse, status: 500),
+          en,
+        );
+
+        expect(message, isNot(contains('192.168.1.10')));
+        expect(message, isNot(contains('DioException')));
+        expect(message, isNot(contains('\n')));
+      });
     });
 
     test('keeps server messages and other errors untouched', () {

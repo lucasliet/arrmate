@@ -1,3 +1,4 @@
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
@@ -19,10 +20,25 @@ class _StaticTorrentsNotifier extends QBittorrentNotifier {
   /// Every `deleteTorrents` call, as `hashes|deleteFiles`.
   final List<String> deletions = [];
 
-  _StaticTorrentsNotifier(this.torrents);
+  /// When set, [build] fails with it, like a list that could not be loaded.
+  final Object? buildError;
+
+  _StaticTorrentsNotifier(this.torrents, {this.buildError});
 
   @override
-  Future<List<Torrent>> build() async => torrents;
+  Future<List<Torrent>> build() async {
+    final error = buildError;
+    if (error != null) throw error;
+    return torrents;
+  }
+
+  /// Turns the loaded list into an error, keeping the list it had.
+  void failWith(Object error) {
+    state = AsyncValue<List<Torrent>>.error(
+      error,
+      StackTrace.empty,
+    ).copyWithPrevious(state);
+  }
 
   @override
   Future<void> deleteTorrents(
@@ -58,6 +74,49 @@ void main() {
     // Then
     expect(find.byKey(const Key('torrentResultCount')), findsOneWidget);
     expect(find.text('3 torrents'), findsOneWidget);
+  });
+
+  group('when the list fails', () {
+    testWidgets('should name refused credentials instead of the generic '
+        'failure', (tester) async {
+      await _pumpTab(tester, const [], buildError: const UnauthorizedError());
+
+      expect(
+        find.text('Unauthorized. Please check your API key.'),
+        findsOneWidget,
+      );
+      expect(find.text('Failed to load torrents'), findsNothing);
+    });
+
+    testWidgets('should keep the generic failure for other errors', (
+      tester,
+    ) async {
+      await _pumpTab(tester, const [], buildError: StateError('boom'));
+
+      expect(find.text('Failed to load torrents'), findsOneWidget);
+    });
+
+    testWidgets('should drop the count of the last good list next to the '
+        'error', (tester) async {
+      // Given a list that loaded
+      final notifier = await _pumpTab(tester, [
+        _torrent(name: 'Alpha', status: TorrentStatus.uploading),
+        _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+      ]);
+      expect(find.text('2 torrents'), findsOneWidget);
+
+      // When the credentials stop working
+      notifier.failWith(const UnauthorizedError());
+      await tester.pumpAndSettle();
+
+      // Then the error shows and the old count does not
+      expect(
+        find.text('Unauthorized. Please check your API key.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('torrentResultCount')), findsNothing);
+      expect(find.text('2 torrents'), findsNothing);
+    });
   });
 
   testWidgets('should sort by name when the option is selected', (
@@ -467,11 +526,12 @@ void main() {
 
 Future<_StaticTorrentsNotifier> _pumpTab(
   WidgetTester tester,
-  List<Torrent> torrents,
-) async {
+  List<Torrent> torrents, {
+  Object? buildError,
+}) async {
   await tester.binding.setSurfaceSize(const Size(1200, 1600));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  final notifier = _StaticTorrentsNotifier(torrents);
+  final notifier = _StaticTorrentsNotifier(torrents, buildError: buildError);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

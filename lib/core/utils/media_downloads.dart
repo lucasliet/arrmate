@@ -25,10 +25,16 @@ class MediaDownloads extends Equatable {
   /// Ids of the activity queue items that belong to the item.
   final List<int> queueIds;
 
+  /// Lowercased infohash of each queue item, keyed by queue id.
+  ///
+  /// Items the queue lists without a download id are absent.
+  final Map<int, String> queueHashes;
+
   /// Creates the collected downloads.
   const MediaDownloads({
     this.episodesByHash = const {},
     this.queueIds = const [],
+    this.queueHashes = const {},
   });
 
   /// Lowercased infohashes of every download found for the item.
@@ -48,7 +54,7 @@ class MediaDownloads extends Equatable {
   }
 
   @override
-  List<Object?> get props => [episodesByHash, queueIds];
+  List<Object?> get props => [episodesByHash, queueIds, queueHashes];
 }
 
 /// Whether [event] records a download the client may still hold.
@@ -72,8 +78,10 @@ Future<MediaDownloads> collectMovieDownloads(
   final episodesByHash = <String, Set<int>>{};
   _addHistory(episodesByHash, await repository.getMovieHistory(movieId));
 
+  final queueHashes = <int, String>{};
   final queueIds = await _addQueue(
     episodesByHash,
+    queueHashes,
     ({required int page, required int pageSize}) =>
         repository.getQueue(page: page, pageSize: pageSize),
     (item) => item.movieId == movieId,
@@ -83,7 +91,11 @@ Future<MediaDownloads> collectMovieDownloads(
     '[MediaDownloads] Movie $movieId: ${episodesByHash.length} hash(es), '
     '${queueIds.length} queue item(s)',
   );
-  return MediaDownloads(episodesByHash: episodesByHash, queueIds: queueIds);
+  return MediaDownloads(
+    episodesByHash: episodesByHash,
+    queueIds: queueIds,
+    queueHashes: queueHashes,
+  );
 }
 
 /// Collects the downloads of the Sonarr series [seriesId].
@@ -97,8 +109,10 @@ Future<MediaDownloads> collectSeriesDownloads(
   final episodesByHash = <String, Set<int>>{};
   _addHistory(episodesByHash, await repository.getSeriesHistory(seriesId));
 
+  final queueHashes = <int, String>{};
   final queueIds = await _addQueue(
     episodesByHash,
+    queueHashes,
     ({required int page, required int pageSize}) =>
         repository.getQueue(page: page, pageSize: pageSize),
     (item) => item.seriesId == seriesId,
@@ -108,7 +122,11 @@ Future<MediaDownloads> collectSeriesDownloads(
     '[MediaDownloads] Series $seriesId: ${episodesByHash.length} hash(es), '
     '${queueIds.length} queue item(s)',
   );
-  return MediaDownloads(episodesByHash: episodesByHash, queueIds: queueIds);
+  return MediaDownloads(
+    episodesByHash: episodesByHash,
+    queueIds: queueIds,
+    queueHashes: queueHashes,
+  );
 }
 
 /// Collects the downloads of [seriesId] that cover at least one of
@@ -153,10 +171,13 @@ void _addHistory(
 /// Pages through the activity queue adding the downloads of the items that
 /// satisfy [matches] to [episodesByHash], and returns their queue ids.
 ///
+/// The infohash of each item that has one is recorded in [queueHashes].
+///
 /// Stops when a page is short (last page) or once `totalRecords` items were
 /// consumed; [_maxQueuePages] caps the walk.
 Future<List<int>> _addQueue(
   Map<String, Set<int>> episodesByHash,
+  Map<int, String> queueHashes,
   Future<QueueItems> Function({required int page, required int pageSize})
   getQueue,
   bool Function(QueueItem item) matches,
@@ -167,6 +188,10 @@ Future<List<int>> _addQueue(
     final queue = await getQueue(page: page, pageSize: pageSize);
     for (final item in queue.records.where(matches)) {
       queueIds.add(item.id);
+      final downloadId = item.downloadId;
+      if (downloadId != null && downloadId.isNotEmpty) {
+        queueHashes[item.id] = downloadId.toLowerCase();
+      }
       _addDownload(episodesByHash, item.downloadId, item.episodeId);
     }
     if (queue.records.length < pageSize) break;

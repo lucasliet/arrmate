@@ -247,6 +247,9 @@ class SeasonDetailsScreen extends ConsumerWidget {
     final purgeService = ref.read(purgeServiceProvider);
     final minimumSeedingDays = ref.read(settingsProvider).minimumSeedingDays;
     final repository = ref.read(seriesRepositoryProvider);
+    final metadataController = ref.read(
+      seriesMetadataControllerProvider(series.id),
+    );
 
     if (repository == null) {
       messenger.showSnackBar(
@@ -335,6 +338,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
         approvedSharedPackHashes = await resolveSharedPackApprovals(
           context: context,
           sharedPackCandidates: preview.sharedPackCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
         if (!context.mounted) return;
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
@@ -342,6 +347,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
           crossSeedCandidates: preview.crossSeedCandidatesFor(
             approvedSharedPackHashes,
           ),
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {
@@ -385,7 +392,7 @@ class SeasonDetailsScreen extends ConsumerWidget {
             content: Text(
               l10n.seriesPurgedSummary(
                 result.mediaFilesDeleted,
-                result.torrentHashesDeleted.length,
+                result.torrentsDeleted,
               ),
             ),
           ),
@@ -401,6 +408,9 @@ class SeasonDetailsScreen extends ConsumerWidget {
           ),
         );
       }
+    } finally {
+      // Even a purge that failed halfway may have deleted files already.
+      metadataController.refreshAfterPurge([season.seasonNumber]);
     }
   }
 }

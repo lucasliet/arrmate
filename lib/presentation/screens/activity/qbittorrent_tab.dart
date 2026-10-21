@@ -20,6 +20,7 @@ import 'widgets/torrent_details_sheet.dart';
 import 'widgets/torrent_filters_sheet.dart';
 import 'widgets/torrent_list_item.dart';
 import '../../../core/extensions/context_extensions.dart';
+import '../../../core/network/api_error.dart';
 import '../../l10n/labels.dart';
 
 class QBittorrentTab extends ConsumerStatefulWidget {
@@ -412,18 +413,21 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
                       child: Text(context.l10n.commonClear),
                     ),
                   const Spacer(),
-                  Text(
-                    hiddenCount == 0
-                        ? context.l10n.torrentResultCount(
-                            visibleTorrents.length,
-                          )
-                        : context.l10n.torrentResultCountWithHidden(
-                            visibleTorrents.length,
-                            hiddenCount,
-                          ),
-                    key: const Key('torrentResultCount'),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  // On an error the list below says so; a count taken from the
+                  // last good list would sit next to it and contradict it.
+                  if (!torrentsState.hasError)
+                    Text(
+                      hiddenCount == 0
+                          ? context.l10n.torrentResultCount(
+                              visibleTorrents.length,
+                            )
+                          : context.l10n.torrentResultCountWithHidden(
+                              visibleTorrents.length,
+                              hiddenCount,
+                            ),
+                      key: const Key('torrentResultCount'),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                 ],
               ),
             ),
@@ -504,7 +508,11 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
               },
               error: (error, stack) => Center(
                 child: ErrorDisplay(
-                  message: context.l10n.torrentLoadFailed,
+                  // Refused credentials are something the user can fix, so
+                  // they get their own message instead of the generic one.
+                  message: error is UnauthorizedError
+                      ? describeError(error, context.l10n)
+                      : context.l10n.torrentLoadFailed,
                   onRetry: _refreshAll,
                 ),
               ),

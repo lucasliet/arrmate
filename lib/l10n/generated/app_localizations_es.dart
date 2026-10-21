@@ -3661,6 +3661,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String sharedBatchPurgePartial(int purged, int total, String error) {
+    return 'Purga completada en $purged de $total. Error: $error';
+  }
+
+  @override
   String get sharedBatchPurgeMoviesContent =>
       'Esto quita de forma permanente las películas seleccionadas de Radarr, elimina sus archivos y elimina todos los torrents de origen de qBittorrent.';
 
@@ -4019,6 +4024,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get systemVersionHistorySubtitle =>
       'Novedades de cada versión publicada';
+
+  @override
+  String torrentActionFailed(String error) {
+    return 'Error en la acción del torrent: $error';
+  }
 
   @override
   String torrentAddFailed(String error) {

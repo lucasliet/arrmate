@@ -1,3 +1,4 @@
+import 'package:arrmate/core/services/purge_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/shared/widgets/seeding_warning_dialog.dart';
 import 'package:flutter/material.dart';
@@ -58,6 +59,91 @@ void main() {
     });
   });
 
+  group('what Keep seeding keeps', () {
+    testWidgets('should not ask about a cross-seed it will keep anyway', (
+      tester,
+    ) async {
+      // Given a copy that seeded for 10 minutes and a 1 hour minimum
+      final result = await _run(
+        tester,
+        (context) => resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: [
+            _torrent(hash: 'YOUNG', name: 'Arrival.2016', seedingTime: 600),
+          ],
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 3600,
+        ),
+      );
+
+      // Then there is nothing to approve, so no dialog opens
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(await result, isEmpty);
+    });
+
+    testWidgets('should still ask about the copies that seeded long enough', (
+      tester,
+    ) async {
+      final result = await _run(
+        tester,
+        (context) => resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: [
+            _torrent(hash: 'YOUNG', name: 'Young.Copy', seedingTime: 600),
+            _torrent(hash: 'OLD', name: 'Old.Copy', seedingTime: 7200),
+          ],
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 3600,
+        ),
+      );
+
+      expect(find.text('Old.Copy'), findsOneWidget);
+      expect(find.text('Young.Copy'), findsNothing);
+      await tester.tap(find.text('Delete torrent'));
+      await tester.pumpAndSettle();
+
+      expect(await result, {'old'});
+    });
+
+    testWidgets('should ask about everything under Delete all', (tester) async {
+      final result = await _run(
+        tester,
+        (context) => resolveCrossSeedApprovals(
+          context: context,
+          crossSeedCandidates: [
+            _torrent(hash: 'YOUNG', name: 'Young.Copy', seedingTime: 600),
+          ],
+          minimumSeedingSeconds: 3600,
+        ),
+      );
+
+      expect(find.text('Young.Copy'), findsOneWidget);
+      await tester.tap(find.text('Delete torrent'));
+      await tester.pumpAndSettle();
+
+      expect(await result, {'young'});
+    });
+
+    testWidgets('should not ask about a multi-season pack it will keep', (
+      tester,
+    ) async {
+      final result = await _run(
+        tester,
+        (context) => resolveSharedPackApprovals(
+          context: context,
+          sharedPackCandidates: [
+            _torrent(hash: 'PACK', name: 'Show.Complete', seedingTime: 600),
+          ],
+          action: SeedingAction.keepBelowThreshold,
+          minimumSeedingSeconds: 3600,
+        ),
+      );
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(await result, isEmpty);
+    });
+  });
+
   group('resolveCrossSeedApprovals', () {
     testWidgets('should keep asking with the cross-seed wording', (
       tester,
@@ -106,7 +192,11 @@ Future<Future<Set<String>>> _run(
   return result;
 }
 
-Torrent _torrent({required String hash, required String name}) {
+Torrent _torrent({
+  required String hash,
+  required String name,
+  int seedingTime = 0,
+}) {
   return Torrent(
     hash: hash,
     name: name,
@@ -127,5 +217,6 @@ Torrent _torrent({required String hash, required String name}) {
     amountLeft: 0,
     addedOn: 1700000000,
     priority: 0,
+    seedingTime: seedingTime,
   );
 }
