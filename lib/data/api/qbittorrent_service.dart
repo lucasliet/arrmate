@@ -31,6 +31,22 @@ class QBittorrentService {
   /// qBittorrent bans an IP after a few failed logins in a row.
   Future<void>? _loginInFlight;
 
+  /// Set once the server refused the credentials.
+  ///
+  /// From then on every request fails with [UnauthorizedError] without logging
+  /// in, so something that keeps retrying (a poll, several open screens) cannot
+  /// pile up failed logins and get the IP banned. Only [allowAuthenticationRetry]
+  /// clears it.
+  bool _credentialsRefused = false;
+
+  /// Lets the next request try to log in again after the credentials were
+  /// refused.
+  ///
+  /// Meant for something the user did on purpose — opening the list, pressing
+  /// retry or refresh. Editing the instance creates a new service, which starts
+  /// clean.
+  void allowAuthenticationRetry() => _credentialsRefused = false;
+
   /// Every candidate base URL that may be tried when the active one fails.
   final List<String> _candidateUrls;
 
@@ -162,10 +178,14 @@ class QBittorrentService {
   Future<void> _login({String? baseUrl}) async {
     final running = _loginInFlight;
     if (running != null) return running;
+    if (_credentialsRefused) throw const UnauthorizedError();
     final login = authenticate(baseUrl: baseUrl);
     _loginInFlight = login;
     try {
       await login;
+    } on UnauthorizedError {
+      _credentialsRefused = true;
+      rethrow;
     } finally {
       _loginInFlight = null;
     }

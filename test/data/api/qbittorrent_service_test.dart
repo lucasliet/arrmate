@@ -368,6 +368,89 @@ void main() {
       expect(infoRequests(adapter), 1);
     });
 
+    test('should not log in again on later requests after the credentials '
+        'were refused', () async {
+      // Given a server that refuses the credentials
+      final adapter = _RecordingAdapter()..failLoginsFrom = 1;
+      final service = _serviceCookie(adapter);
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+      expect(adapter.loginCount, 1);
+      final requestsAfterFirstFailure = adapter.requests.length;
+
+      // When something keeps polling, as the list does after an error
+      for (var cycle = 0; cycle < 6; cycle++) {
+        await expectLater(
+          service.getTorrents(),
+          throwsA(isA<UnauthorizedError>()),
+        );
+      }
+      await expectLater(
+        service.pauseTorrents(['hash']),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      // Then the server never hears from the client again
+      expect(adapter.loginCount, 1);
+      expect(adapter.requests.length, requestsAfterFirstFailure);
+    });
+
+    test('should log in exactly once more when the user retries', () async {
+      final adapter = _RecordingAdapter()..failLoginsFrom = 1;
+      final service = _serviceCookie(adapter);
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      service.allowAuthenticationRetry();
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      // One login for the first try and one for the retry, still refused
+      expect(adapter.loginCount, 2);
+    });
+
+    test('should work again once a retry finds working credentials', () async {
+      final adapter = _RecordingAdapter()..failLoginsFrom = 1;
+      final service = _serviceCookie(adapter);
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      adapter.failLoginsFrom = null;
+      service.allowAuthenticationRetry();
+
+      expect(await service.getTorrents(), hasLength(1));
+      expect(await service.getTorrents(), hasLength(1));
+      expect(adapter.loginCount, 2);
+    });
+
+    test('should let parallel requests share the refused login', () async {
+      final adapter = _RecordingAdapter()..failLoginsFrom = 1;
+      final service = _serviceCookie(adapter);
+
+      final results = await Future.wait([
+        for (var i = 0; i < 3; i++)
+          service.getTorrents().then<Object>(
+            (_) => 'ok',
+            onError: (Object error) => error,
+          ),
+      ]);
+
+      expect(results, everyElement(isA<UnauthorizedError>()));
+      expect(adapter.loginCount, 1);
+    });
+
     test('should keep the username, the password and the URL out of the '
         'error', () async {
       final adapter = _RecordingAdapter()..respond = (_) => 403;
