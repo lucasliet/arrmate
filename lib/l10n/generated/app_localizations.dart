@@ -6221,6 +6221,12 @@ abstract class AppLocalizations {
   /// **'Changelog for every published release'**
   String get systemVersionHistorySubtitle;
 
+  /// No description provided for @torrentActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The torrent action failed: {error}'**
+  String torrentActionFailed(String error);
+
   /// No description provided for @torrentAddFailed.
   ///
   /// In en, this message translates to:

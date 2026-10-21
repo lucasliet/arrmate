@@ -4021,6 +4021,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Novedades de cada versión publicada';
 
   @override
+  String torrentActionFailed(String error) {
+    return 'Error en la acción del torrent: $error';
+  }
+
+  @override
   String torrentAddFailed(String error) {
     return 'Error al añadir el torrent: $error';
   }

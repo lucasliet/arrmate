@@ -3940,6 +3940,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Changelog for every published release';
 
   @override
+  String torrentActionFailed(String error) {
+    return 'The torrent action failed: $error';
+  }
+
+  @override
   String torrentAddFailed(String error) {
     return 'Failed to add torrent: $error';
   }

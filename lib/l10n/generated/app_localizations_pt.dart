@@ -825,6 +825,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'há $count meses',
       one: 'há 1 mês',
+      zero: 'há 0 meses',
     );
     return '$_temp0';
   }
@@ -856,6 +857,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'há $count anos',
       one: 'há 1 ano',
+      zero: 'há 0 anos',
     );
     return '$_temp0';
   }
@@ -1702,6 +1704,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos selecionados',
       one: '1 arquivo selecionado',
+      zero: '0 arquivos selecionados',
     );
     return '$_temp0';
   }
@@ -1713,6 +1716,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos importados com sucesso',
       one: '1 arquivo importado com sucesso',
+      zero: '0 arquivos importados com sucesso',
     );
     return '$_temp0';
   }
@@ -1727,6 +1731,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count válidos',
       one: '1 válido',
+      zero: '0 válidos',
     );
     return '$_temp0';
   }
@@ -1795,6 +1800,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -1920,6 +1926,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count selecionados',
       one: '1 selecionado',
+      zero: '0 selecionados',
     );
     return '$_temp0';
   }
@@ -2412,6 +2419,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return 'Este torrent semeou por menos que o mínimo de $_temp0:';
   }
@@ -2426,12 +2434,14 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Os $count torrents a seguir semearam',
       one: 'O torrent a seguir semeou',
+      zero: 'Os 0 torrents a seguir semearam',
     );
     String _temp1 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$_temp0 por menos que o mínimo de $_temp1:';
   }
@@ -2571,6 +2581,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '($count problemas)',
       one: '(1 problema)',
+      zero: '(0 problemas)',
     );
     return '$_temp0';
   }
@@ -2613,6 +2624,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count tarefas',
       one: '1 tarefa',
+      zero: '0 tarefas',
     );
     return '$_temp0';
   }
@@ -2651,6 +2663,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$_temp0';
   }
@@ -2784,6 +2797,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count resultados',
       one: '1 resultado',
+      zero: '0 resultados',
     );
     return '$_temp0';
   }
@@ -2795,12 +2809,14 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count resultados',
       one: '1 resultado',
+      zero: '0 resultados',
     );
     String _temp1 = intl.Intl.pluralLogic(
       hidden,
       locale: localeName,
       other: '$hidden ocultos',
       one: '1 oculto',
+      zero: '0 ocultos',
     );
     return '$_temp0 · $_temp1';
   }
@@ -2893,6 +2909,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir arquivos de $count temporadas',
       one: 'Excluir arquivos de 1 temporada',
+      zero: 'Excluir arquivos de 0 temporadas',
     );
     return '$_temp0';
   }
@@ -2927,6 +2944,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -3109,6 +3127,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Expurgar $count temporadas',
       one: 'Expurgar 1 temporada',
+      zero: 'Expurgar 0 temporadas',
     );
     return '$_temp0';
   }
@@ -3212,6 +3231,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Busca iniciada para $count temporadas',
       one: 'Busca iniciada para 1 temporada',
+      zero: 'Busca iniciada para 0 temporadas',
     );
     return '$_temp0';
   }
@@ -3231,6 +3251,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count temporadas',
       one: '1 temporada',
+      zero: '0 temporadas',
     );
     return '$_temp0';
   }
@@ -3272,6 +3293,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count selecionadas',
       one: '1 selecionada',
+      zero: '0 selecionadas',
     );
     return '$_temp0';
   }
@@ -3308,6 +3330,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count temporadas desmonitoradas',
       one: '1 temporada desmonitorada',
+      zero: '0 temporadas desmonitoradas',
     );
     return '$_temp0';
   }
@@ -3378,6 +3401,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count tags',
       one: '1 tag',
+      zero: '0 tags',
     );
     return '$_temp0';
   }
@@ -3451,6 +3475,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count notificações não lidas',
       one: '1 notificação não lida',
+      zero: '0 notificações não lidas',
     );
     return '$_temp0';
   }
@@ -3493,6 +3518,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir arquivos de $count filmes',
       one: 'Excluir arquivos de 1 filme',
+      zero: 'Excluir arquivos de 0 filmes',
     );
     return '$_temp0';
   }
@@ -3508,6 +3534,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$total filmes',
       one: '1 filme',
+      zero: '0 filmes',
     );
     return '$deleted de $_temp0 excluídos antes do erro: $error';
   }
@@ -3519,6 +3546,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir $count filmes',
       one: 'Excluir 1 filme',
+      zero: 'Excluir 0 filmes',
     );
     return '$_temp0';
   }
@@ -3538,6 +3566,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir arquivos de $count séries',
       one: 'Excluir arquivos de 1 série',
+      zero: 'Excluir arquivos de 0 séries',
     );
     return '$_temp0';
   }
@@ -3553,6 +3582,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$total séries',
       one: '1 série',
+      zero: '0 séries',
     );
     return '$deleted de $_temp0 excluídas antes do erro: $error';
   }
@@ -3564,6 +3594,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir $count séries',
       one: 'Excluir 1 série',
+      zero: 'Excluir 0 séries',
     );
     return '$_temp0';
   }
@@ -3579,6 +3610,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -3590,6 +3622,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count filmes excluídos',
       one: '1 filme excluído',
+      zero: '0 filmes excluídos',
     );
     return '$_temp0';
   }
@@ -3601,6 +3634,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count filmes e arquivos excluídos',
       one: '1 filme e arquivos excluídos',
+      zero: '0 filmes e arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -3612,6 +3646,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count séries excluídas',
       one: '1 série excluída',
+      zero: '0 séries excluídas',
     );
     return '$_temp0';
   }
@@ -3623,6 +3658,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count séries e arquivos excluídos',
       one: '1 série e arquivos excluídos',
+      zero: '0 séries e arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -3634,6 +3670,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count filmes monitorados',
       one: '1 filme monitorado',
+      zero: '0 filmes monitorados',
     );
     return '$_temp0';
   }
@@ -3645,6 +3682,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count séries monitoradas',
       one: '1 série monitorada',
+      zero: '0 séries monitoradas',
     );
     return '$_temp0';
   }
@@ -3675,6 +3713,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Expurgar $count filmes',
       one: 'Expurgar 1 filme',
+      zero: 'Expurgar 0 filmes',
     );
     return '$_temp0';
   }
@@ -3690,6 +3729,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Expurgar $count séries',
       one: 'Expurgar 1 série',
+      zero: 'Expurgar 0 séries',
     );
     return '$_temp0';
   }
@@ -3701,6 +3741,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count filmes expurgados.',
       one: '1 filme expurgado.',
+      zero: '0 filmes expurgados.',
     );
     return '$_temp0';
   }
@@ -3712,6 +3753,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count séries expurgadas.',
       one: '1 série expurgada.',
+      zero: '0 séries expurgadas.',
     );
     return '$_temp0';
   }
@@ -3723,6 +3765,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count filmes deixaram de ser monitorados',
       one: '1 filme deixou de ser monitorado',
+      zero: '0 filmes deixaram de ser monitorados',
     );
     return '$_temp0';
   }
@@ -3734,6 +3777,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count séries deixaram de ser monitoradas',
       one: '1 série deixou de ser monitorada',
+      zero: '0 séries deixaram de ser monitoradas',
     );
     return '$_temp0';
   }
@@ -3745,6 +3789,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$total filmes',
       one: '1 filme',
+      zero: '0 filmes',
     );
     return '$updated de $_temp0 atualizados antes do erro: $error';
   }
@@ -3756,6 +3801,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$total séries',
       one: '1 série',
+      zero: '0 séries',
     );
     return '$updated de $_temp0 atualizadas antes do erro: $error';
   }
@@ -3781,6 +3827,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count selecionados',
       one: '1 selecionado',
+      zero: '0 selecionados',
     );
     return '$_temp0';
   }
@@ -3804,6 +3851,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Excluir $count torrents',
       one: 'Excluir 1 torrent',
+      zero: 'Excluir 0 torrents',
     );
     return '$_temp0';
   }
@@ -3815,6 +3863,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count torrents e seus arquivos excluídos',
       one: '1 torrent e seus arquivos excluídos',
+      zero: '0 torrents e seus arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -3827,6 +3876,7 @@ class AppLocalizationsPt extends AppLocalizations {
       other:
           '$count torrents e seus arquivos excluídos ($kept mantidos semeando)',
       one: '1 torrent e seus arquivos excluídos ($kept mantidos semeando)',
+      zero: '0 torrents e seus arquivos excluídos ($kept mantidos semeando)',
     );
     return '$_temp0';
   }
@@ -3918,6 +3968,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count Episódios',
       one: '1 Episódio',
+      zero: '0 Episódios',
     );
     return '$_temp0';
   }
@@ -3950,6 +4001,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count Filmes',
       one: '1 Filme',
+      zero: '0 Filmes',
     );
     return '$_temp0';
   }
@@ -4012,6 +4064,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return 'Avisar antes de excluir torrents que semearam por menos de $_temp0.';
   }
@@ -4029,6 +4082,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get systemVersionHistorySubtitle =>
       'Novidades de cada versão publicada';
+
+  @override
+  String torrentActionFailed(String error) {
+    return 'Falha na ação do torrent: $error';
+  }
 
   @override
   String torrentAddFailed(String error) {
@@ -4081,6 +4139,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count conectados',
       one: '1 conectado',
+      zero: '0 conectados',
     );
     return '$_temp0';
   }
@@ -4137,6 +4196,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos importados com sucesso',
       one: '1 arquivo importado com sucesso',
+      zero: '0 arquivos importados com sucesso',
     );
     return '$_temp0';
   }
@@ -4148,6 +4208,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos selecionados para importação',
       one: '1 arquivo selecionado para importação',
+      zero: '0 arquivos selecionados para importação',
     );
     return '$_temp0';
   }
@@ -4302,6 +4363,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count peers',
       one: '1 peer',
+      zero: '0 peers',
     );
     return '$_temp0';
   }
@@ -4360,6 +4422,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return '$_temp0';
   }
@@ -4371,6 +4434,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count torrents · ocultos: $hidden',
       one: '1 torrent · ocultos: $hidden',
+      zero: '0 torrents · ocultos: $hidden',
     );
     return '$_temp0';
   }
@@ -4461,6 +4525,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count downloads',
       one: '1 download',
+      zero: '0 downloads',
     );
     return '$_temp0';
   }
@@ -4472,6 +4537,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count leechers',
       one: '1 leecher',
+      zero: '0 leechers',
     );
     return '$_temp0';
   }
@@ -4483,6 +4549,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count peers',
       one: '1 peer',
+      zero: '0 peers',
     );
     return '$_temp0';
   }
@@ -4494,6 +4561,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count seeds',
       one: '1 seed',
+      zero: '0 seeds',
     );
     return '$_temp0';
   }
@@ -4853,6 +4921,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$lastOnline · As imagens em cache podem ter até $_temp0';
   }
@@ -5723,6 +5792,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'há $count meses',
       one: 'há 1 mês',
+      zero: 'há 0 meses',
     );
     return '$_temp0';
   }
@@ -5754,6 +5824,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'há $count anos',
       one: 'há 1 ano',
+      zero: 'há 0 anos',
     );
     return '$_temp0';
   }
@@ -6600,6 +6671,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos selecionados',
       one: '1 arquivo selecionado',
+      zero: '0 arquivos selecionados',
     );
     return '$_temp0';
   }
@@ -6611,6 +6683,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos importados com sucesso',
       one: '1 arquivo importado com sucesso',
+      zero: '0 arquivos importados com sucesso',
     );
     return '$_temp0';
   }
@@ -6625,6 +6698,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count válidos',
       one: '1 válido',
+      zero: '0 válidos',
     );
     return '$_temp0';
   }
@@ -6693,6 +6767,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -6818,6 +6893,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count selecionados',
       one: '1 selecionado',
+      zero: '0 selecionados',
     );
     return '$_temp0';
   }
@@ -7310,6 +7386,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return 'Este torrent semeou por menos que o mínimo de $_temp0:';
   }
@@ -7324,12 +7401,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Os $count torrents a seguir semearam',
       one: 'O torrent a seguir semeou',
+      zero: 'Os 0 torrents a seguir semearam',
     );
     String _temp1 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$_temp0 por menos que o mínimo de $_temp1:';
   }
@@ -7469,6 +7548,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '($count problemas)',
       one: '(1 problema)',
+      zero: '(0 problemas)',
     );
     return '$_temp0';
   }
@@ -7511,6 +7591,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count tarefas',
       one: '1 tarefa',
+      zero: '0 tarefas',
     );
     return '$_temp0';
   }
@@ -7549,6 +7630,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$_temp0';
   }
@@ -7682,6 +7764,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count resultados',
       one: '1 resultado',
+      zero: '0 resultados',
     );
     return '$_temp0';
   }
@@ -7693,12 +7776,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count resultados',
       one: '1 resultado',
+      zero: '0 resultados',
     );
     String _temp1 = intl.Intl.pluralLogic(
       hidden,
       locale: localeName,
       other: '$hidden ocultos',
       one: '1 oculto',
+      zero: '0 ocultos',
     );
     return '$_temp0 · $_temp1';
   }
@@ -7791,6 +7876,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir arquivos de $count temporadas',
       one: 'Excluir arquivos de 1 temporada',
+      zero: 'Excluir arquivos de 0 temporadas',
     );
     return '$_temp0';
   }
@@ -7825,6 +7911,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -8007,6 +8094,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Expurgar $count temporadas',
       one: 'Expurgar 1 temporada',
+      zero: 'Expurgar 0 temporadas',
     );
     return '$_temp0';
   }
@@ -8110,6 +8198,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Busca iniciada para $count temporadas',
       one: 'Busca iniciada para 1 temporada',
+      zero: 'Busca iniciada para 0 temporadas',
     );
     return '$_temp0';
   }
@@ -8129,6 +8218,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count temporadas',
       one: '1 temporada',
+      zero: '0 temporadas',
     );
     return '$_temp0';
   }
@@ -8170,6 +8260,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count selecionadas',
       one: '1 selecionada',
+      zero: '0 selecionadas',
     );
     return '$_temp0';
   }
@@ -8206,6 +8297,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count temporadas desmonitoradas',
       one: '1 temporada desmonitorada',
+      zero: '0 temporadas desmonitoradas',
     );
     return '$_temp0';
   }
@@ -8276,6 +8368,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count tags',
       one: '1 tag',
+      zero: '0 tags',
     );
     return '$_temp0';
   }
@@ -8349,6 +8442,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count notificações não lidas',
       one: '1 notificação não lida',
+      zero: '0 notificações não lidas',
     );
     return '$_temp0';
   }
@@ -8391,6 +8485,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir arquivos de $count filmes',
       one: 'Excluir arquivos de 1 filme',
+      zero: 'Excluir arquivos de 0 filmes',
     );
     return '$_temp0';
   }
@@ -8406,6 +8501,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$total filmes',
       one: '1 filme',
+      zero: '0 filmes',
     );
     return '$deleted de $_temp0 excluídos antes do erro: $error';
   }
@@ -8417,6 +8513,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir $count filmes',
       one: 'Excluir 1 filme',
+      zero: 'Excluir 0 filmes',
     );
     return '$_temp0';
   }
@@ -8436,6 +8533,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir arquivos de $count séries',
       one: 'Excluir arquivos de 1 série',
+      zero: 'Excluir arquivos de 0 séries',
     );
     return '$_temp0';
   }
@@ -8451,6 +8549,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$total séries',
       one: '1 série',
+      zero: '0 séries',
     );
     return '$deleted de $_temp0 excluídas antes do erro: $error';
   }
@@ -8462,6 +8561,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir $count séries',
       one: 'Excluir 1 série',
+      zero: 'Excluir 0 séries',
     );
     return '$_temp0';
   }
@@ -8477,6 +8577,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos excluídos',
       one: '1 arquivo excluído',
+      zero: '0 arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -8488,6 +8589,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count filmes excluídos',
       one: '1 filme excluído',
+      zero: '0 filmes excluídos',
     );
     return '$_temp0';
   }
@@ -8499,6 +8601,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count filmes e arquivos excluídos',
       one: '1 filme e arquivos excluídos',
+      zero: '0 filmes e arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -8510,6 +8613,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count séries excluídas',
       one: '1 série excluída',
+      zero: '0 séries excluídas',
     );
     return '$_temp0';
   }
@@ -8521,6 +8625,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count séries e arquivos excluídos',
       one: '1 série e arquivos excluídos',
+      zero: '0 séries e arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -8532,6 +8637,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count filmes monitorados',
       one: '1 filme monitorado',
+      zero: '0 filmes monitorados',
     );
     return '$_temp0';
   }
@@ -8543,6 +8649,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count séries monitoradas',
       one: '1 série monitorada',
+      zero: '0 séries monitoradas',
     );
     return '$_temp0';
   }
@@ -8573,6 +8680,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Expurgar $count filmes',
       one: 'Expurgar 1 filme',
+      zero: 'Expurgar 0 filmes',
     );
     return '$_temp0';
   }
@@ -8588,6 +8696,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Expurgar $count séries',
       one: 'Expurgar 1 série',
+      zero: 'Expurgar 0 séries',
     );
     return '$_temp0';
   }
@@ -8599,6 +8708,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count filmes expurgados.',
       one: '1 filme expurgado.',
+      zero: '0 filmes expurgados.',
     );
     return '$_temp0';
   }
@@ -8610,6 +8720,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count séries expurgadas.',
       one: '1 série expurgada.',
+      zero: '0 séries expurgadas.',
     );
     return '$_temp0';
   }
@@ -8621,6 +8732,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count filmes deixaram de ser monitorados',
       one: '1 filme deixou de ser monitorado',
+      zero: '0 filmes deixaram de ser monitorados',
     );
     return '$_temp0';
   }
@@ -8632,6 +8744,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count séries deixaram de ser monitoradas',
       one: '1 série deixou de ser monitorada',
+      zero: '0 séries deixaram de ser monitoradas',
     );
     return '$_temp0';
   }
@@ -8643,6 +8756,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$total filmes',
       one: '1 filme',
+      zero: '0 filmes',
     );
     return '$updated de $_temp0 atualizados antes do erro: $error';
   }
@@ -8654,6 +8768,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$total séries',
       one: '1 série',
+      zero: '0 séries',
     );
     return '$updated de $_temp0 atualizadas antes do erro: $error';
   }
@@ -8679,6 +8794,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count selecionados',
       one: '1 selecionado',
+      zero: '0 selecionados',
     );
     return '$_temp0';
   }
@@ -8702,6 +8818,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: 'Excluir $count torrents',
       one: 'Excluir 1 torrent',
+      zero: 'Excluir 0 torrents',
     );
     return '$_temp0';
   }
@@ -8713,6 +8830,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count torrents e seus arquivos excluídos',
       one: '1 torrent e seus arquivos excluídos',
+      zero: '0 torrents e seus arquivos excluídos',
     );
     return '$_temp0';
   }
@@ -8725,6 +8843,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       other:
           '$count torrents e seus arquivos excluídos ($kept mantidos semeando)',
       one: '1 torrent e seus arquivos excluídos ($kept mantidos semeando)',
+      zero: '0 torrents e seus arquivos excluídos ($kept mantidos semeando)',
     );
     return '$_temp0';
   }
@@ -8816,6 +8935,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count Episódios',
       one: '1 Episódio',
+      zero: '0 Episódios',
     );
     return '$_temp0';
   }
@@ -8848,6 +8968,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count Filmes',
       one: '1 Filme',
+      zero: '0 Filmes',
     );
     return '$_temp0';
   }
@@ -8910,6 +9031,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return 'Avisar antes de excluir torrents que semearam por menos de $_temp0.';
   }
@@ -8927,6 +9049,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get systemVersionHistorySubtitle =>
       'Novidades de cada versão publicada';
+
+  @override
+  String torrentActionFailed(String error) {
+    return 'Falha na ação do torrent: $error';
+  }
 
   @override
   String torrentAddFailed(String error) {
@@ -8979,6 +9106,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count conectados',
       one: '1 conectado',
+      zero: '0 conectados',
     );
     return '$_temp0';
   }
@@ -9035,6 +9163,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos importados com sucesso',
       one: '1 arquivo importado com sucesso',
+      zero: '0 arquivos importados com sucesso',
     );
     return '$_temp0';
   }
@@ -9046,6 +9175,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count arquivos selecionados para importação',
       one: '1 arquivo selecionado para importação',
+      zero: '0 arquivos selecionados para importação',
     );
     return '$_temp0';
   }
@@ -9200,6 +9330,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count peers',
       one: '1 peer',
+      zero: '0 peers',
     );
     return '$_temp0';
   }
@@ -9258,6 +9389,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count torrents',
       one: '1 torrent',
+      zero: '0 torrents',
     );
     return '$_temp0';
   }
@@ -9269,6 +9401,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count torrents · ocultos: $hidden',
       one: '1 torrent · ocultos: $hidden',
+      zero: '0 torrents · ocultos: $hidden',
     );
     return '$_temp0';
   }
@@ -9359,6 +9492,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count downloads',
       one: '1 download',
+      zero: '0 downloads',
     );
     return '$_temp0';
   }
@@ -9370,6 +9504,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count leechers',
       one: '1 leecher',
+      zero: '0 leechers',
     );
     return '$_temp0';
   }
@@ -9381,6 +9516,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count peers',
       one: '1 peer',
+      zero: '0 peers',
     );
     return '$_temp0';
   }
@@ -9392,6 +9528,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$count seeds',
       one: '1 seed',
+      zero: '0 seeds',
     );
     return '$_temp0';
   }
@@ -9751,6 +9888,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: '0 dias',
     );
     return '$lastOnline · As imagens em cache podem ter até $_temp0';
   }
