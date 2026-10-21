@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:dio/dio.dart';
@@ -124,9 +125,11 @@ void main() {
       );
       final service = _service(adapter);
 
-      // 401 < 500 passes validateStatus, so it returns gracefully.
-      final torrents = await service.getTorrents();
-      expect(torrents, isEmpty);
+      // A rejected credential is an error, not an empty list.
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
 
       expect(adapter.requests.map((uri) => uri.host), [
         'primary.test',
@@ -181,8 +184,7 @@ void main() {
     test('should fall back to the pre-5.0 endpoint when the new one is '
         'not served', () async {
       // Given
-      // The client accepts any status below 500, so an unanswered rename comes
-      // back as a plain response and the action silently does nothing.
+      // The server answers 404 to a name it does not know.
       final adapter = _RecordingAdapter(
         pathStatusCodes: {'/api/v2/torrents/start': 404},
       );
@@ -215,6 +217,172 @@ void main() {
         '/api/v2/torrents/pause',
         '/api/v2/torrents/pause',
       ]);
+    });
+  });
+
+  group('QBittorrentService rejected requests', () {
+    int infoRequests(_RecordingAdapter adapter) => adapter.requests
+        .where((uri) => uri.path == '/api/v2/torrents/info')
+        .length;
+
+    test('should fail a listing the server keeps rejecting after one new '
+        'login', () async {
+      // Given a session the server never accepts
+      final adapter = _RecordingAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter);
+
+      // When / Then the call fails instead of returning an empty list
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      // And it logged in once to start and once to renew, asking twice at most
+      expect(adapter.loginCount, 2);
+      expect(infoRequests(adapter), 2);
+    });
+
+    test('should fail an action the server keeps rejecting after one new '
+        'login', () async {
+      final adapter = _RecordingAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter);
+
+      await expectLater(
+        service.pauseTorrents(['hash']),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      expect(adapter.loginCount, 2);
+      expect(
+        adapter.requests.where((uri) => uri.path == '/api/v2/torrents/stop'),
+        hasLength(2),
+      );
+    });
+
+    test('should fail a delete the server answers with 404 or 409', () async {
+      for (final status in [404, 409]) {
+        final adapter = _RecordingAdapter(
+          pathStatusCodes: {'/api/v2/torrents/delete': status},
+        );
+        final service = _serviceCookie(adapter);
+
+        await expectLater(
+          service.deleteTorrents(['hash'], deleteFiles: true),
+          throwsA(
+            isA<DioException>().having(
+              (error) => error.response?.statusCode,
+              'status',
+              status,
+            ),
+          ),
+        );
+
+        // A refusal that is not about credentials is not retried
+        expect(adapter.loginCount, 1);
+        expect(
+          adapter.requests.where(
+            (uri) => uri.path == '/api/v2/torrents/delete',
+          ),
+          hasLength(1),
+        );
+      }
+    });
+
+    test('should fail a listing answered with another 4xx', () async {
+      final adapter = _RecordingAdapter(
+        pathStatusCodes: {'/api/v2/torrents/info': 400},
+      );
+      final service = _serviceCookie(adapter);
+
+      await expectLater(service.getTorrents(), throwsA(isA<DioException>()));
+    });
+
+    test('should log in once for requests that expire together', () async {
+      // Given an established session the server then expires
+      final adapter = _RecordingAdapter();
+      final service = _serviceCookie(adapter);
+      await service.getTorrents();
+      expect(adapter.loginCount, 1);
+      adapter.respond = (options) =>
+          options.headers['Cookie'] == 'SID=session-1' ? 403 : null;
+
+      // When three requests are rejected at the same time
+      final results = await Future.wait([
+        service.getTorrents(),
+        service.getTorrents(),
+        service.getTorrents(),
+      ]);
+
+      // Then they share one new login and all succeed with it
+      expect(adapter.loginCount, 2);
+      expect(results.map((torrents) => torrents.length), [1, 1, 1]);
+    });
+
+    test(
+      'should log in once for requests that start without a session',
+      () async {
+        final adapter = _RecordingAdapter();
+        final service = _serviceCookie(adapter);
+
+        await Future.wait([
+          service.getTorrents(),
+          service.getTorrents(),
+          service.getTorrents(),
+        ]);
+
+        expect(adapter.loginCount, 1);
+      },
+    );
+
+    test('should not log in again when the new login is refused', () async {
+      // Given a session that expires and a server that now refuses the login
+      final adapter = _RecordingAdapter();
+      final service = _serviceCookie(adapter);
+      await service.getTorrents();
+      adapter.respond = (options) =>
+          options.headers['Cookie'] == 'SID=session-1' ? 403 : null;
+      adapter.failLoginsFrom = 2;
+      final infoBefore = infoRequests(adapter);
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      // Then it asked for exactly one new login and never retried the request
+      expect(adapter.loginCount, 2);
+      expect(infoRequests(adapter) - infoBefore, 1);
+    });
+
+    test('should not retry with a login when using an API key', () async {
+      final adapter = _RecordingAdapter()..respond = (_) => 401;
+      final service = _service(adapter);
+
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      expect(adapter.loginCount, 0);
+      expect(infoRequests(adapter), 1);
+    });
+
+    test('should keep the username, the password and the URL out of the '
+        'error', () async {
+      final adapter = _RecordingAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter);
+
+      final error = await service.getTorrents().then<Object>(
+        (_) => 'no error',
+        onError: (Object error) => error,
+      );
+
+      expect(error, isA<UnauthorizedError>());
+      final message = error.toString();
+      expect(message, isNot(contains('user')));
+      expect(message, isNot(contains('pass')));
+      expect(message, isNot(contains('primary.test')));
     });
   });
 
@@ -299,6 +467,16 @@ class _RecordingAdapter implements HttpClientAdapter {
   final List<Uri> requests = [];
   final List<String> methods = [];
 
+  /// Answers a non-login request with this status; `null` answers normally.
+  int? Function(RequestOptions options)? respond;
+
+  /// Number of login requests received.
+  int loginCount = 0;
+
+  /// From this login on (1-based), the server rejects the credentials the way
+  /// qBittorrent does: `200` with the body `Fails.` and no cookie.
+  int? failLoginsFrom;
+
   _RecordingAdapter({
     Set<String>? unavailableHosts,
     Map<String, int>? statusCodes,
@@ -318,6 +496,8 @@ class _RecordingAdapter implements HttpClientAdapter {
     final uri = options.uri;
     requests.add(uri);
     methods.add(options.method);
+    // Lets requests started together interleave, like they do on a network.
+    await Future<void>.delayed(Duration.zero);
 
     if (unavailableHosts.contains(uri.host)) {
       throw DioException.connectionError(
@@ -326,17 +506,32 @@ class _RecordingAdapter implements HttpClientAdapter {
       );
     }
 
+    final isLogin =
+        options.method == 'POST' && uri.path.endsWith('/api/v2/auth/login');
     final statusCode =
-        pathStatusCodes[uri.path] ?? statusCodes[uri.host] ?? 200;
+        (isLogin ? null : respond?.call(options)) ??
+        pathStatusCodes[uri.path] ??
+        statusCodes[uri.host] ??
+        200;
 
     // Login endpoint — return 200 with Set-Cookie for reachable hosts.
-    if (options.method == 'POST' && uri.path.endsWith('/api/v2/auth/login')) {
+    if (isLogin) {
+      loginCount++;
+      if (failLoginsFrom != null && loginCount >= failLoginsFrom!) {
+        return ResponseBody.fromString(
+          'Fails.',
+          statusCode,
+          headers: {
+            Headers.contentTypeHeader: [Headers.textPlainContentType],
+          },
+        );
+      }
       return ResponseBody.fromString(
         'Ok.',
         statusCode,
         headers: {
           Headers.contentTypeHeader: [Headers.textPlainContentType],
-          'set-cookie': ['SID=mock-session-cookie; Path=/'],
+          'set-cookie': ['SID=session-$loginCount; Path=/'],
         },
       );
     }

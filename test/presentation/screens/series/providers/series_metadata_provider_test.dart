@@ -98,6 +98,23 @@ void main() {
       verify(qbittorrent.getTorrents).called(2);
     });
 
+    test('should still refresh when the controller outlives its autoDispose '
+        'provider', () async {
+      // Given the screens read the controller before the confirmation
+      // dialogs and the purge, and nothing keeps its provider alive
+      final controller = container.read(seriesMetadataControllerProvider(3));
+      container.listen(seriesFilesProvider(3), (_, _) {});
+      await container.read(seriesFilesProvider(3).future);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // When the purge finishes much later
+      controller.refreshAfterPurge([1]);
+      await container.read(seriesFilesProvider(3).future);
+
+      // Then the series is reloaded instead of the call throwing
+      verify(() => repository.getSeriesFiles(3)).called(2);
+    });
+
     test('should not touch the data of another series', () async {
       // Given
       when(() => repository.getSeriesFiles(4)).thenAnswer((_) async => []);

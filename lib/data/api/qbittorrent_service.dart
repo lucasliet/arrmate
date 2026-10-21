@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
+import '../../core/network/api_error.dart';
 import '../../core/network/request_diagnostics.dart';
 import '../../core/network/secure_log_interceptor.dart';
 import '../../core/services/logger_service.dart';
@@ -24,7 +25,11 @@ class QBittorrentService {
   /// Whether authentication uses API key (Bearer token) instead of cookies.
   bool _isApiKey = false;
 
-  Completer<void>? _reauthCompleter;
+  /// Login currently in flight, shared by every request that needs a session.
+  ///
+  /// Parallel requests wait for the same login instead of each starting one:
+  /// qBittorrent bans an IP after a few failed logins in a row.
+  Future<void>? _loginInFlight;
 
   /// Every candidate base URL that may be tried when the active one fails.
   final List<String> _candidateUrls;
@@ -48,7 +53,6 @@ class QBittorrentService {
               baseUrl: instance.effectiveUrl,
               connectTimeout: instance.timeout(InstanceTimeout.normal),
               receiveTimeout: instance.timeout(InstanceTimeout.normal),
-              validateStatus: (status) => status != null && status < 500,
               headers: {for (final h in instance.headers) h.name: h.value},
             ),
           ) {
@@ -123,12 +127,17 @@ class QBittorrentService {
         }
       }
 
-      if (response.statusCode == 403) {
-        throw Exception('Invalid credentials (403)');
+      // A rejected login comes back as `200 Fails.`, or as 401/403 once the IP
+      // is banned. None of those carry anything worth showing, and the error
+      // must never repeat the username or the URL.
+      final status = response.statusCode;
+      if (status == 200 || status == 204 || status == 401 || status == 403) {
+        throw const UnauthorizedError();
       }
-
-      throw Exception(
-        'Authentication failed: ${response.statusCode} - ${response.data}',
+      throw DioException.badResponse(
+        statusCode: status ?? 0,
+        requestOptions: response.requestOptions,
+        response: response,
       );
     } catch (e) {
       logger.error('[QBittorrentService] Auth error', e);
@@ -145,16 +154,55 @@ class QBittorrentService {
   Future<void> _ensureAuthenticated({String? currentUrl}) async {
     if (_isApiKey) return;
     if (instance.apiKey.isEmpty) return;
-    if (_sessionCookie == null) {
-      if (_reauthCompleter != null && !_reauthCompleter!.isCompleted) {
-        await _reauthCompleter!.future;
-      } else {
-        await authenticate(baseUrl: currentUrl);
-      }
+    if (_sessionCookie == null) await _login(baseUrl: currentUrl);
+  }
+
+  /// Logs in, sharing one attempt between every caller that arrives while it
+  /// runs, so they all see the same outcome.
+  Future<void> _login({String? baseUrl}) async {
+    final running = _loginInFlight;
+    if (running != null) return running;
+    final login = authenticate(baseUrl: baseUrl);
+    _loginInFlight = login;
+    try {
+      await login;
+    } finally {
+      _loginInFlight = null;
     }
   }
 
-  /// Makes an authenticated request with auto-retry on 401/403.
+  /// Replaces the session the server just rejected, at most once per
+  /// rejection.
+  ///
+  /// Requests that were rejected together share a single login. A request that
+  /// only now sees its 401/403, after another one already replaced the
+  /// [rejectedCookie], simply reuses the new session.
+  Future<void> _renewSession({
+    required String? rejectedCookie,
+    String? baseUrl,
+  }) async {
+    final running = _loginInFlight;
+    if (running != null) return running;
+    if (_sessionCookie != rejectedCookie) return;
+    logger.warning('[QBittorrentService] Session expired, logging in again');
+    _sessionCookie = null;
+    await _login(baseUrl: baseUrl);
+  }
+
+  /// Whether this instance signs in with a username and password, the only
+  /// mode in which a rejected request can be fixed by logging in again.
+  bool get _usesCookieSession => instance.apiKey.contains(':');
+
+  /// Whether [status] means the server refused the credentials.
+  bool _isAuthRejected(int? status) => status == 401 || status == 403;
+
+  /// Makes an authenticated request.
+  ///
+  /// Only a 2xx answer is a success. A rejected session (401/403) is renewed
+  /// and the request retried once; if it is rejected again the call fails with
+  /// [UnauthorizedError] and does not log in any further. Any other status
+  /// throws a [DioException], so an action the server refused is never taken
+  /// for one it performed.
   ///
   /// Safe read requests (GET) additionally fail over to the next candidate URL
   /// on a connection-level failure, mirroring [ApiClient]. Mutating requests
@@ -201,9 +249,12 @@ class QBittorrentService {
     }
   }
 
-  /// Runs a single authenticated attempt against a resolved path, handling the
-  /// 403 re-authentication flow. The cookie/API-key state is shared across
-  /// candidate URLs because each candidate points to the same logical server.
+  /// Runs a single authenticated attempt against a resolved path.
+  ///
+  /// The cookie/API-key state is shared across candidate URLs because each
+  /// candidate points to the same logical server. The status of every answer
+  /// is judged here rather than by the HTTP client, so the outcome does not
+  /// depend on how that client was configured.
   Future<Response<T>> _requestOnce<T>(
     String resolvedPath, {
     String method = 'GET',
@@ -214,119 +265,45 @@ class QBittorrentService {
   }) async {
     await _ensureAuthenticated(currentUrl: currentUrl);
 
-    options ??= Options();
-    if (_isApiKey) {
-      options.headers = {
-        ...(options.headers ?? {}),
-        'Authorization': 'Bearer ${instance.apiKey}',
-      };
-    } else if (_sessionCookie != null) {
-      options.headers = {...(options.headers ?? {}), 'Cookie': _sessionCookie};
-    }
-    options.method = method;
-
-    try {
-      final response = await _dio.request<T>(
+    Future<Response<T>> send() {
+      final base = options ?? Options();
+      final headers = <String, dynamic>{...?base.headers};
+      if (_isApiKey) {
+        headers['Authorization'] = 'Bearer ${instance.apiKey}';
+      } else if (_sessionCookie != null) {
+        headers['Cookie'] = _sessionCookie;
+      }
+      return _dio.request<T>(
         resolvedPath,
-        data: data,
+        // A form that was already sent cannot be sent again.
+        data: data is FormData ? data.clone() : data,
         queryParameters: queryParameters,
-        options: options,
+        options: base.copyWith(
+          method: method,
+          headers: headers,
+          validateStatus: (_) => true,
+        ),
       );
-
-      // Re-authenticate on 403 (Session expired)
-      if (response.statusCode == 403) {
-        // Check if re-auth is already happening
-        if (_reauthCompleter != null) {
-          logger.debug(
-            '[QBittorrentService] 403 encountered, waiting for existing re-auth...',
-          );
-          await _reauthCompleter!.future;
-          // Retry with new cookie
-          if (_sessionCookie != null) {
-            options.headers?['Cookie'] = _sessionCookie;
-          }
-          return await _dio.request<T>(
-            resolvedPath,
-            data: data,
-            queryParameters: queryParameters,
-            options: options,
-          );
-        }
-
-        _reauthCompleter = Completer();
-        try {
-          logger.warning(
-            '[QBittorrentService] Session expired, re-authenticating...',
-          );
-          _sessionCookie = null;
-          await authenticate(baseUrl: currentUrl);
-          _reauthCompleter!.complete();
-
-          // Retry
-          if (_sessionCookie != null) {
-            options.headers?['Cookie'] = _sessionCookie;
-          }
-          return await _dio.request<T>(
-            resolvedPath,
-            data: data,
-            queryParameters: queryParameters,
-            options: options,
-          );
-        } catch (e) {
-          _reauthCompleter!.completeError(e);
-          rethrow;
-        } finally {
-          _reauthCompleter = null;
-        }
-      }
-
-      return response;
-    } catch (e) {
-      // If error is 403 from DioException, logic is similar
-      if (e is DioException && e.response?.statusCode == 403) {
-        if (_reauthCompleter != null) {
-          logger.debug(
-            '[QBittorrentService] 403 (exception), waiting for existing re-auth...',
-          );
-          await _reauthCompleter!.future;
-          if (_sessionCookie != null) {
-            options.headers?['Cookie'] = _sessionCookie;
-          }
-          return await _dio.request<T>(
-            resolvedPath,
-            data: data,
-            queryParameters: queryParameters,
-            options: options,
-          );
-        }
-
-        _reauthCompleter = Completer();
-        try {
-          logger.warning(
-            '[QBittorrentService] Session expired (DioException), re-authenticating...',
-          );
-          _sessionCookie = null;
-          await authenticate(baseUrl: currentUrl);
-          _reauthCompleter!.complete();
-
-          if (_sessionCookie != null) {
-            options.headers?['Cookie'] = _sessionCookie;
-          }
-          return await _dio.request<T>(
-            resolvedPath,
-            data: data,
-            queryParameters: queryParameters,
-            options: options,
-          );
-        } catch (authError) {
-          _reauthCompleter!.completeError(authError);
-          rethrow;
-        } finally {
-          _reauthCompleter = null;
-        }
-      }
-      rethrow;
     }
+
+    final usedCookie = _sessionCookie;
+    var response = await send();
+    if (_isAuthRejected(response.statusCode)) {
+      if (!_usesCookieSession) throw const UnauthorizedError();
+      await _renewSession(rejectedCookie: usedCookie, baseUrl: currentUrl);
+      response = await send();
+      if (_isAuthRejected(response.statusCode)) {
+        throw const UnauthorizedError();
+      }
+    }
+
+    final status = response.statusCode;
+    if (status != null && status >= 200 && status < 300) return response;
+    throw DioException.badResponse(
+      statusCode: status ?? 0,
+      requestOptions: response.requestOptions,
+      response: response,
+    );
   }
 
   /// Resolves [path] against [baseUrl]. When the candidate differs from the
@@ -461,9 +438,7 @@ class QBittorrentService {
   ///
   /// qBittorrent 5 renamed `pause`/`resume` to `stop`/`start` and dropped the
   /// old names, while 4.x only ever had the old ones. A 404 or 405 means the
-  /// request had no effect, so trying the other name cannot act twice — and
-  /// because the client accepts any status below 500, an unanswered rename
-  /// would otherwise look like a button that does nothing.
+  /// request had no effect, so trying the other name cannot act twice.
   Future<void> _halt(
     List<String> hashes, {
     required String path,
@@ -471,14 +446,18 @@ class QBittorrentService {
   }) async {
     final data = {'hashes': hashes.join('|')};
     if (!_usesLegacyStartStop) {
-      final response = await _request(
-        path,
-        method: 'POST',
-        data: data,
-        options: Options(contentType: Headers.formUrlEncodedContentType),
-      );
-      final status = response.statusCode;
-      if (status != 404 && status != 405) return;
+      try {
+        await _request(
+          path,
+          method: 'POST',
+          data: data,
+          options: Options(contentType: Headers.formUrlEncodedContentType),
+        );
+        return;
+      } on DioException catch (error) {
+        final status = error.response?.statusCode;
+        if (status != 404 && status != 405) rethrow;
+      }
       logger.info(
         '[QBittorrentService] $path is unavailable, falling back to the '
         'pre-5.0 endpoints',

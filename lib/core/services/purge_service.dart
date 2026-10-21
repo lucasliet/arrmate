@@ -806,6 +806,8 @@ class PurgeService {
     final sourceDeleted = <String>[];
     final crossSeedDeleted = <String>[];
     final hashesToDelete = <String>{};
+    // Announced only once qBittorrent confirmed the deletion.
+    final deleted = <(Torrent, bool)>[];
 
     bool isBelowThreshold(Torrent t) =>
         action == SeedingAction.keepBelowThreshold &&
@@ -829,7 +831,7 @@ class PurgeService {
       }
       if (hashesToDelete.add(h)) {
         sourceDeleted.add(h);
-        _emitTorrentPurgedNotification(t, context, isCrossSeed: false);
+        deleted.add((t, false));
       }
     }
     // Copies of a kept multi-season pack usually share its data on disk:
@@ -860,7 +862,7 @@ class PurgeService {
       }
       if (hashesToDelete.add(h)) {
         crossSeedDeleted.add(h);
-        _emitTorrentPurgedNotification(t, context, isCrossSeed: true);
+        deleted.add((t, true));
       }
     }
 
@@ -874,6 +876,14 @@ class PurgeService {
     );
 
     await service.deleteTorrents(hashesToDelete.toList(), deleteFiles: true);
+
+    for (final (torrent, isCrossSeed) in deleted) {
+      _emitTorrentPurgedNotification(
+        torrent,
+        context,
+        isCrossSeed: isCrossSeed,
+      );
+    }
 
     return _TorrentPurgeOutcome(
       torrentHashesDeleted: sourceDeleted,

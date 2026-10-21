@@ -87,6 +87,11 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - Resetar senha no qBittorrent (Settings → WebUI → "Reset to default").
    - Tentar novamente.
 
+**Como o Arrmate reage quando o qBittorrent recusa:**
+- Se a sessão expira, o app entra de novo **uma única vez** e repete o pedido. Se o qBittorrent recusar de novo, o app mostra "Unauthorized. Please check your API key." (mensagem sem usuário nem endereço) e **não tenta mais login**, porque o qBittorrent bloqueia o IP depois de vários logins errados seguidos (o padrão é 5).
+- A lista de torrents aparece como erro ("Failed to load torrents" com "Retry"), nunca como "No Torrents", quando as credenciais são recusadas.
+- Uma ação que o qBittorrent não executa (por exemplo, excluir um torrent e receber 404 ou 409) vira erro. Num purge, o torrent só entra na contagem e nas notificações depois que o qBittorrent confirma a exclusão.
+
 ## Notificações não chegam — verificações e solução
 
 **Sintomas:**

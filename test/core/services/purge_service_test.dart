@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1666,6 +1667,49 @@ void main() {
         expect(result.torrentHashesDeleted, ['s01pack', 'fullpack']);
         expect(result.crossSeedDuplicatesDeleted, ['fullxseed']);
       });
+
+      test(
+        'purgeSeason announces nothing when qBittorrent refuses the delete',
+        () async {
+          // Given the client answers the delete with a 409
+          final notifications = MockInAppNotificationService();
+          when(
+            () => notifications.addNotification(any()),
+          ).thenAnswer((_) async {});
+          final request = RequestOptions(path: '/api/v2/torrents/delete');
+          when(
+            () => qb.deleteTorrents(
+              any(),
+              deleteFiles: any(named: 'deleteFiles'),
+            ),
+          ).thenAnswer(
+            (_) => Future.error(
+              DioException.badResponse(
+                statusCode: 409,
+                requestOptions: request,
+                response: Response<dynamic>(
+                  requestOptions: request,
+                  statusCode: 409,
+                ),
+              ),
+            ),
+          );
+
+          // When
+          await expectLater(
+            _service(
+              movieRepo: MockMovieRepository(),
+              seriesRepo: seriesRepo,
+              qb: qb,
+              notifications: notifications,
+            ).purgeSeason(42, 1, [1, 2], scopeEpisodeIds: [1, 2]),
+            throwsA(isA<DioException>()),
+          );
+
+          // Then no torrent is reported as purged
+          verifyNever(() => notifications.addNotification(any()));
+        },
+      );
 
       test(
         'purgeSeason reports source and cross-seed torrents in torrentsDeleted',
