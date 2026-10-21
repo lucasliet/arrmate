@@ -117,6 +117,36 @@ Torrent _torrent({
 }
 
 void main() {
+  group('isKeptBySeedingChoice', () {
+    final young = _torrent(hash: 'a', name: 'a', seedingTime: 600);
+    final old = _torrent(hash: 'b', name: 'b', seedingTime: 7200);
+
+    test('keeps what has not seeded long enough under Keep seeding', () {
+      expect(
+        isKeptBySeedingChoice(young, SeedingAction.keepBelowThreshold, 3600),
+        isTrue,
+      );
+      expect(
+        isKeptBySeedingChoice(old, SeedingAction.keepBelowThreshold, 3600),
+        isFalse,
+      );
+    });
+
+    test('keeps nothing under Delete all', () {
+      expect(
+        isKeptBySeedingChoice(young, SeedingAction.deleteAll, 3600),
+        isFalse,
+      );
+    });
+
+    test('keeps nothing when the minimum is off', () {
+      expect(
+        isKeptBySeedingChoice(young, SeedingAction.keepBelowThreshold, 0),
+        isFalse,
+      );
+    });
+  });
+
   group('PurgeService', () {
     test(
       'purgeMovie collects hashes from grabbed+imported history, removes queue, '
@@ -1708,6 +1738,43 @@ void main() {
 
           // Then no torrent is reported as purged
           verifyNever(() => notifications.addNotification(any()));
+        },
+      );
+
+      test(
+        'purgeSeason keeps an approved cross-seed under Keep seeding when it '
+        'has not seeded long enough',
+        () async {
+          // Given a copy that seeded for 10 minutes and a 1 hour minimum
+          when(() => qb.getTorrents()).thenAnswer(
+            (_) async => [
+              _torrent(
+                hash: 'S01PACK',
+                name: 'Show.S01.1080p',
+                seedingTime: 7200,
+              ),
+              _torrent(
+                hash: 'S01XSEED',
+                name: 'show.s01.1080p',
+                seedingTime: 600,
+              ),
+            ],
+          );
+
+          // When the user keeps what is still seeding, and approves the copy
+          final result = await service().purgeSeason(
+            42,
+            1,
+            [1, 2],
+            scopeEpisodeIds: [1, 2],
+            action: SeedingAction.keepBelowThreshold,
+            minimumSeedingSeconds: 3600,
+            approvedCrossSeedHashes: {'s01xseed'},
+          );
+
+          // Then the copy stays: the approval cannot override Keep seeding
+          expect(result.torrentHashesDeleted, ['s01pack']);
+          expect(result.crossSeedDuplicatesDeleted, isEmpty);
         },
       );
 

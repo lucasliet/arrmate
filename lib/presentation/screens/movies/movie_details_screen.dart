@@ -639,6 +639,8 @@ class MovieDetailsScreen extends ConsumerWidget {
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
           context: context,
           crossSeedCandidates: preview.crossSeedCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {

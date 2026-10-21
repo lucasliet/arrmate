@@ -38,14 +38,20 @@ Future<SeedingAction?> resolveSeedingAction({
 
 /// Requests deletion approval for every detected cross-seed torrent.
 ///
+/// Torrents the seeding choice [action] keeps anyway (see
+/// [isKeptBySeedingChoice]) are not asked about: an approval for them would be
+/// ignored, which reads as a delete button that does nothing.
+///
 /// Returns the normalized hashes of torrents explicitly approved for deletion.
 Future<Set<String>> resolveCrossSeedApprovals({
   required BuildContext context,
   required List<Torrent> crossSeedCandidates,
+  SeedingAction action = SeedingAction.deleteAll,
+  int minimumSeedingSeconds = 0,
 }) {
   return _resolveTorrentApprovals(
     context: context,
-    candidates: crossSeedCandidates,
+    candidates: _askable(crossSeedCandidates, action, minimumSeedingSeconds),
     confirm: (torrent) =>
         showCrossSeedConfirmationDialog(context: context, torrent: torrent),
   );
@@ -55,18 +61,33 @@ Future<Set<String>> resolveCrossSeedApprovals({
 /// holds episodes from seasons outside the purge (see
 /// `PurgePreview.sharedPackCandidates`).
 ///
+/// Torrents the seeding choice [action] keeps anyway are not asked about, as in
+/// [resolveCrossSeedApprovals].
+///
 /// Returns the normalized hashes of torrents explicitly approved for deletion.
 Future<Set<String>> resolveSharedPackApprovals({
   required BuildContext context,
   required List<Torrent> sharedPackCandidates,
+  SeedingAction action = SeedingAction.deleteAll,
+  int minimumSeedingSeconds = 0,
 }) {
   return _resolveTorrentApprovals(
     context: context,
-    candidates: sharedPackCandidates,
+    candidates: _askable(sharedPackCandidates, action, minimumSeedingSeconds),
     confirm: (torrent) =>
         showSharedPackConfirmationDialog(context: context, torrent: torrent),
   );
 }
+
+/// The [candidates] the purge would actually delete if approved.
+List<Torrent> _askable(
+  List<Torrent> candidates,
+  SeedingAction action,
+  int minimumSeedingSeconds,
+) => [
+  for (final torrent in candidates)
+    if (!isKeptBySeedingChoice(torrent, action, minimumSeedingSeconds)) torrent,
+];
 
 /// Asks [confirm] once per distinct hash in [candidates] and collects the
 /// lowercased hashes the user approved.

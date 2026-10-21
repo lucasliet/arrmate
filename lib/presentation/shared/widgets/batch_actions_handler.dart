@@ -210,6 +210,8 @@ class BatchActionsHandler {
             ),
           ),
         ),
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       return BatchActionResult(
@@ -463,6 +465,8 @@ class BatchActionsHandler {
             ),
           ),
         ),
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       return BatchActionResult(
@@ -638,8 +642,10 @@ class BatchActionsHandler {
 
   Future<Set<String>> _resolveCrossSeedApprovals(
     BuildContext context,
-    Future<List<PurgePreview>> Function() previews,
-  ) async {
+    Future<List<PurgePreview>> Function() previews, {
+    required SeedingAction action,
+    required int minimumSeedingSeconds,
+  }) async {
     final candidates = <Torrent>[];
     for (final preview in await previews()) {
       candidates.addAll(preview.crossSeedCandidates);
@@ -648,6 +654,8 @@ class BatchActionsHandler {
     return resolveCrossSeedApprovals(
       context: context,
       crossSeedCandidates: candidates,
+      action: action,
+      minimumSeedingSeconds: minimumSeedingSeconds,
     );
   }
 

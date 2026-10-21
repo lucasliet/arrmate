@@ -862,6 +862,8 @@ class SeriesDetailsScreen extends ConsumerWidget {
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
           context: context,
           crossSeedCandidates: preview.crossSeedCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {
@@ -1262,6 +1264,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
         sharedPackCandidates: [
           for (final preview in previews) ...preview.sharedPackCandidates,
         ],
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
       if (!mounted) return;
       approvedCrossSeedHashes = await resolveCrossSeedApprovals(
@@ -1270,6 +1274,8 @@ class _SeasonsSectionState extends ConsumerState<_SeasonsSection> {
           for (final preview in previews)
             ...preview.crossSeedCandidatesFor(approvedSharedPackHashes),
         ],
+        action: action,
+        minimumSeedingSeconds: minimumSeedingDays * 86400,
       );
     } catch (e) {
       if (!mounted) return;

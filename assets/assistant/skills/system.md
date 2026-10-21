@@ -158,6 +158,7 @@ Define um limite de segurança antes de apagar torrents que ainda estão cumprin
   - **Keep seeding** — remove o título e os arquivos, mas **mantém** no qBittorrent os torrents abaixo do limite.
   - **Delete all** (vermelho) — apaga todos os torrents mesmo assim.
 - O diálogo avisa que o título sai da biblioteca e os arquivos são apagados **nos dois casos**; a escolha só governa os torrents no qBittorrent.
+- Quem escolhe **Keep seeding** não é perguntado depois sobre apagar cópias **cross-seed** nem packs de várias temporadas que semearam menos que o mínimo: eles ficam no qBittorrent de qualquer forma, então o app nem abre o diálogo de confirmação deles. As cópias que já cumpriram o tempo continuam sendo perguntadas.
 - Ao remover **um torrent avulso** (Aba Atividade → Torrents → tocar no torrent → "Remove Torrent"), aparece a versão simples do aviso ("Torrent still seeding") com confirmar/cancelar.
 
 **Observações:**

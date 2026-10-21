@@ -338,6 +338,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
         approvedSharedPackHashes = await resolveSharedPackApprovals(
           context: context,
           sharedPackCandidates: preview.sharedPackCandidates,
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
         if (!context.mounted) return;
         approvedCrossSeedHashes = await resolveCrossSeedApprovals(
@@ -345,6 +347,8 @@ class SeasonDetailsScreen extends ConsumerWidget {
           crossSeedCandidates: preview.crossSeedCandidatesFor(
             approvedSharedPackHashes,
           ),
+          action: action,
+          minimumSeedingSeconds: minimumSeedingDays * 86400,
         );
       }
     } catch (e) {

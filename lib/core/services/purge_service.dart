@@ -70,6 +70,19 @@ enum SeedingAction {
 bool isBelowSeedingThreshold(Torrent torrent, int minimumSeedingSeconds) =>
     minimumSeedingSeconds > 0 && torrent.seedingTime < minimumSeedingSeconds;
 
+/// Whether the seeding choice [action] leaves [torrent] in qBittorrent.
+///
+/// With [SeedingAction.keepBelowThreshold], whatever has seeded for less than
+/// [minimumSeedingSeconds] stays, approved for deletion or not. The screens use
+/// it to skip asking about torrents the purge is going to keep anyway.
+bool isKeptBySeedingChoice(
+  Torrent torrent,
+  SeedingAction action,
+  int minimumSeedingSeconds,
+) =>
+    action == SeedingAction.keepBelowThreshold &&
+    isBelowSeedingThreshold(torrent, minimumSeedingSeconds);
+
 /// Context of a purge operation, used when emitting per-torrent
 /// notifications so the notification carries the origin (movie/series/season).
 typedef PurgeContext = ({String type, int id, int? seasonNumber});
@@ -810,8 +823,7 @@ class PurgeService {
     final deleted = <(Torrent, bool)>[];
 
     bool isBelowThreshold(Torrent t) =>
-        action == SeedingAction.keepBelowThreshold &&
-        isBelowSeedingThreshold(t, minimumSeedingSeconds);
+        isKeptBySeedingChoice(t, action, minimumSeedingSeconds);
 
     for (final t in source) {
       final h = t.hash.toLowerCase();
