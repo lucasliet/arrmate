@@ -60,8 +60,10 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
         // If error, retry slower
         _schedulePolling(const Duration(seconds: 60));
       }
-      // A poll that fails keeps the data it has, to avoid flickering the UI
-      if (keepOnError && state.hasValue) {
+      // A poll that fails keeps the data it has, to avoid flickering the UI.
+      // An error already on screen stays: the old data it carries must not
+      // replace it, or the failure would vanish by itself.
+      if (keepOnError && state.hasValue && !state.hasError) {
         return state.value!;
       }
       rethrow;

@@ -951,7 +951,7 @@
   "sharedBatchPreviewCrossSeedsFailed": "Falha ao gerar a prévia dos cross-seeds: {error}",
   "sharedBatchPreviewFailed": "Falha ao gerar a prévia: {error}",
   "sharedBatchPurgeFailed": "Falha ao expurgar: {error}",
-  "sharedBatchPurgePartial": "Purge concluído em {purged} de {total}. Falha: {error}",
+  "sharedBatchPurgePartial": "Expurgo concluído em {purged} de {total}. Falha: {error}",
   "sharedBatchPurgeMoviesContent": "Isso remove permanentemente os filmes selecionados do Radarr, exclui os arquivos deles e exclui todos os torrents de origem do qBittorrent.",
   "sharedBatchPurgeMoviesTitle": "{count, plural, =0{Expurgar 0 filmes} =1{Expurgar 1 filme} other{Expurgar {count} filmes}}",
   "sharedBatchPurgeSeriesContent": "Isso remove permanentemente as séries selecionadas do Sonarr, exclui os arquivos delas e exclui todos os torrents de origem do qBittorrent.",

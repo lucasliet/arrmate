@@ -163,6 +163,31 @@ void main() {
       container.dispose();
     });
 
+    testWidgets('should keep showing the error when a poll fails after a '
+        'refresh that failed', (tester) async {
+      // Given a list that loaded, then a server that stops answering
+      var calls = 0;
+      when(service.getTorrents).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) return [_torrent()];
+        throw DioException.connectionError(
+          requestOptions: RequestOptions(path: '/api/v2/torrents/info'),
+          reason: 'unreachable',
+        );
+      });
+      final container = openList();
+      await tester.pump();
+      await container.read(qbittorrentTorrentsProvider.notifier).refresh();
+      expect(container.read(qbittorrentTorrentsProvider).hasError, isTrue);
+
+      // When the next poll fails too
+      await tester.pump(const Duration(seconds: 61));
+
+      // Then the error is still shown, not replaced by the old list
+      expect(container.read(qbittorrentTorrentsProvider).hasError, isTrue);
+      container.dispose();
+    });
+
     testWidgets('should allow a login when the list is opened and when '
         'refreshed', (tester) async {
       when(service.getTorrents).thenAnswer((_) async => [_torrent()]);

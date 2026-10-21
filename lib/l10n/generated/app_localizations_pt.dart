@@ -3704,7 +3704,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String sharedBatchPurgePartial(int purged, int total, String error) {
-    return 'Purge concluído em $purged de $total. Falha: $error';
+    return 'Expurgo concluído em $purged de $total. Falha: $error';
   }
 
   @override
@@ -8676,7 +8676,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String sharedBatchPurgePartial(int purged, int total, String error) {
-    return 'Purge concluído em $purged de $total. Falha: $error';
+    return 'Expurgo concluído em $purged de $total. Falha: $error';
   }
 
   @override
