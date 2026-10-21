@@ -471,6 +471,6 @@ class RadarrApi {
 
   /// Commands Radarr to run a system health check.
   Future<void> healthCheck() async {
-    await sendCommand('HealthCheck');
+    await sendCommand('CheckHealth');
   }
 }
