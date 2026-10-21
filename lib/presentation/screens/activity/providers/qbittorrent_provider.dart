@@ -33,7 +33,12 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     return _fetchTorrents();
   }
 
-  Future<List<Torrent>> _fetchTorrents() async {
+  /// Fetches the list and schedules the next poll.
+  ///
+  /// With [keepOnError], a failure leaves the list already on screen in place
+  /// instead of replacing it with the error. Only polls ask for it, since the
+  /// user did not trigger them; opening and refreshing the list report it.
+  Future<List<Torrent>> _fetchTorrents({bool keepOnError = false}) async {
     final service = ref.read(qbittorrentServiceProvider);
     if (service == null) {
       _schedulePolling(const Duration(seconds: 30));
@@ -55,8 +60,8 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
         // If error, retry slower
         _schedulePolling(const Duration(seconds: 60));
       }
-      // If we already have data, keep it and just log error (to avoid flickering UI)
-      if (state.hasValue) {
+      // A poll that fails keeps the data it has, to avoid flickering the UI
+      if (keepOnError && state.hasValue) {
         return state.value!;
       }
       rethrow;
@@ -71,7 +76,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
       if (!_isDisposed) {
         // Use ref.invalidateSelf() or just call _fetchTorrents() and update state
         // InvalidateSelf will trigger build() again which calls _fetchTorrents
-        _fetchTorrents()
+        _fetchTorrents(keepOnError: true)
             .then((data) {
               if (!_isDisposed) state = AsyncValue.data(data);
             })
