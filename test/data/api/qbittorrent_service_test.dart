@@ -297,6 +297,23 @@ void main() {
       await expectLater(service.getTorrents(), throwsA(isA<DioException>()));
     });
 
+    test('should read a plain-text Forbidden as a rejection, not as a bad '
+        'body', () async {
+      // Given a server that answers 403 with `Forbidden`, like qBittorrent
+      final adapter = _RecordingAdapter();
+      final service = _serviceCookie(adapter);
+      await service.getTorrents();
+      adapter.respond = (options) =>
+          options.headers['Cookie'] == 'SID=session-1' ? 403 : null;
+
+      // When a typed list request meets it
+      final torrents = await service.getTorrents();
+
+      // Then the session is renewed and the request is repeated
+      expect(adapter.loginCount, 2);
+      expect(torrents, hasLength(1));
+    });
+
     test('should log in once for requests that expire together', () async {
       // Given an established session the server then expires
       final adapter = _RecordingAdapter();
@@ -615,6 +632,16 @@ class _RecordingAdapter implements HttpClientAdapter {
         headers: {
           Headers.contentTypeHeader: [Headers.textPlainContentType],
           'set-cookie': ['SID=session-$loginCount; Path=/'],
+        },
+      );
+    }
+
+    if (statusCode == 401 || statusCode == 403) {
+      return ResponseBody.fromString(
+        'Forbidden',
+        statusCode,
+        headers: {
+          Headers.contentTypeHeader: [Headers.textPlainContentType],
         },
       );
     }

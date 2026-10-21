@@ -274,7 +274,9 @@ class QBittorrentService {
   /// The cookie/API-key state is shared across candidate URLs because each
   /// candidate points to the same logical server. The status of every answer
   /// is judged here rather than by the HTTP client, so the outcome does not
-  /// depend on how that client was configured.
+  /// depend on how that client was configured. The body is read untyped
+  /// because a rejection comes as plain text (`Forbidden`), which cannot be
+  /// cast to [T]; only a successful answer is converted.
   Future<Response<T>> _requestOnce<T>(
     String resolvedPath, {
     String method = 'GET',
@@ -285,7 +287,7 @@ class QBittorrentService {
   }) async {
     await _ensureAuthenticated(currentUrl: currentUrl);
 
-    Future<Response<T>> send() {
+    Future<Response<dynamic>> send() {
       final base = options ?? Options();
       final headers = <String, dynamic>{...?base.headers};
       if (_isApiKey) {
@@ -293,7 +295,7 @@ class QBittorrentService {
       } else if (_sessionCookie != null) {
         headers['Cookie'] = _sessionCookie;
       }
-      return _dio.request<T>(
+      return _dio.request<dynamic>(
         resolvedPath,
         // A form that was already sent cannot be sent again.
         data: data is FormData ? data.clone() : data,
@@ -302,6 +304,7 @@ class QBittorrentService {
           method: method,
           headers: headers,
           validateStatus: (_) => true,
+          responseType: _responseTypeFor<T>(base.responseType),
         ),
       );
     }
@@ -318,12 +321,34 @@ class QBittorrentService {
     }
 
     final status = response.statusCode;
-    if (status != null && status >= 200 && status < 300) return response;
+    if (status != null && status >= 200 && status < 300) {
+      return Response<T>(
+        data: response.data as T?,
+        requestOptions: response.requestOptions,
+        headers: response.headers,
+        statusCode: response.statusCode,
+        statusMessage: response.statusMessage,
+        isRedirect: response.isRedirect,
+        redirects: response.redirects,
+        extra: response.extra,
+      );
+    }
     throw DioException.badResponse(
       statusCode: status ?? 0,
       requestOptions: response.requestOptions,
       response: response,
     );
+  }
+
+  /// The response type Dio would pick for a request typed as [T].
+  ///
+  /// Requests are sent untyped, so this repeats Dio's own choice: plain text
+  /// for [String], JSON otherwise, unless bytes or a stream were asked for.
+  ResponseType? _responseTypeFor<T>(ResponseType? requested) {
+    if (requested == ResponseType.bytes || requested == ResponseType.stream) {
+      return requested;
+    }
+    return T == String ? ResponseType.plain : ResponseType.json;
   }
 
   /// Resolves [path] against [baseUrl]. When the candidate differs from the
