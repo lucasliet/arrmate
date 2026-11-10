@@ -27,7 +27,7 @@ download_tool appimagetool.AppImage \
 rm -rf "$appdir"
 mkdir -p "$appdir/usr/bin"
 cp -a "$bundle/." "$appdir/usr/bin/"
-cp web/icons/Icon-512.png "$appdir/arrmate.png"
+cp linux/arrmate.png "$appdir/arrmate.png"
 cat > "$appdir/arrmate.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
