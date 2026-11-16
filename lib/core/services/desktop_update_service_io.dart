@@ -221,12 +221,18 @@ class DesktopUpdateService {
             throw DesktopUpdateException(DesktopUpdateFailure.versionMismatch);
           }
         } else {
-          await _run('powershell.exe', [
+          final expandResult = await _run('powershell.exe', [
             '-NoProfile',
             '-NonInteractive',
             '-Command',
             'Expand-Archive -LiteralPath ${_powershellQuote(download.path)} -DestinationPath ${_powershellQuote(extracted.path)}',
           ]);
+          // ignore: avoid_print
+          print(
+            'PROBE expand stdout=[${expandResult.stdout}] stderr=[${expandResult.stderr}] '
+            'exit=${expandResult.exitCode} zip=${download.path} '
+            'zipLen=${await download.length()} dest=${extracted.path}',
+          );
           staged = extracted.path;
           final version = await _run('powershell.exe', [
             '-NoProfile',
