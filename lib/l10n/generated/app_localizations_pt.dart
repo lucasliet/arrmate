@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2698,6 +2699,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get releasesDownload => 'Baixar';
 
   @override
+  String get releasesDownloadAnyway => 'Baixar mesmo assim';
+
+  @override
   String get releasesDownloadRelease => 'Baixar release';
 
   @override
@@ -2766,13 +2770,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get releasesRejected => 'Rejeitada';
 
   @override
-  String get releasesRejectedTooltip => 'Release rejeitada';
+  String get releasesRejectedWarning => 'Esta release foi rejeitada:';
 
   @override
   String get releasesRejectionReasons => 'Motivos da rejeição';
-
-  @override
-  String get releasesReleaseRejected => 'Release rejeitada';
 
   @override
   String get releasesReleaseType => 'Tipo de release';
@@ -7670,6 +7671,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get releasesDownload => 'Baixar';
 
   @override
+  String get releasesDownloadAnyway => 'Baixar mesmo assim';
+
+  @override
   String get releasesDownloadRelease => 'Baixar release';
 
   @override
@@ -7738,13 +7742,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get releasesRejected => 'Rejeitada';
 
   @override
-  String get releasesRejectedTooltip => 'Release rejeitada';
+  String get releasesRejectedWarning => 'Esta release foi rejeitada:';
 
   @override
   String get releasesRejectionReasons => 'Motivos da rejeição';
-
-  @override
-  String get releasesReleaseRejected => 'Release rejeitada';
 
   @override
   String get releasesReleaseType => 'Tipo de release';

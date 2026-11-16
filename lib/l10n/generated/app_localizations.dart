@@ -4535,6 +4535,12 @@ abstract class AppLocalizations {
   /// **'Download'**
   String get releasesDownload;
 
+  /// No description provided for @releasesDownloadAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Download anyway'**
+  String get releasesDownloadAnyway;
+
   /// No description provided for @releasesDownloadRelease.
   ///
   /// In en, this message translates to:
@@ -4661,23 +4667,17 @@ abstract class AppLocalizations {
   /// **'Rejected'**
   String get releasesRejected;
 
-  /// No description provided for @releasesRejectedTooltip.
+  /// No description provided for @releasesRejectedWarning.
   ///
   /// In en, this message translates to:
-  /// **'Rejected release'**
-  String get releasesRejectedTooltip;
+  /// **'This release was rejected:'**
+  String get releasesRejectedWarning;
 
   /// No description provided for @releasesRejectionReasons.
   ///
   /// In en, this message translates to:
   /// **'Rejection reasons'**
   String get releasesRejectionReasons;
-
-  /// No description provided for @releasesReleaseRejected.
-  ///
-  /// In en, this message translates to:
-  /// **'Release rejected'**
-  String get releasesReleaseRejected;
 
   /// No description provided for @releasesReleaseType.
   ///
