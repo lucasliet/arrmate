@@ -163,7 +163,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 **AppBar da SeasonDetailsScreen:**
 - **Título**: "[Nome da série] - Season [N]".
 - **Botão "Automatic Search"** (ícone `travel_explore` no canto superior direito): dispara busca automática de releases para toda a temporada.
-- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download).
+- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download). Releases rejeitadas pelo Sonarr também podem ser baixadas: o diálogo de confirmação lista os motivos da rejeição como aviso e o botão vira **"Download anyway"**.
 - **Botão "Delete season files"** (ícone `delete_sweep` no canto superior direito): apaga todos os arquivos dessa temporada em disco. **Desabilitado** (acinzentado) quando a temporada não tem nenhum episódio com arquivo baixado.
 - **Botão "Purge season"** (ícone `delete_forever` no canto superior direito): remove episódios e arquivos da temporada no Sonarr e também remove torrents fonte no qBittorrent (com aprovação individual de cross-seed).
 

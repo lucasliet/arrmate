@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2652,6 +2653,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get releasesDownload => 'Download';
 
   @override
+  String get releasesDownloadAnyway => 'Download anyway';
+
+  @override
   String get releasesDownloadRelease => 'Download release';
 
   @override
@@ -2719,13 +2723,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get releasesRejected => 'Rejected';
 
   @override
-  String get releasesRejectedTooltip => 'Rejected release';
+  String get releasesRejectedWarning => 'This release was rejected:';
 
   @override
   String get releasesRejectionReasons => 'Rejection reasons';
-
-  @override
-  String get releasesReleaseRejected => 'Release rejected';
 
   @override
   String get releasesReleaseType => 'Release type';

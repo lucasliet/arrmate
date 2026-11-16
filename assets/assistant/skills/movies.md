@@ -301,7 +301,8 @@ Use o **Purge** quando quiser remover completamente um filme **e** liberar o esp
 6. Um **diálogo de confirmação** aparece:
    - Mensagem: "Are you sure you want to grab [título da release]?"
    - Botões: "Cancel" e "Download".
-7. Tocar **"Download"** para confirmar.
+   - **Release rejeitada:** releases que o Radarr rejeitou (ex: idioma ou qualidade fora do perfil) continuam podendo ser baixadas, pois a escolha é do usuário. O diálogo mostra um **aviso com os motivos da rejeição** e o botão passa a ser **"Download anyway"**. O ícone de download dessas releases fica em vermelho e os motivos também aparecem na tela de detalhes da release.
+7. Tocar **"Download"** (ou **"Download anyway"**) para confirmar.
    - Enquanto o envio acontece, o ícone de download **daquela release vira um indicador de progresso** e o botão de download das demais releases fica desabilitado — não é preciso tocar de novo.
    - A release é **enviada ao cliente de download** (configurado no Radarr: qBittorrent, Transmission, etc).
    - Snackbar confirma sucesso. Se falhar, o sheet continua aberto, o ícone volta ao normal e um snackbar de erro explica o motivo.
