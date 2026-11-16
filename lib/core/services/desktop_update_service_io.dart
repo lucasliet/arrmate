@@ -234,6 +234,15 @@ class DesktopUpdateService {
             '-Command',
             '(Get-Item -LiteralPath ${_powershellQuote(path.join(staged, 'arrmate.exe'))}).VersionInfo.ProductVersion',
           ]);
+          final listing = Directory(staged)
+              .listSync(recursive: true)
+              .map((e) => '${e.path} ${e is File ? e.lengthSync() : ''}')
+              .join(' | ');
+          // ignore: avoid_print
+          print(
+            'PROBE version stdout=[${version.stdout}] stderr=[${version.stderr}] '
+            'exit=${version.exitCode} info=[${info.version}] staged=[$listing]',
+          );
           if (version.stdout.toString().trim().split('+').first !=
               info.version) {
             throw DesktopUpdateException(DesktopUpdateFailure.versionMismatch);
