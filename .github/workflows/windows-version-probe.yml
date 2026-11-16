@@ -1,0 +1,29 @@
+name: Windows version probe
+on:
+  push:
+    branches:
+      - tmp/windows-version-probe
+jobs:
+  probe:
+    runs-on: windows-2022
+    steps:
+      - name: Compile fixture and read its version like the updater test
+        shell: powershell
+        run: |
+          $PSVersionTable | Out-String | Write-Host
+          $dir = Join-Path $env:RUNNER_TEMP 'probe'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $src = Join-Path $dir 'version_fixture.cs'
+          $exe = Join-Path $dir 'version_fixture.exe'
+          Set-Content -LiteralPath $src -Value 'using System.Reflection; [assembly: AssemblyInformationalVersion("2.1.0+71")] public class Fixture { public static void Main() {} }'
+          Add-Type -Path $src -OutputAssembly $exe -OutputType ConsoleApplication
+          $item = Get-Item -LiteralPath $exe
+          Write-Host "ProductVersion=[$($item.VersionInfo.ProductVersion)]"
+          Write-Host "FileVersion=[$($item.VersionInfo.FileVersion)]"
+          $item.VersionInfo | Format-List * | Out-String | Write-Host
+          Write-Host "--- same command as the app, via powershell.exe"
+          $out = powershell.exe -NoProfile -NonInteractive -Command "(Get-Item -LiteralPath '$exe').VersionInfo.ProductVersion"
+          Write-Host "app-command output=[$out]"
+          Write-Host "--- csc / framework"
+          [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription | Write-Host
+          (Get-Command csc.exe -ErrorAction SilentlyContinue).Source | Write-Host
