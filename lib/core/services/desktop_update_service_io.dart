@@ -225,14 +225,22 @@ class DesktopUpdateService {
             '-NoProfile',
             '-NonInteractive',
             '-Command',
-            'Expand-Archive -LiteralPath ${_powershellQuote(download.path)} -DestinationPath ${_powershellQuote(extracted.path)}',
+            // Extracts through .NET instead of Expand-Archive: Windows
+            // PowerShell can inherit the PowerShell 7 module path and load an
+            // Archive module it cannot run, which fails without extracting.
+            "\$ErrorActionPreference = 'Stop'; "
+                'Add-Type -AssemblyName System.IO.Compression.FileSystem; '
+                '[System.IO.Compression.ZipFile]::ExtractToDirectory('
+                '${_powershellQuote(download.path)}, '
+                '${_powershellQuote(extracted.path)})',
           ]);
           staged = extracted.path;
           final version = await _run('powershell.exe', [
             '-NoProfile',
             '-NonInteractive',
             '-Command',
-            '(Get-Item -LiteralPath ${_powershellQuote(path.join(staged, 'arrmate.exe'))}).VersionInfo.ProductVersion',
+            "\$ErrorActionPreference = 'Stop'; "
+                '(Get-Item -LiteralPath ${_powershellQuote(path.join(staged, 'arrmate.exe'))}).VersionInfo.ProductVersion',
           ]);
           if (version.stdout.toString().trim().split('+').first !=
               info.version) {
