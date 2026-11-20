@@ -164,6 +164,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     );
   }
 
+  /// Runs a batch [action], then reports the outcome and leaves selection
+  /// mode. The selection is kept when the user cancels.
   Future<void> _runBatchAction(
     BuildContext context,
     Future<BatchActionResult?> Function(BatchActionsHandler handler) action,
@@ -171,11 +173,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     final handler = BatchActionsHandler(ref);
     final result = await action(handler);
     if (!mounted || !context.mounted) return;
-    if (result != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result.message)));
-    }
+    if (result == null) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
     _clearSelection();
   }
 

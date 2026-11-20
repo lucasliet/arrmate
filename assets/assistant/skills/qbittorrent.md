@@ -107,7 +107,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
    - **Keep seeding** — exclui só os que já cumpriram o mínimo; os outros continuam no qBittorrent com seus arquivos.
    - **Delete all** — exclui todos os selecionados.
    - Com o mínimo em 0 dias o aviso não aparece.
-7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final; cancelar qualquer um dos diálogos mantém a seleção.
+7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final; cancelar qualquer um dos diálogos mantém a seleção, e uma exclusão que falha (nada foi removido) também a mantém para tentar de novo.
 
 **Observações:**
 - A exclusão remove o torrent do qBittorrent **e apaga os arquivos do disco** (não há opção de manter arquivos neste fluxo; para isso use "Remove Torrent" no sheet de detalhes de um torrent).

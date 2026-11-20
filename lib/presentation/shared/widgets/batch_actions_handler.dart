@@ -21,7 +21,15 @@ class BatchActionResult {
   final String message;
   final bool refreshCatalog;
 
-  const BatchActionResult({required this.message, this.refreshCatalog = false});
+  /// Whether the action changed nothing, so the caller keeps the selection
+  /// for another attempt instead of making the user pick everything again.
+  final bool keepSelection;
+
+  const BatchActionResult({
+    required this.message,
+    this.refreshCatalog = false,
+    this.keepSelection = false,
+  });
 }
 
 /// Orchestrates the three batch operations (Delete, Delete files, Purge) for
@@ -603,7 +611,10 @@ class BatchActionsHandler {
     if (torrents.isEmpty) return null;
     final l10n = context.l10n;
     if (_ref.read(qbittorrentServiceProvider) == null) {
-      return BatchActionResult(message: l10n.sharedTorrentsNoQbittorrent);
+      return BatchActionResult(
+        message: l10n.sharedTorrentsNoQbittorrent,
+        keepSelection: true,
+      );
     }
 
     final minimumSeedingDays = _ref.read(settingsProvider).minimumSeedingDays;
@@ -670,6 +681,7 @@ class BatchActionsHandler {
       _hideLoading(navigator);
       return BatchActionResult(
         message: l10n.sharedTorrentsDeleteFailed(describeError(e, l10n)),
+        keepSelection: true,
       );
     }
   }

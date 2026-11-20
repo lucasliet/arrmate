@@ -109,7 +109,8 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
   }
 
   /// Deletes [torrents] with their files, then reports the outcome and leaves
-  /// selection mode. The selection is kept when the user cancels.
+  /// selection mode. The selection is kept when the user cancels or when the
+  /// delete failed without removing anything.
   Future<void> _deleteSelectedWithFiles(List<Torrent> torrents) async {
     final result = await BatchActionsHandler(
       ref,
@@ -119,6 +120,7 @@ class _QBittorrentTabState extends ConsumerState<QBittorrentTab> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.keepSelection) return;
     _clearSelection();
   }
 
