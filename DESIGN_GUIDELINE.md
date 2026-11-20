@@ -801,6 +801,7 @@ Barra horizontal rolável de filtros do calendário.
 ### Imagens
 
 - ✅ Use `CachedNetworkImage` com placeholder shimmer
+- ✅ Pôsteres de filme/série: use `MoviePoster`/`SeriesPoster`, que passam por `PosterNetworkImage` (`lib/presentation/widgets/poster_network_image.dart`) — no web ele usa `Image.network` em vez de `CachedNetworkImage`
 - ✅ Sempre tenha fallback com ícone
 - ✅ `fit: BoxFit.cover` para manter aspect ratio
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/movies/widgets/movie_poster.dart';
@@ -219,6 +220,54 @@ void main() {
             // Then
             expect(find.byType(MoviePoster), findsOneWidget);
             expect(find.byIcon(Icons.movie_outlined), findsNothing);
+          },
+          createHttpClient: (context) =>
+              TestHttpOverrides().createHttpClient(context),
+        );
+      },
+    );
+
+    testWidgets(
+      'should load the remote poster with the framework image on web',
+      (tester) async {
+        // Given
+        await HttpOverrides.runZoned(
+          () async {
+            // When
+            await tester.pumpWidget(
+              ProviderScope(
+                overrides: [
+                  currentRadarrInstanceProvider.overrideWithValue(null),
+                  platformCapabilitiesProvider.overrideWithValue(
+                    PlatformCapabilities.forPlatform(
+                      isWeb: true,
+                      targetPlatform: TargetPlatform.linux,
+                    ),
+                  ),
+                ],
+                child: MaterialApp(
+                  localizationsDelegates: testLocalizationsDelegates,
+                  supportedLocales: testSupportedLocales,
+                  locale: testLocale,
+                  home: Scaffold(
+                    body: SizedBox(
+                      width: 100,
+                      height: 150,
+                      child: MoviePoster(movie: testMovieWithRemotePoster),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            // Then
+            final provider = tester.widget<Image>(find.byType(Image)).image;
+            expect(provider, isA<NetworkImage>());
+            expect(
+              (provider as NetworkImage).url,
+              'https://image.tmdb.org/t/p/w500/poster.jpg',
+            );
+            expect(provider.headers, isNull);
           },
           createHttpClient: (context) =>
               TestHttpOverrides().createHttpClient(context),
