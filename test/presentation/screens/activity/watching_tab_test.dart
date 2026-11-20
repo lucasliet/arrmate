@@ -671,6 +671,35 @@ void main() {
       },
     );
 
+    testWidgets(
+      'refetches watching items after the gate timeout when the stop report '
+      'hangs',
+      (tester) async {
+        // Given
+        const settleTimeout = Duration(milliseconds: 200);
+        final harness = await _pumpActivityShell(
+          tester,
+          jellyfinInstance: jellyfinInstance,
+          item: episodeWatchingItem,
+          player: _StopReportingPlayer(stop: Completer<void>().future),
+          stopGate: PlaybackStopGate(settleTimeout: settleTimeout),
+        );
+        await tester.tap(find.byType(WatchingListItem));
+        await tester.pumpAndSettle();
+        harness.router.pop();
+        await tester.pumpAndSettle();
+        expect(harness.buildCount, harness.buildsBeforePlay);
+
+        // When
+        await tester.pump(settleTimeout);
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(find.text('Player'), findsNothing);
+        expect(harness.buildCount, harness.buildsBeforePlay + 1);
+      },
+    );
+
     testWidgets('does not navigate to library when instance selection fails', (
       tester,
     ) async {
@@ -843,6 +872,7 @@ Future<_ShellHarness> _pumpActivityShell(
   required WatchingItem item,
   required Widget player,
   void Function()? onBuild,
+  PlaybackStopGate? stopGate,
 }) async {
   final rootKey = GlobalKey<NavigatorState>();
   final unresolvedClose = Completer<void>();
@@ -889,6 +919,8 @@ Future<_ShellHarness> _pumpActivityShell(
           ),
         ),
         playbackLaunchServiceProvider.overrideWithValue(fakeLaunchService),
+        if (stopGate != null)
+          playbackStopGateProvider.overrideWithValue(stopGate),
       ],
       child: MaterialApp.router(
         localizationsDelegates: testLocalizationsDelegates,

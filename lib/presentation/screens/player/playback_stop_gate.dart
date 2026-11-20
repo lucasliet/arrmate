@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/logger_service.dart';
+
 /// Remembers whether the open player still owes a Jellyfin Stopped report.
 ///
 /// A player with a progress reporter calls [arm] when the session starts and
@@ -9,11 +11,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Watching awaits [settled] before refetching, so Resume sees the position
 /// that report stored. The web fallback never calls [arm], so [settled] is
 /// already complete and the refresh runs immediately.
+///
+/// The wait is bounded by [settleTimeout]: a report stuck on a stalled server
+/// keeps running in the background, but no longer holds the refresh.
 class PlaybackStopGate {
+  /// Creates a gate that waits at most [settleTimeout] for a stop report.
+  PlaybackStopGate({this.settleTimeout = defaultSettleTimeout});
+
+  /// How long [settled] waits for a stop report unless told otherwise.
+  static const Duration defaultSettleTimeout = Duration(seconds: 3);
+
+  /// Longest time [settled] waits for a tracked stop report.
+  final Duration settleTimeout;
+
   Future<void> _pending = Future<void>.value();
   Completer<void>? _session;
 
-  /// Completes when the armed session's stop report has finished.
+  /// Completes when the armed session's stop report has finished or
+  /// [settleTimeout] has passed since it was tracked.
   ///
   /// Completes immediately when no session is armed.
   Future<void> get settled {
@@ -33,17 +48,27 @@ class PlaybackStopGate {
     _session = Completer<void>();
   }
 
-  /// Completes the armed session when [report] finishes.
+  /// Completes the armed session when [report] finishes or [settleTimeout]
+  /// passes, whichever comes first.
   ///
   /// [report] may already be complete. When nothing was armed, [settled]
-  /// follows [report] directly.
+  /// follows [report] directly, under the same limit.
   void track(Future<void> report) {
-    _pending = report;
+    final bounded = report.timeout(
+      settleTimeout,
+      onTimeout: () {
+        logger.warning(
+          '[PlaybackStopGate] Stop report still pending after '
+          '${settleTimeout.inMilliseconds}ms; releasing the Watching refresh',
+        );
+      },
+    );
+    _pending = bounded;
     final session = _session;
     if (session == null) {
       return;
     }
-    report.whenComplete(() {
+    bounded.whenComplete(() {
       if (!session.isCompleted) {
         session.complete();
       }

@@ -308,6 +308,10 @@ class PlaybackSessionController {
 
   /// Cancels every subscription and timer, reports the final position and
   /// releases the engine.
+  ///
+  /// The engine is released without waiting for the stop report, so a
+  /// stalled server cannot keep it alive. The returned future still
+  /// completes only after both have finished.
   Future<void> dispose() async {
     _disposed = true;
     _progressTimer?.cancel();
@@ -317,9 +321,27 @@ class PlaybackSessionController {
       await subscription.cancel();
     }
     _subscriptions.clear();
+    final release = _releasePlayer();
     await stop;
-    await _player?.dispose();
+    await release;
+  }
+
+  /// Disposes the engine, logging a failure instead of throwing it.
+  Future<void> _releasePlayer() async {
+    final player = _player;
     _player = null;
+    if (player == null) {
+      return;
+    }
+    try {
+      await player.dispose();
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[PlaybackSessionController] Engine dispose failed',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   void _resetResumeState(Duration target) {

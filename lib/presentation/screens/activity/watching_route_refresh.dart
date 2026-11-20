@@ -12,7 +12,8 @@ import 'providers/watching_provider.dart';
 /// navigator, which updates [GoRouter.routerDelegate] before the reported
 /// location catches up. The refresh listens to both. A real player registers
 /// its Stopped report on [playbackStopGateProvider]; this widget waits for
-/// that report before invalidating. The web fallback never registers a
+/// that report before invalidating, for at most the gate's
+/// [PlaybackStopGate.settleTimeout]. The web fallback never registers a
 /// report, so the refresh runs on the next frame.
 class WatchingRouteRefresh extends ConsumerStatefulWidget {
   /// Creates a refresh listener around [child].
