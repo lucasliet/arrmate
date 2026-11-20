@@ -12,12 +12,14 @@ import '../../helpers/localized_app.dart';
 import 'mock_image_http.dart';
 
 const _posterUrl = 'https://image.tmdb.org/t/p/w500/poster.jpg';
+const _otherPosterUrl = 'https://image.tmdb.org/t/p/w500/other.jpg';
 const _authHeaders = {'X-Api-Key': 'test-api-key'};
 
 class _OfflineHttpClient extends Mock implements HttpClient {}
 
 Widget _wrap({
   required bool isWeb,
+  String imageUrl = _posterUrl,
   Map<String, String>? httpHeaders,
   WidgetBuilder? placeholderBuilder,
 }) {
@@ -39,7 +41,7 @@ Widget _wrap({
           width: 100,
           height: 150,
           child: PosterNetworkImage(
-            imageUrl: _posterUrl,
+            imageUrl: imageUrl,
             httpHeaders: httpHeaders,
             placeholderBuilder: placeholderBuilder,
             errorBuilder: (context) => const Icon(Icons.broken_image),
@@ -53,6 +55,13 @@ Widget _wrap({
 void main() {
   setUpAll(() {
     registerMockFallbacks();
+  });
+
+  // A poster decoded by an earlier test would be shown at once, skipping the
+  // loading state the next test expects.
+  setUp(() {
+    imageCache.clear();
+    imageCache.clearLiveImages();
   });
 
   group('PosterNetworkImage', () {
@@ -105,6 +114,32 @@ void main() {
             TestHttpOverrides().createHttpClient(context),
       );
     });
+
+    testWidgets(
+      'builds a new image on web when the poster URL changes in place',
+      (tester) async {
+        await HttpOverrides.runZoned(
+          () async {
+            // Given a poster already on screen
+            await tester.pumpWidget(_wrap(isWeb: true));
+            final first = tester.state(find.byType(Image));
+
+            // When the same slot receives another poster
+            await tester.pumpWidget(
+              _wrap(isWeb: true, imageUrl: _otherPosterUrl),
+            );
+
+            // Then the image is not the one that showed the previous poster
+            final second = tester.state(find.byType(Image));
+            expect(second, isNot(same(first)));
+            final image = tester.widget<Image>(find.byType(Image));
+            expect((image.image as NetworkImage).url, _otherPosterUrl);
+          },
+          createHttpClient: (context) =>
+              TestHttpOverrides().createHttpClient(context),
+        );
+      },
+    );
 
     for (final isWeb in [true, false]) {
       testWidgets('shows the given placeholder while loading (web: $isWeb)', (

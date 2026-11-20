@@ -45,6 +45,9 @@ class PosterNetworkImage extends ConsumerWidget {
       // route is shown again, which blanks it on web (issue #59).
       return Image.network(
         imageUrl,
+        // The `<img>` fallback keeps showing the previous poster when the same
+        // element is given another URL, so each URL gets its own element.
+        key: ValueKey(imageUrl),
         headers: httpHeaders,
         fit: fit,
         // TMDB and local servers do not always send CORS headers; without
