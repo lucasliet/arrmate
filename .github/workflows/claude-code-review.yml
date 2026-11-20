@@ -22,20 +22,28 @@ jobs:
     # `--allowed-tools` REPLACES the default tool set, so every tool the review
     # needs has to be listed here. Read/Grep/Glob are what let the reviewer open
     # the files it is reviewing; without them the run burns ~20 permission
-    # denials and may end green without posting anything.
+    # denials and may end green without posting anything. Listing the inline
+    # comment tool is also what makes the action start that MCP server, and the
+    # `gh api .../comments` entry lets the reviewer read the inline comments of
+    # earlier reviews, which `gh pr view --comments` does not return.
     env:
       ZAI_MODEL: glm-5.3
       # Bots whose pushes may trigger a review. claude-code-action refuses runs
       # started by any other bot, which left the check red when a Cursor agent
       # pushed to a PR branch.
       REVIEW_ALLOWED_BOTS: 'cursor,cursor[bot]'
-      REVIEW_TOOLS: 'Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)'
+      REVIEW_TOOLS: 'Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments:*),mcp__github_inline_comment__create_inline_comment'
       REVIEW_PROMPT: |
-        /code-review:code-review
+        /code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
         PR NUMBER: ${{ github.event.pull_request.number }}
 
+        The instructions below take precedence over the command's own steps wherever they differ.
+
         IMPORTANT - Before reviewing, check the PR comments thread for previous code reviews.
+        Inline comments of earlier reviews are not in that thread; read them with
+        `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments`.
+        A previous review by Claude is NOT a reason to stop: review the new commits.
 
         If previous reviews exist:
         1. DO NOT repeat suggestions that were already made
@@ -54,23 +62,28 @@ jobs:
         - Test coverage
 
         Do not nitpick, focus your review in major issues that cannot be merged.
-        address your suggestions to the class and line you are referring to.
+        Post each new finding as an inline comment on the file and line it refers to, using
+        `mcp__github_inline_comment__create_inline_comment` with `confirmed: true`, one comment per
+        issue, with a committable suggestion block only when it fixes the issue entirely.
+        A finding that has no line in the diff goes in the summary comment instead.
 
         Structure your review as:
         ## Previous Suggestions Status (if applicable, if not, just ignore section, don't write anything)
         [Status of each previous suggestion]
 
         ## New Findings (if that is the first review, don't add this title)
-        [New issues found in recent commits]
+        [One line per new issue, naming the file and line of its inline comment]
 
         ## Veredict [commit-hash]
         [Your final verdict, and if you approve the PR or not]
 
         Use the repository's AGENTS.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 
-        answer the review in brazilian portuguese.
+        answer the review in brazilian portuguese, inline comments included.
 
-        Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+        ALWAYS finish by using `gh pr comment` with your Bash tool to leave the structured review above
+        as a single summary comment on the PR, even when every finding was already posted inline and
+        even when there are no findings. That comment is how this workflow knows the review ran.
 
     steps:
       - name: Checkout repository
@@ -159,7 +172,9 @@ jobs:
 
       # The action exits 0 even when the agent gives up, so the step outcome
       # alone cannot tell a real review from a silent no-op. A published comment
-      # is the only reliable signal, and it is what decides the fallback.
+      # is the only reliable signal, and it is what decides the fallback. Only
+      # the summary comment counts: inline comments come before it, so a run
+      # that died halfway is still retried by the fallback.
       - name: Check whether the Anthropic review was published
         id: claude-result
         env:
