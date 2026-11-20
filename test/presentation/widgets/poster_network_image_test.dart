@@ -73,6 +73,10 @@ void main() {
             expect(provider, isA<NetworkImage>());
             expect((provider as NetworkImage).url, _posterUrl);
             expect(provider.headers, _authHeaders);
+            expect(
+              provider.webHtmlElementStrategy,
+              WebHtmlElementStrategy.fallback,
+            );
             expect(image.fit, BoxFit.cover);
             expect(find.byType(CachedNetworkImage), findsNothing);
           },

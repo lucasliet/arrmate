@@ -47,6 +47,9 @@ class PosterNetworkImage extends ConsumerWidget {
         imageUrl,
         headers: httpHeaders,
         fit: fit,
+        // TMDB and local servers do not always send CORS headers; without
+        // the fallback the image fails to load instead of using <img>.
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
             wasSynchronouslyLoaded || frame != null
             ? child
