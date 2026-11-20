@@ -715,9 +715,38 @@ void main() {
       );
 
       // Then the next request reaches the server without a user retry
-      expect(probedUrls, ['https://alternative.test']);
+      expect(
+        probedUrls,
+        unorderedEquals(['https://primary.test', 'https://alternative.test']),
+      );
       adapter.unavailableHosts.clear();
       expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should report the browser block when the primary answers the '
+        'browser and only the alternative is down', () async {
+      // Given a primary the browser refuses to read and a dead alternative
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (url) async => url == 'https://primary.test',
+      );
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+
+      // Then no further login is sent until the user retries
+      adapter.requests.clear();
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+      expect(adapter.requests, isEmpty);
     });
 
     test('should keep a plain connection error when another request is '
@@ -731,7 +760,7 @@ void main() {
         adapter,
         browserManagedSession: true,
         browserReachability: (_) {
-          probeStarted.complete();
+          if (!probeStarted.isCompleted) probeStarted.complete();
           return probe.future;
         },
       );
