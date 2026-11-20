@@ -216,10 +216,129 @@ void main() {
       verify(service.getTorrents).called(greaterThan(1));
       container.dispose();
     });
+
+    for (final action
+        in <String, ({TorrentStatus before, TorrentStatus after})>{
+          'pause': (
+            before: TorrentStatus.uploading,
+            after: TorrentStatus.pausedUP,
+          ),
+          'resume': (
+            before: TorrentStatus.pausedUP,
+            after: TorrentStatus.uploading,
+          ),
+        }.entries) {
+      testWidgets('should show the new state after a single ${action.key} '
+          'even when the server still reports the old one right after it', (
+        tester,
+      ) async {
+        // Given a server that only reports the new state on its next refresh
+        final before = action.value.before;
+        final after = action.value.after;
+        var calls = 0;
+        when(service.getTorrents).thenAnswer((_) async {
+          calls++;
+          return [_torrent(status: calls <= 2 ? before : after)];
+        });
+        when(() => service.pauseTorrents(any())).thenAnswer((_) async {});
+        when(() => service.resumeTorrents(any())).thenAnswer((_) async {});
+        final container = openList();
+        await tester.pump();
+        final notifier = container.read(qbittorrentTorrentsProvider.notifier);
+
+        // When the action runs once
+        if (after.isPaused) {
+          await notifier.pauseTorrents(['aabb']);
+        } else {
+          await notifier.resumeTorrents(['aabb']);
+        }
+        await tester.pump();
+        expect(
+          container.read(qbittorrentTorrentsProvider).value!.single.status,
+          before,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+
+        // Then the list catches up without a second try
+        expect(
+          container.read(qbittorrentTorrentsProvider).value!.single.status,
+          after,
+        );
+        if (after.isPaused) {
+          verify(() => service.pauseTorrents(['aabb'])).called(1);
+        } else {
+          verify(() => service.resumeTorrents(['aabb'])).called(1);
+        }
+
+        // And polling goes back to its regular pace
+        await tester.pump(const Duration(seconds: 10));
+        expect(calls, 3);
+        container.dispose();
+      });
+    }
+
+    testWidgets('should stop the quick polls after the limit when the state '
+        'never changes', (tester) async {
+      // Given a server that never reports the pause
+      var calls = 0;
+      when(service.getTorrents).thenAnswer((_) async {
+        calls++;
+        return [_torrent()];
+      });
+      when(() => service.pauseTorrents(any())).thenAnswer((_) async {});
+      final container = openList();
+      await tester.pump();
+
+      // When the torrent is paused and ten seconds go by
+      await container.read(qbittorrentTorrentsProvider.notifier).pauseTorrents([
+        'aabb',
+      ]);
+      await tester.pump();
+      for (var second = 0; second < 10; second++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      // Then only the load, the refetch and five quick polls happened
+      expect(calls, 7);
+      container.dispose();
+    });
+
+    testWidgets('should not start quick polls when the pause is refused', (
+      tester,
+    ) async {
+      // Given a server that refuses the pause
+      var calls = 0;
+      when(service.getTorrents).thenAnswer((_) async {
+        calls++;
+        return [_torrent()];
+      });
+      when(() => service.pauseTorrents(any())).thenThrow(
+        DioException.connectionError(
+          requestOptions: RequestOptions(path: '/api/v2/torrents/stop'),
+          reason: 'unreachable',
+        ),
+      );
+      final container = openList();
+      await tester.pump();
+
+      // When the pause fails
+      await expectLater(
+        container.read(qbittorrentTorrentsProvider.notifier).pauseTorrents([
+          'aabb',
+        ]),
+        throwsA(isA<DioException>()),
+      );
+      await tester.pump(const Duration(seconds: 5));
+
+      // Then the list was not asked again ahead of its regular pace
+      expect(calls, 1);
+      container.dispose();
+    });
   });
 }
 
-Torrent _torrent() {
+Torrent _torrent({TorrentStatus status = TorrentStatus.uploading}) {
   return Torrent(
     hash: 'aabb',
     name: 'Arrival.2016.1080p',
@@ -229,7 +348,7 @@ Torrent _torrent() {
     upspeed: 0,
     eta: 0,
     ratio: 1,
-    status: TorrentStatus.uploading,
+    status: status,
     state: 'uploading',
     tags: const [],
     savePath: '/downloads',

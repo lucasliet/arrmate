@@ -14,8 +14,19 @@ final qbittorrentTorrentsProvider =
     );
 
 class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
+  /// Pace of the polls that wait for qBittorrent to report a pause or resume.
+  static const Duration _settleInterval = Duration(seconds: 1);
+
+  /// How many quick polls a pause or resume may take before giving up.
+  static const int _maxSettlePolls = 5;
+
   Timer? _timer;
   bool _isDisposed = false;
+
+  /// Hashes whose pause or resume the server has not reported yet, mapped to
+  /// whether they are expected to be paused.
+  final Map<String, bool> _expectedPaused = {};
+  int _settlePollsLeft = 0;
 
   @override
   Future<List<Torrent>> build() async {
@@ -47,9 +58,10 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
 
     try {
       final torrents = await service.getTorrents();
-      _schedulePolling(_calculatePollingInterval(torrents));
+      _schedulePolling(_nextPollInterval(torrents));
       return torrents;
     } catch (e, stack) {
+      _clearExpectedStates();
       logger.error('[QBittorrentNotifier] Failed to fetch torrents', e, stack);
       // Refused credentials do not fix themselves. Polling on would ask the
       // server to log in again every minute, and qBittorrent bans an IP after a
@@ -87,6 +99,46 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
             });
       }
     });
+  }
+
+  /// Records that [hashes] were just paused or resumed, so the next polls
+  /// come quickly until the server reports it.
+  void _expectPausedState(List<String> hashes, {required bool paused}) {
+    for (final hash in hashes) {
+      _expectedPaused[hash] = paused;
+    }
+    _settlePollsLeft = _maxSettlePolls;
+  }
+
+  /// Forgets the pauses and resumes still waiting for the server.
+  void _clearExpectedStates() {
+    _expectedPaused.clear();
+    _settlePollsLeft = 0;
+  }
+
+  /// Returns how long to wait before the poll that follows [torrents].
+  ///
+  /// qBittorrent accepts a pause or resume at once but only reports the new
+  /// state on its next refresh (1.5s by default), so the list read right after
+  /// the action is still the old one. While a torrent in [torrents] has not
+  /// reached the state asked for, the next poll comes after [_settleInterval],
+  /// at most [_maxSettlePolls] times. Otherwise the regular pace applies.
+  Duration _nextPollInterval(List<Torrent> torrents) {
+    final pausedByHash = {
+      for (final torrent in torrents) torrent.hash: torrent.status.isPaused,
+    };
+    _expectedPaused.removeWhere((hash, paused) {
+      final reported = pausedByHash[hash];
+      return reported == null || reported == paused;
+    });
+
+    if (_expectedPaused.isEmpty || _settlePollsLeft <= 0) {
+      _clearExpectedStates();
+      return _calculatePollingInterval(torrents);
+    }
+
+    _settlePollsLeft--;
+    return _settleInterval;
   }
 
   Duration _calculatePollingInterval(List<Torrent> torrents) {
@@ -130,6 +182,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
   /// Refreshes the list manually and resets polling.
   Future<void> refresh() async {
     _timer?.cancel();
+    _clearExpectedStates();
     ref.read(qbittorrentServiceProvider)?.allowAuthenticationRetry();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(_fetchTorrents);
@@ -139,6 +192,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     final service = ref.read(qbittorrentServiceProvider);
     if (service == null) return;
     await service.pauseTorrents(hashes);
+    _expectPausedState(hashes, paused: true);
     ref.invalidateSelf();
   }
 
@@ -146,6 +200,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     final service = ref.read(qbittorrentServiceProvider);
     if (service == null) return;
     await service.resumeTorrents(hashes);
+    _expectPausedState(hashes, paused: false);
     ref.invalidateSelf();
   }
 
