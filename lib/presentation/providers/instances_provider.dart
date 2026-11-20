@@ -425,6 +425,7 @@ class InstancesNotifier extends Notifier<InstancesState> {
             apiKey: migrated.apiKey,
             headers: migrated.headers,
             userSession: migrated.userSession,
+            clearUserSession: migrated.userSession == null,
           ),
         );
         logger.info(

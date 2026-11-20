@@ -533,6 +533,51 @@ void main() {
   });
 
   test(
+    'drops a session stored next to an API key and a Basic password on load',
+    () async {
+      // Given
+      SharedPreferences.setMockInitialValues({
+        'instances': jsonEncode([
+          Instance(
+            id: 'jellyfin-legacy',
+            type: InstanceType.jellyfin,
+            label: 'Legacy',
+            url: 'https://jellyfin.example.com',
+            apiKey: 'server-key',
+            headers: [_basicAuth('admin:secret-password')],
+            userSession: _jellyfinSession,
+          ).toJson(),
+        ]),
+      });
+      final container = ProviderContainer(
+        overrides: [
+          jellyfinSessionServiceProvider.overrideWithValue(
+            _signingInSessions(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // When
+      await _waitUntilLoaded(container);
+      await _waitUntil(
+        () =>
+            container.read(instancesProvider).instances.single.headers.isEmpty,
+      );
+
+      // Then
+      final migrated = container.read(instancesProvider).instances.single;
+      expect(migrated.apiKey, 'server-key');
+      expect(migrated.userSession, isNull);
+      final preferences = await SharedPreferences.getInstance();
+      expect(
+        preferences.getString('instances'),
+        isNot(contains(_jellyfinSession.accessToken)),
+      );
+    },
+  );
+
+  test(
     'should persist and restore the selected instance for each type',
     () async {
       final firstContainer = ProviderContainer();
