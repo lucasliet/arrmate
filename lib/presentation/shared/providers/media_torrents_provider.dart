@@ -63,6 +63,48 @@ class MediaTorrents extends Equatable {
   List<Object?> get props => [torrents, qbittorrentSkipped];
 }
 
+/// Pace of the reloads that wait for qBittorrent to report a pause or resume.
+const Duration _settleInterval = Duration(seconds: 1);
+
+/// How many reloads a pause or resume may take before giving up.
+const int _maxSettleReloads = 5;
+
+/// Reloads [provider] until the torrent [hash] reports the [paused] state.
+///
+/// qBittorrent accepts a pause or resume at once but only reports the new
+/// state on its next refresh (1.5s by default), and a media torrent list is
+/// read once, so without this it keeps the state from before the action. The
+/// list is reloaded every second, at most five times, and the reloads stop as
+/// soon as the state is reported, the torrent is gone, the list is no longer
+/// on screen or a reload fails.
+Future<void> reloadMediaTorrentsUntilPaused(
+  ProviderContainer container,
+  AutoDisposeFutureProvider<MediaTorrents> provider, {
+  required String hash,
+  required bool paused,
+}) async {
+  for (var reload = 0; reload < _maxSettleReloads; reload++) {
+    await Future<void>.delayed(_settleInterval);
+    try {
+      if (!container.exists(provider)) return;
+      final media = await container.refresh(provider.future);
+      final reported = media.torrents
+          .where((linked) => linked.torrent.hash == hash)
+          .firstOrNull;
+      if (reported == null || reported.torrent.status.isPaused == paused) {
+        return;
+      }
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[MediaTorrents] Could not confirm the pause state of a torrent',
+        error,
+        stackTrace,
+      );
+      return;
+    }
+  }
+}
+
 /// Resolves the qBittorrent torrents backing the Radarr movie [movieId].
 ///
 /// Reverse of the torrent link index: instead of sweeping the global history

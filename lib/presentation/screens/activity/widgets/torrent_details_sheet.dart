@@ -27,11 +27,19 @@ class TorrentDetailsSheet extends ConsumerWidget {
   /// user is already on the media the button would navigate to.
   final bool showOpenInLibrary;
 
+  /// Called after the server accepted a pause (`true`) or a resume (`false`).
+  ///
+  /// The torrents tab follows the change through
+  /// [qbittorrentTorrentsProvider]; a caller listing torrents from another
+  /// source uses this to reload it.
+  final ValueChanged<bool>? onPausedChanged;
+
   const TorrentDetailsSheet({
     super.key,
     required this.torrent,
     this.link,
     this.showOpenInLibrary = true,
+    this.onPausedChanged,
   });
 
   @override
@@ -285,11 +293,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               ? FilledButton.icon(
                                   onPressed: () => _runTorrentAction(
                                     context,
-                                    () => ref
-                                        .read(
-                                          qbittorrentTorrentsProvider.notifier,
-                                        )
-                                        .resumeTorrents([torrent.hash]),
+                                    () => _setPaused(ref, paused: false),
                                   ),
                                   icon: const Icon(Icons.play_arrow),
                                   label: Text(context.l10n.torrentResume),
@@ -297,11 +301,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               : FilledButton.icon(
                                   onPressed: () => _runTorrentAction(
                                     context,
-                                    () => ref
-                                        .read(
-                                          qbittorrentTorrentsProvider.notifier,
-                                        )
-                                        .pauseTorrents([torrent.hash]),
+                                    () => _setPaused(ref, paused: true),
                                   ),
                                   icon: const Icon(Icons.pause),
                                   label: Text(context.l10n.torrentPause),
@@ -851,6 +851,18 @@ class TorrentDetailsSheet extends ConsumerWidget {
       return context.colorScheme.secondary;
     }
     return context.colorScheme.primary;
+  }
+
+  /// Pauses or resumes this torrent and reports it through
+  /// [onPausedChanged] once the server accepted the request.
+  Future<void> _setPaused(WidgetRef ref, {required bool paused}) async {
+    final notifier = ref.read(qbittorrentTorrentsProvider.notifier);
+    if (paused) {
+      await notifier.pauseTorrents([torrent.hash]);
+    } else {
+      await notifier.resumeTorrents([torrent.hash]);
+    }
+    onPausedChanged?.call(paused);
   }
 
   String _formatDate(int timestamp) {

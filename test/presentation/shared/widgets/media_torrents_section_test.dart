@@ -1,4 +1,5 @@
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/screens/activity/providers/qbittorrent_provider.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sheet.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_list_item.dart';
 import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
@@ -7,6 +8,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../helpers/localized_app.dart';
+
+/// Notifier standing in for qBittorrent: it accepts a pause at once and
+/// records it, without any network or polling.
+class _PauseRecordingNotifier extends QBittorrentNotifier {
+  final List<String> pausedHashes = [];
+
+  @override
+  Future<List<Torrent>> build() async => const [];
+
+  @override
+  Future<void> pauseTorrents(List<String> hashes) async {
+    pausedHashes.addAll(hashes);
+  }
+}
 
 /// Stand-in for the real reverse-lookup providers.
 final _stubProvider = FutureProvider.autoDispose<MediaTorrents>(
@@ -110,6 +125,77 @@ void main() {
       expect(sheet.torrent.hash, 'aabb');
       expect(find.text('Open in library'), findsNothing);
     });
+
+    testWidgets(
+      'should reload until the client reports a pause made from the sheet',
+      (tester) async {
+        // Given a client that reports the pause only on its second reload,
+        // on a view tall enough to build the sheet actions
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(800, 2400);
+        addTearDown(tester.view.reset);
+        final notifier = _PauseRecordingNotifier();
+        var loads = 0;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              qbittorrentTorrentsProvider.overrideWith(() => notifier),
+              _stubProvider.overrideWith((ref) async {
+                loads++;
+                return MediaTorrents(
+                  torrents: [
+                    _linked(
+                      hash: 'aabb',
+                      name: 'Arrival.2016.1080p',
+                      status: loads >= 3
+                          ? TorrentStatus.pausedUP
+                          : TorrentStatus.uploading,
+                    ),
+                  ],
+                );
+              }),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MediaTorrentsSection(provider: _stubProvider),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(TorrentListItem));
+        await tester.pumpAndSettle();
+
+        // When
+        await tester.tap(find.text('Pause'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(notifier.pausedHashes, ['aabb']);
+        expect(loads, 3);
+        expect(
+          tester
+              .widget<TorrentListItem>(find.byType(TorrentListItem))
+              .torrent
+              .status,
+          TorrentStatus.pausedUP,
+        );
+
+        // When the state is confirmed
+        await tester.pump(const Duration(seconds: 5));
+
+        // Then the reloads stop
+        expect(loads, 3);
+      },
+    );
   });
 }
 
@@ -144,6 +230,7 @@ LinkedTorrent _linked({
   required String hash,
   required String name,
   Set<int> episodeIds = const {},
+  TorrentStatus status = TorrentStatus.uploading,
 }) {
   return LinkedTorrent(
     torrent: Torrent(
@@ -155,7 +242,7 @@ LinkedTorrent _linked({
       upspeed: 0,
       eta: 0,
       ratio: 1,
-      status: TorrentStatus.uploading,
+      status: status,
       state: 'uploading',
       tags: const [],
       savePath: '/downloads',
