@@ -29,6 +29,7 @@ class PlaybackStopGate {
   Future<void> _pending = Future<void>.value();
   Completer<void>? _session;
   Future<void>? _lateReport;
+  Future<void>? _tracked;
 
   /// The last tracked stop report when it outlived [settleTimeout], so
   /// [settled] completed before the server stored the position.
@@ -65,10 +66,13 @@ class PlaybackStopGate {
   /// follows [report] directly, under the same limit.
   void track(Future<void> report) {
     _lateReport = null;
+    _tracked = report;
     final bounded = report.timeout(
       settleTimeout,
       onTimeout: () {
-        _lateReport = report;
+        if (identical(_tracked, report)) {
+          _lateReport = report;
+        }
         logger.warning(
           '[PlaybackStopGate] Stop report still pending after '
           '${settleTimeout.inMilliseconds}ms; releasing the Watching refresh',

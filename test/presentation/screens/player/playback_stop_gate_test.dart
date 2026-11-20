@@ -103,26 +103,45 @@ void main() {
       expect(gate.lateReport, isNull);
     });
 
-    test('a new session can be armed after a timed-out one', () async {
+    testWidgets('a new session can be armed after a timed-out one', (
+      tester,
+    ) async {
       // Given
       final gate = PlaybackStopGate(settleTimeout: shortTimeout);
       gate.arm();
       gate.track(Completer<void>().future);
-      await gate.settled.timeout(testLimit);
+      await tester.pump(shortTimeout);
       final nextReport = Completer<void>();
       gate.arm();
       gate.track(nextReport.future);
       var settled = false;
       unawaited(gate.settled.then((_) => settled = true));
-      await pumpEventQueue();
+      await tester.pump();
       expect(settled, isFalse);
 
       // When
       nextReport.complete();
-      await pumpEventQueue();
+      await tester.pump();
 
       // Then
       expect(settled, isTrue);
+    });
+
+    testWidgets('lateReport ignores the timeout of a replaced report', (
+      tester,
+    ) async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      gate.arm();
+      gate.track(Completer<void>().future);
+      await tester.pump(shortTimeout ~/ 2);
+
+      // When
+      gate.track(Future<void>.value());
+      await tester.pump(shortTimeout);
+
+      // Then
+      expect(gate.lateReport, isNull);
     });
   });
 }
