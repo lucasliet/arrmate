@@ -38,9 +38,15 @@ class JellyfinSessionService {
 
   /// Whether [instance] authenticates with an API key while still holding a
   /// Basic credentials header, which API key mode never sends.
+  ///
+  /// Each header is checked on its own, as
+  /// [JellyfinService.withoutBasicCredentials] does, so a password listed
+  /// after another `Authorization` header is still found.
   bool _carriesUnusedBasicCredentials(Instance instance) {
     return instance.apiKey.isNotEmpty &&
-        JellyfinService.decodeBasicCredentials(instance.headers) != null;
+        instance.headers.any(
+          (header) => JellyfinService.decodeBasicCredentials([header]) != null,
+        );
   }
 
   /// Returns [instance] ready to be persisted without a password.

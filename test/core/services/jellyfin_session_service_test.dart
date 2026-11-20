@@ -170,6 +170,41 @@ void main() {
       expect(sessions.needsCredentialExchange(instance), isFalse);
     });
 
+    test(
+      'drops a Basic password listed after another Authorization header',
+      () async {
+        // Given
+        final service = MockJellyfinService();
+        when(() => service.hasLoginCredentials).thenReturn(false);
+        final sessions = JellyfinSessionService(
+          jellyfinServiceFactory: (_) => service,
+        );
+        final instance = jellyfin(
+          apiKey: 'server-key',
+          headers: [
+            InstanceHeader(name: 'Authorization', value: 'Bearer x'),
+            InstanceHeader(
+              name: 'Authorization',
+              value: 'Basic YWRtaW46cGFzcw==',
+            ),
+          ],
+        );
+
+        // When
+        final exchanged = await sessions.exchangeCredentials(instance);
+
+        // Then
+        expect(sessions.needsCredentialExchange(instance), isTrue);
+        expect(exchanged.apiKey, 'server-key');
+        expect(exchanged.headers.map((h) => h.value), ['Bearer x']);
+        expect(
+          exchanged.toJson().toString(),
+          isNot(contains('YWRtaW46cGFzcw')),
+        );
+        expect(sessions.needsCredentialExchange(exchanged), isFalse);
+      },
+    );
+
     test('keeps a stored session when no new credentials are given', () async {
       // Given
       final service = MockJellyfinService();
