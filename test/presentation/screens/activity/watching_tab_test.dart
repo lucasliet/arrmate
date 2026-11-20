@@ -700,6 +700,37 @@ void main() {
       },
     );
 
+    testWidgets(
+      'refetches watching items again when a stop report finishes after the '
+      'gate timeout',
+      (tester) async {
+        // Given
+        const settleTimeout = Duration(milliseconds: 200);
+        final lateStop = Completer<void>();
+        final harness = await _pumpActivityShell(
+          tester,
+          jellyfinInstance: jellyfinInstance,
+          item: episodeWatchingItem,
+          player: _StopReportingPlayer(stop: lateStop.future),
+          stopGate: PlaybackStopGate(settleTimeout: settleTimeout),
+        );
+        await tester.tap(find.byType(WatchingListItem));
+        await tester.pumpAndSettle();
+        harness.router.pop();
+        await tester.pumpAndSettle();
+        await tester.pump(settleTimeout);
+        await tester.pumpAndSettle();
+        expect(harness.buildCount, harness.buildsBeforePlay + 1);
+
+        // When
+        lateStop.complete();
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(harness.buildCount, harness.buildsBeforePlay + 2);
+      },
+    );
+
     testWidgets('does not navigate to library when instance selection fails', (
       tester,
     ) async {

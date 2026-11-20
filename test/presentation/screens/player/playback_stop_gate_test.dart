@@ -72,6 +72,37 @@ void main() {
       },
     );
 
+    test('lateReport exposes the report that outlived the timeout', () async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      final slowReport = Completer<void>();
+      gate.arm();
+      gate.track(slowReport.future);
+      expect(gate.lateReport, isNull);
+      await gate.settled.timeout(testLimit);
+
+      // When
+      final lateReport = gate.lateReport;
+      slowReport.complete();
+
+      // Then
+      expect(lateReport, isNotNull);
+      await expectLater(lateReport!.timeout(testLimit), completes);
+    });
+
+    test('lateReport stays null when the report finishes in time', () async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      gate.arm();
+
+      // When
+      gate.track(Future<void>.value());
+      await gate.settled.timeout(testLimit);
+
+      // Then
+      expect(gate.lateReport, isNull);
+    });
+
     test('a new session can be armed after a timed-out one', () async {
       // Given
       final gate = PlaybackStopGate(settleTimeout: shortTimeout);

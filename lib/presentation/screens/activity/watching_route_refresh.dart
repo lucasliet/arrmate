@@ -13,7 +13,8 @@ import 'providers/watching_provider.dart';
 /// location catches up. The refresh listens to both. A real player registers
 /// its Stopped report on [playbackStopGateProvider]; this widget waits for
 /// that report before invalidating, for at most the gate's
-/// [PlaybackStopGate.settleTimeout]. The web fallback never registers a
+/// [PlaybackStopGate.settleTimeout]; a report that finishes after that limit
+/// triggers a second refresh. The web fallback never registers a
 /// report, so the refresh runs on the next frame.
 class WatchingRouteRefresh extends ConsumerStatefulWidget {
   /// Creates a refresh listener around [child].
@@ -107,12 +108,24 @@ class _WatchingRouteRefreshState extends ConsumerState<WatchingRouteRefresh> {
   }
 
   /// Invalidates the Watching feed once [gate] has finished its stop report.
+  ///
+  /// When the wait timed out, the feed was read before the server stored the
+  /// position, so it is invalidated again when that report finishes.
   Future<void> _refreshAfterStop(
     ProviderContainer container,
     PlaybackStopGate gate,
     int generation,
   ) async {
     await gate.settled;
+    if (!mounted || generation != _leaveGeneration) {
+      return;
+    }
+    container.invalidate(watchingItemsProvider);
+    final lateReport = gate.lateReport;
+    if (lateReport == null) {
+      return;
+    }
+    await lateReport;
     if (!mounted || generation != _leaveGeneration) {
       return;
     }

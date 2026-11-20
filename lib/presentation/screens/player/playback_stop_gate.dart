@@ -13,7 +13,9 @@ import '../../../core/services/logger_service.dart';
 /// already complete and the refresh runs immediately.
 ///
 /// The wait is bounded by [settleTimeout]: a report stuck on a stalled server
-/// keeps running in the background, but no longer holds the refresh.
+/// keeps running in the background, but no longer holds the refresh. That
+/// report stays reachable through [lateReport], so the list can refetch once
+/// more when a slow server finally stores the position.
 class PlaybackStopGate {
   /// Creates a gate that waits at most [settleTimeout] for a stop report.
   PlaybackStopGate({this.settleTimeout = defaultSettleTimeout});
@@ -26,6 +28,14 @@ class PlaybackStopGate {
 
   Future<void> _pending = Future<void>.value();
   Completer<void>? _session;
+  Future<void>? _lateReport;
+
+  /// The last tracked stop report when it outlived [settleTimeout], so
+  /// [settled] completed before the server stored the position.
+  ///
+  /// Null while the wait is still running, when the report finished in time,
+  /// and after a newer report is tracked.
+  Future<void>? get lateReport => _lateReport;
 
   /// Completes when the armed session's stop report has finished or
   /// [settleTimeout] has passed since it was tracked.
@@ -54,9 +64,11 @@ class PlaybackStopGate {
   /// [report] may already be complete. When nothing was armed, [settled]
   /// follows [report] directly, under the same limit.
   void track(Future<void> report) {
+    _lateReport = null;
     final bounded = report.timeout(
       settleTimeout,
       onTimeout: () {
+        _lateReport = report;
         logger.warning(
           '[PlaybackStopGate] Stop report still pending after '
           '${settleTimeout.inMilliseconds}ms; releasing the Watching refresh',
