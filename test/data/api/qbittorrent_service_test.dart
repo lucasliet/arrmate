@@ -661,6 +661,31 @@ void main() {
       );
     });
 
+    test('should keep a plain connection error when a cross-origin '
+        'qBittorrent that already answered becomes unreachable', () async {
+      // Given a cross-origin session the browser already proved it can read
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await service.getTorrents();
+      adapter.unavailableHosts.addAll({'primary.test', 'alternative.test'});
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+
+      // Then the next request reaches the server without a user retry
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
     test('should still fail over when the first cross-origin candidate is '
         'unreachable', () async {
       // Given

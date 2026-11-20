@@ -312,10 +312,13 @@ class QBittorrentService {
   /// qBittorrent sends no CORS headers and refuses a foreign `Origin`, and a
   /// request sent with credentials is also discarded when the server allows
   /// any origin (`*`) or does not allow credentials. The browser reports all
-  /// of them, and a server that is down, as the same connection error.
+  /// of them, and a server that is down, as the same connection error. Once
+  /// a request was accepted the browser is known to read the answers, so a
+  /// later connection error is the network or the server and stays as it is.
   bool _isBlockedByBrowser(DioException error, String url) {
     return _browserManagedSession &&
         _usesCookieSession &&
+        !_browserSessionProven &&
         error.type == DioExceptionType.connectionError &&
         _isCrossOrigin(url);
   }
@@ -330,7 +333,9 @@ class QBittorrentService {
   /// [allowAuthenticationRetry]; unless a request was already accepted, which
   /// proves the session is kept and leaves only that call failed. A
   /// cross-origin request the browser could not read fails the same lasting
-  /// way with [BrowserCrossOriginBlockedError]. Any other status
+  /// way with [BrowserCrossOriginBlockedError], unless a request was already
+  /// accepted: the connection error is then rethrown as it came, so a poll
+  /// can retry once the server is back. Any other status
   /// throws a [DioException], so an action the server refused is never taken
   /// for one it performed.
   ///
