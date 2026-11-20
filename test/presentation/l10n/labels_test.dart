@@ -111,6 +111,22 @@ void main() {
       );
     });
 
+    test('explains a blocked cross-origin qBittorrent in every language', () {
+      // Given
+      const error = BrowserCrossOriginBlockedError();
+
+      // When
+      final english = describeError(error, en);
+      final portuguese = describeError(error, ptBR);
+      final spanish = describeError(error, es);
+
+      // Then
+      expect(english, en.errorQbittorrentBrowserCrossOrigin);
+      expect(english, error.message);
+      expect(portuguese, ptBR.errorQbittorrentBrowserCrossOrigin);
+      expect(spanish, es.errorQbittorrentBrowserCrossOrigin);
+    });
+
     test('explains a browser session that was not kept instead of blaming '
         'the API key', () {
       // Given

@@ -779,6 +779,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorNotFound => 'Recurso no encontrado.';
 
   @override
+  String get errorQbittorrentBrowserCrossOrigin =>
+      'El navegador bloqueó o no pudo alcanzar qBittorrent en otro dominio. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso), o si acepta solicitudes con credenciales desde este sitio (CORS).';
+
+  @override
   String get errorQbittorrentBrowserSession =>
       'El navegador no conservó la sesión de qBittorrent. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso). De lo contrario, usa una API Key.';
 

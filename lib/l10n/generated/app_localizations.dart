@@ -1391,6 +1391,12 @@ abstract class AppLocalizations {
   /// **'Resource not found.'**
   String get errorNotFound;
 
+  /// No description provided for @errorQbittorrentBrowserCrossOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser blocked or could not reach qBittorrent on another domain. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy), or when it allows credentialed requests from this site (CORS).'**
+  String get errorQbittorrentBrowserCrossOrigin;
+
   /// No description provided for @errorQbittorrentBrowserSession.
   ///
   /// In en, this message translates to:

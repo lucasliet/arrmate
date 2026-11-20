@@ -215,6 +215,7 @@
   "errorConnectionFailed": "Falha na conexão. Verifique sua rede.",
   "errorInvalidUrl": "URL inválida: {url}",
   "errorNotFound": "Recurso não encontrado.",
+  "errorQbittorrentBrowserCrossOrigin": "O navegador bloqueou ou não alcançou o qBittorrent em outro domínio. Na web, usuário e senha só funcionam com o qBittorrent servido no mesmo domínio do Arrmate (proxy reverso), ou quando ele aceita requisições com credenciais deste site (CORS).",
   "errorQbittorrentBrowserSession": "O navegador não manteve a sessão do qBittorrent. Na web, usuário e senha só funcionam com o qBittorrent servido no mesmo domínio do Arrmate (proxy reverso). Caso contrário, use uma API Key.",
   "errorRequestCancelled": "Solicitação cancelada",
   "errorRequestTimedOut": "A solicitação expirou. Tente novamente.",

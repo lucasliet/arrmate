@@ -87,7 +87,9 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - No navegador, o login com usuário e senha depende do cookie de sessão, que só é mantido quando o qBittorrent é servido no **mesmo domínio** do Arrmate (reverse proxy).
    - Se o qBittorrent estiver em outro domínio, o login é aceito, mas as chamadas seguintes são recusadas e o app mostra esse erro em vez da lista de torrents.
    - Solução: publicar o qBittorrent atrás de um reverse proxy no mesmo domínio do Arrmate, ou usar uma **API Key** (qBittorrent ≥ v5.2.0) no lugar de usuário e senha.
-   - Apps nativos (Android, iOS, desktop) não têm essa limitação.
+   - Se o erro for **"The browser blocked or could not reach qBittorrent on another domain"**: o navegador não conseguiu ler a resposta do qBittorrent em outro domínio (ou o servidor está fora do ar). O qBittorrent não envia cabeçalhos CORS e recusa `Origin` de fora; um proxy em outro domínio só funciona com usuário e senha se responder com `Access-Control-Allow-Credentials: true` e a origem exata do Arrmate (`Access-Control-Allow-Origin: *` não serve para requisições com credenciais). O app para de tentar o login até o usuário atualizar a lista.
+   - Com autenticação dispensada para a rede local (bypass) ou feita pelo proxy, deixe o campo de usuário e senha vazio: sem ele o app não envia credenciais e um proxy com `Access-Control-Allow-Origin: *` continua funcionando.
+   - Uma ação recusada com 403 (por exemplo mudar o local para uma pasta sem permissão de escrita) falha sozinha; a lista de torrents continua funcionando.
 
 3. **Se error persiste:**
    - Resetar senha no qBittorrent (Settings → WebUI → "Reset to default").

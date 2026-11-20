@@ -21,7 +21,10 @@ import '../../domain/models/models.dart';
 /// cannot be read and a `Cookie` header cannot be written. The browser keeps
 /// and sends the session itself, which only works when qBittorrent is served
 /// from the same site as the app; otherwise the requests after an accepted
-/// login fail with [BrowserSessionUnavailableError].
+/// login fail with [BrowserSessionUnavailableError]. When the answers of a
+/// qBittorrent on another origin cannot be read at all (no CORS headers, or
+/// headers that do not allow credentials), the call fails with
+/// [BrowserCrossOriginBlockedError].
 class QBittorrentService {
   final Instance instance;
   final Dio _dio;
@@ -38,6 +41,17 @@ class QBittorrentService {
   /// Whether a login was accepted while the browser manages the session.
   bool _hasBrowserSession = false;
 
+  /// Whether a request was already accepted while the browser manages the
+  /// session, which proves the browser keeps and sends the cookie.
+  ///
+  /// A rejection that survives a new login is then about that one request
+  /// (an endpoint answering 403, for instance), not about the session.
+  bool _browserSessionProven = false;
+
+  /// Address of the page running the app, which decides whether a request is
+  /// cross-origin for the browser.
+  final Uri _pageUri;
+
   /// Number of accepted logins, which tells a request whether the session it
   /// was rejected with has been replaced since.
   int _sessionGeneration = 0;
@@ -51,8 +65,9 @@ class QBittorrentService {
   /// qBittorrent bans an IP after a few failed logins in a row.
   Future<void>? _loginInFlight;
 
-  /// Set once the server refused the credentials, or the browser did not keep
-  /// the session of an accepted login.
+  /// Set once the server refused the credentials, the browser did not keep
+  /// the session of an accepted login, or the browser could not read the
+  /// answers of a qBittorrent on another origin.
   ///
   /// From then on every request fails with this error without logging in, so
   /// something that keeps retrying (a poll, several open screens) cannot pile
@@ -82,13 +97,16 @@ class QBittorrentService {
 
   /// Creates the service for [instance].
   ///
-  /// [browserManagedSession] tells whether a browser owns the session cookie;
-  /// it defaults to the platform and is only passed by tests.
+  /// [browserManagedSession] tells whether a browser owns the session cookie
+  /// and [pageUri] is the address the app is served from; both default to the
+  /// platform and are only passed by tests.
   QBittorrentService(
     this.instance, {
     Dio? dio,
     bool browserManagedSession = kIsWeb,
+    Uri? pageUri,
   }) : _browserManagedSession = browserManagedSession,
+       _pageUri = pageUri ?? Uri.base,
        _candidateUrls = instance.connectionUrls,
        _activeUrl = instance.connectionUrls.first,
        _dio =
@@ -118,7 +136,23 @@ class QBittorrentService {
   /// - Empty → no managed auth; requests fall back to [Instance.headers] only.
   /// - No `:` → Bearer API key (qBittorrent ≥v5.2.0), no login request.
   /// - `username:password` → form-based login, stores returned SID cookie.
+  ///
+  /// In a browser, a login to another origin whose answer cannot be read
+  /// fails with [BrowserCrossOriginBlockedError].
   Future<void> authenticate({String? baseUrl}) async {
+    try {
+      await _signIn(baseUrl: baseUrl);
+    } on DioException catch (error) {
+      if (_isBlockedByBrowser(error, baseUrl ?? _activeUrl)) {
+        throw const BrowserCrossOriginBlockedError();
+      }
+      rethrow;
+    }
+  }
+
+  /// Runs the login of [authenticate] and lets a connection failure through
+  /// untouched, so [_request] can still fail over to another candidate URL.
+  Future<void> _signIn({String? baseUrl}) async {
     if (instance.apiKey.isEmpty) {
       _isApiKey = false;
       logger.debug(
@@ -200,7 +234,7 @@ class QBittorrentService {
   ///
   /// Stateless modes (API key or custom-header-only) require no preparation —
   /// this is a no-op for them. Cookie mode acquires a session if none is held.
-  /// [currentUrl] is forwarded to [authenticate] so the login POST reaches the
+  /// [currentUrl] is forwarded to [_signIn] so the login POST reaches the
   /// correct candidate when the service has failed over to an alternative URL.
   Future<void> _ensureAuthenticated({String? currentUrl}) async {
     if (_isApiKey) return;
@@ -225,7 +259,7 @@ class QBittorrentService {
     if (running != null) return running;
     final refusal = _refusal;
     if (refusal != null) throw refusal;
-    final login = authenticate(baseUrl: baseUrl);
+    final login = _signIn(baseUrl: baseUrl);
     _loginInFlight = login;
     try {
       await login;
@@ -263,6 +297,29 @@ class QBittorrentService {
   /// Whether [status] means the server refused the credentials.
   bool _isAuthRejected(int? status) => status == 401 || status == 403;
 
+  /// Whether [url] is on another origin than the page running the app.
+  bool _isCrossOrigin(String url) {
+    final target = _pageUri.resolve(url);
+    return target.scheme != _pageUri.scheme ||
+        target.host != _pageUri.host ||
+        target.port != _pageUri.port;
+  }
+
+  /// Whether [error] is how a browser reports an answer it would not let the
+  /// app read: a username and password request to [url] on another origin
+  /// that failed without any response.
+  ///
+  /// qBittorrent sends no CORS headers and refuses a foreign `Origin`, and a
+  /// request sent with credentials is also discarded when the server allows
+  /// any origin (`*`) or does not allow credentials. The browser reports all
+  /// of them, and a server that is down, as the same connection error.
+  bool _isBlockedByBrowser(DioException error, String url) {
+    return _browserManagedSession &&
+        _usesCookieSession &&
+        error.type == DioExceptionType.connectionError &&
+        _isCrossOrigin(url);
+  }
+
   /// Makes an authenticated request.
   ///
   /// Only a 2xx answer is a success. A rejected session (401/403) is renewed
@@ -270,7 +327,10 @@ class QBittorrentService {
   /// [UnauthorizedError] and does not log in any further. In a browser that
   /// second rejection means the session was not kept, so the call fails with
   /// [BrowserSessionUnavailableError] and so does every later one, until
-  /// [allowAuthenticationRetry]. Any other status
+  /// [allowAuthenticationRetry]; unless a request was already accepted, which
+  /// proves the session is kept and leaves only that call failed. A
+  /// cross-origin request the browser could not read fails the same lasting
+  /// way with [BrowserCrossOriginBlockedError]. Any other status
   /// throws a [DioException], so an action the server refused is never taken
   /// for one it performed.
   ///
@@ -308,6 +368,9 @@ class QBittorrentService {
       } on DioException catch (error) {
         final nextUrl = _nextCandidateUrl(attemptedUrls);
         if (!allowFailover || !_canFailOver(error) || nextUrl == null) {
+          if (_isBlockedByBrowser(error, currentUrl)) {
+            throw _refusal = const BrowserCrossOriginBlockedError();
+          }
           rethrow;
         }
         logger.warning(
@@ -372,7 +435,9 @@ class QBittorrentService {
       );
       response = await send();
       if (_isAuthRejected(response.statusCode)) {
-        if (!_browserManagedSession) throw const UnauthorizedError();
+        if (!_browserManagedSession || _browserSessionProven) {
+          throw const UnauthorizedError();
+        }
         _hasBrowserSession = false;
         throw _refusal = const BrowserSessionUnavailableError();
       }
@@ -380,6 +445,9 @@ class QBittorrentService {
 
     final status = response.statusCode;
     if (status != null && status >= 200 && status < 300) {
+      if (_browserManagedSession && _usesCookieSession) {
+        _browserSessionProven = true;
+      }
       return Response<T>(
         data: response.data as T?,
         requestOptions: response.requestOptions,

@@ -28,6 +28,7 @@ String describeError(Object error, AppLocalizations l10n) {
     TimeoutError() when message == const TimeoutError().message =>
       l10n.errorRequestTimedOut,
     BrowserSessionUnavailableError() => l10n.errorQbittorrentBrowserSession,
+    BrowserCrossOriginBlockedError() => l10n.errorQbittorrentBrowserCrossOrigin,
     UnauthorizedError() when message == const UnauthorizedError().message =>
       l10n.errorUnauthorized,
     NotFoundError() when message == const NotFoundError().message =>
