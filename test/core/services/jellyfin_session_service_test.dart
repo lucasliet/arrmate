@@ -87,6 +87,89 @@ void main() {
       }
     });
 
+    test('drops an unused Basic password saved next to an API key', () async {
+      // Given
+      final service = MockJellyfinService();
+      when(() => service.hasLoginCredentials).thenReturn(false);
+      final sessions = JellyfinSessionService(
+        jellyfinServiceFactory: (_) => service,
+      );
+      final instance = jellyfin(
+        apiKey: 'server-key',
+        headers: [
+          InstanceHeader(
+            name: 'Authorization',
+            value: 'Basic YWRtaW46cGFzcw==',
+          ),
+          InstanceHeader(name: 'X-Proxy', value: 'keep-me'),
+        ],
+      );
+
+      // When
+      final exchanged = await sessions.exchangeCredentials(instance);
+
+      // Then
+      expect(exchanged.apiKey, 'server-key');
+      expect(exchanged.userSession, isNull);
+      expect(exchanged.headers.map((h) => h.name), ['X-Proxy']);
+      expect(exchanged.toJson().toString(), isNot(contains('YWRtaW46cGFzcw')));
+      expect(sessions.needsCredentialExchange(instance), isTrue);
+      expect(sessions.needsCredentialExchange(exchanged), isFalse);
+      verifyNever(() => service.signIn());
+    });
+
+    test(
+      'drops the Basic password and the session when an API key is set',
+      () async {
+        // Given
+        final service = MockJellyfinService();
+        when(() => service.hasLoginCredentials).thenReturn(false);
+        when(() => service.logout()).thenAnswer((_) async {});
+        final sessions = JellyfinSessionService(
+          jellyfinServiceFactory: (_) => service,
+        );
+        final instance = jellyfin(
+          apiKey: 'server-key',
+          headers: [
+            InstanceHeader(
+              name: 'Authorization',
+              value: 'Basic YWRtaW46cGFzcw==',
+            ),
+          ],
+          userSession: session,
+        );
+
+        // When
+        final exchanged = await sessions.exchangeCredentials(instance);
+
+        // Then
+        expect(exchanged.apiKey, 'server-key');
+        expect(exchanged.headers, isEmpty);
+        expect(exchanged.userSession, isNull);
+        verifyNever(() => service.logout());
+      },
+    );
+
+    test('keeps a non-Basic Authorization header next to an API key', () async {
+      // Given
+      final service = MockJellyfinService();
+      when(() => service.hasLoginCredentials).thenReturn(false);
+      final sessions = JellyfinSessionService(
+        jellyfinServiceFactory: (_) => service,
+      );
+      final instance = jellyfin(
+        apiKey: 'server-key',
+        headers: [InstanceHeader(name: 'Authorization', value: 'Bearer x')],
+      );
+
+      // When
+      final exchanged = await sessions.exchangeCredentials(instance);
+
+      // Then
+      expect(exchanged, instance);
+      expect(sessions.needsCredentialExchange(instance), isFalse);
+    });
+
     test('keeps a stored session when no new credentials are given', () async {
       // Given
       final service = MockJellyfinService();

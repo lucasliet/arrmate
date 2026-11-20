@@ -33,12 +33,14 @@ InstanceHeader _basicAuth(String credentials) => InstanceHeader(
 );
 
 /// Session service whose sign-in always succeeds with [_jellyfinSession]
-/// for instances carrying a Basic `username:password` header.
+/// for instances carrying a Basic `username:password` header and no API key,
+/// as the real [JellyfinService] resolves its authentication mode.
 JellyfinSessionService _signingInSessions() {
   return JellyfinSessionService(
     jellyfinServiceFactory: (instance) {
       final service = MockJellyfinService();
       final hasBasic =
+          instance.apiKey.isEmpty &&
           JellyfinService.decodeBasicCredentials(instance.headers) != null;
       when(() => service.hasLoginCredentials).thenReturn(hasBasic);
       when(() => service.signIn()).thenAnswer((_) async => _jellyfinSession);
@@ -103,6 +105,51 @@ void main() {
       preferences.getString('instances'),
       isNot(contains('secret-password')),
     );
+  });
+
+  test('does not store a Basic password saved next to an API key', () async {
+    // Given
+    final repository = MockInstanceRepository();
+    final container = ProviderContainer(
+      overrides: [
+        instanceRepositoryProvider.overrideWithValue(repository),
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+    await _waitUntilLoaded(container);
+    when(() => repository.getSystemStatus(any())).thenAnswer(
+      (_) async => const InstanceStatus(
+        appName: 'Jellyfin',
+        instanceName: 'Home Jellyfin',
+        version: '12.2.0',
+      ),
+    );
+    when(() => repository.getTags(any())).thenAnswer((_) async => []);
+    final basicAuth = _basicAuth('admin:secret-password');
+    final encodedPassword = basicAuth.value.substring('Basic '.length);
+    final instance = Instance(
+      id: 'jellyfin-home',
+      type: InstanceType.jellyfin,
+      label: 'Home',
+      url: 'https://jellyfin.example.com',
+      apiKey: 'server-key',
+      headers: [basicAuth],
+    );
+
+    // When
+    final saved = await container
+        .read(instancesProvider.notifier)
+        .validateAndSaveInstance(instance);
+
+    // Then
+    expect(saved.apiKey, 'server-key');
+    expect(saved.headers, isEmpty);
+    expect(saved.userSession, isNull);
+    final preferences = await SharedPreferences.getInstance();
+    final stored = preferences.getString('instances');
+    expect(stored, contains('server-key'));
+    expect(stored, isNot(contains(encodedPassword)));
   });
 
   test('keeps the owned Jellyfin API key when an edit is saved', () async {
@@ -442,6 +489,46 @@ void main() {
     expect(
       preferences.getString('instances'),
       isNot(contains('secret-password')),
+    );
+  });
+
+  test('drops a Basic password stored next to an API key on load', () async {
+    // Given
+    final basicAuth = _basicAuth('admin:secret-password');
+    final encodedPassword = basicAuth.value.substring('Basic '.length);
+    SharedPreferences.setMockInitialValues({
+      'instances': jsonEncode([
+        Instance(
+          id: 'jellyfin-legacy',
+          type: InstanceType.jellyfin,
+          label: 'Legacy',
+          url: 'https://jellyfin.example.com',
+          apiKey: 'server-key',
+          headers: [basicAuth],
+        ).toJson(),
+      ]),
+    });
+    final container = ProviderContainer(
+      overrides: [
+        jellyfinSessionServiceProvider.overrideWithValue(_signingInSessions()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // When
+    await _waitUntilLoaded(container);
+    await _waitUntil(
+      () => container.read(instancesProvider).instances.single.headers.isEmpty,
+    );
+
+    // Then
+    final migrated = container.read(instancesProvider).instances.single;
+    expect(migrated.apiKey, 'server-key');
+    expect(migrated.userSession, isNull);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('instances'),
+      isNot(contains(encodedPassword)),
     );
   });
 
