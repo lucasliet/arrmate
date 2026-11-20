@@ -117,6 +117,30 @@ Torrent _torrent({
 }
 
 void main() {
+  group('isBelowSeedingThreshold', () {
+    test('never flags a torrent when the minimum is 0', () {
+      // Given
+      final justAdded = _torrent(hash: 'a', name: 'a', seedingTime: 0);
+
+      // When
+      final flagged = isBelowSeedingThreshold(justAdded, 0);
+
+      // Then
+      expect(flagged, isFalse);
+    });
+
+    test('flags a torrent that seeded for less than the minimum', () {
+      // Given
+      final justAdded = _torrent(hash: 'a', name: 'a', seedingTime: 0);
+
+      // When
+      final flagged = isBelowSeedingThreshold(justAdded, 86400);
+
+      // Then
+      expect(flagged, isTrue);
+    });
+  });
+
   group('isKeptBySeedingChoice', () {
     final young = _torrent(hash: 'a', name: 'a', seedingTime: 600);
     final old = _torrent(hash: 'b', name: 'b', seedingTime: 7200);
@@ -1013,6 +1037,53 @@ void main() {
         expect(preview.belowThreshold.length, 1);
       },
     );
+
+    test('previewMovie flags nothing when the minimum is 0', () async {
+      // Given
+      final movieRepo = MockMovieRepository();
+      final qb = MockQBittorrentService();
+      when(() => movieRepo.getMovieHistory(7)).thenAnswer(
+        (_) async => [
+          _historyEvent(
+            eventType: 'grabbed',
+            movieId: 7,
+            downloadId: 'YOUNGHASH001',
+          ),
+        ],
+      );
+      when(
+        () => movieRepo.getQueue(
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          sortKey: any(named: 'sortKey'),
+          sortDirection: any(named: 'sortDirection'),
+        ),
+      ).thenAnswer(
+        (_) async => QueueItems(
+          page: 1,
+          pageSize: 20,
+          sortKey: 'timeleft',
+          sortDirection: 'ascending',
+          totalRecords: 0,
+          records: const [],
+        ),
+      );
+      when(() => qb.getTorrents()).thenAnswer(
+        (_) async => [
+          _torrent(hash: 'YOUNGHASH001', name: 'release.mkv', seedingTime: 0),
+        ],
+      );
+
+      // When
+      final preview = await _service(
+        movieRepo: movieRepo,
+        qb: qb,
+      ).previewMovie(7, minimumSeedingSeconds: 0);
+
+      // Then
+      expect(preview.torrentsToDelete.length, 1);
+      expect(preview.belowThreshold, isEmpty);
+    });
 
     test(
       'purgeMovies aggregates counts and hash lists across multiple movies',

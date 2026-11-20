@@ -2416,7 +2416,7 @@
   "systemClearImageCache": "Clear image cache",
   "systemClearImageCacheSubtitle": "Free up cached poster and image storage",
   "systemDaysHelper": "0 disables the warning",
-  "systemDaysInvalid": "Enter a valid number (0 or more)",
+  "systemDaysInvalid": "Enter a valid number (0 to 60)",
   "systemDaysLabel": "Days",
   "systemDiagnosticsSubtitle": "Test endpoints, latency, request traces, and export a report",
   "systemHealth": "Health",

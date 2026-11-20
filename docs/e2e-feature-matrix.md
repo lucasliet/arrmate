@@ -487,7 +487,6 @@ Shared by movies, seasons, and episodes.
 Things the code does differently from the in-app assistant skills or UI copy.
 They are not covered by the rows above and need a product decision.
 
-- `Minimum seeding days` says “0 disables the warning”, but the value is clamped to 1–60, so 0 is saved as 1.
 - `/settings/system-management` is a router path, but the deep link validator rejects it.
 - Health wiki URLs are shown as plain text, not as links.
 - Series details have no Files, Extra files, or History section, unlike movie details. The providers exist; the screen does not use them.

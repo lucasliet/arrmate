@@ -183,7 +183,9 @@ class SystemManagementScreen extends ConsumerWidget {
                   ),
                   validator: (value) {
                     final parsed = int.tryParse(value ?? '');
-                    if (parsed == null || parsed < 0) {
+                    if (parsed == null ||
+                        parsed < 0 ||
+                        parsed > SettingsNotifier.maxMinimumSeedingDays) {
                       return context.l10n.systemDaysInvalid;
                     }
                     return null;

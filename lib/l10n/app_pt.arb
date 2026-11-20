@@ -982,7 +982,7 @@
   "systemClearImageCache": "Limpar cache de imagens",
   "systemClearImageCacheSubtitle": "Libere o espaço usado por pôsteres e imagens em cache",
   "systemDaysHelper": "0 desativa o aviso",
-  "systemDaysInvalid": "Informe um número válido (0 ou mais)",
+  "systemDaysInvalid": "Informe um número válido (0 a 60)",
   "systemDaysLabel": "Dias",
   "systemDiagnosticsSubtitle": "Teste endpoints, latência, rastros de requisições e exporte um relatório",
   "systemHealth": "Saúde",

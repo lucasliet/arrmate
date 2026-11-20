@@ -3920,7 +3920,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get systemDaysHelper => '0 desativa o aviso';
 
   @override
-  String get systemDaysInvalid => 'Informe um número válido (0 ou mais)';
+  String get systemDaysInvalid => 'Informe um número válido (0 a 60)';
 
   @override
   String get systemDaysLabel => 'Dias';
@@ -8892,7 +8892,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get systemDaysHelper => '0 desativa o aviso';
 
   @override
-  String get systemDaysInvalid => 'Informe um número válido (0 ou mais)';
+  String get systemDaysInvalid => 'Informe um número válido (0 a 60)';
 
   @override
   String get systemDaysLabel => 'Dias';

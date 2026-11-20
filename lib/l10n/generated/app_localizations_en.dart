@@ -3784,7 +3784,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemDaysHelper => '0 disables the warning';
 
   @override
-  String get systemDaysInvalid => 'Enter a valid number (0 or more)';
+  String get systemDaysInvalid => 'Enter a valid number (0 to 60)';
 
   @override
   String get systemDaysLabel => 'Days';

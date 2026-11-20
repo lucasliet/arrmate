@@ -3860,7 +3860,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get systemDaysHelper => '0 desactiva el aviso';
 
   @override
-  String get systemDaysInvalid => 'Introduce un número válido (0 o más)';
+  String get systemDaysInvalid => 'Introduce un número válido (0 a 60)';
 
   @override
   String get systemDaysLabel => 'Días';

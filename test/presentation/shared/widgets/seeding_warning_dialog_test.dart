@@ -144,6 +144,80 @@ void main() {
     });
   });
 
+  group('resolveSeedingAction', () {
+    /// Runs [resolveSeedingAction] for a purge of one torrent that has not
+    /// seeded at all, with [minimumSeedingDays] as the configured minimum.
+    Future<Future<SeedingAction?>> resolve(
+      WidgetTester tester,
+      int minimumSeedingDays,
+      List<int> requestedSeconds,
+    ) async {
+      final torrent = _torrent(hash: 'YOUNG', name: 'Young.Release');
+      late BuildContext appContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: Builder(
+            builder: (context) {
+              appContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      final result = resolveSeedingAction(
+        context: appContext,
+        minimumSeedingDays: minimumSeedingDays,
+        preview: (minimumSeedingSeconds) async {
+          requestedSeconds.add(minimumSeedingSeconds);
+          return PurgePreview(
+            torrentsToDelete: [torrent],
+            crossSeedCandidates: const [],
+            belowThreshold: [
+              if (isBelowSeedingThreshold(torrent, minimumSeedingSeconds))
+                torrent,
+            ],
+            qbittorrentSkipped: false,
+          );
+        },
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('should delete without warning when the minimum is 0', (
+      tester,
+    ) async {
+      // Given
+      final requestedSeconds = <int>[];
+
+      // When
+      final result = await resolve(tester, 0, requestedSeconds);
+
+      // Then
+      expect(find.text('Torrents still seeding'), findsNothing);
+      expect(await result, SeedingAction.deleteAll);
+      expect(requestedSeconds, [0]);
+    });
+
+    testWidgets('should warn about the same torrent with a 1 day minimum', (
+      tester,
+    ) async {
+      // Given
+      final requestedSeconds = <int>[];
+
+      // When
+      await resolve(tester, 1, requestedSeconds);
+
+      // Then
+      expect(find.text('Torrents still seeding'), findsOneWidget);
+      expect(find.text('Young.Release'), findsOneWidget);
+      expect(requestedSeconds, [86400]);
+    });
+  });
+
   group('resolveCrossSeedApprovals', () {
     testWidgets('should keep asking with the cross-seed wording', (
       tester,

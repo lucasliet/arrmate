@@ -5996,7 +5996,7 @@ abstract class AppLocalizations {
   /// No description provided for @systemDaysInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid number (0 or more)'**
+  /// **'Enter a valid number (0 to 60)'**
   String get systemDaysInvalid;
 
   /// No description provided for @systemDaysLabel.
