@@ -1,4 +1,6 @@
+import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/screens/activity/providers/qbittorrent_provider.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sheet.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_list_item.dart';
@@ -7,6 +9,7 @@ import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import '../../../helpers/localized_app.dart';
 
 /// Notifier standing in for qBittorrent: it accepts a pause at once and
@@ -22,6 +25,8 @@ class _PauseRecordingNotifier extends QBittorrentNotifier {
     pausedHashes.addAll(hashes);
   }
 }
+
+class _MockQBittorrentService extends Mock implements QBittorrentService {}
 
 /// Stand-in for the real reverse-lookup providers.
 final _stubProvider = FutureProvider.autoDispose<MediaTorrents>(
@@ -127,19 +132,34 @@ void main() {
     });
 
     testWidgets(
-      'should reload until the client reports a pause made from the sheet',
+      'should reload once the client reports a pause made from the sheet',
       (tester) async {
-        // Given a client that reports the pause only on its second reload,
-        // on a view tall enough to build the sheet actions
+        // Given a client that reports the pause only when asked a second
+        // time, on a view tall enough to build the sheet actions
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = const Size(800, 2400);
         addTearDown(tester.view.reset);
         final notifier = _PauseRecordingNotifier();
         var loads = 0;
+        var clientReads = 0;
+        final service = _MockQBittorrentService();
+        when(service.getTorrents).thenAnswer((_) async {
+          clientReads++;
+          return [
+            _linked(
+              hash: 'aabb',
+              name: 'Arrival.2016.1080p',
+              status: clientReads >= 2
+                  ? TorrentStatus.pausedUP
+                  : TorrentStatus.uploading,
+            ).torrent,
+          ];
+        });
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
               qbittorrentTorrentsProvider.overrideWith(() => notifier),
+              qbittorrentServiceProvider.overrideWithValue(service),
               _stubProvider.overrideWith((ref) async {
                 loads++;
                 return MediaTorrents(
@@ -147,7 +167,7 @@ void main() {
                     _linked(
                       hash: 'aabb',
                       name: 'Arrival.2016.1080p',
-                      status: loads >= 3
+                      status: clientReads >= 2
                           ? TorrentStatus.pausedUP
                           : TorrentStatus.uploading,
                     ),
@@ -180,7 +200,8 @@ void main() {
 
         // Then
         expect(notifier.pausedHashes, ['aabb']);
-        expect(loads, 3);
+        expect(clientReads, 2);
+        expect(loads, 2);
         expect(
           tester
               .widget<TorrentListItem>(find.byType(TorrentListItem))
@@ -192,8 +213,9 @@ void main() {
         // When the state is confirmed
         await tester.pump(const Duration(seconds: 5));
 
-        // Then the reloads stop
-        expect(loads, 3);
+        // Then the client is left alone and the list is not reloaded again
+        expect(clientReads, 2);
+        expect(loads, 2);
       },
     );
   });

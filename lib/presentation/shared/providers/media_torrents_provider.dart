@@ -64,35 +64,40 @@ class MediaTorrents extends Equatable {
   List<Object?> get props => [torrents, qbittorrentSkipped];
 }
 
-/// Reloads [provider] until the torrent [hash] reports the [paused] state.
+/// Reloads [provider] once the torrent [hash] reports the [paused] state.
 ///
 /// qBittorrent accepts a pause or resume at once but only reports the new
 /// state on its next refresh (1.5s by default), and a media torrent list is
-/// read once, so without this it keeps the state from before the action. The
-/// list is reloaded every second, at most five times, and the reloads stop as
-/// soon as the state is reported, the torrent is gone, the list is no longer
-/// on screen or a reload fails.
+/// read once, so without this it keeps the state from before the action. Only
+/// the client is asked while waiting, every second and at most five times:
+/// resolving the list again also reads the history and the queue of the
+/// library server, which a pause does not change. The list is reloaded a
+/// single time, when the state is reported, the torrent is gone or the
+/// attempts run out. Nothing is reloaded when the list is no longer on screen,
+/// no client is configured or the client fails.
 Future<void> reloadMediaTorrentsUntilPaused(
   ProviderContainer container,
   AutoDisposeFutureProvider<MediaTorrents> provider, {
   required String hash,
   required bool paused,
 }) async {
-  for (var reload = 0; reload < torrentPauseSettleAttempts; reload++) {
-    await Future<void>.delayed(torrentPauseSettleInterval);
-    try {
+  try {
+    for (var attempt = 0; attempt < torrentPauseSettleAttempts; attempt++) {
+      await Future<void>.delayed(torrentPauseSettleInterval);
       if (!container.exists(provider)) return;
-      final media = await container.refresh(provider.future);
-      final torrents = media.torrents.map((linked) => linked.torrent);
-      if (torrentPauseSettled(torrents, hash, paused: paused)) return;
-    } catch (error, stackTrace) {
-      logger.warning(
-        '[MediaTorrents] Could not confirm the pause state of a torrent',
-        error,
-        stackTrace,
-      );
-      return;
+      final service = container.read(qbittorrentServiceProvider);
+      if (service == null) return;
+      final torrents = await service.getTorrents();
+      if (torrentPauseSettled(torrents, hash, paused: paused)) break;
     }
+    if (!container.exists(provider)) return;
+    await container.refresh(provider.future);
+  } catch (error, stackTrace) {
+    logger.warning(
+      '[MediaTorrents] Could not confirm the pause state of a torrent',
+      error,
+      stackTrace,
+    );
   }
 }
 
