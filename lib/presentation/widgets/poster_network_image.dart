@@ -17,6 +17,11 @@ class PosterNetworkImage extends ConsumerWidget {
   /// Builds the widget shown when the poster cannot be loaded.
   final WidgetBuilder errorBuilder;
 
+  /// Builds the widget shown while the poster loads.
+  ///
+  /// Defaults to a centered progress indicator.
+  final WidgetBuilder? placeholderBuilder;
+
   /// Optional headers sent with the image request, such as instance auth.
   final Map<String, String>? httpHeaders;
 
@@ -28,6 +33,7 @@ class PosterNetworkImage extends ConsumerWidget {
     super.key,
     required this.imageUrl,
     required this.errorBuilder,
+    this.placeholderBuilder,
     this.httpHeaders,
     this.fit = BoxFit.cover,
   });
@@ -60,6 +66,8 @@ class PosterNetworkImage extends ConsumerWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
+    final placeholderBuilder = this.placeholderBuilder;
+    if (placeholderBuilder != null) return placeholderBuilder(context);
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),

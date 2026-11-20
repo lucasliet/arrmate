@@ -1,8 +1,10 @@
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/providers/queue_lookup_provider.dart';
 import 'package:arrmate/presentation/screens/calendar/providers/calendar_provider.dart';
 import 'package:arrmate/presentation/screens/calendar/widgets/calendar_item.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +74,57 @@ void main() {
 
     expect(container.read(currentRadarrInstanceProvider), remote);
     expect(find.text('Movie details 42'), findsOneWidget);
+  });
+
+  testWidgets('should render the poster with the framework image on web', (
+    tester,
+  ) async {
+    // Given
+    const posterUrl = 'https://image.tmdb.org/t/p/w500/poster.jpg';
+    final event = CalendarEvent(
+      instanceId: 'radarr-home',
+      instanceType: InstanceType.radarr,
+      releaseDate: DateTime.now(),
+      type: CalendarEventType.digital,
+      movie: _movie(
+        images: [
+          MediaImage(
+            coverType: 'poster',
+            url: '/poster.jpg',
+            remoteUrl: posterUrl,
+          ),
+        ],
+      ),
+    );
+
+    // When
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          queueMediaLookupProvider.overrideWithValue(
+            const AsyncValue.data(QueueMediaLookup.empty),
+          ),
+          platformCapabilitiesProvider.overrideWithValue(
+            PlatformCapabilities.forPlatform(
+              isWeb: true,
+              targetPlatform: TargetPlatform.linux,
+            ),
+          ),
+          instancesProvider.overrideWith(_NoInstancesNotifier.new),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: Scaffold(body: CalendarItem(event: event)),
+        ),
+      ),
+    );
+
+    // Then
+    final image = tester.widget<Image>(find.byType(Image));
+    expect((image.image as NetworkImage).url, posterUrl);
+    expect(find.byType(CachedNetworkImage), findsNothing);
   });
 
   testWidgets(
@@ -171,8 +224,9 @@ Instance _instance(String id, {InstanceType type = InstanceType.radarr}) {
   );
 }
 
-Movie _movie() {
+Movie _movie({List<MediaImage> images = const []}) {
   return Movie(
+    images: images,
     guid: 42,
     tmdbId: 1,
     title: 'Movie',
@@ -186,4 +240,10 @@ Movie _movie() {
     qualityProfileId: 1,
     added: DateTime.now(),
   );
+}
+
+/// Instances state with nothing configured and nothing to load.
+class _NoInstancesNotifier extends InstancesNotifier {
+  @override
+  InstancesState build() => const InstancesState(isLoading: false);
 }

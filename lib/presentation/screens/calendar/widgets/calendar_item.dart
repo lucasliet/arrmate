@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../widgets/instance_origin_badge.dart';
+import '../../../widgets/poster_network_image.dart';
 import '../../../widgets/queue_status_indicator.dart';
 import '../providers/calendar_provider.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -42,10 +42,11 @@ class CalendarItem extends ConsumerWidget {
               width: 70,
               height: 100,
               child: posterUrl != null
-                  ? CachedNetworkImage(
+                  ? PosterNetworkImage(
                       imageUrl: posterUrl,
                       fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => Container(
+                      placeholderBuilder: (context) => const SizedBox.shrink(),
+                      errorBuilder: (context) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
                         child: Icon(
                           event.type.icon,

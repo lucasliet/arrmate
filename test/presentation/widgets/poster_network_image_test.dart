@@ -16,7 +16,11 @@ const _authHeaders = {'X-Api-Key': 'test-api-key'};
 
 class _OfflineHttpClient extends Mock implements HttpClient {}
 
-Widget _wrap({required bool isWeb, Map<String, String>? httpHeaders}) {
+Widget _wrap({
+  required bool isWeb,
+  Map<String, String>? httpHeaders,
+  WidgetBuilder? placeholderBuilder,
+}) {
   return ProviderScope(
     overrides: [
       platformCapabilitiesProvider.overrideWithValue(
@@ -37,6 +41,7 @@ Widget _wrap({required bool isWeb, Map<String, String>? httpHeaders}) {
           child: PosterNetworkImage(
             imageUrl: _posterUrl,
             httpHeaders: httpHeaders,
+            placeholderBuilder: placeholderBuilder,
             errorBuilder: (context) => const Icon(Icons.broken_image),
           ),
         ),
@@ -96,6 +101,31 @@ void main() {
             TestHttpOverrides().createHttpClient(context),
       );
     });
+
+    for (final isWeb in [true, false]) {
+      testWidgets('shows the given placeholder while loading (web: $isWeb)', (
+        tester,
+      ) async {
+        await HttpOverrides.runZoned(
+          () async {
+            // Given
+            final widget = _wrap(
+              isWeb: isWeb,
+              placeholderBuilder: (context) => const Text('Loading poster'),
+            );
+
+            // When
+            await tester.pumpWidget(widget);
+
+            // Then
+            expect(find.text('Loading poster'), findsOneWidget);
+            expect(find.byType(CircularProgressIndicator), findsNothing);
+          },
+          createHttpClient: (context) =>
+              TestHttpOverrides().createHttpClient(context),
+        );
+      });
+    }
 
     testWidgets('shows the error fallback on web when the image fails', (
       tester,
