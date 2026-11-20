@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
 import '../../core/network/api_error.dart';
+import '../../core/network/browser_reachability.dart';
 import '../../core/network/request_diagnostics.dart';
 import '../../core/network/secure_log_interceptor.dart';
 import '../../core/services/logger_service.dart';
@@ -52,6 +53,10 @@ class QBittorrentService {
   /// cross-origin for the browser.
   final Uri _pageUri;
 
+  /// Tells whether the server at a URL answers the browser at all, even with
+  /// an answer the app cannot read.
+  final Future<bool> Function(String url) _canBrowserReach;
+
   /// Number of accepted logins, which tells a request whether the session it
   /// was rejected with has been replaced since.
   int _sessionGeneration = 0;
@@ -97,16 +102,19 @@ class QBittorrentService {
 
   /// Creates the service for [instance].
   ///
-  /// [browserManagedSession] tells whether a browser owns the session cookie
-  /// and [pageUri] is the address the app is served from; both default to the
+  /// [browserManagedSession] tells whether a browser owns the session cookie,
+  /// [pageUri] is the address the app is served from and [browserReachability]
+  /// tells whether a server answers the browser at all; they default to the
   /// platform and are only passed by tests.
   QBittorrentService(
     this.instance, {
     Dio? dio,
     bool browserManagedSession = kIsWeb,
     Uri? pageUri,
+    Future<bool> Function(String url) browserReachability = canBrowserReach,
   }) : _browserManagedSession = browserManagedSession,
        _pageUri = pageUri ?? Uri.base,
+       _canBrowserReach = browserReachability,
        _candidateUrls = instance.connectionUrls,
        _activeUrl = instance.connectionUrls.first,
        _dio =
@@ -143,7 +151,7 @@ class QBittorrentService {
     try {
       await _signIn(baseUrl: baseUrl);
     } on DioException catch (error) {
-      if (_isBlockedByBrowser(error, baseUrl ?? _activeUrl)) {
+      if (await _isBlockedByBrowser(error, baseUrl ?? _activeUrl)) {
         throw const BrowserCrossOriginBlockedError();
       }
       rethrow;
@@ -307,20 +315,25 @@ class QBittorrentService {
 
   /// Whether [error] is how a browser reports an answer it would not let the
   /// app read: a username and password request to [url] on another origin
-  /// that failed without any response.
+  /// that failed without any response, although the server does answer.
   ///
   /// qBittorrent sends no CORS headers and refuses a foreign `Origin`, and a
   /// request sent with credentials is also discarded when the server allows
   /// any origin (`*`) or does not allow credentials. The browser reports all
-  /// of them, and a server that is down, as the same connection error. Once
-  /// a request was accepted the browser is known to read the answers, so a
-  /// later connection error is the network or the server and stays as it is.
-  bool _isBlockedByBrowser(DioException error, String url) {
-    return _browserManagedSession &&
+  /// of them, and a server that is down, as the same connection error, so the
+  /// server is probed: one that does not answer at all is an outage, which
+  /// stays a connection error and can be retried. Once a request was accepted
+  /// the browser is known to read the answers, so a later connection error is
+  /// the network or the server and stays as it is.
+  Future<bool> _isBlockedByBrowser(DioException error, String url) async {
+    final unreadable =
+        _browserManagedSession &&
         _usesCookieSession &&
         !_browserSessionProven &&
         error.type == DioExceptionType.connectionError &&
         _isCrossOrigin(url);
+    if (!unreadable) return false;
+    return _canBrowserReach(_pageUri.resolve(url).toString());
   }
 
   /// Makes an authenticated request.
@@ -334,8 +347,9 @@ class QBittorrentService {
   /// proves the session is kept and leaves only that call failed. A
   /// cross-origin request the browser could not read fails the same lasting
   /// way with [BrowserCrossOriginBlockedError], unless a request was already
-  /// accepted: the connection error is then rethrown as it came, so a poll
-  /// can retry once the server is back. Any other status
+  /// accepted or the server does not answer at all: the connection error is
+  /// then rethrown as it came, so a poll can retry once the server is back.
+  /// Any other status
   /// throws a [DioException], so an action the server refused is never taken
   /// for one it performed.
   ///
@@ -373,7 +387,7 @@ class QBittorrentService {
       } on DioException catch (error) {
         final nextUrl = _nextCandidateUrl(attemptedUrls);
         if (!allowFailover || !_canFailOver(error) || nextUrl == null) {
-          if (_isBlockedByBrowser(error, currentUrl)) {
+          if (await _isBlockedByBrowser(error, currentUrl)) {
             throw _refusal = const BrowserCrossOriginBlockedError();
           }
           rethrow;

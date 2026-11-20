@@ -686,6 +686,39 @@ void main() {
       expect(await service.getTorrents(), hasLength(1));
     });
 
+    test('should keep a plain connection error when a cross-origin '
+        'qBittorrent that never answered is down', () async {
+      // Given a cross-origin qBittorrent the browser cannot reach at all
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final probedUrls = <String>[];
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (url) async {
+          probedUrls.add(url);
+          return false;
+        },
+      );
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+
+      // Then the next request reaches the server without a user retry
+      expect(probedUrls, ['https://alternative.test']);
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
     test('should still fail over when the first cross-origin candidate is '
         'unreachable', () async {
       // Given
@@ -831,6 +864,7 @@ QBittorrentService _serviceCookie(
   bool browserManagedSession = false,
   Uri? pageUri,
   String? alternativeUrl = 'https://alternative.test',
+  Future<bool> Function(String url)? browserReachability,
 }) {
   final instance = Instance(
     id: 'qbit',
@@ -849,6 +883,7 @@ QBittorrentService _serviceCookie(
     dio: dio,
     browserManagedSession: browserManagedSession,
     pageUri: pageUri,
+    browserReachability: browserReachability ?? (_) async => true,
   );
 }
 

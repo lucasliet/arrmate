@@ -33,7 +33,9 @@ and **qBittorrent** (for downloads).
       read (no CORS headers, or CORS without
       `Access-Control-Allow-Credentials: true` and an explicit origin, since
       `*` is refused for requests with credentials) gets its own explanatory
-      error, and the app also stops logging in until the user retries.
+      error, and the app also stops logging in until the user retries. A
+      server that does not answer the browser at all (probed with a `no-cors`
+      request) stays a plain connection error and keeps being retried.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
