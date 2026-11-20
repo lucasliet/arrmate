@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
 import '../../../core/utils/cross_seed_matcher.dart';
 import '../../../core/utils/media_downloads.dart';
+import '../../../core/utils/torrent_pause_settle.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -63,12 +64,6 @@ class MediaTorrents extends Equatable {
   List<Object?> get props => [torrents, qbittorrentSkipped];
 }
 
-/// Pace of the reloads that wait for qBittorrent to report a pause or resume.
-const Duration _settleInterval = Duration(seconds: 1);
-
-/// How many reloads a pause or resume may take before giving up.
-const int _maxSettleReloads = 5;
-
 /// Reloads [provider] until the torrent [hash] reports the [paused] state.
 ///
 /// qBittorrent accepts a pause or resume at once but only reports the new
@@ -83,17 +78,13 @@ Future<void> reloadMediaTorrentsUntilPaused(
   required String hash,
   required bool paused,
 }) async {
-  for (var reload = 0; reload < _maxSettleReloads; reload++) {
-    await Future<void>.delayed(_settleInterval);
+  for (var reload = 0; reload < torrentPauseSettleAttempts; reload++) {
+    await Future<void>.delayed(torrentPauseSettleInterval);
     try {
       if (!container.exists(provider)) return;
       final media = await container.refresh(provider.future);
-      final reported = media.torrents
-          .where((linked) => linked.torrent.hash == hash)
-          .firstOrNull;
-      if (reported == null || reported.torrent.status.isPaused == paused) {
-        return;
-      }
+      final torrents = media.torrents.map((linked) => linked.torrent);
+      if (torrentPauseSettled(torrents, hash, paused: paused)) return;
     } catch (error, stackTrace) {
       logger.warning(
         '[MediaTorrents] Could not confirm the pause state of a torrent',

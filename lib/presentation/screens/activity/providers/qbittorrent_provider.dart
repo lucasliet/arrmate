@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_error.dart';
 import '../../../../core/services/logger_service.dart';
+import '../../../../core/utils/torrent_pause_settle.dart';
 import '../../../../domain/models/models.dart';
 import '../../../../presentation/providers/data_providers.dart';
 import '../../../../presentation/providers/instances_provider.dart';
@@ -14,12 +15,6 @@ final qbittorrentTorrentsProvider =
     );
 
 class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
-  /// Pace of the polls that wait for qBittorrent to report a pause or resume.
-  static const Duration _settleInterval = Duration(seconds: 1);
-
-  /// How many quick polls a pause or resume may take before giving up.
-  static const int _maxSettlePolls = 5;
-
   Timer? _timer;
   bool _isDisposed = false;
 
@@ -107,7 +102,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     for (final hash in hashes) {
       _expectedPaused[hash] = paused;
     }
-    _settlePollsLeft = _maxSettlePolls;
+    _settlePollsLeft = torrentPauseSettleAttempts;
   }
 
   /// Forgets the pauses and resumes still waiting for the server.
@@ -121,16 +116,13 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
   /// qBittorrent accepts a pause or resume at once but only reports the new
   /// state on its next refresh (1.5s by default), so the list read right after
   /// the action is still the old one. While a torrent in [torrents] has not
-  /// reached the state asked for, the next poll comes after [_settleInterval],
-  /// at most [_maxSettlePolls] times. Otherwise the regular pace applies.
+  /// reached the state asked for, the next poll comes after
+  /// [torrentPauseSettleInterval], at most [torrentPauseSettleAttempts] times.
+  /// Otherwise the regular pace applies.
   Duration _nextPollInterval(List<Torrent> torrents) {
-    final pausedByHash = {
-      for (final torrent in torrents) torrent.hash: torrent.status.isPaused,
-    };
-    _expectedPaused.removeWhere((hash, paused) {
-      final reported = pausedByHash[hash];
-      return reported == null || reported == paused;
-    });
+    _expectedPaused.removeWhere(
+      (hash, paused) => torrentPauseSettled(torrents, hash, paused: paused),
+    );
 
     if (_expectedPaused.isEmpty || _settlePollsLeft <= 0) {
       _clearExpectedStates();
@@ -138,7 +130,7 @@ class QBittorrentNotifier extends AutoDisposeAsyncNotifier<List<Torrent>> {
     }
 
     _settlePollsLeft--;
-    return _settleInterval;
+    return torrentPauseSettleInterval;
   }
 
   Duration _calculatePollingInterval(List<Torrent> torrents) {
