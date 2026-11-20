@@ -469,6 +469,7 @@ void main() {
           find.text('Deleted 1 torrent and files (kept 1 still seeding)'),
           findsOneWidget,
         );
+        expect(find.byKey(const Key('torrentSelectionHeader')), findsNothing);
       },
     );
 
@@ -496,6 +497,7 @@ void main() {
 
         // Then
         expect(notifier.deletions, ['Alpha,Bravo|true']);
+        expect(find.byKey(const Key('torrentSelectionHeader')), findsNothing);
       },
     );
 
@@ -521,6 +523,65 @@ void main() {
       // Then
       expect(notifier.deletions, isEmpty);
     });
+
+    testWidgets(
+      'should keep the selection when the seeding warning is cancelled',
+      (tester) async {
+        // Given
+        final torrents = [
+          _torrent(name: 'Alpha', status: TorrentStatus.uploading),
+          _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+        ];
+        final notifier = await _pumpTab(tester, torrents);
+        await tester.longPress(find.text('Alpha'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('torrentSelectAllButton')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete with files'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Confirm'));
+        await tester.pumpAndSettle();
+
+        // When
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(notifier.deletions, isEmpty);
+        expect(find.text('Torrents still seeding'), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byKey(const Key('torrentSelectionHeader')), findsOneWidget);
+        expect(_selectedNames(tester), ['Alpha', 'Bravo']);
+      },
+    );
+
+    testWidgets(
+      'should keep the selection when the delete confirmation is cancelled',
+      (tester) async {
+        // Given
+        final torrents = [
+          _torrent(name: 'Alpha', status: TorrentStatus.uploading),
+          _torrent(name: 'Bravo', status: TorrentStatus.uploading),
+        ];
+        final notifier = await _pumpTab(tester, torrents);
+        await tester.longPress(find.text('Alpha'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('torrentSelectAllButton')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete with files'));
+        await tester.pumpAndSettle();
+
+        // When
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(notifier.deletions, isEmpty);
+        expect(find.text('Torrents still seeding'), findsNothing);
+        expect(find.byKey(const Key('torrentSelectionHeader')), findsOneWidget);
+        expect(_selectedNames(tester), ['Alpha', 'Bravo']);
+      },
+    );
   });
 }
 

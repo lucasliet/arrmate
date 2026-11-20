@@ -103,11 +103,11 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
    - O botão "+" some e aparece a barra inferior com **"Delete with files"** (vermelho).
 5. Tocar **"Delete with files"** → diálogo **"Delete N torrents"** → **Confirm**.
 6. **Aviso de seeding (mesma regra do Purge da biblioteca):** se algum torrent selecionado semeou menos que o mínimo de dias configurado em Configurações → System Management (padrão 20 dias), aparece o diálogo **"Torrents still seeding"** listando esses torrents e o tempo semeado:
-   - **Cancel** — não exclui nada.
+   - **Cancel** — não exclui nada e mantém a seleção.
    - **Keep seeding** — exclui só os que já cumpriram o mínimo; os outros continuam no qBittorrent com seus arquivos.
    - **Delete all** — exclui todos os selecionados.
    - Com o mínimo em 0 dias o aviso não aparece.
-7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final.
+7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final; cancelar qualquer um dos diálogos mantém a seleção.
 
 **Observações:**
 - A exclusão remove o torrent do qBittorrent **e apaga os arquivos do disco** (não há opção de manter arquivos neste fluxo; para isso use "Remove Torrent" no sheet de detalhes de um torrent).

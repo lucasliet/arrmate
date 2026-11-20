@@ -593,6 +593,9 @@ class BatchActionsHandler {
   /// Applies the same seeding-time rule as the library purge: when any torrent
   /// seeded for less than the configured minimum, [showSeedingWarningDialog]
   /// lets the user cancel, keep those torrents seeding, or delete them all.
+  ///
+  /// Returns `null` when the user cancels or dismisses a dialog, so nothing
+  /// was deleted.
   Future<BatchActionResult?> deleteTorrentsWithFiles(
     BuildContext context,
     List<Torrent> torrents,
