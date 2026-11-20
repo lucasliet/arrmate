@@ -1,0 +1,144 @@
+{
+  "sha": "3a2856d",
+  "poster": [
+    {
+      "repro": "A-movies-delete",
+      "verdict": "PASS",
+      "method": "api-delete + pull-refresh",
+      "issues": [],
+      "titles": [
+        "Mock Dune Part Two",
+        "Mock Fail Delete Movie",
+        "Mock Paused Movie",
+        "Mock Upcoming Movie"
+      ],
+      "imgs": [
+        {
+          "src": "http://127.0.0.1:19854/img/movie/1/poster.png",
+          "w": 300,
+          "h": 450,
+          "complete": true
+        },
+        {
+          "src": "http://127.0.0.1:19854/img/movie/3/poster.png",
+          "w": 300,
+          "h": 450,
+          "complete": true
+        },
+        {
+          "src": "http://127.0.0.1:19854/img/movie/4/poster.png",
+          "w": 300,
+          "h": 450,
+          "complete": true
+        },
+        {
+          "src": "http://127.0.0.1:19854/img/movie/5/poster.png",
+          "w": 300,
+          "h": 450,
+          "complete": true
+        }
+      ]
+    },
+    {
+      "repro": "B-movies-filter-reorder",
+      "verdict": "PASS",
+      "method": "localStorage-sort-title-desc-reload (search did not narrow headless)",
+      "narrowed_search": false,
+      "issues": [],
+      "followup_imgs": ["/movie/5/", "/movie/4/", "/movie/2/", "/movie/3/", "/movie/1/"]
+    },
+    {
+      "repro": "control-series",
+      "verdict": "PASS",
+      "issues": []
+    }
+  ],
+  "extra": [
+    {
+      "smoke": "posters",
+      "movies_grid": "PASS",
+      "movie_detail": "PASS",
+      "series_grid": "PASS"
+    },
+    {
+      "smoke": "58",
+      "verdict": "ran"
+    }
+  ],
+  "issue_61": [
+    {
+      "issue": "61",
+      "scenario": "reachable same-origin torrents list (not blocked)",
+      "verdict": "PASS",
+      "severity": "ALTO",
+      "notes": "list=True blocked_copy=False",
+      "shot": "r6-61-reachable-same-origin.png"
+    },
+    {
+      "issue": "61",
+      "scenario": "cross-origin before proven shows browser-block guidance",
+      "verdict": "PASS",
+      "severity": "ALTO",
+      "notes": "hints=True",
+      "shot": "r6-61-cross-before-proven.png"
+    },
+    {
+      "issue": "61",
+      "scenario": "dead server generic error ~11s not CORS copy",
+      "verdict": "PASS",
+      "severity": "ALTO",
+      "notes": "dt=11.4s cross_copy=False",
+      "shot": "r6-61-dead-server.png"
+    },
+    {
+      "issue": "61",
+      "scenario": "proven session transient failure not CORS guidance",
+      "verdict": "PASS",
+      "severity": "ALTO",
+      "notes": "cross_copy=False",
+      "shot": "r6-61-proven-transient-error.png"
+    },
+    {
+      "issue": "61",
+      "scenario": "recover after transient",
+      "verdict": "FAIL",
+      "severity": "INFO",
+      "notes": "recovered=False",
+      "shot": "r6-61-proven-recover.png"
+    }
+  ],
+  "issue_58": [
+    {
+      "issue": "58",
+      "scenario": "real qBit: UI pause settles Paused/Stopped",
+      "verdict": "PASS",
+      "severity": "ALTO",
+      "notes": "ui=True dt=2.0s info_reqs=3",
+      "shot": "r6-58-real-after-pause.png"
+    },
+    {
+      "issue": "58",
+      "scenario": "real qBit: UI resume",
+      "verdict": "PASS",
+      "severity": "INFO",
+      "notes": "ui=True dt=1.0s",
+      "shot": "r6-58-real-after-resume.png"
+    },
+    {
+      "issue": "58",
+      "scenario": "mock qBit state_delay=2.5s \u2014 list polls then settles",
+      "verdict": "PASS",
+      "severity": "INFO",
+      "notes": "ui=True dt=1.0s info_reqs=2 times=[0.17, 1.24]",
+      "shot": "r6-58-mock-delay-after-pause.png"
+    },
+    {
+      "issue": "58",
+      "scenario": "movie details media torrents pause path",
+      "verdict": "BLOQUEADO",
+      "severity": "INFO",
+      "notes": "info_reqs_after_click=0",
+      "shot": "r6-58-movie-media-torrents.png"
+    }
+  ]
+}

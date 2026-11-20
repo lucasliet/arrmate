@@ -1,0 +1,46 @@
+[
+  {
+    "repro": "A-movies-delete",
+    "verdict": "PASS",
+    "method": "api-delete + pull-refresh",
+    "issues": [],
+    "titles": [
+      "Mock Dune Part Two",
+      "Mock Fail Delete Movie",
+      "Mock Paused Movie",
+      "Mock Upcoming Movie"
+    ],
+    "imgs": [
+      {"src": "http://127.0.0.1:19854/img/movie/1/poster.png"},
+      {"src": "http://127.0.0.1:19854/img/movie/3/poster.png"},
+      {"src": "http://127.0.0.1:19854/img/movie/4/poster.png"},
+      {"src": "http://127.0.0.1:19854/img/movie/5/poster.png"}
+    ]
+  },
+  {
+    "repro": "B-movies-filter-reorder",
+    "verdict": "PASS",
+    "method": "localStorage-sort-title-desc-reload (headless search did not narrow; follow-up DOM check)",
+    "narrowed_search": false,
+    "followup_titles": [
+      "Mock Upcoming Movie",
+      "Mock Paused Movie",
+      "Mock Oppenheimer",
+      "Mock Fail Delete Movie",
+      "Mock Dune Part Two"
+    ],
+    "followup_imgs": [
+      "/img/movie/5/",
+      "/img/movie/4/",
+      "/img/movie/2/",
+      "/img/movie/3/",
+      "/img/movie/1/"
+    ],
+    "issues": []
+  },
+  {
+    "repro": "control-series",
+    "verdict": "PASS",
+    "issues": []
+  }
+]
