@@ -333,7 +333,9 @@ class QBittorrentService {
         error.type == DioExceptionType.connectionError &&
         _isCrossOrigin(url);
     if (!unreadable) return false;
-    return _canBrowserReach(_pageUri.resolve(url).toString());
+    final reachable = await _canBrowserReach(_pageUri.resolve(url).toString());
+    // Another request may have been accepted while the probe was running.
+    return reachable && !_browserSessionProven;
   }
 
   /// Makes an authenticated request.

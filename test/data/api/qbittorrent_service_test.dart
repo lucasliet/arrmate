@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -716,6 +717,43 @@ void main() {
       // Then the next request reaches the server without a user retry
       expect(probedUrls, ['https://alternative.test']);
       adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should keep a plain connection error when another request is '
+        'accepted while the server is being probed', () async {
+      // Given a failed cross-origin request still waiting for its probe
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final probe = Completer<bool>();
+      final probeStarted = Completer<void>();
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (_) {
+          probeStarted.complete();
+          return probe.future;
+        },
+      );
+      final failed = expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+      await probeStarted.future;
+
+      // When another request proves the browser reads the answers
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+      probe.complete(true);
+      await failed;
+
+      // Then nothing was refused for good
       expect(await service.getTorrents(), hasLength(1));
     });
 
