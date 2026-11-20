@@ -729,7 +729,102 @@ void main() {
       expect(find.text('Movie Details'), findsNothing);
       expect(find.byType(WatchingListItem), findsOneWidget);
     });
+
+    for (final (label, item, expectedDetails) in [
+      ('movie', movieWatchingItem, '/movies/42'),
+      ('series', episodeWatchingItem, '/series/99'),
+    ]) {
+      testWidgets(
+        'back from $label details opened from Watching returns to the Watching tab',
+        (tester) async {
+          // Given
+          final router = await _pumpLibraryShell(
+            tester,
+            jellyfinInstance: jellyfinInstance,
+            item: item,
+          );
+          await tester.tap(find.byTooltip('Open in library'));
+          await tester.pumpAndSettle();
+          expect(find.text('Details $expectedDetails'), findsOneWidget);
+
+          // When
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+
+          // Then
+          expect(find.byType(WatchingListItem), findsOneWidget);
+          expect(find.text('Library List'), findsNothing);
+          expect(
+            router.routerDelegate.currentConfiguration.uri.path,
+            '/activity',
+          );
+        },
+      );
+    }
   });
+}
+
+/// Pumps Activity on the Watching tab inside a shell that mirrors the app
+/// router: movie and series details are children of the library lists.
+Future<GoRouter> _pumpLibraryShell(
+  WidgetTester tester, {
+  required Instance jellyfinInstance,
+  required WatchingItem item,
+}) async {
+  GoRoute libraryRoute(String path) {
+    return GoRoute(
+      path: path,
+      builder: (context, state) => const Scaffold(body: Text('Library List')),
+      routes: [
+        GoRoute(
+          path: ':id',
+          builder: (context, state) =>
+              Scaffold(body: Text('Details ${state.uri.path}')),
+        ),
+      ],
+    );
+  }
+
+  final router = GoRouter(
+    initialLocation: '/activity',
+    routes: [
+      ShellRoute(
+        builder: (context, state, child) => child,
+        routes: [
+          libraryRoute('/movies'),
+          libraryRoute('/series'),
+          GoRoute(
+            path: '/activity',
+            builder: (context, state) => const ActivityScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+        currentQBittorrentInstanceProvider.overrideWithValue(null),
+        queueProvider.overrideWith(_EmptyQueueNotifier.new),
+        activityHistoryProvider.overrideWith(_EmptyHistoryNotifier.new),
+        watchingItemsProvider.overrideWith(() => _StubWatchingNotifier([item])),
+        instancesProvider.overrideWith(() => _StubInstancesNotifier()),
+      ],
+      child: MaterialApp.router(
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        locale: testLocale,
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(Tab, 'Watching'));
+  await tester.pumpAndSettle();
+  return router;
 }
 
 class _ShellHarness {

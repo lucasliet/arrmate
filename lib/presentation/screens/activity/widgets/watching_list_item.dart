@@ -237,11 +237,11 @@ class WatchingListItem extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (item.movie != null) {
-      context.go('/movies/${item.movie!.id}');
+      context.push('/movies/${item.movie!.id}');
       return;
     }
     if (item.series != null) {
-      context.go('/series/${item.series!.id}');
+      context.push('/series/${item.series!.id}');
     }
   }
 }
