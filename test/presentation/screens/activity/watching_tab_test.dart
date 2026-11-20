@@ -790,6 +790,29 @@ void main() {
         },
       );
     }
+
+    testWidgets('a repeated Open in library tap opens the details only once', (
+      tester,
+    ) async {
+      // Given
+      await _pumpLibraryShell(
+        tester,
+        jellyfinInstance: jellyfinInstance,
+        item: movieWatchingItem,
+      );
+
+      // When
+      await tester.tap(find.byTooltip('Open in library'));
+      await tester.tap(find.byTooltip('Open in library'));
+      await tester.pumpAndSettle();
+      expect(find.text('Details /movies/42'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(find.byType(WatchingListItem), findsOneWidget);
+      expect(find.text('Details /movies/42'), findsNothing);
+    });
   });
 }
 

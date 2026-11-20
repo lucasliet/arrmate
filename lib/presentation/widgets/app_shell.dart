@@ -26,10 +26,12 @@ class AppShell extends ConsumerWidget {
     // tooltips in that phase, and the tooltip overlay mutates a layout
     // builder that is not a descendant of the shell.
     final windowClass = WindowClass.fromWidth(MediaQuery.sizeOf(context).width);
-    final location = GoRouterState.of(context).matchedLocation;
+    // The displayed location, not `matchedLocation`: a page pushed over a
+    // tab keeps the shell matched to that tab.
+    final displayedLocation = GoRouterState.of(context).uri.path;
     final selectedIndex = _calculateSelectedIndex(context);
     final showRailNotifications = !AppTab.values.any(
-      (tab) => tab.path == location,
+      (tab) => tab.path == displayedLocation,
     );
     final content = Column(
       children: [
