@@ -1391,6 +1391,12 @@ abstract class AppLocalizations {
   /// **'Resource not found.'**
   String get errorNotFound;
 
+  /// No description provided for @errorQbittorrentBrowserSession.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser did not keep the qBittorrent session. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy). Otherwise use an API key.'**
+  String get errorQbittorrentBrowserSession;
+
   /// No description provided for @errorRequestCancelled.
   ///
   /// In en, this message translates to:

@@ -779,6 +779,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorNotFound => 'Recurso no encontrado.';
 
   @override
+  String get errorQbittorrentBrowserSession =>
+      'El navegador no conservó la sesión de qBittorrent. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso). De lo contrario, usa una API Key.';
+
+  @override
   String get errorRequestCancelled => 'Solicitud cancelada';
 
   @override

@@ -22,6 +22,12 @@ and **qBittorrent** (for downloads).
     - **Bulk Delete**: Long-press selection in the torrent list with a "Delete
       with files" action (e.g. to clear filtered orphans), guarded by the same
       minimum-seeding-days warning as the library Purge.
+    - **Web Sign-In**: In the web build the browser owns the session cookie
+      of a username/password login (sent with `withCredentials`, never a
+      manual `Cookie` header), so that mode needs qBittorrent served from the
+      same domain as the app (reverse proxy). When a login is accepted but the
+      following requests are rejected, the app reports that instead of the
+      generic "Unauthorized" and stops logging in until the user retries.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr

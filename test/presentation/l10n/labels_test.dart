@@ -111,6 +111,24 @@ void main() {
       );
     });
 
+    test('explains a browser session that was not kept instead of blaming '
+        'the API key', () {
+      // Given
+      const error = BrowserSessionUnavailableError();
+
+      // When
+      final english = describeError(error, en);
+      final portuguese = describeError(error, ptBR);
+      final spanish = describeError(error, es);
+
+      // Then
+      expect(english, en.errorQbittorrentBrowserSession);
+      expect(english, error.message);
+      expect(english, isNot(en.errorUnauthorized));
+      expect(portuguese, ptBR.errorQbittorrentBrowserSession);
+      expect(spanish, es.errorQbittorrentBrowserSession);
+    });
+
     group('raw DioException', () {
       DioException dio(DioExceptionType type, {int? status}) {
         final request = RequestOptions(

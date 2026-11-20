@@ -32,6 +32,22 @@ class UnauthorizedError extends ApiError {
     : super(message ?? 'Unauthorized. Please check your API key.');
 }
 
+/// Thrown when qBittorrent accepts a username and password login in a
+/// browser, but keeps rejecting the requests that follow it.
+///
+/// A browser owns the session cookie and only sends it back when qBittorrent
+/// is served from the same site as the app, so the credentials are not the
+/// problem and logging in again cannot help.
+class BrowserSessionUnavailableError extends UnauthorizedError {
+  const BrowserSessionUnavailableError()
+    : super(
+        'The browser did not keep the qBittorrent session. On the web, '
+        'username and password only work when qBittorrent is served from '
+        'the same domain as Arrmate (reverse proxy). Otherwise use an API '
+        'key.',
+      );
+}
+
 /// Thrown when the server returns a 404 Not Found response.
 class NotFoundError extends ApiError {
   const NotFoundError([String? message])

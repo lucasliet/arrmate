@@ -83,6 +83,12 @@ description: Erros de conexão, autenticação API key, notificações, app desa
    - Tocar "Test Connection" para validar.
    - Tocar "Save".
 
+3. **Na versão web ("The browser did not keep the qBittorrent session"):**
+   - No navegador, o login com usuário e senha depende do cookie de sessão, que só é mantido quando o qBittorrent é servido no **mesmo domínio** do Arrmate (reverse proxy).
+   - Se o qBittorrent estiver em outro domínio, o login é aceito, mas as chamadas seguintes são recusadas e o app mostra esse erro em vez da lista de torrents.
+   - Solução: publicar o qBittorrent atrás de um reverse proxy no mesmo domínio do Arrmate, ou usar uma **API Key** (qBittorrent ≥ v5.2.0) no lugar de usuário e senha.
+   - Apps nativos (Android, iOS, desktop) não têm essa limitação.
+
 3. **Se error persiste:**
    - Resetar senha no qBittorrent (Settings → WebUI → "Reset to default").
    - Tentar novamente.

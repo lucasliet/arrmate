@@ -486,6 +486,149 @@ void main() {
     });
   });
 
+  group('QBittorrentService browser session', () {
+    int infoRequests(_RecordingAdapter adapter) => adapter.requests
+        .where((uri) => uri.path == '/api/v2/torrents/info')
+        .length;
+
+    _RecordingAdapter browserAdapter() =>
+        _RecordingAdapter()..hideSessionCookie = true;
+
+    test('should explain that the browser did not keep the session when '
+        'requests are rejected after an accepted login', () async {
+      // Given a login the server accepts and requests it keeps rejecting
+      final adapter = browserAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When / Then
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+
+      // And it logged in once to start and once to renew, without looping
+      expect(adapter.loginCount, 2);
+      expect(infoRequests(adapter), 2);
+    });
+
+    test('should stop asking the server once the browser session is known '
+        'to be unavailable, until a retry is allowed', () async {
+      // Given a session the browser did not keep
+      final adapter = browserAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+      final requestsAfterFailure = adapter.requests.length;
+
+      // When something keeps polling
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+
+      // Then the server never hears from the client again
+      expect(adapter.loginCount, 2);
+      expect(adapter.requests.length, requestsAfterFailure);
+
+      // And a retry the user asked for logs in exactly once more
+      adapter.respond = null;
+      service.allowAuthenticationRetry();
+      expect(await service.getTorrents(), hasLength(1));
+      expect(adapter.loginCount, 3);
+    });
+
+    test(
+      'should send the browser credentials and never a Cookie header',
+      () async {
+        // Given a server that exposes the cookie, which a browser would hide
+        final adapter = _RecordingAdapter();
+        final service = _serviceCookie(adapter, browserManagedSession: true);
+
+        // When
+        await service.getTorrents();
+
+        // Then
+        expect(adapter.options, hasLength(2));
+        for (final options in adapter.options) {
+          expect(options.extra['withCredentials'], isTrue);
+          expect(
+            options.headers.keys.map((name) => name.toLowerCase()),
+            isNot(contains('cookie')),
+          );
+        }
+      },
+    );
+
+    test('should log in once when the server accepts the session the browser '
+        'keeps', () async {
+      // Given
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When
+      final first = await service.getTorrents();
+      final second = await service.getTorrents();
+
+      // Then
+      expect(first, hasLength(1));
+      expect(second, hasLength(1));
+      expect(adapter.loginCount, 1);
+    });
+
+    test('should log in once for requests that expire together', () async {
+      // Given a session that expires once
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await service.getTorrents();
+      var rejections = 3;
+      adapter.respond = (_) => rejections-- > 0 ? 403 : null;
+
+      // When
+      final results = await Future.wait([
+        service.getTorrents(),
+        service.getTorrents(),
+        service.getTorrents(),
+      ]);
+
+      // Then
+      expect(results.every((torrents) => torrents.length == 1), isTrue);
+      expect(adapter.loginCount, 2);
+    });
+
+    test('should not send browser credentials with an API key', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter, browserManagedSession: true);
+
+      // When
+      await service.getTorrents();
+
+      // Then
+      final options = adapter.options.single;
+      expect(options.extra.containsKey('withCredentials'), isFalse);
+      expect(options.headers['Authorization'], 'Bearer bearer-token');
+    });
+
+    test('should keep sending the Cookie header outside a browser', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _serviceCookie(adapter);
+
+      // When
+      await service.getTorrents();
+
+      // Then
+      final options = adapter.options.last;
+      expect(options.headers['Cookie'], 'SID=session-1');
+      expect(
+        adapter.options.any((o) => o.extra.containsKey('withCredentials')),
+        isFalse,
+      );
+    });
+  });
+
   group('QBittorrentService trackers', () {
     test('should parse torrent trackers from the trackers endpoint', () async {
       final adapter = _RecordingAdapter(
@@ -521,7 +664,10 @@ void main() {
   });
 }
 
-QBittorrentService _service(_RecordingAdapter adapter) {
+QBittorrentService _service(
+  _RecordingAdapter adapter, {
+  bool browserManagedSession = false,
+}) {
   final instance = Instance(
     id: 'qbit',
     type: InstanceType.qbittorrent,
@@ -534,10 +680,17 @@ QBittorrentService _service(_RecordingAdapter adapter) {
     ..httpClientAdapter = adapter
     ..options.baseUrl = instance.effectiveUrl
     ..options.validateStatus = (status) => status != null && status < 500;
-  return QBittorrentService(instance, dio: dio);
+  return QBittorrentService(
+    instance,
+    dio: dio,
+    browserManagedSession: browserManagedSession,
+  );
 }
 
-QBittorrentService _serviceCookie(_RecordingAdapter adapter) {
+QBittorrentService _serviceCookie(
+  _RecordingAdapter adapter, {
+  bool browserManagedSession = false,
+}) {
   final instance = Instance(
     id: 'qbit',
     type: InstanceType.qbittorrent,
@@ -550,7 +703,11 @@ QBittorrentService _serviceCookie(_RecordingAdapter adapter) {
     ..httpClientAdapter = adapter
     ..options.baseUrl = instance.effectiveUrl
     ..options.validateStatus = (status) => status != null && status < 500;
-  return QBittorrentService(instance, dio: dio);
+  return QBittorrentService(
+    instance,
+    dio: dio,
+    browserManagedSession: browserManagedSession,
+  );
 }
 
 class _RecordingAdapter implements HttpClientAdapter {
@@ -566,6 +723,13 @@ class _RecordingAdapter implements HttpClientAdapter {
 
   final List<Uri> requests = [];
   final List<String> methods = [];
+
+  /// Options of every request received, to inspect headers and extras.
+  final List<RequestOptions> options = [];
+
+  /// Whether the login answers without a readable `set-cookie`, the way a
+  /// browser exposes it.
+  bool hideSessionCookie = false;
 
   /// Answers a non-login request with this status; `null` answers normally.
   int? Function(RequestOptions options)? respond;
@@ -596,6 +760,7 @@ class _RecordingAdapter implements HttpClientAdapter {
     final uri = options.uri;
     requests.add(uri);
     methods.add(options.method);
+    this.options.add(options);
     // Lets requests started together interleave, like they do on a network.
     await Future<void>.delayed(Duration.zero);
 
@@ -631,7 +796,8 @@ class _RecordingAdapter implements HttpClientAdapter {
         statusCode,
         headers: {
           Headers.contentTypeHeader: [Headers.textPlainContentType],
-          'set-cookie': ['SID=session-$loginCount; Path=/'],
+          if (!hideSessionCookie)
+            'set-cookie': ['SID=session-$loginCount; Path=/'],
         },
       );
     }

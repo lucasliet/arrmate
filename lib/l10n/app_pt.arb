@@ -215,6 +215,7 @@
   "errorConnectionFailed": "Falha na conexão. Verifique sua rede.",
   "errorInvalidUrl": "URL inválida: {url}",
   "errorNotFound": "Recurso não encontrado.",
+  "errorQbittorrentBrowserSession": "O navegador não manteve a sessão do qBittorrent. Na web, usuário e senha só funcionam com o qBittorrent servido no mesmo domínio do Arrmate (proxy reverso). Caso contrário, use uma API Key.",
   "errorRequestCancelled": "Solicitação cancelada",
   "errorRequestTimedOut": "A solicitação expirou. Tente novamente.",
   "errorServer": "Erro no servidor. Tente novamente mais tarde.",

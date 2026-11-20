@@ -778,6 +778,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errorNotFound => 'Recurso não encontrado.';
 
   @override
+  String get errorQbittorrentBrowserSession =>
+      'O navegador não manteve a sessão do qBittorrent. Na web, usuário e senha só funcionam com o qBittorrent servido no mesmo domínio do Arrmate (proxy reverso). Caso contrário, use uma API Key.';
+
+  @override
   String get errorRequestCancelled => 'Solicitação cancelada';
 
   @override
@@ -5748,6 +5752,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get errorNotFound => 'Recurso não encontrado.';
+
+  @override
+  String get errorQbittorrentBrowserSession =>
+      'O navegador não manteve a sessão do qBittorrent. Na web, usuário e senha só funcionam com o qBittorrent servido no mesmo domínio do Arrmate (proxy reverso). Caso contrário, use uma API Key.';
 
   @override
   String get errorRequestCancelled => 'Solicitação cancelada';
