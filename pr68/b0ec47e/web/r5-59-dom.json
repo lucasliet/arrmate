@@ -1,0 +1,186 @@
+[
+  {
+    "repro": "1-movies-search-upcoming",
+    "verdict": "CONFIRMED",
+    "expected": "/img/movie/5/",
+    "titles_after": [
+      "Mock Dune Part Two",
+      "Mock Oppenheimer",
+      "Mock Fail Delete Movie",
+      "Mock Paused Movie",
+      "Mock Upcoming Movie"
+    ],
+    "imgs_after": [
+      {
+        "src": "http://127.0.0.1:19854/img/movie/1/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/2/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/4/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/3/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/5/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      }
+    ],
+    "imgs_before": [
+      {
+        "src": "http://127.0.0.1:19854/img/movie/1/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/2/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/4/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/3/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/5/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      }
+    ],
+    "issues": [
+      "card[2] title='Mock Fail Delete Movie' expected*/img/movie/3/* got src=http://127.0.0.1:19854/img/movie/4/poster.png",
+      "card[3] title='Mock Paused Movie' expected*/img/movie/4/* got src=http://127.0.0.1:19854/img/movie/3/poster.png"
+    ],
+    "notes": "Web search toolbar automated unreliably in headless run; DOM pairing after search attempt still shows nocors poster src/title skew on movies grid (same failure class as issue #59)."
+  },
+  {
+    "repro": "2-movies-delete-middle",
+    "verdict": "CONFIRMED",
+    "titles_before": [
+      "Mock Dune Part Two",
+      "Mock Oppenheimer",
+      "Mock Fail Delete Movie",
+      "Mock Paused Movie",
+      "Mock Upcoming Movie"
+    ],
+    "titles_after": [
+      "Mock Dune Part Two",
+      "Mock Fail Delete Movie",
+      "Mock Paused Movie",
+      "Mock Upcoming Movie"
+    ],
+    "imgs_before": [
+      {
+        "src": "http://127.0.0.1:19854/img/movie/1/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/2/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/3/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/4/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/5/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      }
+    ],
+    "imgs_after": [
+      {
+        "src": "http://127.0.0.1:19854/img/movie/1/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/2/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/3/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19854/img/movie/4/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      }
+    ],
+    "issues": [
+      "card[1] title='Mock Fail Delete Movie' expected*/img/movie/3/* got src=http://127.0.0.1:19854/img/movie/2/poster.png",
+      "card[2] title='Mock Paused Movie' expected*/img/movie/4/* got src=http://127.0.0.1:19854/img/movie/3/poster.png",
+      "card[3] title='Mock Upcoming Movie' expected*/img/movie/5/* got src=http://127.0.0.1:19854/img/movie/4/poster.png"
+    ]
+  },
+  {
+    "repro": "control-series-search-bear",
+    "verdict": "NOT REPRODUCED",
+    "issues": [],
+    "titles_after": [
+      "Mock The Bear",
+      "Mock Severance"
+    ],
+    "imgs_after": [
+      {
+        "src": "http://127.0.0.1:19851/img/series/2/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      },
+      {
+        "src": "http://127.0.0.1:19851/img/series/1/poster.png",
+        "w": 300,
+        "h": 450,
+        "complete": true
+      }
+    ]
+  }
+]
