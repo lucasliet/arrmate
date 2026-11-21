@@ -1,0 +1,106 @@
+{
+  "sha": "eaf9350",
+  "items": [
+    {
+      "item": "web-movie-preview-693134",
+      "verdict": "PASS",
+      "forbidden": [],
+      "no_cast": true,
+      "original_title_shown": true,
+      "hosts": {
+        "127.0.0.1:19854": 15,
+        "127.0.0.1:8945": 40,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      }
+    },
+    {
+      "item": "web-series-preview-366524",
+      "verdict": "PASS",
+      "forbidden": [],
+      "hosts": {
+        "127.0.0.1:19854": 15,
+        "127.0.0.1:8945": 40,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      }
+    },
+    {
+      "item": "web-library-movie-detail",
+      "verdict": "PASS",
+      "forbidden": [],
+      "hosts": {
+        "127.0.0.1:19850": 2,
+        "127.0.0.1:19854": 10,
+        "127.0.0.1:8945": 42,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      }
+    },
+    {
+      "item": "regression-59",
+      "verdict": "PASS"
+    },
+    {
+      "item": "regression-61-dead",
+      "verdict": "PASS"
+    },
+    {
+      "item": "regression-61-recover",
+      "verdict": "PASS",
+      "seconds": 8.1
+    },
+    {
+      "item": "regression-58",
+      "verdict": "PASS"
+    },
+    {
+      "item": "native-linux-desktop-gui",
+      "verdict": "BLOQUEADO",
+      "reason": "No Flutter Linux desktop run / xdotool in cloud VM"
+    },
+    {
+      "item": "native-non-web-widget-tests",
+      "verdict": "PASS",
+      "web_skip_test": true,
+      "non_web_cast_test": true
+    }
+  ],
+  "network": {
+    "movie-preview": {
+      "hosts": {
+        "127.0.0.1:19854": 15,
+        "127.0.0.1:8945": 62,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      },
+      "forbidden": []
+    },
+    "series-preview": {
+      "hosts": {
+        "127.0.0.1:19854": 15,
+        "127.0.0.1:8945": 50,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      },
+      "forbidden": []
+    },
+    "library": {
+      "hosts": {
+        "127.0.0.1:19850": 2,
+        "127.0.0.1:19854": 10,
+        "127.0.0.1:8945": 42,
+        "api.github.com": 1,
+        "fonts.gstatic.com": 1,
+        "www.gstatic.com": 4
+      },
+      "forbidden": []
+    }
+  },
+  "flutter_test": "02:06 +1565 ~4: All tests passed!"
+}
