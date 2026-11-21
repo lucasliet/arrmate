@@ -480,6 +480,7 @@
   },
   "discoverySearchPrompt": "Search by title, provider ID, or URL",
   "errorConnectionFailed": "Connection failed. Please check your network.",
+  "errorFileDialogUnavailable": "The system file dialog is not available. On Linux, install a desktop portal such as xdg-desktop-portal-gtk and try again.",
   "errorInvalidUrl": "Invalid URL: {url}",
   "@errorInvalidUrl": {
     "placeholders": {

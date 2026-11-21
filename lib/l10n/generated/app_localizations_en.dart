@@ -780,6 +780,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connection failed. Please check your network.';
 
   @override
+  String get errorFileDialogUnavailable =>
+      'The system file dialog is not available. On Linux, install a desktop portal such as xdg-desktop-portal-gtk and try again.';
+
+  @override
   String errorInvalidUrl(String url) {
     return 'Invalid URL: $url';
   }

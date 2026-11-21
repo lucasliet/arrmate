@@ -93,6 +93,12 @@ class Torrent extends Equatable {
 
   bool get isComplete => progress >= 1.0;
 
+  /// Whether the client is still fetching the metadata of a magnet link.
+  ///
+  /// Until then it has no `.torrent` file to export.
+  bool get isFetchingMetadata =>
+      const {'metadl', 'forcedmetadl'}.contains(state.toLowerCase());
+
   Duration? get estimatedTime => eta > 0 ? Duration(seconds: eta) : null;
 
   bool get hasCategory => category != null && category!.isNotEmpty;

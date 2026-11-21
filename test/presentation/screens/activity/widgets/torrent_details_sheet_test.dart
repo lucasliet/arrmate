@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:arrmate/core/network/api_error.dart';
+import 'package:arrmate/core/services/file_dialog.dart';
 import 'package:arrmate/core/services/torrent_file_export_service.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
@@ -18,14 +19,19 @@ import '../../../../helpers/localized_app.dart';
 class MockQBittorrentService extends Mock implements QBittorrentService {}
 
 class _FakeTorrentFileExportService extends TorrentFileExportService {
-  _FakeTorrentFileExportService({this.aborted = false});
+  _FakeTorrentFileExportService({
+    this.aborted = false,
+    this.dialogUnavailable = false,
+  });
 
   final bool aborted;
+  final bool dialogUnavailable;
   String? savedName;
   Uint8List? savedBytes;
 
   @override
   Future<String?> saveTorrentFile(String torrentName, Uint8List bytes) async {
+    if (dialogUnavailable) throw const FileDialogUnavailableError();
     if (aborted) return null;
     savedName = torrentName;
     savedBytes = bytes;
@@ -159,6 +165,52 @@ void main() {
 
         // Then
         expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+      });
+
+      testWidgets(
+        'should disable the export while the metadata is being fetched',
+        (tester) async {
+          // Given
+          await pumpSharing(
+            tester,
+            _torrent(status: TorrentStatus.downloading, state: 'metaDL'),
+            _FakeTorrentFileExportService(),
+          );
+
+          // When
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+
+          // Then
+          expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+          verifyNever(() => service.exportTorrent(any()));
+        },
+      );
+
+      testWidgets('should explain a system without a file dialog', (
+        tester,
+      ) async {
+        // Given
+        when(
+          () => service.exportTorrent('hash'),
+        ).thenAnswer((_) async => Uint8List(0));
+        await pumpSharing(
+          tester,
+          _torrent(),
+          _FakeTorrentFileExportService(dialogUnavailable: true),
+        );
+
+        // When
+        await tapAction(tester, 'torrent-export-file-button');
+
+        // Then
+        expect(
+          find.textContaining('The system file dialog is not available'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('org.freedesktop'), findsNothing);
       });
 
       testWidgets('should save the torrent file the server exported', (

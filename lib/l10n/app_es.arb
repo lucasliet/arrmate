@@ -217,6 +217,7 @@
   "discoveryRuntimeMinutes": "{minutes} min",
   "discoverySearchPrompt": "Busca por título, ID del proveedor o URL",
   "errorConnectionFailed": "Error de conexión. Comprueba tu red.",
+  "errorFileDialogUnavailable": "El diálogo de archivos del sistema no está disponible. En Linux, instala un portal de escritorio, como xdg-desktop-portal-gtk, y vuelve a intentarlo.",
   "errorInvalidUrl": "URL no válida: {url}",
   "errorNotFound": "Recurso no encontrado.",
   "errorQbittorrentBrowserCrossOrigin": "El navegador bloqueó o no pudo alcanzar qBittorrent en otro dominio. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso), o si acepta solicitudes con credenciales desde este sitio (CORS).",

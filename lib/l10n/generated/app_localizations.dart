@@ -1403,6 +1403,12 @@ abstract class AppLocalizations {
   /// **'Connection failed. Please check your network.'**
   String get errorConnectionFailed;
 
+  /// No description provided for @errorFileDialogUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The system file dialog is not available. On Linux, install a desktop portal such as xdg-desktop-portal-gtk and try again.'**
+  String get errorFileDialogUnavailable;
+
   /// No description provided for @errorInvalidUrl.
   ///
   /// In en, this message translates to:

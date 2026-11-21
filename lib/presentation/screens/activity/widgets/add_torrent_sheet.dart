@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/file_dialog.dart';
 import '../../../../domain/models/models.dart';
 import '../../../l10n/labels.dart';
 import '../providers/qbittorrent_provider.dart';
@@ -36,9 +37,11 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
 
   Future<void> _pickTorrentFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['torrent'],
+      final result = await guardFileDialog(
+        () => FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['torrent'],
+        ),
       );
 
       if (result != null && result.files.single.path != null) {

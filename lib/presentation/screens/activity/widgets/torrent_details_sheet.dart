@@ -391,7 +391,11 @@ class TorrentDetailsSheet extends ConsumerWidget {
                         Expanded(
                           child: OutlinedButton.icon(
                             key: const ValueKey('torrent-export-file-button'),
-                            onPressed: () => _exportTorrentFile(context, ref),
+                            // The client has no .torrent file to hand over
+                            // while it still fetches the metadata.
+                            onPressed: torrent.isFetchingMetadata
+                                ? null
+                                : () => _exportTorrentFile(context, ref),
                             icon: const Icon(Icons.file_download_outlined),
                             label: Text(context.l10n.torrentExportFile),
                           ),

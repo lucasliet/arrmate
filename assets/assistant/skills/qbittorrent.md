@@ -78,7 +78,7 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - Botão "Move" (ícone de seta) para mudar localização no disco.
     - Botão "Trackers" abre um sheet com os announce URLs do torrent (host, status, seeds/leechers/peers, tier e mensagem de erro) e as linhas DHT, PeX e LSD. A URL completa pode ser selecionada para copiar.
     - Botão "Copy Magnet" copia o magnet link do torrent para a área de transferência e fecha a ficha. Fica desabilitado se o servidor não informar o magnet.
-    - Botão "Export .torrent" baixa o arquivo `.torrent` do qBittorrent e abre o diálogo de salvar do sistema (no navegador, inicia o download). Requer qBittorrent 4.5.0 ou mais novo; em versões anteriores a ação falha com erro.
+    - Botão "Export .torrent" baixa o arquivo `.torrent` do qBittorrent e abre o diálogo de salvar do sistema (no navegador, inicia o download). Requer qBittorrent 4.5.0 ou mais novo; em versões anteriores a ação falha com erro. O botão fica desabilitado enquanto o torrent ainda baixa os metadados de um magnet (o arquivo `.torrent` ainda não existe). No Linux sem um portal de desktop (ex.: `xdg-desktop-portal-gtk`), o app avisa que a janela de arquivos do sistema não está disponível; o mesmo vale para exportar e importar backup e para escolher um `.torrent` ao adicionar.
     - Se 100% completo: botão "Import to Media Library" (para importar para Radarr/Sonarr).
     - Botão "Remove Torrent" (texto em vermelho, destrutivo).
 

@@ -786,6 +786,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errorConnectionFailed => 'Falha na conexão. Verifique sua rede.';
 
   @override
+  String get errorFileDialogUnavailable =>
+      'A janela de arquivos do sistema não está disponível. No Linux, instale um portal de desktop, como o xdg-desktop-portal-gtk, e tente de novo.';
+
+  @override
   String errorInvalidUrl(String url) {
     return 'URL inválida: $url';
   }
@@ -5792,6 +5796,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get errorConnectionFailed => 'Falha na conexão. Verifique sua rede.';
+
+  @override
+  String get errorFileDialogUnavailable =>
+      'A janela de arquivos do sistema não está disponível. No Linux, instale um portal de desktop, como o xdg-desktop-portal-gtk, e tente de novo.';
 
   @override
   String errorInvalidUrl(String url) {

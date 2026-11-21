@@ -1,6 +1,7 @@
 import 'package:arrmate/core/extensions/date_extensions.dart';
 import 'package:arrmate/core/l10n/app_locale.dart';
 import 'package:arrmate/core/network/api_error.dart';
+import 'package:arrmate/core/services/file_dialog.dart';
 import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/l10n/labels.dart';
@@ -92,6 +93,13 @@ void main() {
   });
 
   group('describeError', () {
+    test('explains a system without a file dialog', () {
+      expect(
+        describeError(const FileDialogUnavailableError(), ptBR),
+        contains('janela de arquivos do sistema não está disponível'),
+      );
+    });
+
     test('translates built-in API error messages', () {
       expect(
         describeError(const ConnectionError(), en),

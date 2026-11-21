@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
 import 'backup_file_writer.dart';
+import 'file_dialog.dart';
 import 'logger_service.dart';
 
 /// Saves a `.torrent` file exported from the download client through the
@@ -29,7 +30,8 @@ class TorrentFileExportService {
   /// Opens the platform save dialog and writes [bytes] as the `.torrent` file
   /// of the torrent called [torrentName].
   ///
-  /// Returns the exported file name, or null when the dialog was aborted. On
+  /// Returns the exported file name, or null when the dialog was aborted, and
+  /// throws [FileDialogUnavailableError] when the system has no dialog. On
   /// the web the download starts immediately. Android and iOS write the
   /// picked document themselves from the given bytes, so only desktop builds
   /// need to fill the returned plain path.
@@ -37,9 +39,8 @@ class TorrentFileExportService {
     final fileName = buildFileName(torrentName);
     // No extension filter: Android resolves it to a MIME type and has none
     // registered for `.torrent`. The suggested name already carries it.
-    final path = await FilePicker.platform.saveFile(
-      fileName: fileName,
-      bytes: bytes,
+    final path = await guardFileDialog(
+      () => FilePicker.platform.saveFile(fileName: fileName, bytes: bytes),
     );
     if (path == null && !kIsWeb) return null;
     final writesNativeFile =

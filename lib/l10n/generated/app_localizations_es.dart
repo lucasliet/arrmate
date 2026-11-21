@@ -787,6 +787,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorConnectionFailed => 'Error de conexión. Comprueba tu red.';
 
   @override
+  String get errorFileDialogUnavailable =>
+      'El diálogo de archivos del sistema no está disponible. En Linux, instala un portal de escritorio, como xdg-desktop-portal-gtk, y vuelve a intentarlo.';
+
+  @override
   String errorInvalidUrl(String url) {
     return 'URL no válida: $url';
   }

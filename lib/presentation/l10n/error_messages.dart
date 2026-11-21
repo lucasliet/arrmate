@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/l10n/app_locale.dart';
 import '../../core/network/api_error.dart';
+import '../../core/services/file_dialog.dart';
 
 /// English message of [UnknownApiError] when a request is cancelled.
 ///
@@ -16,9 +17,13 @@ const _requestCancelledMessage = 'Request cancelled';
 /// the error) are returned untouched, since they cannot be translated
 /// reliably. A [DioException] that reached the UI without being wrapped (the
 /// download client has its own HTTP client) is translated by
-/// [_describeDioError]. Any other error falls back to `error.toString()`.
+/// [_describeDioError], and a [FileDialogUnavailableError] gets its own
+/// explanation. Any other error falls back to `error.toString()`.
 String describeError(Object error, AppLocalizations l10n) {
   if (error is DioException) return _describeDioError(error, l10n);
+  if (error is FileDialogUnavailableError) {
+    return l10n.errorFileDialogUnavailable;
+  }
   if (error is! ApiError) return error.toString();
   final message = error.message;
   return switch (error) {
