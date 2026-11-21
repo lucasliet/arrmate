@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:arrmate/core/network/api_error.dart';
 import 'package:arrmate/core/services/torrent_file_export_service.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
@@ -228,6 +230,68 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'should keep the route underneath when the sheet closes mid-export',
+        (tester) async {
+          // Given the sheet open over a pushed route and a slow server
+          final pending = Completer<Uint8List>();
+          when(
+            () => service.exportTorrent('hash'),
+          ).thenAnswer((_) => pending.future);
+          final exporter = _FakeTorrentFileExportService();
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                qbittorrentServiceProvider.overrideWithValue(service),
+                torrentFileExportServiceProvider.overrideWithValue(exporter),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: testLocalizationsDelegates,
+                supportedLocales: testSupportedLocales,
+                locale: testLocale,
+                home: const Scaffold(body: Text('Root')),
+              ),
+            ),
+          );
+          final navigator = tester.state<NavigatorState>(
+            find.byType(Navigator),
+          );
+          navigator.push(
+            MaterialPageRoute<void>(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => TorrentDetailsSheet(torrent: _torrent()),
+                  ),
+                  child: const Text('Underneath'),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Underneath'));
+          await tester.pumpAndSettle();
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+          await tester.tap(button);
+          await tester.pump();
+
+          // When the sheet is dismissed before the server answers
+          navigator.pop();
+          await tester.pumpAndSettle();
+          pending.complete(Uint8List.fromList([1]));
+          await tester.pumpAndSettle();
+
+          // Then
+          expect(find.text('Underneath'), findsOneWidget);
+          expect(exporter.savedBytes, isNull);
+        },
+      );
     });
 
     group('actions the server refuses', () {

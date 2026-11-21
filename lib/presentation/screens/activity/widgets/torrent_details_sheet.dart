@@ -466,7 +466,8 @@ class TorrentDetailsSheet extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     await Clipboard.setData(ClipboardData(text: torrent.magnetUri));
-    if (navigator.canPop()) navigator.pop();
+    // A sheet dismissed meanwhile must not pop the route underneath it.
+    if (context.mounted && navigator.canPop()) navigator.pop();
     messenger.showSnackBar(SnackBar(content: Text(l10n.torrentMagnetCopied)));
   }
 
@@ -483,9 +484,12 @@ class TorrentDetailsSheet extends ConsumerWidget {
     if (service == null) return;
     try {
       final bytes = await service.exportTorrent(torrent.hash);
+      // Dismissing the sheet while the server answers cancels the export.
+      if (!context.mounted) return;
       final fileName = await exporter.saveTorrentFile(torrent.name, bytes);
       if (fileName == null) return;
-      if (navigator.canPop()) navigator.pop();
+      // A sheet dismissed meanwhile must not pop the route underneath it.
+      if (context.mounted && navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(l10n.torrentFileExported)));
     } catch (e) {
       messenger.showSnackBar(
