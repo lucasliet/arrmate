@@ -4012,6 +4012,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get torrentCopyMagnet => 'Copy Magnet';
+
+  @override
   String get torrentCrossSeedBadge => 'Cross-seed';
 
   @override
@@ -4034,6 +4037,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String torrentEta(String eta) {
     return 'ETA: $eta';
   }
+
+  @override
+  String get torrentExportFile => 'Export .torrent';
+
+  @override
+  String get torrentFileExported => 'Torrent file exported';
 
   @override
   String get torrentFiles => 'Files';
@@ -4182,6 +4191,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get torrentLocationMoved =>
       'Location moved successfully. Data is being moved.';
+
+  @override
+  String get torrentMagnetCopied => 'Magnet link copied';
 
   @override
   String get torrentMove => 'Move';

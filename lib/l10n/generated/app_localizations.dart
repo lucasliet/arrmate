@@ -6329,6 +6329,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, other{{count} connected}}'**
   String torrentConnectedCount(int count);
 
+  /// No description provided for @torrentCopyMagnet.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Magnet'**
+  String get torrentCopyMagnet;
+
   /// No description provided for @torrentCrossSeedBadge.
   ///
   /// In en, this message translates to:
@@ -6370,6 +6376,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ETA: {eta}'**
   String torrentEta(String eta);
+
+  /// No description provided for @torrentExportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export .torrent'**
+  String get torrentExportFile;
+
+  /// No description provided for @torrentFileExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Torrent file exported'**
+  String get torrentFileExported;
 
   /// No description provided for @torrentFiles.
   ///
@@ -6616,6 +6634,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location moved successfully. Data is being moved.'**
   String get torrentLocationMoved;
+
+  /// No description provided for @torrentMagnetCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Magnet link copied'**
+  String get torrentMagnetCopied;
 
   /// No description provided for @torrentMove.
   ///

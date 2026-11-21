@@ -341,6 +341,8 @@ Shared by movies, seasons, and episodes.
 | TOR-16 | Matrix badges | Seeding list | `radarr` copy “The Matrix”; cross-seed copy “The Matrix” + “Cross-seed” | Verified |
 | TOR-17 | Episode badge | Severance torrents | “Severance · S01E01” / “· S01E05” / “· S01E09” | Not run |
 | TOR-18 | Pull to refresh | Pull down | Torrents and link index reload | Not run |
+| TOR-20 | Copy magnet | Torrent details → Copy Magnet | Sheet closes, “Magnet link copied”; clipboard holds the `magnet:?xt=urn:btih:` link | Not run |
+| TOR-21 | Export .torrent | Torrent details → Export .torrent | Save dialog (browser download on web) with `<name>.torrent`; “Torrent file exported” | Not run |
 | TOR-19 | Live update | Keep tab open | Dune and S01E09 progress grows every poll; grabbed torrents finish in about a minute | Not run |
 
 ## Activity: Torrent sheet and actions (TRA)

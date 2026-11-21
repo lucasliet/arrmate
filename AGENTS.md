@@ -37,6 +37,9 @@ and **qBittorrent** (for downloads).
       server that does not answer the browser at all (probed with a `no-cors`
       request) stays a plain connection error and keeps being retried.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
+    - **Share Torrents**: The torrent details sheet copies the magnet link
+      and exports the `.torrent` file (`torrents/export`, qBittorrent 4.5.0+)
+      through the platform save dialog.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
       media library with file mapping and target selection (Movies/Series).

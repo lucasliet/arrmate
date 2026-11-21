@@ -25,6 +25,10 @@ class Torrent extends Equatable {
   final int seedingTime;
   final int completionOn;
 
+  /// Magnet link of the torrent as reported by qBittorrent, empty when the
+  /// server did not send one.
+  final String magnetUri;
+
   const Torrent({
     required this.hash,
     required this.name,
@@ -48,6 +52,7 @@ class Torrent extends Equatable {
     required this.priority,
     this.seedingTime = 0,
     this.completionOn = 0,
+    this.magnetUri = '',
   });
 
   factory Torrent.fromJson(Map<String, dynamic> json) {
@@ -80,6 +85,7 @@ class Torrent extends Equatable {
       priority: json['priority'] as int? ?? 0,
       seedingTime: json['seeding_time'] as int? ?? 0,
       completionOn: json['completion_on'] as int? ?? 0,
+      magnetUri: json['magnet_uri'] as String? ?? '',
     );
   }
 
@@ -127,5 +133,6 @@ class Torrent extends Equatable {
     priority,
     seedingTime,
     completionOn,
+    magnetUri,
   ];
 }

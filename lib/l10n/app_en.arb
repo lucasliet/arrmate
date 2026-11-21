@@ -2555,6 +2555,7 @@
       }
     }
   },
+  "torrentCopyMagnet": "Copy Magnet",
   "torrentCrossSeedBadge": "Cross-seed",
   "torrentCrossSeedExplanation": "Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.",
   "torrentDeleteWithFiles": "Delete with files",
@@ -2569,6 +2570,8 @@
       }
     }
   },
+  "torrentExportFile": "Export .torrent",
+  "torrentFileExported": "Torrent file exported",
   "torrentFiles": "Files",
   "torrentFilterLibraryLink": "Library link",
   "torrentFilterTooltip": "Filter torrents",
@@ -2645,6 +2648,7 @@
   "torrentLoadingPeers": "Loading peers...",
   "torrentLoadingTrackers": "Loading trackers...",
   "torrentLocationMoved": "Location moved successfully. Data is being moved.",
+  "torrentMagnetCopied": "Magnet link copied",
   "torrentMove": "Move",
   "torrentMoveFailed": "Failed to move: {error}",
   "@torrentMoveFailed": {

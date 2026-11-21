@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
@@ -744,6 +745,19 @@ class QBittorrentService {
       logger.error('[QBittorrentService] Failed to get torrent files', e);
       rethrow;
     }
+  }
+
+  /// Downloads the `.torrent` file of the torrent identified by [hash].
+  ///
+  /// Calls `GET /api/v2/torrents/export`, available from qBittorrent 4.5.0;
+  /// older servers answer 404, which surfaces as a [DioException].
+  Future<Uint8List> exportTorrent(String hash) async {
+    final response = await _request<List<int>>(
+      '/api/v2/torrents/export',
+      queryParameters: {'hash': hash},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data ?? const []);
   }
 
   /// Gets the announce trackers for a specific torrent.

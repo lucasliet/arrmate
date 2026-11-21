@@ -868,6 +868,73 @@ void main() {
     });
   });
 
+  group('QBittorrentService torrent sharing', () {
+    test('should read the magnet link of a listed torrent', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {
+          '/api/v2/torrents/info': jsonEncode([
+            {
+              'hash': 'abc',
+              'name': 'Movie 2024',
+              'magnet_uri': 'magnet:?xt=urn:btih:abc&dn=Movie%202024',
+            },
+            {'hash': 'def', 'name': 'No Magnet'},
+          ]),
+        },
+      );
+      final service = _service(adapter);
+
+      // When
+      final torrents = await service.getTorrents();
+
+      // Then
+      expect(torrents.map((torrent) => torrent.magnetUri), [
+        'magnet:?xt=urn:btih:abc&dn=Movie%202024',
+        '',
+      ]);
+    });
+
+    test('should download the torrent file from the export endpoint', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {'/api/v2/torrents/export': 'd4:infod4:name5:Movieee'},
+      );
+      final service = _service(adapter);
+
+      // When
+      final bytes = await service.exportTorrent('abc');
+
+      // Then
+      expect(utf8.decode(bytes), 'd4:infod4:name5:Movieee');
+      expect(adapter.requests.last.path, '/api/v2/torrents/export');
+      expect(adapter.requests.last.queryParameters, {'hash': 'abc'});
+    });
+
+    test('should fail when the server has no export endpoint', () async {
+      // Given a qBittorrent older than 4.5.0
+      final adapter = _RecordingAdapter(
+        pathStatusCodes: {'/api/v2/torrents/export': 404},
+      );
+      final service = _service(adapter);
+
+      // When
+      final export = service.exportTorrent('abc');
+
+      // Then
+      await expectLater(
+        export,
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.response?.statusCode,
+            'status',
+            404,
+          ),
+        ),
+      );
+    });
+  });
+
   group('QBittorrentService trackers', () {
     test('should parse torrent trackers from the trackers endpoint', () async {
       final adapter = _RecordingAdapter(
