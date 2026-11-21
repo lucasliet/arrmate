@@ -924,6 +924,35 @@ void main() {
       ]);
     });
 
+    test(
+      'should upload a torrent file from its bytes, without a path',
+      () async {
+        // Given a file picked on the web, where no path exists
+        final adapter = _RecordingAdapter();
+        final service = _service(adapter);
+
+        // When
+        await service.addTorrentFile(
+          AddTorrentRequest(
+            torrentFileBytes: Uint8List.fromList([100, 101]),
+            torrentFileName: 'Movie 2024.torrent',
+            paused: true,
+          ),
+        );
+
+        // Then
+        final form = adapter.options.last.data as FormData;
+        expect(adapter.requests.last.path, '/api/v2/torrents/add');
+        expect(form.files.single.key, 'torrents');
+        expect(form.files.single.value.filename, 'Movie 2024.torrent');
+        expect(form.files.single.value.length, 2);
+        expect(
+          form.fields.map((field) => field.key),
+          containsAll(['paused', 'stopped']),
+        );
+      },
+    );
+
     test('should download the torrent file from the export endpoint', () async {
       // Given
       final adapter = _RecordingAdapter(

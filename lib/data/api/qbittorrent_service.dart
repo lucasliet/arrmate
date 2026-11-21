@@ -587,8 +587,8 @@ class QBittorrentService {
 
   /// Adds torrent via .torrent file.
   Future<void> addTorrentFile(AddTorrentRequest request) async {
-    if (request.torrentFilePath == null) {
-      throw Exception('File path is required for addTorrentFile');
+    if (!request.hasTorrentFile) {
+      throw Exception('A torrent file is required for addTorrentFile');
     }
 
     try {
@@ -596,10 +596,7 @@ class QBittorrentService {
 
       // qBittorrent expects 'torrents' for file upload in API v2
       final formData = FormData.fromMap({
-        'torrents': await MultipartFile.fromFile(
-          request.torrentFilePath!,
-          filename: p.basename(request.torrentFilePath!),
-        ),
+        'torrents': await _torrentFilePart(request),
         ...formMap,
       });
 
@@ -610,6 +607,22 @@ class QBittorrentService {
       logger.error('[QBittorrentService] Failed to add torrent (File)', e);
       rethrow;
     }
+  }
+
+  /// Builds the upload part of the .torrent file in [request].
+  ///
+  /// Bytes are preferred: reading from a path needs `dart:io`, which the web
+  /// build does not have.
+  Future<MultipartFile> _torrentFilePart(AddTorrentRequest request) async {
+    final bytes = request.torrentFileBytes;
+    final path = request.torrentFilePath;
+    if (bytes != null) {
+      final name =
+          request.torrentFileName ??
+          (path == null ? 'file.torrent' : p.basename(path));
+      return MultipartFile.fromBytes(bytes, filename: name);
+    }
+    return MultipartFile.fromFile(path!, filename: p.basename(path));
   }
 
   /// Pauses the specified torrents.

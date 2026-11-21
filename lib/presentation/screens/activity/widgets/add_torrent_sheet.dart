@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -23,7 +24,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
   final _categoryController = TextEditingController();
 
   bool _startPaused = false;
-  String? _selectedFilePath;
+  PlatformFile? _selectedFile;
   bool _isSubmitting = false;
   List<String> _selectedTags = [];
 
@@ -41,12 +42,14 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
         () => FilePicker.platform.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['torrent'],
+          // The web has no file path, only the contents.
+          withData: kIsWeb,
         ),
       );
-
-      if (result != null && result.files.single.path != null) {
+      final file = result?.files.single;
+      if (file != null && (file.bytes != null || _pathOf(file) != null)) {
         setState(() {
-          _selectedFilePath = result.files.single.path;
+          _selectedFile = file;
           _urlsController.clear(); // Clear URLs if file selected
         });
       }
@@ -59,11 +62,15 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
     }
   }
 
+  /// Returns the local path of [file], or null on the web, where the path
+  /// of a picked file is a blob URL that cannot be read as a file.
+  String? _pathOf(PlatformFile file) => kIsWeb ? null : file.path;
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Check if at least one source provided
-    if (_selectedFilePath == null && _urlsController.text.trim().isEmpty) {
+    if (_selectedFile == null && _urlsController.text.trim().isEmpty) {
       context.showErrorSnackBar(context.l10n.torrentAddSourceRequired);
       return;
     }
@@ -71,11 +78,14 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
     setState(() => _isSubmitting = true);
 
     try {
+      final selectedFile = _selectedFile;
       final request = AddTorrentRequest(
         urls: _urlsController.text.trim().isNotEmpty
             ? _urlsController.text.trim()
             : null,
-        torrentFilePath: _selectedFilePath,
+        torrentFilePath: selectedFile == null ? null : _pathOf(selectedFile),
+        torrentFileBytes: selectedFile?.bytes,
+        torrentFileName: selectedFile?.name,
         savepath: _savePathController.text.trim().isNotEmpty
             ? _savePathController.text.trim()
             : null,
@@ -88,7 +98,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
 
       final notifier = ref.read(qbittorrentTorrentsProvider.notifier);
 
-      if (request.torrentFilePath != null) {
+      if (request.hasTorrentFile) {
         await notifier.addTorrentFile(request);
       } else {
         await notifier.addTorrentUrl(request);
@@ -151,17 +161,20 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                       const SizedBox(height: 12),
 
                       // File Picker Button
-                      if (_selectedFilePath != null) ...[
+                      if (_selectedFile case final file?) ...[
                         Card(
                           margin: EdgeInsets.zero,
                           child: ListTile(
                             leading: const Icon(Icons.insert_drive_file),
-                            title: Text(_selectedFilePath!.split('/').last),
-                            subtitle: Text(_selectedFilePath!),
+                            title: Text(file.name),
+                            subtitle: switch (_pathOf(file)) {
+                              final path? => Text(path),
+                              null => null,
+                            },
                             trailing: IconButton(
                               icon: const Icon(Icons.close),
                               onPressed: () =>
-                                  setState(() => _selectedFilePath = null),
+                                  setState(() => _selectedFile = null),
                             ),
                           ),
                         ),
@@ -183,7 +196,7 @@ class _AddTorrentSheetState extends ConsumerState<AddTorrentSheet> {
                       ],
 
                       // URLs Input
-                      if (_selectedFilePath == null)
+                      if (_selectedFile == null)
                         TextFormField(
                           controller: _urlsController,
                           maxLines: 3,
