@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import 'backup_file_writer.dart';
 import 'file_dialog.dart';
@@ -30,7 +31,8 @@ class TorrentFileExportService {
   /// Opens the platform save dialog and writes [bytes] as the `.torrent` file
   /// of the torrent called [torrentName].
   ///
-  /// Returns the exported file name, or null when the dialog was aborted, and
+  /// Returns the name the file was saved under, or null when the dialog was
+  /// aborted, and
   /// throws [FileDialogUnavailableError] when the system has no dialog. On
   /// the web the download starts immediately. Android and iOS write the
   /// picked document themselves from the given bytes, so only desktop builds
@@ -48,10 +50,15 @@ class TorrentFileExportService {
         defaultTargetPlatform != TargetPlatform.android &&
         defaultTargetPlatform != TargetPlatform.iOS;
     if (path != null && writesNativeFile) await writeBackupFile(path, bytes);
+    // Only desktop dialogs return the path the user typed; elsewhere it is
+    // an opaque document reference.
+    final savedName = path != null && writesNativeFile
+        ? p.basename(path)
+        : fileName;
     logger.info(
       '[TorrentFileExportService] Torrent file exported '
       '(${bytes.length} bytes)',
     );
-    return fileName;
+    return savedName;
   }
 }

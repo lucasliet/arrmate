@@ -459,6 +459,7 @@ class BackupScreen extends ConsumerWidget {
   }
 
   String _formatTimestamp(DateTime value) {
-    return DateFormat('d MMM y HH:mm').format(value);
+    // Backups record their timestamps in UTC.
+    return DateFormat('d MMM y HH:mm').format(value.toLocal());
   }
 }

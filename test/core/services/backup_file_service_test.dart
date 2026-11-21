@@ -77,8 +77,8 @@ void main() {
         // When
         final fileName = await BackupFileService().exportBackup('{"schema":1}');
 
-        // Then
-        expect(fileName, isNotNull);
+        // Then the name the user chose is reported, not the suggested one
+        expect(fileName, 'chosen.json');
         expect(picker.savedBytes, utf8.encode('{"schema":1}'));
         expect(File(path).readAsStringSync(), '{"schema":1}');
       });

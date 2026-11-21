@@ -79,8 +79,8 @@ void main() {
           bytes,
         );
 
-        // Then
-        expect(fileName, 'Movie 2024.torrent');
+        // Then the name the user chose is reported, not the suggested one
+        expect(fileName, 'chosen.torrent');
         expect(picker.savedFileName, 'Movie 2024.torrent');
         expect(File(path).readAsBytesSync(), bytes);
       });
