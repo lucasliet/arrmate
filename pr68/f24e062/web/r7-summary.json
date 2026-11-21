@@ -1,0 +1,126 @@
+{
+  "sha": "f24e062",
+  "results": [
+    {
+      "section": "poster",
+      "repro": "A-delete",
+      "verdict": "PASS",
+      "issues": []
+    },
+    {
+      "section": "poster",
+      "repro": "B-sort",
+      "verdict": "PASS",
+      "method": "localStorage-sort-title-desc-reload",
+      "issues": []
+    },
+    {
+      "section": "poster",
+      "repro": "control-series",
+      "verdict": "PASS",
+      "issues": []
+    },
+    {
+      "section": "issue_61",
+      "items": [
+        {
+          "scenario": "reachable-not-blocked",
+          "verdict": "PASS",
+          "notes": "list=True blocked=False"
+        },
+        {
+          "scenario": "cross-before-proven",
+          "verdict": "PASS"
+        },
+        {
+          "scenario": "dead-server",
+          "verdict": "PASS",
+          "seconds": 11.4
+        },
+        {
+          "scenario": "transient-not-cors",
+          "verdict": "PASS"
+        },
+        {
+          "scenario": "recover-after-transient",
+          "verdict": "PASS",
+          "seconds_to_recover": 13.9,
+          "ui_excerpt": "list visible"
+        }
+      ]
+    },
+    {
+      "section": "tor",
+      "items": [
+        {
+          "item": "qbit-version",
+          "version": "v4.6.3",
+          "verdict": "PASS"
+        },
+        {
+          "item": "TOR-20-magnet",
+          "verdict": "PASS",
+          "clipboard_masked": "magnet:?xt=urn:btih:<hash>&dn=arrmate-qa-seed&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce\u2026",
+          "api_hash": "a691c44815a29a46628276ae5d86d78c4adab210",
+          "snackbar": true
+        },
+        {
+          "item": "TOR-21-export-real",
+          "verdict": "PASS",
+          "bytes": 4229,
+          "info_hash": "a691c44815a29a46628276ae5d86d78c4adab210",
+          "expected": "a691c44815a29a46628276ae5d86d78c4adab210"
+        },
+        {
+          "item": "TOR-21-export-mock-404",
+          "verdict": "PASS",
+          "ui": "- text: DOWNLOADING\n- button\n- text: Mock.Dune.Part.Two.2024.1080p.BluRay.x265\n- group:\n  - text: PROGRESS\n  - progressbar \"42\"\n  - text: \"42% completed ETA: 1h\"\n  - group \"Total Size 7.5 GB Downloaded 3.1 GB Uploaded 3.8 GB Ratio 0.10 DL Speed 3.0 MB/s UL Speed 0 B/s\":\n    - button \"Seeds 12 connected\"\n    - button \"Leechers 3 connected\"\n  - text: INFORMATION Added On 2026-11-09 Category radarr S"
+        }
+      ]
+    },
+    {
+      "section": "smoke",
+      "movies_grid": "PASS",
+      "movie_detail": "PASS",
+      "58": [
+        {
+          "issue": "58",
+          "scenario": "real qBit: UI pause settles Paused/Stopped",
+          "verdict": "PASS",
+          "severity": "ALTO",
+          "notes": "ui=True dt=1.0s info_reqs=2",
+          "shot": "r7-58-58-real-after-pause.png"
+        },
+        {
+          "issue": "58",
+          "scenario": "real qBit: UI resume",
+          "verdict": "PASS",
+          "severity": "INFO",
+          "notes": "ui=True dt=1.0s",
+          "shot": "r7-58-58-real-after-resume.png"
+        },
+        {
+          "issue": "58",
+          "scenario": "mock qBit state_delay=2.5s \u2014 list polls then settles",
+          "verdict": "PASS",
+          "severity": "INFO",
+          "notes": "ui=True dt=1.0s info_reqs=2 times=[0.19, 1.26]",
+          "shot": "r7-58-58-mock-delay-after-pause.png"
+        },
+        {
+          "issue": "58",
+          "scenario": "movie details media torrents pause path",
+          "verdict": "BLOQUEADO",
+          "severity": "INFO",
+          "notes": "info_reqs_after_click=0",
+          "shot": "r7-58-58-movie-media-torrents.png"
+        }
+      ]
+    },
+    {
+      "section": "flutter_test",
+      "line": "02:13 +1545 ~4: All tests passed!"
+    }
+  ],
+  "qbit_version": "v4.6.3"
+}

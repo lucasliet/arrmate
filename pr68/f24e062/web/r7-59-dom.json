@@ -1,0 +1,18 @@
+[
+  {
+    "repro": "A-delete",
+    "verdict": "PASS",
+    "issues": []
+  },
+  {
+    "repro": "B-sort",
+    "verdict": "PASS",
+    "method": "localStorage-sort-title-desc-reload",
+    "issues": []
+  },
+  {
+    "repro": "control-series",
+    "verdict": "PASS",
+    "issues": []
+  }
+]
