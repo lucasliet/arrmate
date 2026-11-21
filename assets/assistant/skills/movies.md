@@ -71,7 +71,7 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca por título
 **Identificar o filme no "Movie Preview":**
 - Abaixo do título aparece **"Original title: …"** quando o título original difere do título localizado, e **"English title: …"** quando o título em inglês difere dos dois. Se forem iguais, nada é exibido.
 - Depois da sinopse aparecem as seções **"Cast"** (elenco, com foto, nome e personagem) e **"Crew"** (equipe, com diretores e roteiristas primeiro e a função de cada um), em fileiras roláveis na horizontal.
-- Elenco, equipe e título em inglês vêm do servidor público de metadados do Radarr (`api.radarr.video`), consultado direto pelo app. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse.
+- Elenco, equipe e título em inglês vêm do servidor público de metadados do Radarr (`api.radarr.video`), consultado direto pelo app. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse. Na versão web essas seções não aparecem: o navegador não consegue ler esse servidor (sem CORS), então o app nem faz a consulta. O título original continua aparecendo, porque vem do próprio Radarr.
 
 **Observações:**
 - O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=movie` ou `arrmate:///search?q=<termo>&type=movie` (o padrão é `movie` quando o parâmetro é omitido).

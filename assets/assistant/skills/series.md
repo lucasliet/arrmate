@@ -72,7 +72,7 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 
 **Identificar a série no "Series Preview":**
 - Depois da sinopse aparece a seção **"Cast"** (elenco, com foto, nome e personagem), em uma fileira rolável na horizontal.
-- O elenco vem do servidor público de metadados do Sonarr (`skyhook.sonarr.tv`), consultado direto pelo app. Ele não informa equipe nem título original, então essas informações só existem para filmes. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse.
+- O elenco vem do servidor público de metadados do Sonarr (`skyhook.sonarr.tv`), consultado direto pelo app. Ele não informa equipe nem título original, então essas informações só existem para filmes. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse. Na versão web essas seções não aparecem: o navegador não consegue ler esse servidor (sem CORS), então o app nem faz a consulta.
 
 **Observações:**
 - O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=series` ou `arrmate:///search?q=<termo>&type=series` (sem o parâmetro, o padrão é filme).

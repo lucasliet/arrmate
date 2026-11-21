@@ -59,7 +59,8 @@ and **qBittorrent** (for downloads).
     Sonarr lookups return no credits, so these come from the public metadata
     servers they use themselves (`api.radarr.video`, `skyhook.sonarr.tv`)
     through `MediaMetadataService`; the preview hides them when the request
-    fails.
+    fails. Those servers send no CORS headers, so the web build does not ask
+    them and only shows the original title Radarr itself returns.
   - **Automatic Search**: Trigger automatic search for movie releases.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.

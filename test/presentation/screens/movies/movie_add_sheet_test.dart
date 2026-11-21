@@ -1,3 +1,4 @@
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/data/api/media_metadata_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
@@ -48,12 +49,19 @@ Movie _movie({String? originalTitle}) => Movie(
 Future<void> _pump(
   WidgetTester tester,
   Widget sheet,
-  MediaMetadataService service,
-) async {
+  MediaMetadataService service, {
+  bool isWeb = false,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         mediaMetadataServiceProvider.overrideWithValue(service),
+        platformCapabilitiesProvider.overrideWithValue(
+          PlatformCapabilities.forPlatform(
+            isWeb: isWeb,
+            targetPlatform: TargetPlatform.android,
+          ),
+        ),
         currentRadarrInstanceProvider.overrideWithValue(null),
         currentSonarrInstanceProvider.overrideWithValue(null),
       ],
@@ -135,6 +143,35 @@ void main() {
       // Then
       expect(find.textContaining('Original title'), findsNothing);
       expect(find.textContaining('English title'), findsNothing);
+    });
+  });
+
+  group('web build', () {
+    testWidgets('should not ask the metadata servers, which send no CORS', (
+      tester,
+    ) async {
+      // Given
+      final service = _FakeMetadataService(
+        details: const MediaPreviewDetails(
+          cast: [MediaCredit(name: 'Jackie Chan')],
+        ),
+      );
+
+      // When
+      await _pump(
+        tester,
+        MovieAddSheet(
+          initialMovie: _movie(originalTitle: '捕风追影'),
+          embedded: true,
+        ),
+        service,
+        isWeb: true,
+      );
+
+      // Then
+      expect(service.requested, isEmpty);
+      expect(find.text('Cast'), findsNothing);
+      expect(find.text('Original title: 捕风追影'), findsOneWidget);
     });
   });
 
