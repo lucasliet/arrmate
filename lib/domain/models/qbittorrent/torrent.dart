@@ -29,6 +29,13 @@ class Torrent extends Equatable {
   /// server did not send one.
   final String magnetUri;
 
+  /// Whether the client already holds the torrent metadata.
+  ///
+  /// False for a magnet link whose metadata was not downloaded yet, in any
+  /// state, a paused one included. Clients that do not report it count as
+  /// having it.
+  final bool hasMetadata;
+
   const Torrent({
     required this.hash,
     required this.name,
@@ -53,6 +60,7 @@ class Torrent extends Equatable {
     this.seedingTime = 0,
     this.completionOn = 0,
     this.magnetUri = '',
+    this.hasMetadata = true,
   });
 
   factory Torrent.fromJson(Map<String, dynamic> json) {
@@ -86,6 +94,7 @@ class Torrent extends Equatable {
       seedingTime: json['seeding_time'] as int? ?? 0,
       completionOn: json['completion_on'] as int? ?? 0,
       magnetUri: json['magnet_uri'] as String? ?? '',
+      hasMetadata: json['has_metadata'] as bool? ?? true,
     );
   }
 
@@ -93,10 +102,12 @@ class Torrent extends Equatable {
 
   bool get isComplete => progress >= 1.0;
 
-  /// Whether the client is still fetching the metadata of a magnet link.
+  /// Whether the client lacks the metadata of a magnet link, so it has no
+  /// `.torrent` file to export yet.
   ///
-  /// Until then it has no `.torrent` file to export.
-  bool get isFetchingMetadata =>
+  /// The fetching states cover clients that do not report [hasMetadata].
+  bool get lacksMetadata =>
+      !hasMetadata ||
       const {'metadl', 'forcedmetadl'}.contains(state.toLowerCase());
 
   Duration? get estimatedTime => eta > 0 ? Duration(seconds: eta) : null;
@@ -140,5 +151,6 @@ class Torrent extends Equatable {
     seedingTime,
     completionOn,
     magnetUri,
+    hasMetadata,
   ];
 }

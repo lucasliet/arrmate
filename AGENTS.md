@@ -39,9 +39,10 @@ and **qBittorrent** (for downloads).
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
     - **Share Torrents**: The torrent details sheet copies the magnet link
       and exports the `.torrent` file (`torrents/export`, qBittorrent 4.5.0+)
-      through the platform save dialog. The export is disabled while a magnet
-      still fetches its metadata. A Linux session without a FileChooser
-      portal gets an explanatory message (`guardFileDialog`), also on backup
+      through the platform save dialog. The export is disabled while the
+      client lacks the metadata of a magnet (`has_metadata`, paused ones
+      included). A Linux session without a FileChooser portal or a reachable
+      session bus gets an explanatory message (`guardFileDialog`), also on backup
       export/import and on picking a `.torrent` to add.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr

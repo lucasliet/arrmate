@@ -895,6 +895,35 @@ void main() {
       ]);
     });
 
+    test('should tell a magnet without metadata from the rest', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {
+          '/api/v2/torrents/info': jsonEncode([
+            {
+              'hash': 'abc',
+              'name': 'Paused magnet',
+              'state': 'stoppedDL',
+              'has_metadata': false,
+            },
+            {'hash': 'def', 'name': 'Fetching', 'state': 'forcedMetaDL'},
+            {'hash': 'ghi', 'name': 'Old client', 'state': 'downloading'},
+          ]),
+        },
+      );
+      final service = _service(adapter);
+
+      // When
+      final torrents = await service.getTorrents();
+
+      // Then
+      expect(torrents.map((torrent) => torrent.lacksMetadata), [
+        true,
+        true,
+        false,
+      ]);
+    });
+
     test('should download the torrent file from the export endpoint', () async {
       // Given
       final adapter = _RecordingAdapter(

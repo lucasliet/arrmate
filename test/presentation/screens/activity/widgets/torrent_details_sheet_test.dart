@@ -189,6 +189,31 @@ void main() {
         },
       );
 
+      testWidgets(
+        'should disable the export of a paused magnet without metadata',
+        (tester) async {
+          // Given
+          await pumpSharing(
+            tester,
+            _torrent(
+              status: TorrentStatus.pausedDL,
+              state: 'stoppedDL',
+              hasMetadata: false,
+            ),
+            _FakeTorrentFileExportService(),
+          );
+
+          // When
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+
+          // Then
+          expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+        },
+      );
+
       testWidgets('should explain a system without a file dialog', (
         tester,
       ) async {
@@ -496,6 +521,7 @@ Torrent _torrent({
   TorrentStatus status = TorrentStatus.pausedUP,
   String state = 'pausedUP',
   String magnetUri = '',
+  bool hasMetadata = true,
 }) {
   return Torrent(
     hash: 'hash',
@@ -519,5 +545,6 @@ Torrent _torrent({
     priority: 0,
     seedingTime: seedingTime,
     magnetUri: magnetUri,
+    hasMetadata: hasMetadata,
   );
 }

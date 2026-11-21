@@ -48,6 +48,37 @@ void main() {
       );
     });
 
+    test('should report an unreachable session bus on Linux', () {
+      // Given
+      final error = _DBusError(
+        'SocketException: Connection failed (OS Error: No such file or '
+        'directory, errno = 2), address = /run/user/1000/bus, port = 0',
+      );
+
+      // When / Then
+      expect(
+        guardFileDialog<String?>(
+          () => Future.error(error),
+          isLinuxDesktop: true,
+        ),
+        throwsA(isA<FileDialogUnavailableError>()),
+      );
+    });
+
+    test('should keep a socket failure outside Linux untouched', () {
+      // Given
+      final error = _DBusError('SocketException: Connection failed');
+
+      // When / Then
+      expect(
+        guardFileDialog<String?>(
+          () => Future.error(error),
+          isLinuxDesktop: false,
+        ),
+        throwsA(same(error)),
+      );
+    });
+
     test('should rethrow any other failure untouched', () {
       // Given
       final error = StateError('disk full');
