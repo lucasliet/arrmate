@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/screens/series/widgets/series_poster.dart';
@@ -222,5 +223,107 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'should load the remote poster with the framework image on web',
+      (tester) async {
+        // Given
+        await HttpOverrides.runZoned(
+          () async {
+            // When
+            await tester.pumpWidget(
+              ProviderScope(
+                overrides: [
+                  currentSonarrInstanceProvider.overrideWithValue(null),
+                  platformCapabilitiesProvider.overrideWithValue(
+                    PlatformCapabilities.forPlatform(
+                      isWeb: true,
+                      targetPlatform: TargetPlatform.linux,
+                    ),
+                  ),
+                ],
+                child: MaterialApp(
+                  localizationsDelegates: testLocalizationsDelegates,
+                  supportedLocales: testSupportedLocales,
+                  locale: testLocale,
+                  home: Scaffold(
+                    body: SizedBox(
+                      width: 100,
+                      height: 150,
+                      child: SeriesPoster(series: testSeriesWithRemotePoster),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            // Then
+            final provider = tester.widget<Image>(find.byType(Image)).image;
+            expect(provider, isA<NetworkImage>());
+            expect(
+              (provider as NetworkImage).url,
+              'https://artworks.thetvdb.com/banners/poster.jpg',
+            );
+            expect(provider.headers, isNull);
+          },
+          createHttpClient: (context) =>
+              TestHttpOverrides().createHttpClient(context),
+        );
+      },
+    );
+
+    testWidgets('should load the local poster with auth headers on web', (
+      tester,
+    ) async {
+      // Given
+      final testInstance = Instance(
+        id: 'test-instance',
+        type: InstanceType.sonarr,
+        url: 'http://localhost:8989',
+        apiKey: 'test-api-key',
+      );
+
+      await HttpOverrides.runZoned(
+        () async {
+          // When
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                currentSonarrInstanceProvider.overrideWithValue(testInstance),
+                platformCapabilitiesProvider.overrideWithValue(
+                  PlatformCapabilities.forPlatform(
+                    isWeb: true,
+                    targetPlatform: TargetPlatform.linux,
+                  ),
+                ),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: testLocalizationsDelegates,
+                supportedLocales: testSupportedLocales,
+                locale: testLocale,
+                home: Scaffold(
+                  body: SizedBox(
+                    width: 100,
+                    height: 150,
+                    child: SeriesPoster(series: testSeries),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // Then
+          final provider = tester.widget<Image>(find.byType(Image)).image;
+          expect(provider, isA<NetworkImage>());
+          expect(
+            (provider as NetworkImage).url,
+            'http://localhost:8989/MediaCover/1/poster.jpg',
+          );
+          expect(provider.headers, testInstance.authHeaders);
+        },
+        createHttpClient: (context) =>
+            TestHttpOverrides().createHttpClient(context),
+      );
+    });
   });
 }

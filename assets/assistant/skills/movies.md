@@ -68,6 +68,11 @@ description: Adicionar/detalhes/editar/deletar filme, discover busca por título
 - Toque em um resultado para abrir o "Movie Preview" e depois "Configure Addition" (Monitor, Minimum Availability, Quality Profile, Root Folder, Tags) — mesmas etapas do fluxo padrão.
 - Em seguida, toque em **"Add"** no canto superior direito.
 
+**Identificar o filme no "Movie Preview":**
+- Abaixo do título aparece **"Original title: …"** quando o título original difere do título localizado, e **"English title: …"** quando o título em inglês difere dos dois. Se forem iguais, nada é exibido.
+- Depois da sinopse aparecem as seções **"Cast"** (elenco, com foto, nome e personagem) e **"Crew"** (equipe, com diretores e roteiristas primeiro e a função de cada um), em fileiras roláveis na horizontal.
+- Elenco, equipe e título em inglês vêm do servidor público de metadados do Radarr (`api.radarr.video`), consultado direto pelo app. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse. Na versão web essas seções não aparecem: o navegador não consegue ler esse servidor (sem CORS), então o app nem faz a consulta. O título original continua aparecendo, porque vem do próprio Radarr.
+
 **Observações:**
 - O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=movie` ou `arrmate:///search?q=<termo>&type=movie` (o padrão é `movie` quando o parâmetro é omitido).
 - A extração de ID funciona para os formatos de URL mais comuns do IMDb e TMDB.
@@ -301,7 +306,8 @@ Use o **Purge** quando quiser remover completamente um filme **e** liberar o esp
 6. Um **diálogo de confirmação** aparece:
    - Mensagem: "Are you sure you want to grab [título da release]?"
    - Botões: "Cancel" e "Download".
-7. Tocar **"Download"** para confirmar.
+   - **Release rejeitada:** releases que o Radarr rejeitou (ex: idioma ou qualidade fora do perfil) continuam podendo ser baixadas, pois a escolha é do usuário. O diálogo mostra um **aviso com os motivos da rejeição** e o botão passa a ser **"Download anyway"**. O ícone de download dessas releases fica em vermelho e os motivos também aparecem na tela de detalhes da release.
+7. Tocar **"Download"** (ou **"Download anyway"**) para confirmar.
    - Enquanto o envio acontece, o ícone de download **daquela release vira um indicador de progresso** e o botão de download das demais releases fica desabilitado — não é preciso tocar de novo.
    - A release é **enviada ao cliente de download** (configurado no Radarr: qBittorrent, Transmission, etc).
    - Snackbar confirma sucesso. Se falhar, o sheet continua aberto, o ícone volta ao normal e um snackbar de erro explica o motivo.

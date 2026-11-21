@@ -729,7 +729,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diagnosticsUnknownStatus => 'desconocido';
 
   @override
+  String get discoveryCast => 'Reparto';
+
+  @override
   String get discoveryConfigureAddition => 'Configurar adición';
+
+  @override
+  String get discoveryCrew => 'Equipo';
+
+  @override
+  String discoveryEnglishTitle(String title) {
+    return 'Título en inglés: $title';
+  }
 
   @override
   String get discoveryHideAlreadyAdded => 'Ocultar ya añadidos';
@@ -752,6 +763,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get discoveryNoResultsFound => 'No se encontraron resultados';
+
+  @override
+  String discoveryOriginalTitle(String title) {
+    return 'Título original: $title';
+  }
 
   @override
   String discoveryRootFolderFreeSpace(String path, String free) {
@@ -777,6 +793,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorNotFound => 'Recurso no encontrado.';
+
+  @override
+  String get errorQbittorrentBrowserCrossOrigin =>
+      'El navegador bloqueó o no pudo alcanzar qBittorrent en otro dominio. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso), o si acepta solicitudes con credenciales desde este sitio (CORS).';
+
+  @override
+  String get errorQbittorrentBrowserSession =>
+      'El navegador no conservó la sesión de qBittorrent. En la web, usuario y contraseña solo funcionan si qBittorrent se sirve desde el mismo dominio que Arrmate (proxy inverso). De lo contrario, usa una API Key.';
 
   @override
   String get errorRequestCancelled => 'Solicitud cancelada';
@@ -2694,6 +2718,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get releasesDownload => 'Descargar';
 
   @override
+  String get releasesDownloadAnyway => 'Descargar de todos modos';
+
+  @override
   String get releasesDownloadRelease => 'Descargar release';
 
   @override
@@ -2762,13 +2789,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get releasesRejected => 'Rechazada';
 
   @override
-  String get releasesRejectedTooltip => 'Release rechazada';
+  String get releasesRejectedWarning => 'Esta release fue rechazada:';
 
   @override
   String get releasesRejectionReasons => 'Motivos del rechazo';
-
-  @override
-  String get releasesReleaseRejected => 'Release rechazada';
 
   @override
   String get releasesReleaseType => 'Tipo de release';
@@ -3860,7 +3884,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get systemDaysHelper => '0 desactiva el aviso';
 
   @override
-  String get systemDaysInvalid => 'Introduce un número válido (0 o más)';
+  String get systemDaysInvalid => 'Introduce un número válido (0 a 60)';
 
   @override
   String get systemDaysLabel => 'Días';
@@ -4087,6 +4111,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get torrentCopyMagnet => 'Copiar magnet';
+
+  @override
   String get torrentCrossSeedBadge => 'Cross-seed';
 
   @override
@@ -4110,6 +4137,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String torrentEta(String eta) {
     return 'Restante: $eta';
   }
+
+  @override
+  String get torrentExportFile => 'Exportar .torrent';
+
+  @override
+  String get torrentFileExported => 'Archivo .torrent exportado';
 
   @override
   String get torrentFiles => 'Archivos';
@@ -4260,6 +4293,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get torrentLocationMoved =>
       'Ubicación cambiada correctamente. Los datos se están moviendo.';
+
+  @override
+  String get torrentMagnetCopied => 'Enlace magnet copiado';
 
   @override
   String get torrentMove => 'Mover';

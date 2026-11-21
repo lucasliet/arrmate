@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
 import '../../../widgets/queue_status_indicator.dart';
+import '../../../widgets/poster_network_image.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../l10n/labels.dart';
 
@@ -89,15 +89,15 @@ class SeriesListTile extends StatelessWidget {
       );
     }
 
-    return CachedNetworkImage(
+    return PosterNetworkImage(
       imageUrl: posterUrl,
       fit: BoxFit.cover,
-      placeholder: (context, url) => Shimmer.fromColors(
+      placeholderBuilder: (context) => Shimmer.fromColors(
         baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         highlightColor: Theme.of(context).colorScheme.surface,
         child: Container(color: Colors.white),
       ),
-      errorWidget: (context, url, error) => Container(
+      errorBuilder: (context) => Container(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Icon(
           Icons.tv_outlined,

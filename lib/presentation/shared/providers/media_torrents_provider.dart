@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/logger_service.dart';
 import '../../../core/utils/cross_seed_matcher.dart';
 import '../../../core/utils/media_downloads.dart';
+import '../../../core/utils/torrent_pause_settle.dart';
 import '../../../domain/models/models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/instances_provider.dart';
@@ -61,6 +62,43 @@ class MediaTorrents extends Equatable {
 
   @override
   List<Object?> get props => [torrents, qbittorrentSkipped];
+}
+
+/// Reloads [provider] once the torrent [hash] reports the [paused] state.
+///
+/// qBittorrent accepts a pause or resume at once but only reports the new
+/// state on its next refresh (1.5s by default), and a media torrent list is
+/// read once, so without this it keeps the state from before the action. Only
+/// the client is asked while waiting, every second and at most five times:
+/// resolving the list again also reads the history and the queue of the
+/// library server, which a pause does not change. The list is reloaded a
+/// single time, when the state is reported, the torrent is gone or the
+/// attempts run out. Nothing is reloaded when the list is no longer on screen,
+/// no client is configured or the client fails.
+Future<void> reloadMediaTorrentsUntilPaused(
+  ProviderContainer container,
+  AutoDisposeFutureProvider<MediaTorrents> provider, {
+  required String hash,
+  required bool paused,
+}) async {
+  try {
+    for (var attempt = 0; attempt < torrentPauseSettleAttempts; attempt++) {
+      await Future<void>.delayed(torrentPauseSettleInterval);
+      if (!container.exists(provider)) return;
+      final service = container.read(qbittorrentServiceProvider);
+      if (service == null) return;
+      final torrents = await service.getTorrents();
+      if (torrentPauseSettled(torrents, hash, paused: paused)) break;
+    }
+    if (!container.exists(provider)) return;
+    await container.refresh(provider.future);
+  } catch (error, stackTrace) {
+    logger.warning(
+      '[MediaTorrents] Could not confirm the pause state of a torrent',
+      error,
+      stackTrace,
+    );
+  }
 }
 
 /// Resolves the qBittorrent torrents backing the Radarr movie [movieId].

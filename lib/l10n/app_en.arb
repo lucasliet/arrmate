@@ -418,7 +418,18 @@
   "diagnosticsTitle": "Connection Diagnostics",
   "diagnosticsUnknownError": "unknown error",
   "diagnosticsUnknownStatus": "unknown",
+  "discoveryCast": "Cast",
   "discoveryConfigureAddition": "Configure Addition",
+  "discoveryCrew": "Crew",
+  "discoveryEnglishTitle": "English title: {title}",
+  "@discoveryEnglishTitle": {
+    "description": "English title of a looked-up movie, shown when it differs from the localized one",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "discoveryHideAlreadyAdded": "Hide already added",
   "discoveryLoadFoldersFailed": "Error loading folders: {error}",
   "@discoveryLoadFoldersFailed": {
@@ -439,6 +450,15 @@
   "discoveryNoOverview": "No overview available.",
   "discoveryNoRating": "No rating",
   "discoveryNoResultsFound": "No results found",
+  "discoveryOriginalTitle": "Original title: {title}",
+  "@discoveryOriginalTitle": {
+    "description": "Original-language title of a looked-up movie, shown when it differs from the localized one",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "discoveryRootFolderFreeSpace": "{path} ({free} GB Free)",
   "@discoveryRootFolderFreeSpace": {
     "placeholders": {
@@ -469,6 +489,8 @@
     }
   },
   "errorNotFound": "Resource not found.",
+  "errorQbittorrentBrowserCrossOrigin": "The browser blocked or could not reach qBittorrent on another domain. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy), or when it allows credentialed requests from this site (CORS).",
+  "errorQbittorrentBrowserSession": "The browser did not keep the qBittorrent session. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy). Otherwise use an API key.",
   "errorRequestCancelled": "Request cancelled",
   "errorRequestTimedOut": "Request timed out. Please try again.",
   "errorServer": "Server error. Please try again later.",
@@ -1591,6 +1613,7 @@
   "releasesCustomFormats": "Custom formats",
   "releasesDetailsTitle": "Release details",
   "releasesDownload": "Download",
+  "releasesDownloadAnyway": "Download anyway",
   "releasesDownloadRelease": "Download release",
   "releasesDownloadTitle": "Download Release",
   "releasesEpisodeOrMovie": "Episode or movie",
@@ -1626,9 +1649,8 @@
   "releasesOriginalLanguageOnly": "Original language only",
   "releasesQualityWeight": "Quality weight",
   "releasesRejected": "Rejected",
-  "releasesRejectedTooltip": "Rejected release",
+  "releasesRejectedWarning": "This release was rejected:",
   "releasesRejectionReasons": "Rejection reasons",
-  "releasesReleaseRejected": "Release rejected",
   "releasesReleaseType": "Release type",
   "releasesReleaseWeight": "Release weight",
   "releasesRememberFilters": "Remember filters",
@@ -2416,7 +2438,7 @@
   "systemClearImageCache": "Clear image cache",
   "systemClearImageCacheSubtitle": "Free up cached poster and image storage",
   "systemDaysHelper": "0 disables the warning",
-  "systemDaysInvalid": "Enter a valid number (0 or more)",
+  "systemDaysInvalid": "Enter a valid number (0 to 60)",
   "systemDaysLabel": "Days",
   "systemDiagnosticsSubtitle": "Test endpoints, latency, request traces, and export a report",
   "systemHealth": "Health",
@@ -2553,6 +2575,7 @@
       }
     }
   },
+  "torrentCopyMagnet": "Copy Magnet",
   "torrentCrossSeedBadge": "Cross-seed",
   "torrentCrossSeedExplanation": "Matched as a cross-seed: same release name as the torrent Radarr/Sonarr grabbed, different infohash.",
   "torrentDeleteWithFiles": "Delete with files",
@@ -2567,6 +2590,8 @@
       }
     }
   },
+  "torrentExportFile": "Export .torrent",
+  "torrentFileExported": "Torrent file exported",
   "torrentFiles": "Files",
   "torrentFilterLibraryLink": "Library link",
   "torrentFilterTooltip": "Filter torrents",
@@ -2643,6 +2668,7 @@
   "torrentLoadingPeers": "Loading peers...",
   "torrentLoadingTrackers": "Loading trackers...",
   "torrentLocationMoved": "Location moved successfully. Data is being moved.",
+  "torrentMagnetCopied": "Magnet link copied",
   "torrentMove": "Move",
   "torrentMoveFailed": "Failed to move: {error}",
   "@torrentMoveFailed": {

@@ -722,7 +722,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsUnknownStatus => 'unknown';
 
   @override
+  String get discoveryCast => 'Cast';
+
+  @override
   String get discoveryConfigureAddition => 'Configure Addition';
+
+  @override
+  String get discoveryCrew => 'Crew';
+
+  @override
+  String discoveryEnglishTitle(String title) {
+    return 'English title: $title';
+  }
 
   @override
   String get discoveryHideAlreadyAdded => 'Hide already added';
@@ -745,6 +756,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoveryNoResultsFound => 'No results found';
+
+  @override
+  String discoveryOriginalTitle(String title) {
+    return 'Original title: $title';
+  }
 
   @override
   String discoveryRootFolderFreeSpace(String path, String free) {
@@ -770,6 +786,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorNotFound => 'Resource not found.';
+
+  @override
+  String get errorQbittorrentBrowserCrossOrigin =>
+      'The browser blocked or could not reach qBittorrent on another domain. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy), or when it allows credentialed requests from this site (CORS).';
+
+  @override
+  String get errorQbittorrentBrowserSession =>
+      'The browser did not keep the qBittorrent session. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy). Otherwise use an API key.';
 
   @override
   String get errorRequestCancelled => 'Request cancelled';
@@ -2644,6 +2668,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get releasesDownload => 'Download';
 
   @override
+  String get releasesDownloadAnyway => 'Download anyway';
+
+  @override
   String get releasesDownloadRelease => 'Download release';
 
   @override
@@ -2711,13 +2738,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get releasesRejected => 'Rejected';
 
   @override
-  String get releasesRejectedTooltip => 'Rejected release';
+  String get releasesRejectedWarning => 'This release was rejected:';
 
   @override
   String get releasesRejectionReasons => 'Rejection reasons';
-
-  @override
-  String get releasesReleaseRejected => 'Release rejected';
 
   @override
   String get releasesReleaseType => 'Release type';
@@ -3784,7 +3808,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemDaysHelper => '0 disables the warning';
 
   @override
-  String get systemDaysInvalid => 'Enter a valid number (0 or more)';
+  String get systemDaysInvalid => 'Enter a valid number (0 to 60)';
 
   @override
   String get systemDaysLabel => 'Days';
@@ -4004,6 +4028,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get torrentCopyMagnet => 'Copy Magnet';
+
+  @override
   String get torrentCrossSeedBadge => 'Cross-seed';
 
   @override
@@ -4026,6 +4053,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String torrentEta(String eta) {
     return 'ETA: $eta';
   }
+
+  @override
+  String get torrentExportFile => 'Export .torrent';
+
+  @override
+  String get torrentFileExported => 'Torrent file exported';
 
   @override
   String get torrentFiles => 'Files';
@@ -4174,6 +4207,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get torrentLocationMoved =>
       'Location moved successfully. Data is being moved.';
+
+  @override
+  String get torrentMagnetCopied => 'Magnet link copied';
 
   @override
   String get torrentMove => 'Move';

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ import '../extensions/context_extensions.dart';
 import '../l10n/app_locale.dart';
 import '../network/api_error.dart';
 import '../utils/formatters.dart';
+import '../utils/sensitive_data_redactor.dart';
 import 'jellyfin_playback_reporter.dart';
 import 'logger_service.dart';
 
@@ -388,16 +390,15 @@ class PlaybackLaunchService {
     } catch (error, stackTrace) {
       logger.error(
         '[$_logPrefix] Failed to launch "$displayTitle" from Jellyfin',
-        error,
+        SensitiveDataRedactor.redact(error.toString()),
         stackTrace,
       );
       closeDialog();
+      final reason = _describeLaunchError(error, l10n);
       if (context.mounted) {
-        context.showErrorSnackBar(
-          l10n.playbackStartFailed(describeError(error, l10n)),
-        );
+        context.showErrorSnackBar(l10n.playbackStartFailed(reason));
       }
-      return PlaybackLaunchFailure(error.toString());
+      return PlaybackLaunchFailure(reason);
     }
   }
 
@@ -448,16 +449,27 @@ class PlaybackLaunchService {
     } catch (error, stackTrace) {
       logger.error(
         '[$_logPrefix] Failed to launch "$displayTitle" from Jellyfin',
-        error,
+        SensitiveDataRedactor.redact(error.toString()),
         stackTrace,
       );
+      final reason = _describeLaunchError(error, l10n);
       if (context.mounted) {
-        context.showErrorSnackBar(
-          l10n.playbackStartFailed(describeError(error, l10n)),
-        );
+        context.showErrorSnackBar(l10n.playbackStartFailed(reason));
       }
-      return PlaybackLaunchFailure(error.toString());
+      return PlaybackLaunchFailure(reason);
     }
+  }
+
+  /// Describes a launch [error] for the user without its raw text.
+  ///
+  /// Only errors [describeError] translates are detailed; anything else may
+  /// quote the stream URL and its `ApiKey` query, so it becomes the generic
+  /// unknown-error message and the detail stays in the log.
+  String _describeLaunchError(Object error, AppLocalizations l10n) {
+    if (error is DioException || error is ApiError) {
+      return describeError(error, l10n);
+    }
+    return l10n.errorUnknown;
   }
 
   /// Marks [instance] as expired and shows the re-authentication snackbar.

@@ -164,7 +164,7 @@ Define um limite de segurança antes de apagar torrents que ainda estão cumprin
 - Ao remover **um torrent avulso** (Aba Atividade → Torrents → tocar no torrent → "Remove Torrent"), aparece a versão simples do aviso ("Torrent still seeding") com confirmar/cancelar.
 
 **Observações:**
-- Só aceita números inteiros ≥ 0; valores inválidos mostram "Enter a valid number (0 or more)".
+- Só aceita números inteiros de 0 a 60; valores inválidos mostram "Enter a valid number (0 to 60)".
 - Útil para não perder ratio em trackers privados ao usar Purge ou remover torrents.
 
 ## Manutenção do app — limpar cache de imagens e resetar configurações

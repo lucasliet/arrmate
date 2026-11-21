@@ -22,7 +22,24 @@ and **qBittorrent** (for downloads).
     - **Bulk Delete**: Long-press selection in the torrent list with a "Delete
       with files" action (e.g. to clear filtered orphans), guarded by the same
       minimum-seeding-days warning as the library Purge.
+    - **Web Sign-In**: In the web build the browser owns the session cookie
+      of a username/password login (sent with `withCredentials`, never a
+      manual `Cookie` header), so that mode needs qBittorrent served from the
+      same domain as the app (reverse proxy). When a login is accepted but the
+      following requests are rejected, the app reports that instead of the
+      generic "Unauthorized" and stops logging in until the user retries. A
+      rejection on a session that already served a request only fails that
+      call. A qBittorrent on another origin whose answers the browser cannot
+      read (no CORS headers, or CORS without
+      `Access-Control-Allow-Credentials: true` and an explicit origin, since
+      `*` is refused for requests with credentials) gets its own explanatory
+      error, and the app also stops logging in until the user retries. A
+      server that does not answer the browser at all (probed with a `no-cors`
+      request) stays a plain connection error and keeps being retried.
     - **Add Torrents**: Support for magnet links, HTTP URLs, and .torrent files.
+    - **Share Torrents**: The torrent details sheet copies the magnet link
+      and exports the `.torrent` file (`torrents/export`, qBittorrent 4.5.0+)
+      through the platform save dialog.
     - **Filters**: View by status (Downloading, Seeding, Paused, Error).
     - **Torrent Import**: Import completed torrent files directly to Radarr/Sonarr
       media library with file mapping and target selection (Movies/Series).
@@ -36,7 +53,14 @@ and **qBittorrent** (for downloads).
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including
-    Quality Profile and Root Folder configuration.
+    Quality Profile and Root Folder configuration. The preview shown before
+    adding lists the cast (plus the crew, the original title and the English
+    title for movies, when they differ from the localized one). Radarr and
+    Sonarr lookups return no credits, so these come from the public metadata
+    servers they use themselves (`api.radarr.video`, `skyhook.sonarr.tv`)
+    through `MediaMetadataService`; the preview hides them when the request
+    fails. Those servers send no CORS headers, so the web build does not ask
+    them and only shows the original title Radarr itself returns.
   - **Automatic Search**: Trigger automatic search for movie releases.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.

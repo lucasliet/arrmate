@@ -1313,11 +1313,29 @@ abstract class AppLocalizations {
   /// **'unknown'**
   String get diagnosticsUnknownStatus;
 
+  /// No description provided for @discoveryCast.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast'**
+  String get discoveryCast;
+
   /// No description provided for @discoveryConfigureAddition.
   ///
   /// In en, this message translates to:
   /// **'Configure Addition'**
   String get discoveryConfigureAddition;
+
+  /// No description provided for @discoveryCrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Crew'**
+  String get discoveryCrew;
+
+  /// English title of a looked-up movie, shown when it differs from the localized one
+  ///
+  /// In en, this message translates to:
+  /// **'English title: {title}'**
+  String discoveryEnglishTitle(String title);
 
   /// No description provided for @discoveryHideAlreadyAdded.
   ///
@@ -1355,6 +1373,12 @@ abstract class AppLocalizations {
   /// **'No results found'**
   String get discoveryNoResultsFound;
 
+  /// Original-language title of a looked-up movie, shown when it differs from the localized one
+  ///
+  /// In en, this message translates to:
+  /// **'Original title: {title}'**
+  String discoveryOriginalTitle(String title);
+
   /// No description provided for @discoveryRootFolderFreeSpace.
   ///
   /// In en, this message translates to:
@@ -1390,6 +1414,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resource not found.'**
   String get errorNotFound;
+
+  /// No description provided for @errorQbittorrentBrowserCrossOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser blocked or could not reach qBittorrent on another domain. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy), or when it allows credentialed requests from this site (CORS).'**
+  String get errorQbittorrentBrowserCrossOrigin;
+
+  /// No description provided for @errorQbittorrentBrowserSession.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser did not keep the qBittorrent session. On the web, username and password only work when qBittorrent is served from the same domain as Arrmate (reverse proxy). Otherwise use an API key.'**
+  String get errorQbittorrentBrowserSession;
 
   /// No description provided for @errorRequestCancelled.
   ///
@@ -4535,6 +4571,12 @@ abstract class AppLocalizations {
   /// **'Download'**
   String get releasesDownload;
 
+  /// No description provided for @releasesDownloadAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Download anyway'**
+  String get releasesDownloadAnyway;
+
   /// No description provided for @releasesDownloadRelease.
   ///
   /// In en, this message translates to:
@@ -4661,23 +4703,17 @@ abstract class AppLocalizations {
   /// **'Rejected'**
   String get releasesRejected;
 
-  /// No description provided for @releasesRejectedTooltip.
+  /// No description provided for @releasesRejectedWarning.
   ///
   /// In en, this message translates to:
-  /// **'Rejected release'**
-  String get releasesRejectedTooltip;
+  /// **'This release was rejected:'**
+  String get releasesRejectedWarning;
 
   /// No description provided for @releasesRejectionReasons.
   ///
   /// In en, this message translates to:
   /// **'Rejection reasons'**
   String get releasesRejectionReasons;
-
-  /// No description provided for @releasesReleaseRejected.
-  ///
-  /// In en, this message translates to:
-  /// **'Release rejected'**
-  String get releasesReleaseRejected;
 
   /// No description provided for @releasesReleaseType.
   ///
@@ -5996,7 +6032,7 @@ abstract class AppLocalizations {
   /// No description provided for @systemDaysInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid number (0 or more)'**
+  /// **'Enter a valid number (0 to 60)'**
   String get systemDaysInvalid;
 
   /// No description provided for @systemDaysLabel.
@@ -6317,6 +6353,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, other{{count} connected}}'**
   String torrentConnectedCount(int count);
 
+  /// No description provided for @torrentCopyMagnet.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Magnet'**
+  String get torrentCopyMagnet;
+
   /// No description provided for @torrentCrossSeedBadge.
   ///
   /// In en, this message translates to:
@@ -6358,6 +6400,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ETA: {eta}'**
   String torrentEta(String eta);
+
+  /// No description provided for @torrentExportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export .torrent'**
+  String get torrentExportFile;
+
+  /// No description provided for @torrentFileExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Torrent file exported'**
+  String get torrentFileExported;
 
   /// No description provided for @torrentFiles.
   ///
@@ -6604,6 +6658,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location moved successfully. Data is being moved.'**
   String get torrentLocationMoved;
+
+  /// No description provided for @torrentMagnetCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Magnet link copied'**
+  String get torrentMagnetCopied;
 
   /// No description provided for @torrentMove.
   ///

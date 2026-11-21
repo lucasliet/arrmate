@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -959,6 +960,120 @@ void main() {
 
       expect(launchResult, isA<PlaybackLaunchCancelled>());
       expect(harness.playerRequest, isNull);
+
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    final leakingErrors = <String, Object>{
+      'a DioException': DioException(
+        requestOptions: RequestOptions(path: _streamUrl),
+        message: 'GET $_streamUrl failed',
+      ),
+      'an unexpected exception': Exception('GET $_streamUrl failed'),
+    };
+    for (final MapEntry(key: description, value: error)
+        in leakingErrors.entries) {
+      testWidgets('playFile hides the stream URL of $description', (
+        tester,
+      ) async {
+        // Given
+        final jellyfin = MockJellyfinService();
+        _stubResolve(jellyfin, throwable: error);
+        final harness = _LaunchHarness();
+        final service = PlaybackLaunchService(
+          jellyfinServiceFactory: (instance) => jellyfin,
+        );
+        PlaybackLaunchResult? launchResult;
+
+        // When
+        await _pumpHarness(
+          tester,
+          harness: harness,
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(
+              _jellyfinInstance(apiKey: 'secret-token'),
+            ),
+          ],
+          run: (context, ref) async {
+            launchResult = await service.playFile(
+              context,
+              ref,
+              filePath: '/movies/The.Matrix.1999.mkv',
+              title: 'The Matrix',
+              tmdbId: 603,
+              isEpisode: false,
+            );
+          },
+        );
+        await harness.done.future;
+        await tester.pump();
+
+        // Then
+        expect(
+          find.text('Could not start playback: An unknown error occurred.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('ApiKey'), findsNothing);
+        expect(find.textContaining('secret-token'), findsNothing);
+        expect(
+          launchResult,
+          isA<PlaybackLaunchFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'An unknown error occurred.',
+          ),
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      });
+    }
+
+    testWidgets('playItem hides the stream URL of an unexpected exception', (
+      tester,
+    ) async {
+      // Given
+      final jellyfin = MockJellyfinService();
+      when(() => jellyfin.authenticate()).thenAnswer((_) async {});
+      when(
+        () => jellyfin.getPlaybackSession(any()),
+      ).thenThrow(Exception('GET $_streamUrl failed'));
+      final harness = _LaunchHarness();
+      final service = PlaybackLaunchService(
+        jellyfinServiceFactory: (instance) => jellyfin,
+      );
+      PlaybackLaunchResult? launchResult;
+
+      // When
+      await _pumpHarness(
+        tester,
+        harness: harness,
+        overrides: [
+          currentJellyfinInstanceProvider.overrideWithValue(
+            _jellyfinInstance(apiKey: 'secret-token'),
+          ),
+        ],
+        run: (context, ref) async {
+          launchResult = await service.playItem(context, ref, item: _item());
+        },
+      );
+      await harness.done.future;
+      await tester.pump();
+
+      // Then
+      expect(
+        find.text('Could not start playback: An unknown error occurred.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('ApiKey'), findsNothing);
+      expect(find.textContaining('secret-token'), findsNothing);
+      expect(
+        launchResult,
+        isA<PlaybackLaunchFailure>().having(
+          (failure) => failure.message,
+          'message',
+          'An unknown error occurred.',
+        ),
+      );
 
       await tester.pump(const Duration(seconds: 5));
     });

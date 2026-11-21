@@ -68,16 +68,7 @@ class MediaTorrentsSection extends ConsumerWidget {
                     torrent: linked.torrent,
                     link: linked.link,
                     margin: const EdgeInsets.only(bottom: 12),
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => TorrentDetailsSheet(
-                        torrent: linked.torrent,
-                        link: linked.link,
-                        showOpenInLibrary: false,
-                      ),
-                    ),
+                    onTap: () => _showDetails(context, linked),
                   ),
               ],
             );
@@ -94,6 +85,30 @@ class MediaTorrentsSection extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Opens the details sheet of [linked].
+  ///
+  /// A pause or resume made there reloads [provider] until the client reports
+  /// it, since this list is a snapshot the torrents tab polling never updates.
+  void _showDetails(BuildContext context, LinkedTorrent linked) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TorrentDetailsSheet(
+        torrent: linked.torrent,
+        link: linked.link,
+        showOpenInLibrary: false,
+        onPausedChanged: (paused) => reloadMediaTorrentsUntilPaused(
+          container,
+          provider,
+          hash: linked.torrent.hash,
+          paused: paused,
+        ),
+      ),
     );
   }
 

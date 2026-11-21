@@ -79,7 +79,10 @@ do not apply to native requests.
 - **Content Discovery**: Search/add screen opened by the FAB on the Movies and
   Series tabs — it opens straight into that tab's media type and accepts a
   title, a TMDB/IMDb/TVDB ID, or a URL, with debounced lookup, sort, and a
-  "Hide already added" filter.
+  "Hide already added" filter. The preview shown before adding lists the cast
+  (plus crew and the original title for movies) to help identify the title;
+  cast and crew are native-only, since the metadata servers send no CORS
+  headers for the web build.
 - **Media Management**: Delete, monitor/unmonitor in batch, and purge movies or
   series from your library, plus remove individual media files with
   confirmation dialogs.
@@ -96,7 +99,8 @@ do not apply to native requests.
   profiles), the minimum-seeding-days guard, and app maintenance (version
   history, image-cache clearing, settings reset).
 - **Download Client Integration**: Full qBittorrent support to view, pause,
-  resume, and delete downloads, plus add new torrents via URL or file.
+  resume, and delete downloads, plus add new torrents via URL or file. The
+  torrent details copy the magnet link and export the `.torrent` file.
 - **Torrent Import**: Import completed torrent files directly to your
   Radarr/Sonarr media library with file mapping and target selection.
 - **Library Link Status**: See at a glance which torrents back an item in the

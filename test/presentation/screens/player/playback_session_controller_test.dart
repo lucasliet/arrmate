@@ -148,6 +148,14 @@ class FakeReporter extends PlaybackProgressReporter {
   }
 }
 
+/// [FakeStreamPlayer] whose engine teardown fails.
+class _FailingDisposePlayer extends FakeStreamPlayer {
+  @override
+  Future<void> dispose() async {
+    throw StateError('simulated engine dispose failure');
+  }
+}
+
 /// Reporter whose [onStop] stays pending until [release] completes.
 class _GatedReporter extends PlaybackProgressReporter {
   _GatedReporter(this.release);
@@ -218,6 +226,57 @@ void main() {
         expect(reporter.stops, [Duration.zero]);
       },
     );
+
+    test(
+      'dispose releases the engine while the stop report is still pending',
+      () async {
+        // Given
+        final release = Completer<void>();
+        final reporter = _GatedReporter(release.future);
+        final player = FakeStreamPlayer();
+        final controller = PlaybackSessionController(
+          request: _buildRequest(reporter: reporter),
+          playerFactory: () => player,
+          progressInterval: const Duration(hours: 1),
+        );
+        await controller.initialize();
+        await pumpEventQueue();
+
+        // When
+        final pending = controller.dispose();
+        var finished = false;
+        unawaited(pending.then((_) => finished = true));
+        await pumpEventQueue();
+
+        // Then
+        expect(reporter.started, isTrue);
+        expect(player.disposed, isTrue);
+        expect(finished, isFalse);
+
+        release.complete();
+        await pending;
+        expect(reporter.stops, [Duration.zero]);
+      },
+    );
+
+    test('a failing engine dispose does not skip the stop report', () async {
+      // Given
+      final reporter = FakeReporter();
+      final controller = PlaybackSessionController(
+        request: _buildRequest(reporter: reporter),
+        playerFactory: _FailingDisposePlayer.new,
+        progressInterval: const Duration(hours: 1),
+      );
+      await controller.initialize();
+      await pumpEventQueue();
+
+      // When
+      final pending = controller.dispose();
+
+      // Then
+      await expectLater(pending, completes);
+      expect(reporter.stops, [Duration.zero]);
+    });
 
     test('seekTo tracks the target so an immediate exit reports it', () async {
       // Given

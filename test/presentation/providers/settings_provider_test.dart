@@ -134,6 +134,53 @@ void main() {
       expect(prefs.getString('home_tab'), isNull);
     });
 
+    group('minimum seeding days', () {
+      test(
+        'should persist 0 so the seeding warning can be turned off',
+        () async {
+          // Given
+          final notifier = container.read(settingsProvider.notifier);
+
+          // When
+          await notifier.setMinimumSeedingDays(0);
+
+          // Then
+          expect(container.read(settingsProvider).minimumSeedingDays, 0);
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('minimum_seeding_days'), 0);
+        },
+      );
+
+      for (final (input, expected) in [(61, 60), (-1, 0), (60, 60), (1, 1)]) {
+        test('should store $expected when asked to save $input', () async {
+          // Given
+          final notifier = container.read(settingsProvider.notifier);
+
+          // When
+          await notifier.setMinimumSeedingDays(input);
+
+          // Then
+          expect(container.read(settingsProvider).minimumSeedingDays, expected);
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('minimum_seeding_days'), expected);
+        });
+      }
+
+      test('should load a persisted 0 instead of the default', () async {
+        // Given
+        SharedPreferences.setMockInitialValues({'minimum_seeding_days': 0});
+        container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // When
+        container.read(settingsProvider);
+        await Future.delayed(Duration.zero);
+
+        // Then
+        expect(container.read(settingsProvider).minimumSeedingDays, 0);
+      });
+    });
+
     group('language', () {
       test('defaults to the system language', () {
         expect(container.read(settingsProvider).language, AppLanguage.system);

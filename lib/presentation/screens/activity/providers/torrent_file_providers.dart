@@ -2,9 +2,16 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/torrent_file_export_service.dart';
 import '../../../../domain/models/qbittorrent/qbittorrent_models.dart';
 import '../../../../presentation/providers/data_providers.dart';
 import 'qbittorrent_provider.dart';
+
+/// Service that saves an exported `.torrent` file through the platform save
+/// dialog.
+final torrentFileExportServiceProvider = Provider<TorrentFileExportService>(
+  (ref) => TorrentFileExportService(),
+);
 
 /// Fetches the list of files for a specific torrent.
 final torrentFilesProvider = FutureProvider.family<List<TorrentFile>, String>((

@@ -176,6 +176,7 @@ Shared by movies, seasons, and episodes.
 | DIS-04 | Existing result tap | Chip off, tap The Matrix | Opens `/movies/2` | Verified |
 | DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Verified |
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
+| DIS-16 | Preview cast, crew and titles | Tap a movie whose localized title differs from the original; tap a series | Movie: “Original title” / “English title” lines only when they differ, “Cast” and “Crew” rows with photos. Series: “Cast” row. With the metadata servers unreachable the preview shows without them. Web: no request to the metadata servers (no CORS), no Cast/Crew rows, the original title from Radarr still shows | Not run |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
 | DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Verified |
 | DIS-09 | Add validation | Clear profile or folder, Add | Not reachable: the profile and folder dropdowns have no clear control, so the empty-selection snackbar cannot be driven | N/A |
@@ -341,6 +342,8 @@ Shared by movies, seasons, and episodes.
 | TOR-16 | Matrix badges | Seeding list | `radarr` copy “The Matrix”; cross-seed copy “The Matrix” + “Cross-seed” | Verified |
 | TOR-17 | Episode badge | Severance torrents | “Severance · S01E01” / “· S01E05” / “· S01E09” | Not run |
 | TOR-18 | Pull to refresh | Pull down | Torrents and link index reload | Not run |
+| TOR-20 | Copy magnet | Torrent details → Copy Magnet | Sheet closes, “Magnet link copied”; clipboard holds the `magnet:?xt=urn:btih:` link | Not run |
+| TOR-21 | Export .torrent | Torrent details → Export .torrent | Save dialog (browser download on web) with `<name>.torrent`; “Torrent file exported” | Not run |
 | TOR-19 | Live update | Keep tab open | Dune and S01E09 progress grows every poll; grabbed torrents finish in about a minute | Not run |
 
 ## Activity: Torrent sheet and actions (TRA)
@@ -487,7 +490,6 @@ Shared by movies, seasons, and episodes.
 Things the code does differently from the in-app assistant skills or UI copy.
 They are not covered by the rows above and need a product decision.
 
-- `Minimum seeding days` says “0 disables the warning”, but the value is clamped to 1–60, so 0 is saved as 1.
 - `/settings/system-management` is a router path, but the deep link validator rejects it.
 - Health wiki URLs are shown as plain text, not as links.
 - Series details have no Files, Extra files, or History section, unlike movie details. The providers exist; the screen does not use them.

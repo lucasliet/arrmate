@@ -139,7 +139,7 @@ Cada seção só aparece quando tem itens. Os cards contêm:
 
 **Ações:**
 - **Tocar no card:** em Continue Watching, retoma a reprodução no player interno do app (`/player`) na posição onde parou; em Next Up, começa o episódio do início.
-- **Botão "Open in library" (ícone no canto direito do card):** alterna para a instância correspondente e abre a tela de detalhes do filme ou série na biblioteca (`/movies/:id` ou `/series/:id`).
+- **Botão "Open in library" (ícone no canto direito do card):** alterna para a instância correspondente e abre a tela de detalhes do filme ou série na biblioteca (`/movies/:id` ou `/series/:id`). O voltar dessa tela retorna para a aba Watching.
 - **Puxar para baixo / botão de atualizar:** recarrega as duas seções. Elas também são recarregadas ao sair do player, então ao terminar um episódio o próximo passa a aparecer em Next Up.
 
 **Observações:**
