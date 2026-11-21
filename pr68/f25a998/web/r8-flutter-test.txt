@@ -1,0 +1,2 @@
+flutter test @ f25a998: 1564 passed, 4 skipped.
+Log: /opt/cursor/artifacts/pr68-qa/r8-flutter-test.log
