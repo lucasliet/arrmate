@@ -291,7 +291,12 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                     ),
                   ),
                 ),
-                const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+                SliverPadding(
+                  // Leaves the last row clear of the floating add button.
+                  padding: EdgeInsets.only(
+                    bottom: _isSelecting || isWide ? 16 : 88,
+                  ),
+                ),
               ],
             ),
           ),

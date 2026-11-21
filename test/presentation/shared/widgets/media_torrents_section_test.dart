@@ -1,3 +1,4 @@
+import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
@@ -50,7 +51,10 @@ void main() {
       // Then
       expect(find.text('Torrents'), findsOneWidget);
       expect(find.byType(TorrentListItem), findsNWidgets(2));
-      expect(find.text('Arrival.2016.1080p'), findsOneWidget);
+      expect(
+        find.text(softWrapReleaseName('Arrival.2016.1080p')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('should stay hidden when no download client is configured', (
@@ -102,9 +106,15 @@ void main() {
       );
 
       // Then the pack shows up too, the other episode does not
-      expect(find.text('Severance.S01E05'), findsOneWidget);
-      expect(find.text('Severance.S01.1080p'), findsOneWidget);
-      expect(find.text('Severance.S01E06'), findsNothing);
+      expect(
+        find.text(softWrapReleaseName('Severance.S01E05')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(softWrapReleaseName('Severance.S01.1080p')),
+        findsOneWidget,
+      );
+      expect(find.text(softWrapReleaseName('Severance.S01E06')), findsNothing);
     });
 
     testWidgets('should open the torrent details without a library shortcut', (

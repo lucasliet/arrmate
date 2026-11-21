@@ -149,6 +149,8 @@ class MediaCreditsSection extends StatelessWidget {
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          // Keeps the desktop scrollbar off the last line of text.
+          padding: const EdgeInsets.only(bottom: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

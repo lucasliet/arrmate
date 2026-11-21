@@ -157,3 +157,17 @@ String countryFlagEmoji(String? code) {
   }
   return buffer.toString();
 }
+
+/// Returns [name] with an invisible break opportunity after each separator
+/// of a release name (`.`, `_`, `-`).
+///
+/// A name such as `Some.Movie.2024.1080p.WEB-DL` has no spaces, so without
+/// them a narrow line breaks in the middle of a word.
+String softWrapReleaseName(String name) {
+  return name.replaceAllMapped(
+    _releaseNameSeparator,
+    (match) => '${match[0]}\u200B',
+  );
+}
+
+final RegExp _releaseNameSeparator = RegExp(r'[._-](?=[^\s._-])');
