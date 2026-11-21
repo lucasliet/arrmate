@@ -53,7 +53,13 @@ and **qBittorrent** (for downloads).
   - **Search & Sort**: Client-side filtering and sorting for instant library
     navigation.
   - **Add Content**: Search and add new Movies/Series via API lookup, including
-    Quality Profile and Root Folder configuration.
+    Quality Profile and Root Folder configuration. The preview shown before
+    adding lists the cast (plus the crew, the original title and the English
+    title for movies, when they differ from the localized one). Radarr and
+    Sonarr lookups return no credits, so these come from the public metadata
+    servers they use themselves (`api.radarr.video`, `skyhook.sonarr.tv`)
+    through `MediaMetadataService`; the preview hides them when the request
+    fails.
   - **Automatic Search**: Trigger automatic search for movie releases.
   - **Interactive Search**: Manual release search (torrents/nzbs) with filtering
     and download selection.

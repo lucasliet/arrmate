@@ -70,6 +70,10 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 - Toque em um resultado para abrir o "Series Preview" e depois "Configure Addition" (Monitor, Monitor New Seasons, Series Type, Season Folder, Quality Profile, Root Folder, Tags) — mesmas etapas do fluxo padrão.
 - Em seguida, toque em **"Add"** no canto superior direito.
 
+**Identificar a série no "Series Preview":**
+- Depois da sinopse aparece a seção **"Cast"** (elenco, com foto, nome e personagem), em uma fileira rolável na horizontal.
+- O elenco vem do servidor público de metadados do Sonarr (`skyhook.sonarr.tv`), consultado direto pelo app. Ele não informa equipe nem título original, então essas informações só existem para filmes. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse.
+
 **Observações:**
 - O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=series` ou `arrmate:///search?q=<termo>&type=series` (sem o parâmetro, o padrão é filme).
 - A extração de ID funciona para os formatos de URL mais comuns do IMDb e TVDB.

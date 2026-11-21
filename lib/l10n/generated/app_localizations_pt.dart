@@ -728,7 +728,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get diagnosticsUnknownStatus => 'desconhecido';
 
   @override
+  String get discoveryCast => 'Elenco';
+
+  @override
   String get discoveryConfigureAddition => 'Configurar adição';
+
+  @override
+  String get discoveryCrew => 'Equipe';
+
+  @override
+  String discoveryEnglishTitle(String title) {
+    return 'Título em inglês: $title';
+  }
 
   @override
   String get discoveryHideAlreadyAdded => 'Ocultar já adicionados';
@@ -751,6 +762,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get discoveryNoResultsFound => 'Nenhum resultado encontrado';
+
+  @override
+  String discoveryOriginalTitle(String title) {
+    return 'Título original: $title';
+  }
 
   @override
   String discoveryRootFolderFreeSpace(String path, String free) {
@@ -5720,7 +5736,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get diagnosticsUnknownStatus => 'desconhecido';
 
   @override
+  String get discoveryCast => 'Elenco';
+
+  @override
   String get discoveryConfigureAddition => 'Configurar adição';
+
+  @override
+  String get discoveryCrew => 'Equipe';
+
+  @override
+  String discoveryEnglishTitle(String title) {
+    return 'Título em inglês: $title';
+  }
 
   @override
   String get discoveryHideAlreadyAdded => 'Ocultar já adicionados';
@@ -5743,6 +5770,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get discoveryNoResultsFound => 'Nenhum resultado encontrado';
+
+  @override
+  String discoveryOriginalTitle(String title) {
+    return 'Título original: $title';
+  }
 
   @override
   String discoveryRootFolderFreeSpace(String path, String free) {

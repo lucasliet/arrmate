@@ -79,7 +79,8 @@ do not apply to native requests.
 - **Content Discovery**: Search/add screen opened by the FAB on the Movies and
   Series tabs — it opens straight into that tab's media type and accepts a
   title, a TMDB/IMDb/TVDB ID, or a URL, with debounced lookup, sort, and a
-  "Hide already added" filter.
+  "Hide already added" filter. The preview shown before adding lists the cast
+  (plus crew and the original title for movies) to help identify the title.
 - **Media Management**: Delete, monitor/unmonitor in batch, and purge movies or
   series from your library, plus remove individual media files with
   confirmation dialogs.

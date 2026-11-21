@@ -92,6 +92,9 @@ class Movie extends Equatable {
   final int tmdbId;
   final String? imdbId;
   final String title;
+
+  /// Title in the original language, as Radarr reports it.
+  final String? originalTitle;
   final String sortTitle;
   final String? studio;
   final int year;
@@ -143,6 +146,7 @@ class Movie extends Equatable {
     this.overview,
     this.certification,
     this.youTubeTrailerId,
+    this.originalTitle,
     this.originalLanguage,
     this.alternateTitles = const [],
     this.genres = const [],
@@ -243,6 +247,7 @@ class Movie extends Equatable {
       overview: json['overview'] as String?,
       certification: json['certification'] as String?,
       youTubeTrailerId: json['youTubeTrailerId'] as String?,
+      originalTitle: json['originalTitle'] as String?,
       originalLanguage: json['originalLanguage'] != null
           ? MediaLanguage.fromJson(
               json['originalLanguage'] as Map<String, dynamic>,
@@ -319,6 +324,7 @@ class Movie extends Equatable {
       if (overview != null) 'overview': overview,
       if (certification != null) 'certification': certification,
       if (youTubeTrailerId != null) 'youTubeTrailerId': youTubeTrailerId,
+      if (originalTitle != null) 'originalTitle': originalTitle,
       if (originalLanguage != null)
         'originalLanguage': originalLanguage!.toJson(),
       'alternateTitles': alternateTitles.map((e) => e.toJson()).toList(),
@@ -359,6 +365,7 @@ class Movie extends Equatable {
     String? overview,
     String? certification,
     String? youTubeTrailerId,
+    String? originalTitle,
     MediaLanguage? originalLanguage,
     List<MediaAlternateTitle>? alternateTitles,
     List<String>? genres,
@@ -397,6 +404,7 @@ class Movie extends Equatable {
       overview: overview ?? this.overview,
       certification: certification ?? this.certification,
       youTubeTrailerId: youTubeTrailerId ?? this.youTubeTrailerId,
+      originalTitle: originalTitle ?? this.originalTitle,
       originalLanguage: originalLanguage ?? this.originalLanguage,
       alternateTitles: alternateTitles ?? this.alternateTitles,
       genres: genres ?? this.genres,
@@ -438,6 +446,7 @@ class Movie extends Equatable {
     overview,
     certification,
     youTubeTrailerId,
+    originalTitle,
     originalLanguage,
     alternateTitles,
     genres,

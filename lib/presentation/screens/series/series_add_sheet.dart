@@ -9,6 +9,8 @@ import '../../providers/data_providers.dart';
 import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
+import '../../shared/providers/media_preview_details_provider.dart';
+import '../../shared/widgets/media_preview_details.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/series_lookup_provider.dart';
@@ -352,6 +354,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
 
   Widget _buildPreview() {
     final series = _selectedSeries!;
+    final details = ref.watch(seriesPreviewDetailsProvider(series.tvdbId));
     return _buildSurface(
       (scrollController) => Column(
         children: [
@@ -398,6 +401,7 @@ class _SeriesAddSheetState extends ConsumerState<SeriesAddSheet> {
                 ),
                 const SizedBox(height: 16),
                 Text(series.overview ?? context.l10n.seriesNoOverview),
+                MediaPreviewCredits(details: details),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => setState(() => _isConfiguring = true),

@@ -9,6 +9,8 @@ import '../../providers/data_providers.dart';
 import '../../providers/instance_tags_provider.dart';
 import '../../providers/instances_provider.dart';
 import '../../shared/providers/formatted_options_provider.dart';
+import '../../shared/providers/media_preview_details_provider.dart';
+import '../../shared/widgets/media_preview_details.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/tags/tag_list.dart';
 import 'providers/movie_lookup_provider.dart';
@@ -349,6 +351,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
 
   Widget _buildPreview() {
     final movie = _selectedMovie!;
+    final details = ref.watch(moviePreviewDetailsProvider(movie.tmdbId));
     return _buildSurface(
       (scrollController) => Column(
         children: [
@@ -384,6 +387,12 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
+                MediaPreviewTitles(
+                  title: movie.title,
+                  originalTitle:
+                      movie.originalTitle ?? details.valueOrNull?.originalTitle,
+                  englishTitle: details.valueOrNull?.englishTitle,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   [
@@ -396,6 +405,7 @@ class _MovieAddSheetState extends ConsumerState<MovieAddSheet> {
                 ),
                 const SizedBox(height: 16),
                 Text(movie.overview ?? context.l10n.discoveryNoOverview),
+                MediaPreviewCredits(details: details),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => setState(() => _isConfiguring = true),

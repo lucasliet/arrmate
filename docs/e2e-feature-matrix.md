@@ -176,6 +176,7 @@ Shared by movies, seasons, and episodes.
 | DIS-04 | Existing result tap | Chip off, tap The Matrix | Opens `/movies/2` | Verified |
 | DIS-05 | Sort Relevant / Latest / Rating | Sort dropdown | Result order changes | Verified |
 | DIS-06 | Preview | Tap Inception | “Movie Preview” with poster, overview, Configure Addition | Verified |
+| DIS-16 | Preview cast, crew and titles | Tap a movie whose localized title differs from the original; tap a series | Movie: “Original title” / “English title” lines only when they differ, “Cast” and “Crew” rows with photos. Series: “Cast” row. With the metadata servers unreachable the preview shows without them | Not run |
 | DIS-07 | Configure fields | Configure Addition | Monitor (Movie / Movie + Collection / None), Minimum Availability, Quality Profile, Root Folder with free space, Tags | Verified |
 | DIS-08 | Add movie | HD-1080p, `/movies`, Add | “Movie added successfully”; the library is shown with no red error; Inception is in the library; reopening Discover shows it as added; adding it again is rejected | Verified |
 | DIS-09 | Add validation | Clear profile or folder, Add | Not reachable: the profile and folder dropdowns have no clear control, so the empty-selection snackbar cannot be driven | N/A |

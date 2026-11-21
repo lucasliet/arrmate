@@ -418,7 +418,18 @@
   "diagnosticsTitle": "Connection Diagnostics",
   "diagnosticsUnknownError": "unknown error",
   "diagnosticsUnknownStatus": "unknown",
+  "discoveryCast": "Cast",
   "discoveryConfigureAddition": "Configure Addition",
+  "discoveryCrew": "Crew",
+  "discoveryEnglishTitle": "English title: {title}",
+  "@discoveryEnglishTitle": {
+    "description": "English title of a looked-up movie, shown when it differs from the localized one",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "discoveryHideAlreadyAdded": "Hide already added",
   "discoveryLoadFoldersFailed": "Error loading folders: {error}",
   "@discoveryLoadFoldersFailed": {
@@ -439,6 +450,15 @@
   "discoveryNoOverview": "No overview available.",
   "discoveryNoRating": "No rating",
   "discoveryNoResultsFound": "No results found",
+  "discoveryOriginalTitle": "Original title: {title}",
+  "@discoveryOriginalTitle": {
+    "description": "Original-language title of a looked-up movie, shown when it differs from the localized one",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "discoveryRootFolderFreeSpace": "{path} ({free} GB Free)",
   "@discoveryRootFolderFreeSpace": {
     "placeholders": {

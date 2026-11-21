@@ -1313,11 +1313,29 @@ abstract class AppLocalizations {
   /// **'unknown'**
   String get diagnosticsUnknownStatus;
 
+  /// No description provided for @discoveryCast.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast'**
+  String get discoveryCast;
+
   /// No description provided for @discoveryConfigureAddition.
   ///
   /// In en, this message translates to:
   /// **'Configure Addition'**
   String get discoveryConfigureAddition;
+
+  /// No description provided for @discoveryCrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Crew'**
+  String get discoveryCrew;
+
+  /// English title of a looked-up movie, shown when it differs from the localized one
+  ///
+  /// In en, this message translates to:
+  /// **'English title: {title}'**
+  String discoveryEnglishTitle(String title);
 
   /// No description provided for @discoveryHideAlreadyAdded.
   ///
@@ -1354,6 +1372,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No results found'**
   String get discoveryNoResultsFound;
+
+  /// Original-language title of a looked-up movie, shown when it differs from the localized one
+  ///
+  /// In en, this message translates to:
+  /// **'Original title: {title}'**
+  String discoveryOriginalTitle(String title);
 
   /// No description provided for @discoveryRootFolderFreeSpace.
   ///

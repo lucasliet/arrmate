@@ -729,7 +729,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diagnosticsUnknownStatus => 'desconocido';
 
   @override
+  String get discoveryCast => 'Reparto';
+
+  @override
   String get discoveryConfigureAddition => 'Configurar adición';
+
+  @override
+  String get discoveryCrew => 'Equipo';
+
+  @override
+  String discoveryEnglishTitle(String title) {
+    return 'Título en inglés: $title';
+  }
 
   @override
   String get discoveryHideAlreadyAdded => 'Ocultar ya añadidos';
@@ -752,6 +763,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get discoveryNoResultsFound => 'No se encontraron resultados';
+
+  @override
+  String discoveryOriginalTitle(String title) {
+    return 'Título original: $title';
+  }
 
   @override
   String discoveryRootFolderFreeSpace(String path, String free) {
