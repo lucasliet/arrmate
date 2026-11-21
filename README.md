@@ -96,7 +96,8 @@ do not apply to native requests.
   profiles), the minimum-seeding-days guard, and app maintenance (version
   history, image-cache clearing, settings reset).
 - **Download Client Integration**: Full qBittorrent support to view, pause,
-  resume, and delete downloads, plus add new torrents via URL or file.
+  resume, and delete downloads, plus add new torrents via URL or file. The
+  torrent details copy the magnet link and export the `.torrent` file.
 - **Torrent Import**: Import completed torrent files directly to your
   Radarr/Sonarr media library with file mapping and target selection.
 - **Library Link Status**: See at a glance which torrents back an item in the
