@@ -59,4 +59,37 @@ void main() {
       1,
     );
   });
+
+  testWidgets('should fit the app bar actions on a 360 px wide screen', (
+    tester,
+  ) async {
+    // Given
+    await tester.binding.setSurfaceSize(const Size(360, 780));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final sample = TourMockData.movies().first;
+
+    // When
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentRadarrInstanceProvider.overrideWithValue(null),
+          currentSonarrInstanceProvider.overrideWithValue(null),
+          filteredMoviesProvider.overrideWithValue(
+            AsyncData([sample.copyWith(guid: 1)]),
+          ),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: MoviesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(tester.takeException(), isNull);
+    expect(find.byIcon(Icons.search), findsOneWidget);
+  });
 }
