@@ -1,0 +1,289 @@
+{
+  "head": "0d5ddfc",
+  "flutter_test": "02:28 +1583 ~4: All tests passed!",
+  "web": [
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "library",
+      "status": "PASS",
+      "detail": "movies grid/list and series grid render; list ends clear of the add button"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "cast-hidden-web",
+      "status": "PASS",
+      "detail": "metadata requests: none"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "copy-magnet",
+      "status": "PASS",
+      "detail": "clipboard: magnet:?xt=urn:btih:cccccccccccccccccccccccccccccccccccccccc&dn=Dune+2"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "export-torrent",
+      "status": "PASS",
+      "detail": "Dune 2021 Remux-2160p.torrent: bencoded, name and lab hash match"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "export-404",
+      "status": "PASS",
+      "detail": "error snackbar, sheet stays open"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "export-dismissed",
+      "status": "PASS",
+      "detail": "downloads=0, list route kept"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "regress-58-pause-resume",
+      "status": "PASS",
+      "detail": "client stops and starts the torrent; the list shows Paused (DL), then Downloading again (screenshots)"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "regress-60-cancel-keeps-selection",
+      "status": "PASS",
+      "detail": "selection header kept, Matrix torrents in the client 2 -> 2"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "rejected-release-grab",
+      "status": "PASS",
+      "detail": "dialog lists the rejection; client torrents 10 -> 11"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "add-torrent-file-web",
+      "status": "PASS",
+      "detail": "real file name shown, upload accepted by the client"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "backup-created-local-time",
+      "status": "PASS",
+      "detail": "UTC 2026-11-22T05:34:06.222Z -> shown \"Created: 22 Nov 2026 02:34\" (America/Sao_Paulo 02:34)"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "external-hosts",
+      "status": "INFO",
+      "detail": "api.github.com"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "library",
+      "status": "PASS",
+      "detail": "movies grid/list and series grid render; list ends clear of the add button"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "cast-hidden-web",
+      "status": "PASS",
+      "detail": "metadata requests: none"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "copy-magnet",
+      "status": "PASS",
+      "detail": "clipboard: magnet:?xt=urn:btih:cccccccccccccccccccccccccccccccccccccccc&dn=Dune+2"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "export-torrent",
+      "status": "PASS",
+      "detail": "Dune 2021 Remux-2160p.torrent: bencoded, name and lab hash match"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "export-404",
+      "status": "PASS",
+      "detail": "error snackbar, sheet stays open"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "export-dismissed",
+      "status": "PASS",
+      "detail": "downloads=0, list route kept"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "regress-58-pause-resume",
+      "status": "PASS",
+      "detail": "client stops and starts the torrent; the list shows Paused (DL), then Downloading again (screenshots)"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "regress-60-cancel-keeps-selection",
+      "status": "PASS",
+      "detail": "selection header kept, Matrix torrents in the client 3 -> 3"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "rejected-release-grab",
+      "status": "PASS",
+      "detail": "dialog lists the rejection; client torrents 13 -> 14"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "add-torrent-file-web",
+      "status": "PASS",
+      "detail": "real file name shown, upload accepted by the client"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "backup-created-local-time",
+      "status": "PASS",
+      "detail": "UTC 2026-11-22T05:38:09.281Z -> shown \"Created: 22 Nov 2026 02:38\" (America/Sao_Paulo 02:38)"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "external-hosts",
+      "status": "INFO",
+      "detail": "api.github.com"
+    },
+    {
+      "platform": "web-debug",
+      "size": "360/400/1280",
+      "id": "layout-overflow",
+      "status": "PASS",
+      "detail": "RenderFlex overflow messages per width: {\"360\":0,\"400\":0,\"1280\":0}"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "export-disabled-no-metadata",
+      "status": "PASS",
+      "detail": "export aria-disabled=true, copy magnet enabled=true"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "export-disabled-no-metadata",
+      "status": "PASS",
+      "detail": "export aria-disabled=true, copy magnet enabled=true"
+    },
+    {
+      "platform": "web",
+      "size": "desktop",
+      "id": "long-name",
+      "status": "PASS",
+      "detail": "see screenshot: name breaks after separators, not mid-word"
+    },
+    {
+      "platform": "web",
+      "size": "mobile",
+      "id": "long-name",
+      "status": "PASS",
+      "detail": "see screenshot: name breaks after separators, not mid-word"
+    }
+  ],
+  "linux": [
+    {
+      "size": "desktop",
+      "id": "library",
+      "status": "PASS",
+      "detail": "movies grid and list; list ends clear of the add button"
+    },
+    {
+      "size": "desktop",
+      "id": "copy-magnet",
+      "status": "PASS",
+      "detail": "snackbar 'Magnet link copied' (clipboard content checked on web only)"
+    },
+    {
+      "size": "desktop",
+      "id": "export-no-portal",
+      "status": "PASS",
+      "detail": "translated message instead of the raw D-Bus error"
+    },
+    {
+      "size": "desktop",
+      "id": "export-no-session-bus",
+      "status": "PASS",
+      "detail": "DBUS_SESSION_BUS_ADDRESS on a missing socket: same translated message, no SocketException"
+    },
+    {
+      "size": "desktop",
+      "id": "add-torrent-pick-no-portal",
+      "status": "PASS",
+      "detail": "translated message"
+    },
+    {
+      "size": "desktop",
+      "id": "backup-export-no-portal",
+      "status": "PASS",
+      "detail": "translated message"
+    },
+    {
+      "size": "desktop",
+      "id": "backup-restore-no-portal",
+      "status": "PASS",
+      "detail": "translated message"
+    },
+    {
+      "size": "desktop",
+      "id": "export-disabled-no-metadata",
+      "status": "PASS",
+      "detail": "paused magnet with has_metadata false: Export .torrent disabled, Copy Magnet enabled"
+    },
+    {
+      "size": "desktop",
+      "id": "movie-preview",
+      "status": "BLOCKED",
+      "detail": "metadata servers unreachable from this environment; the preview shows without cast/crew, no error"
+    },
+    {
+      "size": "mobile-400",
+      "id": "library",
+      "status": "PASS",
+      "detail": "grid, list clear of the add button, series grid; 400 px is the Linux minimum window width"
+    },
+    {
+      "size": "mobile-400",
+      "id": "long-name",
+      "status": "PASS",
+      "detail": "name breaks after separators"
+    },
+    {
+      "size": "mobile-400",
+      "id": "export-disabled-no-metadata",
+      "status": "PASS",
+      "detail": "Export .torrent disabled"
+    },
+    {
+      "size": "mobile-400",
+      "id": "movie-preview",
+      "status": "BLOCKED",
+      "detail": "same as desktop"
+    }
+  ]
+}
