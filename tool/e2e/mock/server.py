@@ -636,6 +636,33 @@ def minimal_jellyfin_item(path: str) -> dict:
     )
 
 
+
+def bencode(value) -> bytes:
+    """Encode [value] the way a .torrent file stores it."""
+    if isinstance(value, int):
+        return b"i%de" % value
+    if isinstance(value, str):
+        value = value.encode()
+    if isinstance(value, bytes):
+        return b"%d:%s" % (len(value), value)
+    if isinstance(value, list):
+        return b"l" + b"".join(bencode(item) for item in value) + b"e"
+    return b"d" + b"".join(bencode(key) + bencode(item) for key, item in sorted(value.items())) + b"e"
+
+
+def torrent_file(torrent: dict) -> bytes:
+    """Build the .torrent file qBittorrent would export for [torrent]."""
+    return bencode({
+        "announce": torrent["tracker"],
+        "info": {
+            "length": torrent["size"],
+            "name": torrent["name"],
+            "piece length": 4_194_304,
+            "pieces": bytes.fromhex(torrent["hash"]),
+        },
+    })
+
+
 class Lab:
     """In-memory library shared by every mocked service."""
 
@@ -1174,6 +1201,7 @@ class Lab:
             "priority": 0 if progress >= 1 else 1,
             "tracker": "udp://tracker.arrmate.lab:1337/announce",
             "magnet_uri": f"magnet:?xt=urn:btih:{infohash}&dn={name.replace(' ', '+')}",
+            "has_metadata": True,
         }
         self.sim[infohash] = {
             "auto": auto,
@@ -2925,6 +2953,17 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._json({**torrent, "addition_date": torrent["added_on"], "completion_date": torrent["completion_on"], "total_downloaded": torrent["downloaded"], "total_uploaded": torrent["uploaded"]})
                 return
+            if method == "GET" and path == "/api/v2/torrents/export":
+                torrent = LAB.torrent((query.get("hash") or [""])[0])
+                if torrent is None:
+                    self._text("Not Found", 404)
+                    return
+                if not torrent["has_metadata"]:
+                    # qBittorrent has no .torrent file until the metadata arrives.
+                    self._text("Conflict", 409)
+                    return
+                self._send(200, torrent_file(torrent), "application/x-bittorrent")
+                return
             if method == "GET" and path == "/api/v2/torrents/files":
                 infohash = (query.get("hash") or [""])[0].lower()
                 if infohash not in LAB.files:
@@ -3028,6 +3067,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._text("Not Found", 404)
                 return
             for torrent in selected:
+                # A started magnet fetches its metadata right away in the lab.
+                torrent["has_metadata"] = True
                 if torrent["state"] in STOPPED_STATES or torrent["state"] == "error":
                     stalled = not LAB.sim.get(torrent["hash"], {}).get("auto") and torrent["progress"] >= FIXTURE_STALL_AT
                     LAB.apply_state(torrent, "uploading" if torrent["progress"] >= 1 else "stalledDL" if stalled else "downloading")
@@ -3086,6 +3127,7 @@ class Handler(BaseHTTPRequestHandler):
         save_path = (fields.get("savepath") or [""])[0] or None
         stopped = (fields.get("stopped") or ["false"])[0].lower() == "true"
         sources: list[tuple[str, str]] = []
+        magnets: set[str] = set()
         for line in (fields.get("urls") or [""])[0].splitlines():
             line = line.strip()
             if not line:
@@ -3095,9 +3137,11 @@ class Handler(BaseHTTPRequestHandler):
             name = unquote_plus(display.group(1)) if display else line.rsplit("/", 1)[-1] or line
             if btih:
                 infohash = btih.group(1).lower()
+                magnets.add(infohash)
             elif re.fullmatch(r"[0-9a-fA-F]{40}", line):
                 infohash = line.lower()
                 name = f"Magnet {infohash[:8]}"
+                magnets.add(infohash)
             else:
                 infohash = hashlib.sha1(line.encode()).hexdigest()
                 name = re.sub(r"\.torrent$", "", name)
@@ -3120,6 +3164,8 @@ class Handler(BaseHTTPRequestHandler):
                 auto=True,
                 front=True,
             )
+            # A magnet added stopped never fetched its metadata.
+            LAB.torrent(infohash)["has_metadata"] = not (stopped and infohash in magnets)
             added += 1
         return added
 
