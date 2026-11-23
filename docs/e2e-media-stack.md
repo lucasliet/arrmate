@@ -53,6 +53,23 @@ docker compose -f tool/e2e/docker-compose.yml down
 The process keeps state in memory. Restarting the container restores the
 sample library.
 
+### Simulating a stalled Jellyfin
+
+Two optional environment variables make the Jellyfin side hang, to check that
+the player still closes at once (issue #57):
+
+- `MEDIALAB_STALL_STREAM=1`: `/Videos/{id}/stream` sends its headers and a few
+  bytes, then stops sending, so the player keeps buffering.
+- `MEDIALAB_STALL_STOPPED=<seconds>`: `POST /Sessions/Playing/Stopped` answers
+  only after that many seconds.
+
+Both run outside the lab lock, so the rest of the API keeps answering. Leave
+them unset for the smoke command.
+
+```sh
+MEDIALAB_STALL_STREAM=1 MEDIALAB_STALL_STOPPED=20 python3 -u tool/e2e/mock/server.py
+```
+
 The smoke command requires Python 3.10 or newer on the host and runs 22 HTTP
 scenarios, including new grabs and their automatic imports in both services
 plus the Jellyfin auth, catalog, playback, progress-sync, and library-scan

@@ -39,6 +39,7 @@ Credentials
 from __future__ import annotations
 
 import copy
+import os
 import hashlib
 import json
 import re
@@ -3354,6 +3355,29 @@ class Handler(BaseHTTPRequestHandler):
                     )
         return {"MediaSources": sources}
 
+    def _jellyfin_stalls(self, method: str, path: str) -> bool:
+        """Simulate a stalled server when the lab was started to do so.
+
+        `MEDIALAB_STALL_STREAM=1` answers a video stream with its headers and a
+        few bytes, then stops sending. `MEDIALAB_STALL_STOPPED=<seconds>` holds
+        the `Stopped` playback report that long before answering. Both run
+        outside the lab lock, so the rest of the API keeps answering. Returns
+        True when the request was fully handled here.
+        """
+        if os.environ.get("MEDIALAB_STALL_STREAM") == "1" and method == "GET" and re.fullmatch(r"/Videos/[^/]+/stream", path):
+            self.send_response(200)
+            self.send_header("Content-Type", "video/x-matroska")
+            self.send_header("Content-Length", str(500_000_000))
+            self.end_headers()
+            self.wfile.write(b"\x1a\x45\xdf\xa3")
+            self.wfile.flush()
+            time.sleep(600)
+            return True
+        delay = float(os.environ.get("MEDIALAB_STALL_STOPPED") or 0)
+        if delay > 0 and method == "POST" and path == "/Sessions/Playing/Stopped":
+            time.sleep(delay)
+        return False
+
     def _jellyfin_video(self, item_id: str) -> bool:
         """Serve the placeholder video payload; False when the item is unknown."""
         item = next((entry for entry in LAB.jellyfin_items if entry["Id"] == item_id), None)
@@ -3398,6 +3422,8 @@ class Handler(BaseHTTPRequestHandler):
         principal = self._jellyfin_principal(query)
         if principal is None:
             self._json({}, 401)
+            return
+        if self._jellyfin_stalls(method, path):
             return
         with LOCK:
             LAB.tick()
