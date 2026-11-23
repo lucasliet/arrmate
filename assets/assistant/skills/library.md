@@ -41,7 +41,7 @@ description: Filtrar/ordenar filmes e séries, alternar grade/lista, busca local
 **Observações:**
 - Você pode combinar sort + filter (ex: ordenar por Rating descendente + mostrar apenas Downloaded).
 - Pull-to-refresh (arrastar para baixo) limpa a busca e recarrega.
-- A barra de seleção em lote permite ações rápidas para múltiplos itens (Monitor, Unmonitor e opções de Delete via submenu).
+- A barra de seleção em lote permite ações rápidas para múltiplos itens (Monitor, Unmonitor e opções de Delete via submenu). Cancelar a confirmação de uma ação em lote (ou o aviso de torrents ainda em seed do Purge) mantém a seleção; ela só é limpa quando a ação termina.
 
 ## Filtrar e ordenar a lista de séries
 

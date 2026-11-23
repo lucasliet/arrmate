@@ -78,7 +78,7 @@ class TorrentListItem extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          torrent.name,
+                          softWrapReleaseName(torrent.name),
                           style: context.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

@@ -1,4 +1,5 @@
 import 'package:arrmate/core/services/purge_service.dart';
+import 'package:arrmate/core/platform/platform_capabilities.dart';
 import 'package:arrmate/domain/models/models.dart';
 
 import 'package:arrmate/presentation/providers/data_providers.dart';
@@ -68,6 +69,60 @@ Series createMockSeries({List<MediaImage> images = const [], String? imdbId}) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'SeriesDetailsScreen should render the background with the framework image on web',
+    (tester) async {
+      // Given
+      const remoteUrl = 'http://remote.com/fanart.jpg';
+      final media = createMockSeries(
+        images: [
+          MediaImage(
+            coverType: 'fanart',
+            url: '/local/fanart.jpg',
+            remoteUrl: remoteUrl,
+          ),
+        ],
+      );
+
+      // When
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            platformCapabilitiesProvider.overrideWithValue(
+              PlatformCapabilities.forPlatform(
+                isWeb: true,
+                targetPlatform: TargetPlatform.linux,
+              ),
+            ),
+            currentSonarrInstanceProvider.overrideWithValue(mockInstance),
+            seriesDetailsProvider(1).overrideWith((ref) => media),
+            seriesFilesProvider(1).overrideWith((ref) async => []),
+            seriesExtraFilesProvider(1).overrideWith((ref) async => []),
+            seriesHistoryProvider(1).overrideWith((ref) async => []),
+            seriesQualityProfilesProvider.overrideWith((ref) async => []),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: SeriesDetailsScreen(seriesId: 1),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Then
+      final background = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is NetworkImage &&
+            (widget.image as NetworkImage).url == remoteUrl,
+      );
+      expect(background, findsOneWidget);
+      expect(find.byType(CachedNetworkImage), findsNothing);
+    },
+  );
 
   testWidgets(
     'SeriesDetailsScreen should prefer remoteUrl for background if available',

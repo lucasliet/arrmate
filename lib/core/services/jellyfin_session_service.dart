@@ -13,7 +13,9 @@ final jellyfinSessionServiceProvider = Provider(
 ///
 /// `username:password` credentials, carried by a Basic `Authorization`
 /// header (Add Basic Auth), are signed in once, and only the returned
-/// [InstanceUserSession] is persisted. The API Key field is never a login.
+/// [InstanceUserSession] is persisted. The API Key field is never a login,
+/// and a Basic credentials header saved next to an API key is never used,
+/// so it is dropped instead of stored.
 /// Instances saved before sessions existed are migrated the same way on
 /// their next load.
 class JellyfinSessionService {
@@ -27,10 +29,24 @@ class JellyfinSessionService {
            jellyfinServiceFactory ?? ((instance) => JellyfinService(instance));
 
   /// Whether [instance] still carries a Jellyfin password that should be
-  /// exchanged for a session.
+  /// exchanged for a session, or dropped because an API key makes it unused.
   bool needsCredentialExchange(Instance instance) {
-    return instance.type == InstanceType.jellyfin &&
-        _jellyfinServiceFactory(instance).hasLoginCredentials;
+    if (instance.type != InstanceType.jellyfin) return false;
+    if (_carriesUnusedBasicCredentials(instance)) return true;
+    return _jellyfinServiceFactory(instance).hasLoginCredentials;
+  }
+
+  /// Whether [instance] authenticates with an API key while still holding a
+  /// Basic credentials header, which API key mode never sends.
+  ///
+  /// Each header is checked on its own, as
+  /// [JellyfinService.withoutBasicCredentials] does, so a password listed
+  /// after another `Authorization` header is still found.
+  bool _carriesUnusedBasicCredentials(Instance instance) {
+    return instance.apiKey.isNotEmpty &&
+        instance.headers.any(
+          (header) => JellyfinService.decodeBasicCredentials([header]) != null,
+        );
   }
 
   /// Returns [instance] ready to be persisted without a password.
@@ -39,7 +55,9 @@ class JellyfinSessionService {
   ///   [Instance.userSession]; the API Key field is cleared and a Basic
   ///   credentials header is dropped. Signing in again reuses the stored
   ///   device id, so the server replaces the previous session.
-  /// - A plain API key replacing a stored session drops the session locally
+  /// - An API key drops a Basic credentials header saved next to it, since
+  ///   API key mode never sends it and the password must not be stored.
+  /// - An API key replacing a stored session drops the session locally
   ///   only; the caller signs it out once the new credentials are saved.
   /// - Anything else is returned unchanged.
   ///
@@ -57,15 +75,20 @@ class JellyfinSessionService {
       );
     }
 
-    if (instance.apiKey.isNotEmpty && instance.userSession != null) {
-      logger.info(
-        '[JellyfinSessionService] API key replaces the stored session; '
-        'dropping it locally until the new key is saved',
-      );
-      return instance.copyWith(clearUserSession: true);
-    }
+    if (instance.apiKey.isEmpty) return instance;
 
-    return instance;
+    final withoutPassword = _carriesUnusedBasicCredentials(instance)
+        ? instance.copyWith(
+            headers: JellyfinService.withoutBasicCredentials(instance.headers),
+          )
+        : instance;
+    if (withoutPassword.userSession == null) return withoutPassword;
+
+    logger.info(
+      '[JellyfinSessionService] API key replaces the stored session; '
+      'dropping it locally until the new key is saved',
+    );
+    return withoutPassword.copyWith(clearUserSession: true);
   }
 
   /// Signs the stored session of [instance] out on the server, logging

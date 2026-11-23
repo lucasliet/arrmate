@@ -1,4 +1,8 @@
+import 'package:arrmate/core/utils/formatters.dart';
+import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
+import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/screens/activity/providers/qbittorrent_provider.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sheet.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_list_item.dart';
 import 'package:arrmate/presentation/shared/providers/media_torrents_provider.dart';
@@ -6,7 +10,24 @@ import 'package:arrmate/presentation/shared/widgets/media_torrents_section.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import '../../../helpers/localized_app.dart';
+
+/// Notifier standing in for qBittorrent: it accepts a pause at once and
+/// records it, without any network or polling.
+class _PauseRecordingNotifier extends QBittorrentNotifier {
+  final List<String> pausedHashes = [];
+
+  @override
+  Future<List<Torrent>> build() async => const [];
+
+  @override
+  Future<void> pauseTorrents(List<String> hashes) async {
+    pausedHashes.addAll(hashes);
+  }
+}
+
+class _MockQBittorrentService extends Mock implements QBittorrentService {}
 
 /// Stand-in for the real reverse-lookup providers.
 final _stubProvider = FutureProvider.autoDispose<MediaTorrents>(
@@ -30,7 +51,10 @@ void main() {
       // Then
       expect(find.text('Torrents'), findsOneWidget);
       expect(find.byType(TorrentListItem), findsNWidgets(2));
-      expect(find.text('Arrival.2016.1080p'), findsOneWidget);
+      expect(
+        find.text(softWrapReleaseName('Arrival.2016.1080p')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('should stay hidden when no download client is configured', (
@@ -82,9 +106,15 @@ void main() {
       );
 
       // Then the pack shows up too, the other episode does not
-      expect(find.text('Severance.S01E05'), findsOneWidget);
-      expect(find.text('Severance.S01.1080p'), findsOneWidget);
-      expect(find.text('Severance.S01E06'), findsNothing);
+      expect(
+        find.text(softWrapReleaseName('Severance.S01E05')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(softWrapReleaseName('Severance.S01.1080p')),
+        findsOneWidget,
+      );
+      expect(find.text(softWrapReleaseName('Severance.S01E06')), findsNothing);
     });
 
     testWidgets('should open the torrent details without a library shortcut', (
@@ -110,6 +140,94 @@ void main() {
       expect(sheet.torrent.hash, 'aabb');
       expect(find.text('Open in library'), findsNothing);
     });
+
+    testWidgets(
+      'should reload once the client reports a pause made from the sheet',
+      (tester) async {
+        // Given a client that reports the pause only when asked a second
+        // time, on a view tall enough to build the sheet actions
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(800, 2400);
+        addTearDown(tester.view.reset);
+        final notifier = _PauseRecordingNotifier();
+        var loads = 0;
+        var clientReads = 0;
+        final service = _MockQBittorrentService();
+        when(service.getTorrents).thenAnswer((_) async {
+          clientReads++;
+          return [
+            _linked(
+              hash: 'aabb',
+              name: 'Arrival.2016.1080p',
+              status: clientReads >= 2
+                  ? TorrentStatus.pausedUP
+                  : TorrentStatus.uploading,
+            ).torrent,
+          ];
+        });
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              qbittorrentTorrentsProvider.overrideWith(() => notifier),
+              qbittorrentServiceProvider.overrideWithValue(service),
+              _stubProvider.overrideWith((ref) async {
+                loads++;
+                return MediaTorrents(
+                  torrents: [
+                    _linked(
+                      hash: 'aabb',
+                      name: 'Arrival.2016.1080p',
+                      status: clientReads >= 2
+                          ? TorrentStatus.pausedUP
+                          : TorrentStatus.uploading,
+                    ),
+                  ],
+                );
+              }),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              locale: testLocale,
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MediaTorrentsSection(provider: _stubProvider),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(TorrentListItem));
+        await tester.pumpAndSettle();
+
+        // When
+        await tester.tap(find.text('Pause'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // Then
+        expect(notifier.pausedHashes, ['aabb']);
+        expect(clientReads, 2);
+        expect(loads, 2);
+        expect(
+          tester
+              .widget<TorrentListItem>(find.byType(TorrentListItem))
+              .torrent
+              .status,
+          TorrentStatus.pausedUP,
+        );
+
+        // When the state is confirmed
+        await tester.pump(const Duration(seconds: 5));
+
+        // Then the client is left alone and the list is not reloaded again
+        expect(clientReads, 2);
+        expect(loads, 2);
+      },
+    );
   });
 }
 
@@ -144,6 +262,7 @@ LinkedTorrent _linked({
   required String hash,
   required String name,
   Set<int> episodeIds = const {},
+  TorrentStatus status = TorrentStatus.uploading,
 }) {
   return LinkedTorrent(
     torrent: Torrent(
@@ -155,7 +274,7 @@ LinkedTorrent _linked({
       upspeed: 0,
       eta: 0,
       ratio: 1,
-      status: TorrentStatus.uploading,
+      status: status,
       state: 'uploading',
       tags: const [],
       savePath: '/downloads',

@@ -221,6 +221,13 @@ class WatchingListItem extends ConsumerWidget {
         );
   }
 
+  /// Selects the item's instance and pushes its details over Activity, so
+  /// back returns to the Watching tab.
+  ///
+  /// A repeated tap is ignored while the details are already on top, since
+  /// `push` would stack a second copy. The push is imperative, like the
+  /// other pages opened over a tab, so on web the address bar keeps
+  /// `/activity` and a reload returns there.
   Future<void> _openInLibrary(BuildContext context, WidgetRef ref) async {
     try {
       await ref
@@ -236,12 +243,18 @@ class WatchingListItem extends ConsumerWidget {
     }
     if (!context.mounted) return;
 
-    if (item.movie != null) {
-      context.go('/movies/${item.movie!.id}');
-      return;
-    }
-    if (item.series != null) {
-      context.go('/series/${item.series!.id}');
-    }
+    final detailsLocation = _detailsLocation();
+    if (detailsLocation == null) return;
+    final router = GoRouter.of(context);
+    if (router.state.uri.path == detailsLocation) return;
+    router.push(detailsLocation);
+  }
+
+  /// Library details route of the matched movie or series, or null when the
+  /// item has neither.
+  String? _detailsLocation() {
+    if (item.movie != null) return '/movies/${item.movie!.id}';
+    if (item.series != null) return '/series/${item.series!.id}';
+    return null;
   }
 }

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +20,7 @@ import '../../shared/widgets/releases_sheet.dart';
 import '../../shared/widgets/seeding_warning_dialog.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/media/poster_viewer.dart';
+import '../../widgets/poster_network_image.dart';
 import 'providers/series_metadata_provider.dart';
 import 'providers/series_provider.dart';
 import 'season_details_screen.dart';
@@ -95,11 +95,12 @@ class SeriesDetailsScreen extends ConsumerWidget {
               fit: StackFit.expand,
               children: [
                 if (backgroundImageUrl != null)
-                  CachedNetworkImage(
+                  PosterNetworkImage(
                     imageUrl: backgroundImageUrl,
                     httpHeaders: backgroundHeaders,
                     fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => Container(
+                    placeholderBuilder: (context) => const SizedBox.shrink(),
+                    errorBuilder: (context) => Container(
                       color: theme.colorScheme.surfaceContainerHighest,
                     ),
                   )

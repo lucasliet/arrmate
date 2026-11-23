@@ -320,6 +320,12 @@ class MediaLabChecks(unittest.TestCase):
         torrent = api("qbit", "/api/v2/torrents/info", query={"hashes": infohash})[0]
         self.assertEqual(torrent["state"], "stoppedDL")
         self.assertEqual(torrent["save_path"], "/downloads/api-check")
+        # A magnet added stopped has no metadata, so there is nothing to export.
+        self.assertFalse(torrent["has_metadata"])
+        api("qbit", "/api/v2/torrents/export", query={"hash": infohash}, status=409)
+        exported = api("qbit", "/api/v2/torrents/export", query={"hash": "a" * 40})
+        self.assertTrue(exported.startswith(b"d8:announce"))
+        api("qbit", "/api/v2/torrents/export", query={"hash": "0" * 40}, status=404)
         api("qbit", "/api/v2/torrents/delete", method="POST", form={"hashes": infohash, "deleteFiles": "false"})
         self.assertEqual(api("qbit", "/api/v2/torrents/info", query={"hashes": infohash}), [])
 

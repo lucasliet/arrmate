@@ -77,6 +77,8 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
     - Botão "Files" (ícone de pasta) para listar e gerenciar arquivos.
     - Botão "Move" (ícone de seta) para mudar localização no disco.
     - Botão "Trackers" abre um sheet com os announce URLs do torrent (host, status, seeds/leechers/peers, tier e mensagem de erro) e as linhas DHT, PeX e LSD. A URL completa pode ser selecionada para copiar.
+    - Botão "Copy Magnet" copia o magnet link do torrent para a área de transferência e fecha a ficha. Fica desabilitado se o servidor não informar o magnet.
+    - Botão "Export .torrent" baixa o arquivo `.torrent` do qBittorrent e abre o diálogo de salvar do sistema (no navegador, inicia o download). Requer qBittorrent 4.5.0 ou mais novo; em versões anteriores a ação falha com erro. O botão fica desabilitado enquanto o qBittorrent não tem os metadados de um magnet, mesmo com o torrent pausado (o arquivo `.torrent` ainda não existe). No Linux sem um portal de desktop (ex.: `xdg-desktop-portal-gtk`) ou sem o barramento de sessão D-Bus, o app avisa que a janela de arquivos do sistema não está disponível; o mesmo vale para exportar e importar backup e para escolher um `.torrent` ao adicionar.
     - Se 100% completo: botão "Import to Media Library" (para importar para Radarr/Sonarr).
     - Botão "Remove Torrent" (texto em vermelho, destrutivo).
 
@@ -103,11 +105,11 @@ A aba Torrents mostra **todos os torrents do qBittorrent** configurado:
    - O botão "+" some e aparece a barra inferior com **"Delete with files"** (vermelho).
 5. Tocar **"Delete with files"** → diálogo **"Delete N torrents"** → **Confirm**.
 6. **Aviso de seeding (mesma regra do Purge da biblioteca):** se algum torrent selecionado semeou menos que o mínimo de dias configurado em Configurações → System Management (padrão 20 dias), aparece o diálogo **"Torrents still seeding"** listando esses torrents e o tempo semeado:
-   - **Cancel** — não exclui nada.
+   - **Cancel** — não exclui nada e mantém a seleção.
    - **Keep seeding** — exclui só os que já cumpriram o mínimo; os outros continuam no qBittorrent com seus arquivos.
    - **Delete all** — exclui todos os selecionados.
    - Com o mínimo em 0 dias o aviso não aparece.
-7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final.
+7. Snackbar confirma, ex.: **"Deleted 3 torrents and files"** ou **"Deleted 2 torrents and files (kept 1 still seeding)"**. A seleção é limpa ao final; cancelar qualquer um dos diálogos mantém a seleção, e uma exclusão que falha (nada foi removido) também a mantém para tentar de novo.
 
 **Observações:**
 - A exclusão remove o torrent do qBittorrent **e apaga os arquivos do disco** (não há opção de manter arquivos neste fluxo; para isso use "Remove Torrent" no sheet de detalhes de um torrent).

@@ -1,3 +1,4 @@
+import 'package:arrmate/core/utils/formatters.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/screens/activity/activity_screen.dart';
 import 'package:arrmate/presentation/screens/activity/qbittorrent_tab.dart';
@@ -165,7 +166,10 @@ void main() {
 
     // Then
     expect(find.byKey(tourMockupBannerKey), findsOneWidget);
-    expect(find.text(TourMockData.torrents().first.name), findsOneWidget);
+    expect(
+      find.text(softWrapReleaseName(TourMockData.torrents().first.name)),
+      findsOneWidget,
+    );
     expect(find.text('No Torrents'), findsNothing);
   });
 

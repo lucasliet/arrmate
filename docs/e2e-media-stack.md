@@ -20,6 +20,10 @@ a real stack:
 - qBittorrent answers like 5.1.2: `stop`/`start` only, `stoppedDL`/`stoppedUP`
   states, the `stopped` add flag, persisted file priorities, and a recheck that
   returns to the previous state after three seconds.
+- `torrents/export` returns a bencoded `.torrent` file. A magnet added
+  stopped reports `has_metadata: false` and its export answers 409, as
+  qBittorrent does before the metadata arrives; starting it fetches the
+  metadata.
 - Jellyfin indexes the *arr files as a playable catalog: `/Items` matches names
   loosely and returns decoys the client must reject (a same-title movie with a
   different path and tmdb id, a ghost episode path Sonarr no longer has),

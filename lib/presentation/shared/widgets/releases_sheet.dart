@@ -100,25 +100,73 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
   }
 
   Future<void> _onDownload(Release release) async {
-    if (release.rejected || _grabbingGuid.value != null) return;
+    if (_grabbingGuid.value != null) return;
 
     try {
+      // A rejected release is never blocked: the user picked it on purpose, so
+      // the dialog only warns about the reasons the server gave.
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(dialogContext.l10n.releasesDownloadTitle),
-          content: Text(dialogContext.l10n.releasesGrabConfirm(release.title)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(dialogContext.l10n.commonCancel),
+        builder: (dialogContext) {
+          final l10n = dialogContext.l10n;
+          final theme = Theme.of(dialogContext);
+          return AlertDialog(
+            title: Text(l10n.releasesDownloadTitle),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.releasesGrabConfirm(release.title)),
+                  if (release.rejected) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 20,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.releasesRejectedWarning,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    for (final reason in release.rejections)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 28),
+                        child: Text(
+                          '• $reason',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                  ],
+                ],
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(dialogContext.l10n.releasesDownload),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(
+                  release.rejected
+                      ? l10n.releasesDownloadAnyway
+                      : l10n.releasesDownload,
+                ),
+              ),
+            ],
+          );
+        },
       );
       if (confirmed != true || !mounted) return;
 
@@ -160,7 +208,7 @@ class _ReleasesSheetState extends ConsumerState<ReleasesSheet> {
         valueListenable: _grabbingGuid,
         builder: (context, grabbingGuid, child) => _ReleaseDetailsSheet(
           release: release,
-          onDownload: release.rejected || grabbingGuid != null
+          onDownload: grabbingGuid != null
               ? null
               : () {
                   Navigator.of(detailsContext).pop();
@@ -634,7 +682,7 @@ class _ReleaseTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isRejected = release.rejected;
-    final canDownload = !isRejected && !isGrabbing && !isAnotherGrabRunning;
+    final canDownload = !isGrabbing && !isAnotherGrabRunning;
     final languageLabel = release.languages
         .map((language) => language.name)
         .whereType<String>()
@@ -642,14 +690,9 @@ class _ReleaseTile extends StatelessWidget {
     final l10n = context.l10n;
 
     return Opacity(
-      opacity: isRejected ? 0.55 : 1,
+      opacity: isRejected ? 0.75 : 1,
       child: ListTile(
-        title: Text(
-          release.title,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            decoration: isRejected ? TextDecoration.lineThrough : null,
-          ),
-        ),
+        title: Text(release.title, style: theme.textTheme.bodyMedium),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -713,8 +756,7 @@ class _ReleaseTile extends StatelessWidget {
               ),
           ],
         ),
-        onTap: isRejected ? null : onDetails,
-        enabled: !isRejected,
+        onTap: onDetails,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -728,7 +770,7 @@ class _ReleaseTile extends StatelessWidget {
               tooltip: isGrabbing
                   ? l10n.releasesSendingTooltip
                   : isRejected
-                  ? l10n.releasesRejectedTooltip
+                  ? l10n.releasesDownloadAnyway
                   : l10n.releasesDownloadRelease,
               onPressed: canDownload ? onDownload : null,
               icon: isGrabbing
@@ -739,7 +781,10 @@ class _ReleaseTile extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                     )
-                  : const Icon(Icons.download),
+                  : Icon(
+                      Icons.download,
+                      color: isRejected ? theme.colorScheme.error : null,
+                    ),
             ),
           ],
         ),
@@ -887,7 +932,7 @@ class _ReleaseDetailsSheet extends StatelessWidget {
                   icon: const Icon(Icons.download),
                   label: Text(
                     release.rejected
-                        ? l10n.releasesReleaseRejected
+                        ? l10n.releasesDownloadAnyway
                         : l10n.releasesDownloadRelease,
                   ),
                 ),

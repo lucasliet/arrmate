@@ -70,6 +70,10 @@ description: Adicionar/detalhes/episódios/editar/deletar série, discover busca
 - Toque em um resultado para abrir o "Series Preview" e depois "Configure Addition" (Monitor, Monitor New Seasons, Series Type, Season Folder, Quality Profile, Root Folder, Tags) — mesmas etapas do fluxo padrão.
 - Em seguida, toque em **"Add"** no canto superior direito.
 
+**Identificar a série no "Series Preview":**
+- Depois da sinopse aparece a seção **"Cast"** (elenco, com foto, nome e personagem), em uma fileira rolável na horizontal.
+- O elenco vem do servidor público de metadados do Sonarr (`skyhook.sonarr.tv`), consultado direto pelo app. Ele não informa equipe nem título original, então essas informações só existem para filmes. Sem acesso a ele, a prévia continua funcionando só com pôster, título e sinopse. Na versão web essas seções não aparecem: o navegador não consegue ler esse servidor (sem CORS), então o app nem faz a consulta.
+
 **Observações:**
 - O tipo de mídia do Discover vem do parâmetro `type` do deep link: `arrmate:///discover?type=series` ou `arrmate:///search?q=<termo>&type=series` (sem o parâmetro, o padrão é filme).
 - A extração de ID funciona para os formatos de URL mais comuns do IMDb e TVDB.
@@ -163,7 +167,7 @@ Ao tocar em uma série, abre a tela **SeriesDetailsScreen** com layout em scroll
 **AppBar da SeasonDetailsScreen:**
 - **Título**: "[Nome da série] - Season [N]".
 - **Botão "Automatic Search"** (ícone `travel_explore` no canto superior direito): dispara busca automática de releases para toda a temporada.
-- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download).
+- **Botão "Interactive Search"** (ícone `troubleshoot` no canto superior direito): abre a busca manual de releases da temporada (lista de releases com ordenação e ação de download). Releases rejeitadas pelo Sonarr também podem ser baixadas: o diálogo de confirmação lista os motivos da rejeição como aviso e o botão vira **"Download anyway"**.
 - **Botão "Delete season files"** (ícone `delete_sweep` no canto superior direito): apaga todos os arquivos dessa temporada em disco. **Desabilitado** (acinzentado) quando a temporada não tem nenhum episódio com arquivo baixado.
 - **Botão "Purge season"** (ícone `delete_forever` no canto superior direito): remove episódios e arquivos da temporada no Sonarr e também remove torrents fonte no qBittorrent (com aprovação individual de cross-seed).
 

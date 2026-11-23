@@ -122,6 +122,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const _seriesSortKey = 'series_sort';
   static const _minimumSeedingDaysKey = 'minimum_seeding_days';
 
+  /// Highest value accepted for the minimum seeding days threshold.
+  static const maxMinimumSeedingDays = 60;
+
   @override
   SettingsState build() {
     _loadSettings();
@@ -280,8 +283,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   /// Sets and persists the minimum seeding days threshold used by Purge to
   /// decide whether to warn before deleting still-seeding torrents.
+  ///
+  /// [days] is clamped to 0..[maxMinimumSeedingDays]; 0 turns the warning off.
   Future<void> setMinimumSeedingDays(int days) async {
-    final clamped = days.clamp(1, 60);
+    final clamped = days.clamp(0, maxMinimumSeedingDays);
     state = state.copyWith(minimumSeedingDays: clamped);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_minimumSeedingDaysKey, clamped);

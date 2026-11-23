@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../domain/models/models.dart';
+import '../../../providers/data_providers.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/seeding_warning_dialog.dart';
 import '../providers/qbittorrent_provider.dart';
+import '../providers/torrent_file_providers.dart';
 import '../qbittorrent/change_location_sheet.dart';
 import '../qbittorrent/torrent_files_sheet.dart';
 import '../qbittorrent/torrent_peers_sheet.dart';
@@ -27,11 +30,19 @@ class TorrentDetailsSheet extends ConsumerWidget {
   /// user is already on the media the button would navigate to.
   final bool showOpenInLibrary;
 
+  /// Called after the server accepted a pause (`true`) or a resume (`false`).
+  ///
+  /// The torrents tab follows the change through
+  /// [qbittorrentTorrentsProvider]; a caller listing torrents from another
+  /// source uses this to reload it.
+  final ValueChanged<bool>? onPausedChanged;
+
   const TorrentDetailsSheet({
     super.key,
     required this.torrent,
     this.link,
     this.showOpenInLibrary = true,
+    this.onPausedChanged,
   });
 
   @override
@@ -85,7 +96,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      torrent.name,
+                      softWrapReleaseName(torrent.name),
                       style: context.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -285,11 +296,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               ? FilledButton.icon(
                                   onPressed: () => _runTorrentAction(
                                     context,
-                                    () => ref
-                                        .read(
-                                          qbittorrentTorrentsProvider.notifier,
-                                        )
-                                        .resumeTorrents([torrent.hash]),
+                                    () => _setPaused(ref, paused: false),
                                   ),
                                   icon: const Icon(Icons.play_arrow),
                                   label: Text(context.l10n.torrentResume),
@@ -297,11 +304,7 @@ class TorrentDetailsSheet extends ConsumerWidget {
                               : FilledButton.icon(
                                   onPressed: () => _runTorrentAction(
                                     context,
-                                    () => ref
-                                        .read(
-                                          qbittorrentTorrentsProvider.notifier,
-                                        )
-                                        .pauseTorrents([torrent.hash]),
+                                    () => _setPaused(ref, paused: true),
                                   ),
                                   icon: const Icon(Icons.pause),
                                   label: Text(context.l10n.torrentPause),
@@ -372,6 +375,34 @@ class TorrentDetailsSheet extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const ValueKey('torrent-copy-magnet-button'),
+                            onPressed: torrent.magnetUri.isEmpty
+                                ? null
+                                : () => _copyMagnetLink(context),
+                            icon: const Icon(Icons.link),
+                            label: Text(context.l10n.torrentCopyMagnet),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const ValueKey('torrent-export-file-button'),
+                            // The client has no .torrent file to hand over
+                            // until it holds the metadata.
+                            onPressed: torrent.lacksMetadata
+                                ? null
+                                : () => _exportTorrentFile(context, ref),
+                            icon: const Icon(Icons.file_download_outlined),
+                            label: Text(context.l10n.torrentExportFile),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     if (torrent.isComplete)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -430,6 +461,47 @@ class TorrentDetailsSheet extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => TorrentPeersSheet(torrent: torrent),
     );
+  }
+
+  /// Copies the magnet link to the clipboard and closes the sheet, so the
+  /// confirmation is not hidden behind it.
+  Future<void> _copyMagnetLink(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    await Clipboard.setData(ClipboardData(text: torrent.magnetUri));
+    // A sheet dismissed meanwhile must not pop the route underneath it.
+    if (context.mounted && navigator.canPop()) navigator.pop();
+    messenger.showSnackBar(SnackBar(content: Text(l10n.torrentMagnetCopied)));
+  }
+
+  /// Downloads the `.torrent` file from the client and saves it through the
+  /// platform save dialog.
+  ///
+  /// The sheet stays open when the dialog is dismissed or the export fails.
+  Future<void> _exportTorrentFile(BuildContext context, WidgetRef ref) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    final service = ref.read(qbittorrentServiceProvider);
+    final exporter = ref.read(torrentFileExportServiceProvider);
+    if (service == null) return;
+    try {
+      final bytes = await service.exportTorrent(torrent.hash);
+      // Dismissing the sheet while the server answers cancels the export.
+      if (!context.mounted) return;
+      final fileName = await exporter.saveTorrentFile(torrent.name, bytes);
+      if (fileName == null) return;
+      // A sheet dismissed meanwhile must not pop the route underneath it.
+      if (context.mounted && navigator.canPop()) navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.torrentFileExported)));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.torrentActionFailed(describeError(e, l10n))),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -851,6 +923,18 @@ class TorrentDetailsSheet extends ConsumerWidget {
       return context.colorScheme.secondary;
     }
     return context.colorScheme.primary;
+  }
+
+  /// Pauses or resumes this torrent and reports it through
+  /// [onPausedChanged] once the server accepted the request.
+  Future<void> _setPaused(WidgetRef ref, {required bool paused}) async {
+    final notifier = ref.read(qbittorrentTorrentsProvider.notifier);
+    if (paused) {
+      await notifier.pauseTorrents([torrent.hash]);
+    } else {
+      await notifier.resumeTorrents([torrent.hash]);
+    }
+    onPausedChanged?.call(paused);
   }
 
   String _formatDate(int timestamp) {

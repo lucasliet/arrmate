@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 
 class AddTorrentRequest extends Equatable {
@@ -6,7 +8,16 @@ class AddTorrentRequest extends Equatable {
   final String? urls;
 
   /// Absolute path to the .torrent file to upload.
+  ///
+  /// Unused when [torrentFileBytes] is set. The web has no file paths, so
+  /// there the picked file only exists as bytes.
   final String? torrentFilePath;
+
+  /// Contents of the .torrent file to upload, when already read.
+  final Uint8List? torrentFileBytes;
+
+  /// File name sent with [torrentFileBytes].
+  final String? torrentFileName;
 
   /// Path to save the torrent files.
   final String? savepath;
@@ -26,6 +37,8 @@ class AddTorrentRequest extends Equatable {
   const AddTorrentRequest({
     this.urls,
     this.torrentFilePath,
+    this.torrentFileBytes,
+    this.torrentFileName,
     this.savepath,
     this.category,
     this.tags,
@@ -33,9 +46,12 @@ class AddTorrentRequest extends Equatable {
     this.skipChecking = false,
   });
 
-  /// Validates if the request has either URLs or a file path.
-  bool get isValid =>
-      (urls != null && urls!.isNotEmpty) || torrentFilePath != null;
+  /// Whether the request carries a .torrent file, by path or by contents.
+  bool get hasTorrentFile =>
+      torrentFilePath != null || torrentFileBytes != null;
+
+  /// Validates if the request has either URLs or a .torrent file.
+  bool get isValid => (urls != null && urls!.isNotEmpty) || hasTorrentFile;
 
   /// Builds the `/api/v2/torrents/add` form fields.
   ///
@@ -58,6 +74,8 @@ class AddTorrentRequest extends Equatable {
   List<Object?> get props => [
     urls,
     torrentFilePath,
+    torrentFileBytes,
+    torrentFileName,
     savepath,
     category,
     tags,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -486,6 +487,512 @@ void main() {
     });
   });
 
+  group('QBittorrentService browser session', () {
+    int infoRequests(_RecordingAdapter adapter) => adapter.requests
+        .where((uri) => uri.path == '/api/v2/torrents/info')
+        .length;
+
+    _RecordingAdapter browserAdapter() =>
+        _RecordingAdapter()..hideSessionCookie = true;
+
+    test('should explain that the browser did not keep the session when '
+        'requests are rejected after an accepted login', () async {
+      // Given a login the server accepts and requests it keeps rejecting
+      final adapter = browserAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When / Then
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+
+      // And it logged in once to start and once to renew, without looping
+      expect(adapter.loginCount, 2);
+      expect(infoRequests(adapter), 2);
+    });
+
+    test('should stop asking the server once the browser session is known '
+        'to be unavailable, until a retry is allowed', () async {
+      // Given a session the browser did not keep
+      final adapter = browserAdapter()..respond = (_) => 403;
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+      final requestsAfterFailure = adapter.requests.length;
+
+      // When something keeps polling
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserSessionUnavailableError>()),
+      );
+
+      // Then the server never hears from the client again
+      expect(adapter.loginCount, 2);
+      expect(adapter.requests.length, requestsAfterFailure);
+
+      // And a retry the user asked for logs in exactly once more
+      adapter.respond = null;
+      service.allowAuthenticationRetry();
+      expect(await service.getTorrents(), hasLength(1));
+      expect(adapter.loginCount, 3);
+    });
+
+    test(
+      'should send the browser credentials and never a Cookie header',
+      () async {
+        // Given a server that exposes the cookie, which a browser would hide
+        final adapter = _RecordingAdapter();
+        final service = _serviceCookie(adapter, browserManagedSession: true);
+
+        // When
+        await service.getTorrents();
+
+        // Then
+        expect(adapter.options, hasLength(2));
+        for (final options in adapter.options) {
+          expect(options.extra['withCredentials'], isTrue);
+          expect(
+            options.headers.keys.map((name) => name.toLowerCase()),
+            isNot(contains('cookie')),
+          );
+        }
+      },
+    );
+
+    test('should log in once when the server accepts the session the browser '
+        'keeps', () async {
+      // Given
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When
+      final first = await service.getTorrents();
+      final second = await service.getTorrents();
+
+      // Then
+      expect(first, hasLength(1));
+      expect(second, hasLength(1));
+      expect(adapter.loginCount, 1);
+    });
+
+    test('should log in once for requests that expire together', () async {
+      // Given a session that expires once
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await service.getTorrents();
+      var rejections = 3;
+      adapter.respond = (_) => rejections-- > 0 ? 403 : null;
+
+      // When
+      final results = await Future.wait([
+        service.getTorrents(),
+        service.getTorrents(),
+        service.getTorrents(),
+      ]);
+
+      // Then
+      expect(results.every((torrents) => torrents.length == 1), isTrue);
+      expect(adapter.loginCount, 2);
+    });
+
+    test('should fail only the call when an endpoint keeps answering 403 on a '
+        'session the browser kept', () async {
+      // Given a working browser session and one endpoint that refuses
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await service.getTorrents();
+      adapter.respond = (options) =>
+          options.uri.path == '/api/v2/torrents/setLocation' ? 403 : null;
+
+      // When
+      await expectLater(
+        service.setTorrentLocation(['hash'], '/read-only'),
+        throwsA(
+          isA<UnauthorizedError>().having(
+            (error) => error,
+            'error',
+            isNot(isA<BrowserSessionUnavailableError>()),
+          ),
+        ),
+      );
+
+      // Then the session is still good for every other request
+      expect(await service.getTorrents(), hasLength(1));
+      expect(adapter.loginCount, 2);
+    });
+
+    test('should explain a login the browser could not read from another '
+        'origin and stop logging in', () async {
+      // Given a qBittorrent on another origin whose answers the browser blocks
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When / Then
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+      final requestsAfterFailure = adapter.requests.length;
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+      expect(adapter.requests.length, requestsAfterFailure);
+
+      // And a retry the user asked for reaches the server again
+      adapter.unavailableHosts.clear();
+      service.allowAuthenticationRetry();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should explain a blocked cross-origin login to the connection '
+        'test', () async {
+      // Given
+      final adapter = browserAdapter()..unavailableHosts.add('primary.test');
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When / Then
+      await expectLater(
+        service.authenticate(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+    });
+
+    test('should keep a plain connection error when a cross-origin '
+        'qBittorrent that already answered becomes unreachable', () async {
+      // Given a cross-origin session the browser already proved it can read
+      final adapter = browserAdapter();
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+      await service.getTorrents();
+      adapter.unavailableHosts.addAll({'primary.test', 'alternative.test'});
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+
+      // Then the next request reaches the server without a user retry
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should keep a plain connection error when a cross-origin '
+        'qBittorrent that never answered is down', () async {
+      // Given a cross-origin qBittorrent the browser cannot reach at all
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final probedUrls = <String>[];
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (url) async {
+          probedUrls.add(url);
+          return false;
+        },
+      );
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+
+      // Then the next request reaches the server without a user retry
+      expect(
+        probedUrls,
+        unorderedEquals(['https://primary.test', 'https://alternative.test']),
+      );
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should report the browser block when the primary answers the '
+        'browser and only the alternative is down', () async {
+      // Given a primary the browser refuses to read and a dead alternative
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (url) async => url == 'https://primary.test',
+      );
+
+      // When
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+
+      // Then no further login is sent until the user retries
+      adapter.requests.clear();
+      await expectLater(
+        service.getTorrents(),
+        throwsA(isA<BrowserCrossOriginBlockedError>()),
+      );
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('should keep a plain connection error when another request is '
+        'accepted while the server is being probed', () async {
+      // Given a failed cross-origin request still waiting for its probe
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final probe = Completer<bool>();
+      final probeStarted = Completer<void>();
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        browserReachability: (_) {
+          if (!probeStarted.isCompleted) probeStarted.complete();
+          return probe.future;
+        },
+      );
+      final failed = expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+      await probeStarted.future;
+
+      // When another request proves the browser reads the answers
+      adapter.unavailableHosts.clear();
+      expect(await service.getTorrents(), hasLength(1));
+      probe.complete(true);
+      await failed;
+
+      // Then nothing was refused for good
+      expect(await service.getTorrents(), hasLength(1));
+    });
+
+    test('should still fail over when the first cross-origin candidate is '
+        'unreachable', () async {
+      // Given
+      final adapter = browserAdapter()..unavailableHosts.add('primary.test');
+      final service = _serviceCookie(adapter, browserManagedSession: true);
+
+      // When
+      final torrents = await service.getTorrents();
+
+      // Then
+      expect(torrents, hasLength(1));
+      expect(adapter.requests.last.host, 'alternative.test');
+    });
+
+    test('should keep a plain connection error for a same-origin '
+        'qBittorrent', () async {
+      // Given the app served from the same origin as qBittorrent
+      final adapter = browserAdapter()
+        ..unavailableHosts.addAll({'primary.test', 'alternative.test'});
+      final service = _serviceCookie(
+        adapter,
+        browserManagedSession: true,
+        pageUri: Uri.parse('https://primary.test/arrmate/'),
+        alternativeUrl: null,
+      );
+
+      // When / Then
+      await expectLater(
+        service.getTorrents(),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.connectionError,
+          ),
+        ),
+      );
+    });
+
+    test('should keep a plain connection error outside a browser', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        unavailableHosts: {'primary.test', 'alternative.test'},
+      );
+      final service = _serviceCookie(adapter);
+
+      // When / Then
+      await expectLater(service.getTorrents(), throwsA(isA<DioException>()));
+    });
+
+    test('should not send browser credentials with an API key', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _service(adapter, browserManagedSession: true);
+
+      // When
+      await service.getTorrents();
+
+      // Then
+      final options = adapter.options.single;
+      expect(options.extra.containsKey('withCredentials'), isFalse);
+      expect(options.headers['Authorization'], 'Bearer bearer-token');
+    });
+
+    test('should keep sending the Cookie header outside a browser', () async {
+      // Given
+      final adapter = _RecordingAdapter();
+      final service = _serviceCookie(adapter);
+
+      // When
+      await service.getTorrents();
+
+      // Then
+      final options = adapter.options.last;
+      expect(options.headers['Cookie'], 'SID=session-1');
+      expect(
+        adapter.options.any((o) => o.extra.containsKey('withCredentials')),
+        isFalse,
+      );
+    });
+  });
+
+  group('QBittorrentService torrent sharing', () {
+    test('should read the magnet link of a listed torrent', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {
+          '/api/v2/torrents/info': jsonEncode([
+            {
+              'hash': 'abc',
+              'name': 'Movie 2024',
+              'magnet_uri': 'magnet:?xt=urn:btih:abc&dn=Movie%202024',
+            },
+            {'hash': 'def', 'name': 'No Magnet'},
+          ]),
+        },
+      );
+      final service = _service(adapter);
+
+      // When
+      final torrents = await service.getTorrents();
+
+      // Then
+      expect(torrents.map((torrent) => torrent.magnetUri), [
+        'magnet:?xt=urn:btih:abc&dn=Movie%202024',
+        '',
+      ]);
+    });
+
+    test('should tell a magnet without metadata from the rest', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {
+          '/api/v2/torrents/info': jsonEncode([
+            {
+              'hash': 'abc',
+              'name': 'Paused magnet',
+              'state': 'stoppedDL',
+              'has_metadata': false,
+            },
+            {'hash': 'def', 'name': 'Fetching', 'state': 'forcedMetaDL'},
+            {'hash': 'ghi', 'name': 'Old client', 'state': 'downloading'},
+          ]),
+        },
+      );
+      final service = _service(adapter);
+
+      // When
+      final torrents = await service.getTorrents();
+
+      // Then
+      expect(torrents.map((torrent) => torrent.lacksMetadata), [
+        true,
+        true,
+        false,
+      ]);
+    });
+
+    test(
+      'should upload a torrent file from its bytes, without a path',
+      () async {
+        // Given a file picked on the web, where no path exists
+        final adapter = _RecordingAdapter();
+        final service = _service(adapter);
+
+        // When
+        await service.addTorrentFile(
+          AddTorrentRequest(
+            torrentFileBytes: Uint8List.fromList([100, 101]),
+            torrentFileName: 'Movie 2024.torrent',
+            paused: true,
+          ),
+        );
+
+        // Then
+        final form = adapter.options.last.data as FormData;
+        expect(adapter.requests.last.path, '/api/v2/torrents/add');
+        expect(form.files.single.key, 'torrents');
+        expect(form.files.single.value.filename, 'Movie 2024.torrent');
+        expect(form.files.single.value.length, 2);
+        expect(
+          form.fields.map((field) => field.key),
+          containsAll(['paused', 'stopped']),
+        );
+      },
+    );
+
+    test('should download the torrent file from the export endpoint', () async {
+      // Given
+      final adapter = _RecordingAdapter(
+        pathBodies: {'/api/v2/torrents/export': 'd4:infod4:name5:Movieee'},
+      );
+      final service = _service(adapter);
+
+      // When
+      final bytes = await service.exportTorrent('abc');
+
+      // Then
+      expect(utf8.decode(bytes), 'd4:infod4:name5:Movieee');
+      expect(adapter.requests.last.path, '/api/v2/torrents/export');
+      expect(adapter.requests.last.queryParameters, {'hash': 'abc'});
+    });
+
+    test('should fail when the server has no export endpoint', () async {
+      // Given a qBittorrent older than 4.5.0
+      final adapter = _RecordingAdapter(
+        pathStatusCodes: {'/api/v2/torrents/export': 404},
+      );
+      final service = _service(adapter);
+
+      // When
+      final export = service.exportTorrent('abc');
+
+      // Then
+      await expectLater(
+        export,
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.response?.statusCode,
+            'status',
+            404,
+          ),
+        ),
+      );
+    });
+  });
+
   group('QBittorrentService trackers', () {
     test('should parse torrent trackers from the trackers endpoint', () async {
       final adapter = _RecordingAdapter(
@@ -521,7 +1028,10 @@ void main() {
   });
 }
 
-QBittorrentService _service(_RecordingAdapter adapter) {
+QBittorrentService _service(
+  _RecordingAdapter adapter, {
+  bool browserManagedSession = false,
+}) {
   final instance = Instance(
     id: 'qbit',
     type: InstanceType.qbittorrent,
@@ -534,23 +1044,39 @@ QBittorrentService _service(_RecordingAdapter adapter) {
     ..httpClientAdapter = adapter
     ..options.baseUrl = instance.effectiveUrl
     ..options.validateStatus = (status) => status != null && status < 500;
-  return QBittorrentService(instance, dio: dio);
+  return QBittorrentService(
+    instance,
+    dio: dio,
+    browserManagedSession: browserManagedSession,
+  );
 }
 
-QBittorrentService _serviceCookie(_RecordingAdapter adapter) {
+QBittorrentService _serviceCookie(
+  _RecordingAdapter adapter, {
+  bool browserManagedSession = false,
+  Uri? pageUri,
+  String? alternativeUrl = 'https://alternative.test',
+  Future<bool> Function(String url)? browserReachability,
+}) {
   final instance = Instance(
     id: 'qbit',
     type: InstanceType.qbittorrent,
     label: 'qBittorrent',
     url: 'https://primary.test',
-    alternativeUrl: 'https://alternative.test',
+    alternativeUrl: alternativeUrl,
     apiKey: 'user:pass',
   );
   final dio = Dio()
     ..httpClientAdapter = adapter
     ..options.baseUrl = instance.effectiveUrl
     ..options.validateStatus = (status) => status != null && status < 500;
-  return QBittorrentService(instance, dio: dio);
+  return QBittorrentService(
+    instance,
+    dio: dio,
+    browserManagedSession: browserManagedSession,
+    pageUri: pageUri,
+    browserReachability: browserReachability ?? (_) async => true,
+  );
 }
 
 class _RecordingAdapter implements HttpClientAdapter {
@@ -566,6 +1092,13 @@ class _RecordingAdapter implements HttpClientAdapter {
 
   final List<Uri> requests = [];
   final List<String> methods = [];
+
+  /// Options of every request received, to inspect headers and extras.
+  final List<RequestOptions> options = [];
+
+  /// Whether the login answers without a readable `set-cookie`, the way a
+  /// browser exposes it.
+  bool hideSessionCookie = false;
 
   /// Answers a non-login request with this status; `null` answers normally.
   int? Function(RequestOptions options)? respond;
@@ -596,6 +1129,7 @@ class _RecordingAdapter implements HttpClientAdapter {
     final uri = options.uri;
     requests.add(uri);
     methods.add(options.method);
+    this.options.add(options);
     // Lets requests started together interleave, like they do on a network.
     await Future<void>.delayed(Duration.zero);
 
@@ -631,7 +1165,8 @@ class _RecordingAdapter implements HttpClientAdapter {
         statusCode,
         headers: {
           Headers.contentTypeHeader: [Headers.textPlainContentType],
-          'set-cookie': ['SID=session-$loginCount; Path=/'],
+          if (!hideSessionCookie)
+            'set-cookie': ['SID=session-$loginCount; Path=/'],
         },
       );
     }

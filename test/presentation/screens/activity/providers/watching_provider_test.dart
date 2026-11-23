@@ -468,6 +468,99 @@ void main() {
     );
 
     test(
+      'keeps the poster URL and the media instance after the Watching refetch',
+      () async {
+        // Given
+        const moviePoster = 'https://image.tmdb.org/t/p/w500/dune.jpg';
+        const seriesPoster = 'https://artworks.thetvdb.com/severance.jpg';
+        final jellyfinService = _MockJellyfinService();
+        when(() => jellyfinService.instance).thenReturn(jellyfinInstance);
+        when(() => jellyfinService.getResumeItems()).thenAnswer(
+          (_) async => [
+            _jellyfinMovie(
+              id: 'jf-dune',
+              name: 'Dune',
+              providerIds: const {'Tmdb': '438631'},
+            ),
+            _jellyfinEpisode(
+              id: 'jf-sev',
+              name: 'Good News About Hell',
+              seriesName: 'Severance',
+              seasonNumber: 1,
+              episodeNumber: 1,
+            ),
+          ],
+        );
+        when(
+          () => jellyfinService.getNextUpItems(),
+        ).thenAnswer((_) async => const []);
+
+        final movieRepo = _MockMovieRepository();
+        when(() => movieRepo.getMovies()).thenAnswer(
+          (_) async => [
+            _movie(
+              id: 7,
+              title: 'Dune',
+              year: 2021,
+              tmdbId: 438631,
+              posterUrl: moviePoster,
+            ),
+          ],
+        );
+
+        final seriesRepo = _MockSeriesRepository();
+        when(() => seriesRepo.getSeries()).thenAnswer(
+          (_) async => [
+            _series(
+              id: 9,
+              title: 'Severance',
+              path: '/tv/Severance',
+              posterUrl: seriesPoster,
+            ),
+          ],
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            currentJellyfinInstanceProvider.overrideWithValue(jellyfinInstance),
+            instancesByTypeProvider(
+              InstanceType.radarr,
+            ).overrideWithValue([radarrInstance]),
+            instancesByTypeProvider(
+              InstanceType.sonarr,
+            ).overrideWithValue([sonarrInstance]),
+            playbackLaunchServiceProvider.overrideWithValue(
+              PlaybackLaunchService(
+                jellyfinServiceFactory: (_) => jellyfinService,
+              ),
+            ),
+            movieRepositoryForInstanceProvider(
+              radarrInstance,
+            ).overrideWithValue(movieRepo),
+            seriesRepositoryForInstanceProvider(
+              sonarrInstance,
+            ).overrideWithValue(seriesRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(watchingItemsProvider.future);
+
+        // When
+        container.invalidate(watchingItemsProvider);
+        final feed = await container.read(watchingItemsProvider.future);
+
+        // Then
+        final items = feed.continueWatching;
+        expect(items, hasLength(2));
+        expect(items[0].movie?.remotePoster, moviePoster);
+        expect(items[0].mediaInstance, radarrInstance);
+        expect(items[1].series?.remotePoster, seriesPoster);
+        expect(items[1].mediaInstance, sonarrInstance);
+        verify(() => jellyfinService.getResumeItems()).called(2);
+      },
+    );
+
+    test(
       'marks Jellyfin session as expired and returns empty list on UnauthorizedError',
       () async {
         // Given
@@ -727,6 +820,7 @@ Movie _movie({
   String? imdbId,
   String? path,
   String? filePath,
+  String? posterUrl,
 }) {
   return Movie.fromJson({
     'id': id,
@@ -743,6 +837,7 @@ Movie _movie({
     'sizeOnDisk': 1000,
     'added': '2024-01-01T00:00:00.000Z',
     'path': ?path,
+    if (posterUrl != null) 'images': _posterImages(posterUrl),
     if (filePath != null)
       'movieFile': {
         'id': id * 10,
@@ -759,6 +854,7 @@ Series _series({
   required String title,
   String? path,
   int year = 2022,
+  String? posterUrl,
 }) {
   return Series.fromJson({
     'id': id,
@@ -774,8 +870,17 @@ Series _series({
     'runtime': 50,
     'added': '2024-01-01T00:00:00.000Z',
     'path': ?path,
+    if (posterUrl != null) 'images': _posterImages(posterUrl),
   });
 }
+
+List<Map<String, dynamic>> _posterImages(String remoteUrl) => [
+  {
+    'coverType': 'poster',
+    'url': '/MediaCover/poster.jpg',
+    'remoteUrl': remoteUrl,
+  },
+];
 
 JellyfinItem _jellyfinMovie({
   required String id,

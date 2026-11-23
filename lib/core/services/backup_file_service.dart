@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import 'backup_file_writer.dart';
+import 'file_dialog.dart';
 import 'logger_service.dart';
 
 /// Moves backups through local files: saving a payload through the platform
@@ -23,7 +25,8 @@ class BackupFileService {
   /// Opens the platform save dialog and writes [encodedJson] to the chosen
   /// location.
   ///
-  /// Returns the exported file name, or null when the dialog was aborted. On
+  /// Returns the name the file was saved under, or null when the dialog was
+  /// aborted. On
   /// the web the download starts immediately and the chosen name is returned
   /// even though no path exists. Android and iOS write the picked document
   /// themselves from the given bytes, so only desktop builds need to fill the
@@ -31,11 +34,13 @@ class BackupFileService {
   Future<String?> exportBackup(String encodedJson) async {
     final fileName = buildFileName(DateTime.now());
     final bytes = Uint8List.fromList(utf8.encode(encodedJson));
-    final path = await FilePicker.platform.saveFile(
-      fileName: fileName,
-      type: FileType.custom,
-      allowedExtensions: const [fileExtension],
-      bytes: bytes,
+    final path = await guardFileDialog(
+      () => FilePicker.platform.saveFile(
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const [fileExtension],
+        bytes: bytes,
+      ),
     );
     if (path == null && !kIsWeb) return null;
     final writesNativeFile =
@@ -43,21 +48,28 @@ class BackupFileService {
         defaultTargetPlatform != TargetPlatform.android &&
         defaultTargetPlatform != TargetPlatform.iOS;
     if (path != null && writesNativeFile) await writeBackupFile(path, bytes);
+    // Only desktop dialogs return the path the user typed; elsewhere it is
+    // an opaque document reference.
+    final savedName = path != null && writesNativeFile
+        ? p.basename(path)
+        : fileName;
     logger.info(
       '[BackupFileService] Backup exported to ${path ?? fileName} '
       '(${bytes.length} bytes)',
     );
-    return fileName;
+    return savedName;
   }
 
   /// Opens the file picker and returns the contents of the picked backup
   /// file, or null when nothing was picked or the file has no readable
   /// content.
   Future<String?> importBackup() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const [fileExtension],
-      withData: true,
+    final result = await guardFileDialog(
+      () => FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const [fileExtension],
+        withData: true,
+      ),
     );
     final files = result?.files;
     if (files == null || files.isEmpty) return null;

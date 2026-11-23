@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:arrmate/core/network/api_error.dart';
+import 'package:arrmate/core/services/file_dialog.dart';
+import 'package:arrmate/core/services/torrent_file_export_service.dart';
 import 'package:arrmate/data/api/qbittorrent_service.dart';
 import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
 import 'package:arrmate/presentation/screens/activity/providers/torrent_file_providers.dart';
 import 'package:arrmate/presentation/screens/activity/widgets/torrent_details_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +17,27 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/localized_app.dart';
 
 class MockQBittorrentService extends Mock implements QBittorrentService {}
+
+class _FakeTorrentFileExportService extends TorrentFileExportService {
+  _FakeTorrentFileExportService({
+    this.aborted = false,
+    this.dialogUnavailable = false,
+  });
+
+  final bool aborted;
+  final bool dialogUnavailable;
+  String? savedName;
+  Uint8List? savedBytes;
+
+  @override
+  Future<String?> saveTorrentFile(String torrentName, Uint8List bytes) async {
+    if (dialogUnavailable) throw const FileDialogUnavailableError();
+    if (aborted) return null;
+    savedName = torrentName;
+    savedBytes = bytes;
+    return TorrentFileExportService.buildFileName(torrentName);
+  }
+}
 
 void main() {
   group('TorrentDetailsSheet', () {
@@ -61,6 +87,288 @@ void main() {
       expect(find.text('tracker.example'), findsOneWidget);
       expect(find.text('Working'), findsOneWidget);
       expect(find.text('3 seeds · 1 leecher · 4 peers'), findsOneWidget);
+    });
+
+    group('sharing the torrent', () {
+      const magnet = 'magnet:?xt=urn:btih:hash&dn=Test%20Torrent';
+      late MockQBittorrentService service;
+
+      setUp(() {
+        service = MockQBittorrentService();
+      });
+
+      Future<void> pumpSharing(
+        WidgetTester tester,
+        Torrent torrent,
+        TorrentFileExportService exporter,
+      ) {
+        return _pump(
+          tester,
+          torrent,
+          overrides: [
+            qbittorrentServiceProvider.overrideWithValue(service),
+            torrentFileExportServiceProvider.overrideWithValue(exporter),
+          ],
+        );
+      }
+
+      Future<void> tapAction(WidgetTester tester, String key) async {
+        final button = find.byKey(ValueKey(key));
+        await tester.scrollUntilVisible(button, 200);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('should copy the magnet link to the clipboard', (
+        tester,
+      ) async {
+        // Given
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await pumpSharing(
+          tester,
+          _torrent(magnetUri: magnet),
+          _FakeTorrentFileExportService(),
+        );
+
+        // When
+        await tapAction(tester, 'torrent-copy-magnet-button');
+
+        // Then
+        expect(copied, magnet);
+        expect(find.text('Magnet link copied'), findsOneWidget);
+      });
+
+      testWidgets('should disable the copy when there is no magnet link', (
+        tester,
+      ) async {
+        // Given
+        await pumpSharing(tester, _torrent(), _FakeTorrentFileExportService());
+
+        // When
+        final button = find.byKey(const ValueKey('torrent-copy-magnet-button'));
+        await tester.scrollUntilVisible(button, 200);
+
+        // Then
+        expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+      });
+
+      testWidgets(
+        'should disable the export while the metadata is being fetched',
+        (tester) async {
+          // Given
+          await pumpSharing(
+            tester,
+            _torrent(status: TorrentStatus.downloading, state: 'metaDL'),
+            _FakeTorrentFileExportService(),
+          );
+
+          // When
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+
+          // Then
+          expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+          verifyNever(() => service.exportTorrent(any()));
+        },
+      );
+
+      testWidgets(
+        'should disable the export of a paused magnet without metadata',
+        (tester) async {
+          // Given
+          await pumpSharing(
+            tester,
+            _torrent(
+              status: TorrentStatus.pausedDL,
+              state: 'stoppedDL',
+              hasMetadata: false,
+            ),
+            _FakeTorrentFileExportService(),
+          );
+
+          // When
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+
+          // Then
+          expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+        },
+      );
+
+      testWidgets('should explain a system without a file dialog', (
+        tester,
+      ) async {
+        // Given
+        when(
+          () => service.exportTorrent('hash'),
+        ).thenAnswer((_) async => Uint8List(0));
+        await pumpSharing(
+          tester,
+          _torrent(),
+          _FakeTorrentFileExportService(dialogUnavailable: true),
+        );
+
+        // When
+        await tapAction(tester, 'torrent-export-file-button');
+
+        // Then
+        expect(
+          find.textContaining('The system file dialog is not available'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('org.freedesktop'), findsNothing);
+      });
+
+      testWidgets('should save the torrent file the server exported', (
+        tester,
+      ) async {
+        // Given
+        final bytes = Uint8List.fromList([100, 101]);
+        when(
+          () => service.exportTorrent('hash'),
+        ).thenAnswer((_) async => bytes);
+        final exporter = _FakeTorrentFileExportService();
+        await pumpSharing(tester, _torrent(), exporter);
+
+        // When
+        await tapAction(tester, 'torrent-export-file-button');
+
+        // Then
+        expect(exporter.savedName, 'Test Torrent');
+        expect(exporter.savedBytes, bytes);
+        expect(find.text('Torrent file exported'), findsOneWidget);
+      });
+
+      testWidgets('should stay silent when the save dialog is dismissed', (
+        tester,
+      ) async {
+        // Given
+        when(
+          () => service.exportTorrent('hash'),
+        ).thenAnswer((_) async => Uint8List(0));
+        await pumpSharing(
+          tester,
+          _torrent(),
+          _FakeTorrentFileExportService(aborted: true),
+        );
+
+        // When
+        await tapAction(tester, 'torrent-export-file-button');
+
+        // Then
+        expect(find.text('Torrent file exported'), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
+      });
+
+      testWidgets('should say why the export failed', (tester) async {
+        // Given a server without the export endpoint
+        final request = RequestOptions(path: '/api/v2/torrents/export');
+        when(() => service.exportTorrent('hash')).thenAnswer(
+          (_) => Future.error(
+            DioException.badResponse(
+              statusCode: 404,
+              requestOptions: request,
+              response: Response<dynamic>(
+                requestOptions: request,
+                statusCode: 404,
+              ),
+            ),
+          ),
+        );
+        final exporter = _FakeTorrentFileExportService();
+        await pumpSharing(tester, _torrent(), exporter);
+
+        // When
+        await tapAction(tester, 'torrent-export-file-button');
+
+        // Then
+        expect(exporter.savedBytes, isNull);
+        expect(
+          find.textContaining('The torrent action failed'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'should keep the route underneath when the sheet closes mid-export',
+        (tester) async {
+          // Given the sheet open over a pushed route and a slow server
+          final pending = Completer<Uint8List>();
+          when(
+            () => service.exportTorrent('hash'),
+          ).thenAnswer((_) => pending.future);
+          final exporter = _FakeTorrentFileExportService();
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                qbittorrentServiceProvider.overrideWithValue(service),
+                torrentFileExportServiceProvider.overrideWithValue(exporter),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: testLocalizationsDelegates,
+                supportedLocales: testSupportedLocales,
+                locale: testLocale,
+                home: const Scaffold(body: Text('Root')),
+              ),
+            ),
+          );
+          final navigator = tester.state<NavigatorState>(
+            find.byType(Navigator),
+          );
+          navigator.push(
+            MaterialPageRoute<void>(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => TorrentDetailsSheet(torrent: _torrent()),
+                  ),
+                  child: const Text('Underneath'),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Underneath'));
+          await tester.pumpAndSettle();
+          final button = find.byKey(
+            const ValueKey('torrent-export-file-button'),
+          );
+          await tester.scrollUntilVisible(button, 200);
+          await tester.tap(button);
+          await tester.pump();
+
+          // When the sheet is dismissed before the server answers
+          navigator.pop();
+          await tester.pumpAndSettle();
+          pending.complete(Uint8List.fromList([1]));
+          await tester.pumpAndSettle();
+
+          // Then
+          expect(find.text('Underneath'), findsOneWidget);
+          expect(exporter.savedBytes, isNull);
+        },
+      );
     });
 
     group('actions the server refuses', () {
@@ -212,6 +520,8 @@ Torrent _torrent({
   int seedingTime = 0,
   TorrentStatus status = TorrentStatus.pausedUP,
   String state = 'pausedUP',
+  String magnetUri = '',
+  bool hasMetadata = true,
 }) {
   return Torrent(
     hash: 'hash',
@@ -234,5 +544,7 @@ Torrent _torrent({
     addedOn: 1234567890,
     priority: 0,
     seedingTime: seedingTime,
+    magnetUri: magnetUri,
+    hasMetadata: hasMetadata,
   );
 }

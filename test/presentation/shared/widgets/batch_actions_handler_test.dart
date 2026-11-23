@@ -3,6 +3,7 @@ import 'package:arrmate/domain/models/models.dart';
 import 'package:arrmate/domain/repositories/movie_repository.dart';
 import 'package:arrmate/domain/repositories/series_repository.dart';
 import 'package:arrmate/presentation/providers/data_providers.dart';
+import 'package:arrmate/presentation/providers/settings_provider.dart';
 import 'package:arrmate/presentation/screens/movies/providers/movies_provider.dart';
 import 'package:arrmate/presentation/screens/series/providers/series_provider.dart';
 import 'package:arrmate/presentation/shared/widgets/batch_actions_handler.dart';
@@ -288,6 +289,124 @@ void main() {
       verify(() => series.getSeries()).called(2);
     });
   });
+
+  group('bulk delete of torrents with files', () {
+    late MockQBittorrentService qb;
+    late BatchActionResult? result;
+
+    setUp(() {
+      result = null;
+      qb = MockQBittorrentService();
+      when(qb.getTorrents).thenAnswer((_) async => []);
+      when(
+        () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+      ).thenAnswer((_) async {});
+    });
+
+    /// Starts the bulk delete of one torrent that has not seeded at all, with
+    /// [minimumSeedingDays] configured, and confirms the first dialog.
+    Future<void> confirmDelete(
+      WidgetTester tester,
+      int minimumSeedingDays,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            qbittorrentServiceProvider.overrideWithValue(qb),
+            settingsProvider.overrideWith(
+              () => _FixedSeedingDaysNotifier(minimumSeedingDays),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            home: Consumer(
+              builder: (context, ref, child) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    result = await BatchActionsHandler(ref)
+                        .deleteTorrentsWithFiles(context, [
+                          _torrent(hash: 'young', name: 'Young.Release'),
+                        ]);
+                  },
+                  child: const Text('Delete torrents'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Delete torrents'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('should delete without the seeding warning when the minimum '
+        'is 0', (tester) async {
+      // When
+      await confirmDelete(tester, 0);
+
+      // Then
+      expect(find.text('Torrents still seeding'), findsNothing);
+      verify(() => qb.deleteTorrents(['young'], deleteFiles: true)).called(1);
+      expect(result!.message, 'Deleted 1 torrent and files');
+    });
+
+    testWidgets('should show the seeding warning with a 1 day minimum', (
+      tester,
+    ) async {
+      // When
+      await confirmDelete(tester, 1);
+
+      // Then
+      expect(find.text('Torrents still seeding'), findsOneWidget);
+      verifyNever(
+        () => qb.deleteTorrents(any(), deleteFiles: any(named: 'deleteFiles')),
+      );
+    });
+  });
+}
+
+class _FixedSeedingDaysNotifier extends SettingsNotifier {
+  _FixedSeedingDaysNotifier(this._minimumSeedingDays);
+
+  final int _minimumSeedingDays;
+
+  @override
+  SettingsState build() =>
+      SettingsState(minimumSeedingDays: _minimumSeedingDays);
+}
+
+/// Builds a completed torrent that seeded for [seedingTime] seconds.
+Torrent _torrent({
+  required String hash,
+  required String name,
+  int seedingTime = 0,
+}) {
+  return Torrent(
+    hash: hash,
+    name: name,
+    size: 1000,
+    progress: 1.0,
+    dlspeed: 0,
+    upspeed: 0,
+    eta: 0,
+    ratio: 1,
+    status: TorrentStatus.uploading,
+    state: 'uploading',
+    tags: const [],
+    savePath: '/downloads',
+    numSeeds: 1,
+    numLeechs: 0,
+    downloaded: 1000,
+    uploaded: 1000,
+    amountLeft: 0,
+    addedOn: 1700000000,
+    priority: 0,
+    seedingTime: seedingTime,
+  );
 }
 
 /// Makes [getQueue] answer with an empty queue.

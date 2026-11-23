@@ -1,0 +1,147 @@
+import 'dart:async';
+
+import 'package:arrmate/presentation/screens/player/playback_stop_gate.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('PlaybackStopGate', () {
+    const shortTimeout = Duration(milliseconds: 20);
+    const testLimit = Duration(seconds: 1);
+
+    test('settled completes immediately when nothing is armed', () async {
+      // Given
+      final gate = PlaybackStopGate();
+
+      // When
+      final settled = gate.settled;
+
+      // Then
+      await expectLater(settled.timeout(testLimit), completes);
+    });
+
+    test('settled waits for the tracked report', () async {
+      // Given
+      final gate = PlaybackStopGate();
+      final report = Completer<void>();
+      gate.arm();
+      gate.track(report.future);
+      var settled = false;
+      unawaited(gate.settled.then((_) => settled = true));
+      await pumpEventQueue();
+      expect(settled, isFalse);
+
+      // When
+      report.complete();
+      await pumpEventQueue();
+
+      // Then
+      expect(settled, isTrue);
+    });
+
+    test(
+      'settled completes within the timeout when the stop report hangs',
+      () async {
+        // Given
+        final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+        final hangingReport = Completer<void>();
+        gate.arm();
+        gate.track(hangingReport.future);
+
+        // When
+        final settled = gate.settled;
+
+        // Then
+        await expectLater(settled.timeout(testLimit), completes);
+        expect(hangingReport.isCompleted, isFalse);
+      },
+    );
+
+    test(
+      'settled is bounded for a hanging report tracked without arming',
+      () async {
+        // Given
+        final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+        final hangingReport = Completer<void>();
+        gate.track(hangingReport.future);
+
+        // When
+        final settled = gate.settled;
+
+        // Then
+        await expectLater(settled.timeout(testLimit), completes);
+      },
+    );
+
+    test('lateReport exposes the report that outlived the timeout', () async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      final slowReport = Completer<void>();
+      gate.arm();
+      gate.track(slowReport.future);
+      expect(gate.lateReport, isNull);
+      await gate.settled.timeout(testLimit);
+
+      // When
+      final lateReport = gate.lateReport;
+      slowReport.complete();
+
+      // Then
+      expect(lateReport, isNotNull);
+      await expectLater(lateReport!.timeout(testLimit), completes);
+    });
+
+    test('lateReport stays null when the report finishes in time', () async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      gate.arm();
+
+      // When
+      gate.track(Future<void>.value());
+      await gate.settled.timeout(testLimit);
+
+      // Then
+      expect(gate.lateReport, isNull);
+    });
+
+    testWidgets('a new session can be armed after a timed-out one', (
+      tester,
+    ) async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      gate.arm();
+      gate.track(Completer<void>().future);
+      await tester.pump(shortTimeout);
+      final nextReport = Completer<void>();
+      gate.arm();
+      gate.track(nextReport.future);
+      var settled = false;
+      unawaited(gate.settled.then((_) => settled = true));
+      await tester.pump();
+      expect(settled, isFalse);
+
+      // When
+      nextReport.complete();
+      await tester.pump();
+
+      // Then
+      expect(settled, isTrue);
+    });
+
+    testWidgets('lateReport ignores the timeout of a replaced report', (
+      tester,
+    ) async {
+      // Given
+      final gate = PlaybackStopGate(settleTimeout: shortTimeout);
+      gate.arm();
+      gate.track(Completer<void>().future);
+      await tester.pump(shortTimeout ~/ 2);
+
+      // When
+      gate.track(Future<void>.value());
+      await tester.pump(shortTimeout);
+
+      // Then
+      expect(gate.lateReport, isNull);
+    });
+  });
+}

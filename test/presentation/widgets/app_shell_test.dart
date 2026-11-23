@@ -1,9 +1,11 @@
 import 'package:arrmate/presentation/adaptive/content_layout.dart';
 import 'package:arrmate/presentation/providers/instances_provider.dart';
 import 'package:arrmate/presentation/providers/network_status_provider.dart';
+import 'package:arrmate/presentation/providers/notifications_provider.dart';
 import 'package:arrmate/presentation/screens/discovery/discovery_screen.dart';
 import 'package:arrmate/presentation/screens/movies/movies_screen.dart';
 import 'package:arrmate/presentation/widgets/app_shell.dart';
+import 'package:arrmate/presentation/widgets/notification_icon_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -271,6 +273,74 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(MoviesScreen), findsOneWidget);
   });
+
+  testWidgets(
+    'rail keeps the notifications button on details pushed over a tab',
+    (tester) async {
+      // Given
+      await _setWindowSize(tester, const Size(1400, 900));
+      addTearDown(() => _setWindowSize(tester, null));
+      final router = GoRouter(
+        initialLocation: '/activity',
+        routes: [
+          ShellRoute(
+            builder: (context, state, child) => AppShell(child: child),
+            routes: [
+              GoRoute(
+                path: '/activity',
+                builder: (context, state) => const Text('Activity page'),
+              ),
+              GoRoute(
+                path: '/movies',
+                builder: (context, state) => const Text('Movies page'),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => const Text('Details'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            networkAvailabilityProvider.overrideWith(
+              (ref) => const Stream<NetworkAvailability>.empty(),
+            ),
+            unreadNotificationCountProvider.overrideWithValue(0),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            locale: testLocale,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(NotificationIconButton), findsNothing);
+
+      // When
+      router.push('/movies/42');
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(find.text('Details'), findsOneWidget);
+      expect(find.byType(NotificationIconButton), findsOneWidget);
+
+      // When
+      router.pop();
+      await tester.pumpAndSettle();
+
+      // Then
+      expect(find.text('Activity page'), findsOneWidget);
+      expect(find.byType(NotificationIconButton), findsNothing);
+    },
+  );
 
   testWidgets('route changes build pages outside the shell layout pass', (
     tester,

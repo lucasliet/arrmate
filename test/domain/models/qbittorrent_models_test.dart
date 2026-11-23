@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:arrmate/domain/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,6 +31,15 @@ void main() {
     test('should be valid with file', () {
       final req = AddTorrentRequest(torrentFilePath: '/path/to/file.torrent');
       expect(req.isValid, true);
+    });
+
+    test('should be valid with the contents of a file', () {
+      final req = AddTorrentRequest(
+        torrentFileBytes: Uint8List(1),
+        torrentFileName: 'file.torrent',
+      );
+      expect(req.isValid, true);
+      expect(req.hasTorrentFile, true);
     });
 
     test('should be invalid without source', () {

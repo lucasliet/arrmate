@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/models.dart';
 import '../../../providers/instances_provider.dart';
-import '../../../../core/network/custom_cache_manager.dart';
+import '../../../widgets/poster_network_image.dart';
 
 /// Helper widget to display a series poster, handling caching and auth headers.
 class SeriesPoster extends ConsumerWidget {
@@ -42,15 +41,10 @@ class SeriesPoster extends ConsumerWidget {
         ?.remoteUrl;
 
     if (remotePoster != null && remotePoster.isNotEmpty) {
-      return CachedNetworkImage(
+      return PosterNetworkImage(
         imageUrl: remotePoster,
-        cacheManager: CustomCacheManager.instance,
         fit: fit,
-        placeholder: (context, url) => Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-        errorWidget: (context, url, error) => _buildPlaceholder(context),
+        errorBuilder: _buildPlaceholder,
       );
     }
 
@@ -70,16 +64,11 @@ class SeriesPoster extends ConsumerWidget {
           .replaceAll('//', '/'),
     );
 
-    return CachedNetworkImage(
+    return PosterNetworkImage(
       imageUrl: uri.toString(),
-      cacheManager: CustomCacheManager.instance,
       httpHeaders: headers,
       fit: fit,
-      placeholder: (context, url) => Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      errorWidget: (context, url, error) => _buildPlaceholder(context),
+      errorBuilder: _buildPlaceholder,
     );
   }
 

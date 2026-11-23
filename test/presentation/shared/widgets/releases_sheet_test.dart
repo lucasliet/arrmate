@@ -19,9 +19,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('should disable every download action for a rejected release', (
-    tester,
-  ) async {
+  testWidgets('should keep every download action enabled for a rejected '
+      'release', (tester) async {
     // Given
     final release = _release(rejected: true);
 
@@ -50,9 +49,74 @@ void main() {
     final releaseTile = tester.widget<ListTile>(
       find.widgetWithText(ListTile, release.title),
     );
-    expect(downloadButton.onPressed, isNull);
-    expect(releaseTile.onTap, isNull);
-    expect(releaseTile.enabled, isFalse);
+    expect(downloadButton.onPressed, isNotNull);
+    expect(downloadButton.tooltip, 'Download anyway');
+    expect(releaseTile.onTap, isNotNull);
+    expect(releaseTile.enabled, isTrue);
+  });
+
+  testWidgets('should warn about the rejection reasons and still grab a '
+      'rejected release once confirmed', (tester) async {
+    // Given
+    final actions = _RecordingReleaseActions();
+    final release = _release(
+      rejected: true,
+      guid: 'rejected-guid',
+      rejections: const ['Wrong quality', 'Not enough seeders'],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          movieReleasesProvider(1).overrideWith((ref) async => [release]),
+          releaseActionsProvider.overrideWith(() => actions),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          locale: testLocale,
+          home: Scaffold(
+            body: ReleasesSheet(id: 1, isMovie: true, title: 'Example Movie'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // When
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.download));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.text('This release was rejected:'), findsOneWidget);
+    expect(find.text('• Wrong quality'), findsOneWidget);
+    expect(find.text('• Not enough seeders'), findsOneWidget);
+    expect(actions.grabbedGuids, isEmpty);
+
+    // When
+    await tester.tap(find.widgetWithText(FilledButton, 'Download anyway'));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(actions.grabbedGuids, ['rejected-guid']);
+  });
+
+  testWidgets('should not warn when grabbing an approved release', (
+    tester,
+  ) async {
+    // Given
+    final release = _release(rejected: false);
+    await tester.pumpWidget(
+      _sheetUnderTest(releases: [release], grab: Completer<void>().future),
+    );
+    await tester.pumpAndSettle();
+
+    // When
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.download));
+    await tester.pumpAndSettle();
+
+    // Then
+    expect(find.text('This release was rejected:'), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Download'), findsOneWidget);
   });
 
   testWidgets('should search releases and show the hidden result count', (
@@ -146,7 +210,8 @@ void main() {
     final downloadButton = tester.widget<FilledButton>(
       find.byKey(const Key('releaseDetailsDownloadButton')),
     );
-    expect(downloadButton.onPressed, isNull);
+    expect(downloadButton.onPressed, isNotNull);
+    expect(find.text('Download anyway'), findsOneWidget);
   });
 
   testWidgets(
@@ -419,6 +484,19 @@ class _PendingReleaseActions extends ReleaseActions {
     required String indexerId,
     required bool isMovie,
   }) => pending;
+}
+
+class _RecordingReleaseActions extends ReleaseActions {
+  final List<String> grabbedGuids = [];
+
+  @override
+  Future<void> downloadRelease({
+    required String guid,
+    required String indexerId,
+    required bool isMovie,
+  }) async {
+    grabbedGuids.add(guid);
+  }
 }
 
 class _DelayedReleaseQueryStore extends ReleaseQueryStore {
