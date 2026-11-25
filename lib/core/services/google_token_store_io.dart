@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'google_token_file_store.dart';
 import 'google_token_keys.dart';
 
 /// Persists the Google OAuth tokens between sessions.
@@ -14,11 +17,13 @@ abstract class GoogleTokenStore {
   Future<void> clear();
 }
 
-/// Creates the platform default [GoogleTokenStore].
-GoogleTokenStore createDefaultGoogleTokenStore() => SecureGoogleTokenStore();
+/// Creates the platform default [GoogleTokenStore]: a private file on macOS
+/// (see [FileGoogleTokenStore]) and the secure storage everywhere else.
+GoogleTokenStore createDefaultGoogleTokenStore() =>
+    Platform.isMacOS ? FileGoogleTokenStore() : SecureGoogleTokenStore();
 
 /// [GoogleTokenStore] backed by the platform's encrypted secure storage,
-/// used by every native build.
+/// used by the native builds other than macOS.
 ///
 /// On macOS the legacy login keychain is used explicitly: the default
 /// data-protection keychain requires a `keychain-access-groups` entitlement,

@@ -61,7 +61,10 @@ targets. The runner includes:
 - Network client entitlements in Debug/Profile and Release for service APIs,
   images, ntfy, and the online assistant.
 - User-selected file read access for importing torrent files.
-- Keychain access groups required by `flutter_secure_storage`.
+- No keychain entitlement: the ad-hoc signature changes on every build, so
+  keychain ACLs would prompt for the login password after each update. The
+  Google Drive tokens live in `google_tokens.json` (mode 0600) in the app
+  support directory instead (`FileGoogleTokenStore`).
 - HTTP transport support for user-configured self-hosted servers, matching
   the existing iOS configuration, and a local-network usage description.
 - Registration of the existing `arrmate://` URL scheme.
