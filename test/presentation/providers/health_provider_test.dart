@@ -150,6 +150,105 @@ void main() {
     );
 
     test(
+      'should test the indexers before the health check when they are in backoff',
+      () async {
+        // Given
+        final movieRepository = MockMovieRepository();
+        final calls = <String>[];
+        when(
+          movieRepository.getHealth,
+        ).thenAnswer((_) async => [_check('IndexerLongTermStatusCheck')]);
+        when(movieRepository.testAllIndexers).thenAnswer((_) async {
+          calls.add('testAllIndexers');
+        });
+        when(movieRepository.healthCheck).thenAnswer((_) async {
+          calls.add('healthCheck');
+        });
+        final container = _container(movieRepository: movieRepository);
+        addTearDown(container.dispose);
+        await container.read(healthProvider.future);
+
+        // When
+        await container.read(healthProvider.notifier).runHealthChecks();
+
+        // Then
+        expect(calls, ['testAllIndexers', 'healthCheck']);
+        verifyNever(movieRepository.testAllDownloadClients);
+      },
+    );
+
+    test('should test the download clients when they are in backoff', () async {
+      // Given
+      final seriesRepository = MockSeriesRepository();
+      when(
+        seriesRepository.getHealth,
+      ).thenAnswer((_) async => [_check('DownloadClientStatusCheck')]);
+      when(seriesRepository.testAllDownloadClients).thenAnswer((_) async {});
+      when(seriesRepository.healthCheck).thenAnswer((_) async {});
+      final container = _container(seriesRepository: seriesRepository);
+      addTearDown(container.dispose);
+      await container.read(healthProvider.future);
+
+      // When
+      await container.read(healthProvider.notifier).runHealthChecks();
+
+      // Then
+      verify(seriesRepository.testAllDownloadClients).called(1);
+      verifyNever(seriesRepository.testAllIndexers);
+    });
+
+    test(
+      'should still run the health check when an indexer keeps failing its test',
+      () async {
+        // Given
+        final movieRepository = MockMovieRepository();
+        final indexerWarning = _check('IndexerStatusCheck');
+        when(
+          movieRepository.getHealth,
+        ).thenAnswer((_) async => [indexerWarning]);
+        when(
+          movieRepository.testAllIndexers,
+        ).thenThrow(StateError('indexer test failed'));
+        when(movieRepository.healthCheck).thenAnswer((_) async {});
+        final container = _container(movieRepository: movieRepository);
+        addTearDown(container.dispose);
+        await container.read(healthProvider.future);
+
+        // When
+        await container.read(healthProvider.notifier).runHealthChecks();
+
+        // Then
+        verify(movieRepository.healthCheck).called(1);
+        final overview = container.read(healthProvider).requireValue;
+        expect(overview.serverChecks, [indexerWarning]);
+        expect(overview.connectionFailures, isEmpty);
+      },
+    );
+
+    test(
+      'should not test providers when no indexer or download client is failing',
+      () async {
+        // Given
+        final movieRepository = MockMovieRepository();
+        when(
+          movieRepository.getHealth,
+        ).thenAnswer((_) async => [_check('AllowedHostsCheck')]);
+        when(movieRepository.healthCheck).thenAnswer((_) async {});
+        final container = _container(movieRepository: movieRepository);
+        addTearDown(container.dispose);
+        await container.read(healthProvider.future);
+
+        // When
+        await container.read(healthProvider.notifier).runHealthChecks();
+
+        // Then
+        verify(movieRepository.healthCheck).called(1);
+        verifyNever(movieRepository.testAllIndexers);
+        verifyNever(movieRepository.testAllDownloadClients);
+      },
+    );
+
+    test(
       'should discard an in-flight refresh after the repository changes',
       () async {
         // Given
@@ -202,4 +301,25 @@ void main() {
       },
     );
   });
+}
+
+HealthCheck _check(String source) {
+  return HealthCheck(
+    source: source,
+    type: 'warning',
+    message: '$source message',
+    wikiUrl: '',
+  );
+}
+
+ProviderContainer _container({
+  MovieRepository? movieRepository,
+  SeriesRepository? seriesRepository,
+}) {
+  return ProviderContainer(
+    overrides: [
+      movieRepositoryProvider.overrideWithValue(movieRepository),
+      seriesRepositoryProvider.overrideWithValue(seriesRepository),
+    ],
+  );
 }

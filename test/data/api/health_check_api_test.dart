@@ -47,6 +47,40 @@ void main() {
       expect(adapter.body, {'name': 'CheckHealth'});
     });
   });
+
+  group('Provider tests', () {
+    // `testall` is what clears the failure backoff; the CheckHealth command
+    // alone keeps indexers and download clients flagged after they recover.
+    test('should ask Radarr to test all indexers', () async {
+      // Given
+      final adapter = _CommandAdapter();
+      final api = RadarrApi(
+        _instance(InstanceType.radarr),
+        _client(adapter, 'radarr'),
+      );
+
+      // When
+      await api.testAllIndexers();
+
+      // Then
+      expect(adapter.path, '/api/v3/indexer/testall');
+    });
+
+    test('should ask Sonarr to test all download clients', () async {
+      // Given
+      final adapter = _CommandAdapter();
+      final api = SonarrApi(
+        _instance(InstanceType.sonarr),
+        _client(adapter, 'sonarr'),
+      );
+
+      // When
+      await api.testAllDownloadClients();
+
+      // Then
+      expect(adapter.path, '/api/v3/downloadclient/testall');
+    });
+  });
 }
 
 Instance _instance(InstanceType type) {
@@ -68,7 +102,7 @@ ApiClient _client(_CommandAdapter adapter, String host) {
   );
 }
 
-/// Records the command posted to the server and answers it as accepted.
+/// Records the request posted to the server and answers it as accepted.
 class _CommandAdapter implements HttpClientAdapter {
   String? path;
   Map<String, dynamic>? body;
@@ -80,9 +114,10 @@ class _CommandAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     path = options.uri.path;
-    body = Map<String, dynamic>.from(options.data as Map);
+    final data = options.data;
+    body = data is Map ? Map<String, dynamic>.from(data) : null;
     return ResponseBody.fromString(
-      jsonEncode({'id': 1, 'name': body!['name']}),
+      jsonEncode(body == null ? [] : {'id': 1, 'name': body!['name']}),
       201,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],

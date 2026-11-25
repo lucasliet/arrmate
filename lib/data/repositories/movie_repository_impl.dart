@@ -190,4 +190,16 @@ class MovieRepositoryImpl implements MovieRepository {
     logger.info('[MovieRepository] Triggering health check');
     return _api.healthCheck();
   }
+
+  @override
+  Future<void> testAllIndexers() async {
+    logger.info('[MovieRepository] Testing all indexers');
+    return _api.testAllIndexers();
+  }
+
+  @override
+  Future<void> testAllDownloadClients() async {
+    logger.info('[MovieRepository] Testing all download clients');
+    return _api.testAllDownloadClients();
+  }
 }

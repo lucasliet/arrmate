@@ -23,6 +23,25 @@ class HealthCheck extends Equatable {
     );
   }
 
+  /// Whether the check reports indexers held back by recent failures, which
+  /// a successful indexer test clears.
+  bool get reportsIndexerFailure => _indexerFailureSources.contains(source);
+
+  /// Whether the check reports unreachable download clients or ones held
+  /// back by recent failures, which a successful download client test clears.
+  bool get reportsDownloadClientFailure =>
+      _downloadClientFailureSources.contains(source);
+
+  static const _indexerFailureSources = {
+    'IndexerStatusCheck',
+    'IndexerLongTermStatusCheck',
+  };
+
+  static const _downloadClientFailureSources = {
+    'DownloadClientCheck',
+    'DownloadClientStatusCheck',
+  };
+
   @override
   List<Object?> get props => [source, type, message, wikiUrl];
 }

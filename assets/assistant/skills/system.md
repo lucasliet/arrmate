@@ -73,7 +73,7 @@ A tela de Health exibe **resultados de health checks** dos servidores Radarr/Son
     - **Link wiki** (quando disponível): toque para abrir no navegador com mais informações.
 
 **Ações:**
-- **Ícone de refresh** no topo: toque para executar health checks manualmente.
+- **Ícone de escudo** (Run health check) no topo: toque para executar os health checks manualmente. Antes, o app testa todos os indexadores (se houver alerta de indexador indisponível ou em backoff) e todos os download clients (se houver alerta de download client), igual ao botão de chave inglesa da tela Status do Radarr/Sonarr. Assim, quando o Prowlarr ou o qBittorrent voltam, os alertas somem sem precisar abrir o Radarr/Sonarr.
 - **Barra de progresso linear**: aparece enquanto checando.
 - **Pull-to-refresh**: recarrega health status.
 
@@ -87,7 +87,8 @@ A tela de Health exibe **resultados de health checks** dos servidores Radarr/Son
 
 **Observações:**
 - Health checks rodam automaticamente em background periodicamente.
-- Você pode forçar check manual tocando no refresh.
+- Você pode forçar check manual tocando no ícone de escudo.
+- Se um indexador ou download client continuar fora do ar, o teste falha e o alerta continua na lista. Como no Radarr/Sonarr, cada teste que falha aumenta o tempo de espera (backoff) daquele indexador ou download client; então, se o Prowlarr ou o cliente ainda estiver fora, espere ele voltar antes de tocar de novo.
 - Alertas ajudam a identificar problemas antes que afetem downloads.
 
 ## Perfis de qualidade disponíveis nas instâncias

@@ -117,4 +117,11 @@ abstract class MovieRepository {
 
   /// Triggers a system health check.
   Future<void> healthCheck();
+
+  /// Tests every indexer, clearing the failure backoff of those that answer.
+  Future<void> testAllIndexers();
+
+  /// Tests every download client, clearing the failure backoff of those that
+  /// answer.
+  Future<void> testAllDownloadClients();
 }

@@ -473,4 +473,26 @@ class RadarrApi {
   Future<void> healthCheck() async {
     await sendCommand('CheckHealth');
   }
+
+  /// Tests every configured indexer, which clears the failure backoff of the
+  /// ones that answer again.
+  ///
+  /// Radarr answers 400 when any indexer still fails its test.
+  Future<void> testAllIndexers() async {
+    await _client.post(
+      '/indexer/testall',
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
+    );
+  }
+
+  /// Tests every configured download client, which clears the failure
+  /// backoff of the ones that answer again.
+  ///
+  /// Radarr answers 400 when any download client still fails its test.
+  Future<void> testAllDownloadClients() async {
+    await _client.post(
+      '/downloadclient/testall',
+      customTimeout: instance.timeout(InstanceTimeout.releaseSearch),
+    );
+  }
 }

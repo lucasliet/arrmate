@@ -251,4 +251,16 @@ class SeriesRepositoryImpl implements SeriesRepository {
     logger.info('[SeriesRepository] Triggering health check');
     return _api.healthCheck();
   }
+
+  @override
+  Future<void> testAllIndexers() async {
+    logger.info('[SeriesRepository] Testing all indexers');
+    return _api.testAllIndexers();
+  }
+
+  @override
+  Future<void> testAllDownloadClients() async {
+    logger.info('[SeriesRepository] Testing all download clients');
+    return _api.testAllDownloadClients();
+  }
 }

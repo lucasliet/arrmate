@@ -215,10 +215,12 @@ final healthProvider = AsyncNotifierProvider<HealthNotifier, HealthOverview>(
 /// Loads and refreshes health information from active Arr instances.
 class HealthNotifier extends AsyncNotifier<HealthOverview> {
   int _generation = 0;
+  final Map<String, List<HealthCheck>> _lastChecksByService = {};
 
   @override
   Future<HealthOverview> build() async {
     _generation++;
+    _lastChecksByService.clear();
     final movieRepo = ref.watch(movieRepositoryProvider);
     final seriesRepo = ref.watch(seriesRepositoryProvider);
     return _fetchHealth(movieRepo, seriesRepo);
@@ -252,8 +254,11 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
     required Future<List<HealthCheck>> Function() load,
   }) async {
     try {
-      return _HealthSourceResult(serverChecks: await load());
+      final checks = await load();
+      _lastChecksByService[service] = checks;
+      return _HealthSourceResult(serverChecks: checks);
     } catch (error, stackTrace) {
+      _lastChecksByService.remove(service);
       logger.error(
         '[HealthNotifier] Failed to load $service health status',
         error,
@@ -269,6 +274,9 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
   }
 
   /// Starts new checks and then reloads the server-reported health status.
+  ///
+  /// Indexers and download clients reported as failing are tested first: the
+  /// health check alone keeps them in backoff even after they answer again.
   Future<void> runHealthChecks() async {
     final generation = ++_generation;
     final movieRepo = ref.read(movieRepositoryProvider);
@@ -277,10 +285,28 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
     state = AsyncLoading<HealthOverview>().copyWithPrevious(state);
     final requests = <Future<HealthConnectionFailure?>>[];
     if (movieRepo != null) {
-      requests.add(_runSource(service: 'Radarr', run: movieRepo.healthCheck));
+      requests.add(
+        _runSource(
+          service: 'Radarr',
+          actions: (
+            testAllIndexers: movieRepo.testAllIndexers,
+            testAllDownloadClients: movieRepo.testAllDownloadClients,
+            startHealthCheck: movieRepo.healthCheck,
+          ),
+        ),
+      );
     }
     if (seriesRepo != null) {
-      requests.add(_runSource(service: 'Sonarr', run: seriesRepo.healthCheck));
+      requests.add(
+        _runSource(
+          service: 'Sonarr',
+          actions: (
+            testAllIndexers: seriesRepo.testAllIndexers,
+            testAllDownloadClients: seriesRepo.testAllDownloadClients,
+            startHealthCheck: seriesRepo.healthCheck,
+          ),
+        ),
+      );
     }
 
     final runFailures = await Future.wait(requests);
@@ -308,10 +334,11 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
 
   Future<HealthConnectionFailure?> _runSource({
     required String service,
-    required Future<void> Function() run,
+    required _HealthCheckActions actions,
   }) async {
     try {
-      await run();
+      await _retestFailingProviders(service, actions);
+      await actions.startHealthCheck();
       return null;
     } catch (error, stackTrace) {
       logger.warning(
@@ -325,7 +352,46 @@ class HealthNotifier extends AsyncNotifier<HealthOverview> {
       );
     }
   }
+
+  Future<void> _retestFailingProviders(
+    String service,
+    _HealthCheckActions actions,
+  ) async {
+    final checks = _lastChecksByService[service] ?? const <HealthCheck>[];
+    await Future.wait([
+      if (checks.any((check) => check.reportsIndexerFailure))
+        _retest(service, 'indexers', actions.testAllIndexers),
+      if (checks.any((check) => check.reportsDownloadClientFailure))
+        _retest(service, 'download clients', actions.testAllDownloadClients),
+    ]);
+  }
+
+  // A provider that still fails makes `testall` answer 400; the health check
+  // that follows reports it, so the failure is only logged here.
+  Future<void> _retest(
+    String service,
+    String providers,
+    Future<void> Function() test,
+  ) async {
+    try {
+      await test();
+    } catch (error, stackTrace) {
+      logger.warning(
+        '[HealthNotifier] Testing $service $providers failed '
+        '(400 means some still fail)',
+        error,
+        stackTrace,
+      );
+    }
+  }
 }
+
+/// Operations that start a new health check on one Arr service.
+typedef _HealthCheckActions = ({
+  Future<void> Function() testAllIndexers,
+  Future<void> Function() testAllDownloadClients,
+  Future<void> Function() startHealthCheck,
+});
 
 class _HealthSourceResult {
   const _HealthSourceResult({this.serverChecks = const [], this.failure});
